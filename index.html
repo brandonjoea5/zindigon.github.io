@@ -1,24 +1,214 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Zindigon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zindigon — Content Creator • Anime Writer</title>
+  <meta name="description" content="Zindigon — official site. Follow projects, read updates, and support the work." />
+  <meta property="og:title" content="Zindigon" />
+  <meta property="og:description" content="Content creator • Anime writer. Follow projects, read updates, and support the work." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="assets/hero.jpg" />
+  <meta name="theme-color" content="#0b1020" />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body { 
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      padding-top: 100px;
+    :root{
+      --bg: #0b1020;           /* deep space */
+      --bg-2:#111633;          /* cards */
+      --ink:#eaeefb;           /* text */
+      --muted:#97a0c3;         /* subtext */
+      --blue:#48b3ff;          /* electric */
+      --pink:#ff3a8e;          /* neon */
+      --glow: 0 0 40px rgba(72,179,255,.25), 0 0 80px rgba(255,58,142,.15);
+      --radius: 18px;
+      --card-blur: blur(10px);
     }
-    h1 { color: #38bdf8; }
-    a { color: #22d3ee; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+
+    /* --- NAV --- */
+    .nav{position:fixed;inset:0 auto auto 0;height:72px;width:100%;display:flex;gap:18px;align-items:center;justify-content:space-between;padding:0 22px;z-index:50;backdrop-filter:saturate(150%) blur(6px);background:linear-gradient(to bottom, rgba(11,16,32,.85), rgba(11,16,32,.35) 70%, transparent);border-bottom:1px solid rgba(255,255,255,.06)}
+    .brand{display:flex;align-items:center;gap:14px;font-weight:700;letter-spacing:.06em}
+    .brand .logo{width:36px;height:36px;border-radius:10px;background: radial-gradient(circle at 30% 30%, var(--blue), transparent 60%),radial-gradient(circle at 70% 70%, var(--pink), transparent 60%), #0f1737;border:1px solid rgba(255,255,255,.12);box-shadow:var(--glow)}
+    .brand span{font-family:Cinzel,serif;font-weight:700;font-size:22px}
+    .nav a{color:var(--ink);text-decoration:none;font-weight:600;opacity:.9}
+    .nav ul{display:flex;gap:18px;align-items:center;list-style:none;margin:0;padding:0}
+    .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg, rgba(72,179,255,.18), rgba(255,58,142,.14));box-shadow:var(--glow);text-decoration:none;color:white;font-weight:700}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(72,179,255,.22), 0 0 60px rgba(255,58,142,.18)}
+
+    /* --- HERO --- */
+    .hero{position:relative;min-height:88svh;display:grid;place-items:center;text-align:center;padding:120px 22px 64px}
+    .hero::before{content:"";position:absolute;inset:0;background:url('assets/hero.jpg') center/cover no-repeat fixed;filter:saturate(110%) contrast(105%);opacity:.55}
+    .hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 70%, rgba(72,179,255,.35), transparent 35%), radial-gradient(ellipse at 50% -10%, rgba(255,58,142,.4), transparent 45%), linear-gradient(to bottom, rgba(11,16,32,.3), var(--bg) 85%)}
+    .hero > *{position:relative;z-index:1}
+
+    .title{font-family:Cinzel,serif;font-weight:700;font-size:clamp(42px,8vw,96px);letter-spacing:.04em;line-height:1.0;margin:0 0 10px}
+    .subtitle{font-size:clamp(16px,2.6vw,22px);color:var(--muted);margin:0 0 26px}
+    .ctas{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+
+    /* --- SECTIONS --- */
+    section{padding:72px 22px}
+    .wrap{max-width:1100px;margin:0 auto}
+
+    .cards{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+    .card{grid-column:span 12;background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:22px 22px 26px;backdrop-filter:var(--card-blur);box-shadow:var(--glow)}
+    .card h3{margin:0 0 10px;font-family:Cinzel,serif;letter-spacing:.03em}
+    .card p{margin:0;color:var(--muted)}
+
+    .card--lg{grid-column:span 12}
+    @media(min-width:760px){.card{grid-column:span 6}.card--lg{grid-column:span 12}}
+    @media(min-width:1024px){.card{grid-column:span 4}.card--lg{grid-column:span 8}}
+
+    /* --- FOOTER --- */
+    footer{padding:48px 22px;color:var(--muted);border-top:1px solid rgba(255,255,255,.06);background:linear-gradient(to top, rgba(255,255,255,.02), transparent)}
+    .foot{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+    .socials{display:flex;gap:12px}
+    .icon{width:22px;height:22px;opacity:.85}
+
+    /* sub-elements */
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:13px;color:var(--muted)}
+
+    /* smooth entrance */
+    [data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .6s ease, transform .6s ease}
+    [data-reveal].in{opacity:1;transform:none}
+
+    /* links */
+    a.link{color:var(--blue);text-decoration:none}
+    a.link:hover{text-decoration:underline}
   </style>
 </head>
 <body>
-  <h1>Welcome to Zindigon</h1>
-  <p>This is the beginning of something powerful.</p>
-  <p>Follow my projects on <a href="#">YouTube</a>, <a href="#">Twitter</a>, or <a href="#">Discord</a>.</p>
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <span>ZINDIGON</span>
+    </div>
+    <ul>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#updates">Updates</a></li>
+      <li><a href="#support">Support</a></li>
+      <li><a class="btn" href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div>
+      <h1 class="title">ZINDIGON</h1>
+      <p class="subtitle">Content Creator • Anime Writer</p>
+      <div class="ctas">
+        <a class="btn" href="#projects">View Projects</a>
+        <a class="btn" href="#support">Support the Work</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="wrap">
+      <div class="cards">
+        <article class="card card--lg" data-reveal>
+          <h3>Bloodline Zero</h3>
+          <p>Original anime IP. High‑stakes powers, intricate world‑building, and relentless momentum. <a class="link" href="#contact">Ask about the story bible</a>.</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>Troll King (Game)</h3>
+          <p>Mobile ARPG: seasonal ladders, ethical monetization, hex‑map travel, and crunchy combat systems.</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>Video & Shorts</h3>
+          <p>Devlogs, behind‑the‑scenes, and lore drops. Follow along as worlds come to life.</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>Artwork & Visuals</h3>
+          <p>Key art, motion banners, and character explorations in the Zindigon aesthetic.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPDATES / BLOG PREVIEW -->
+  <section id="updates">
+    <div class="wrap">
+      <div class="cards">
+        <article class="card" data-reveal>
+          <h3>Latest Update</h3>
+          <p>Setting up the new site on a custom domain with GitHub Pages + Cloudflare. Next: add email + newsletter.</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>What’s Next</h3>
+          <p>Publish dev roadmap for <em>Troll King</em>, share episode outlines for <em>Bloodline Zero</em>, and drop a teaser banner.</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>Join the Discord</h3>
+          <p>Be first to see drafts, give feedback, and catch live Q&A. <a class="link" href="#contact">Request an invite</a>.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUPPORT -->
+  <section id="support">
+    <div class="wrap">
+      <div class="cards">
+        <article class="card card--lg" data-reveal>
+          <h3>Support the Work</h3>
+          <p>Keep the worlds expanding. Tip once or become a supporter — every bit powers new art, chapters, and builds.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px">
+            <a class="btn" href="https://www.paypal.me/" target="_blank" rel="noopener">PayPal</a>
+            <a class="btn" href="https://ko-fi.com/" target="_blank" rel="noopener">Ko‑fi</a>
+            <span class="pill">Secure • No ads • Thank you</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap">
+      <div class="cards">
+        <article class="card" data-reveal>
+          <h3>Contact</h3>
+          <p>Email: <a class="link" href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></p>
+          <p>Business: Zindigon Enterprises LLC</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>Socials</h3>
+          <p>Links coming soon — YouTube, TikTok, X/Twitter, Discord.</p>
+        </article>
+        <article class="card" data-reveal>
+          <h3>Press & Collabs</h3>
+          <p>For interviews, voice work, and collabs, reach out with a short brief and timeline.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot">
+      <div class="pill">© <span id="yr"></span> Zindigon</div>
+      <div class="socials">
+        <a aria-label="YouTube" href="#"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M23.5 6.2a4 4 0 00-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 00.5 6.2 41.7 41.7 0 000 12a41.7 41.7 0 00.5 5.8 4 4 0 002.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 002.8-2.8A41.7 41.7 0 0024 12a41.7 41.7 0 00-.5-5.8zM9.6 15.5V8.5L16 12l-6.4 3.5z"/></svg></a>
+        <a aria-label="Twitter" href="#"><svg class="icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M19.6 7.4c.01.16.01.31.01.47 0 4.8-3.64 10.31-10.31 10.31-2.05 0-3.96-.6-5.56-1.64a7.28 7.28 0 005.37-1.5 3.64 3.64 0 01-3.4-2.53c.55.08 1.08.08 1.66-.07A3.63 3.63 0 012.7 8.6c.5.29 1.06.46 1.67.48A3.62 3.62 0 012.9 6.3c0-.68.18-1.31.5-1.86a10.3 10.3 0 007.47 3.79 3.63 3.63 0 016.19-3.31 7.25 7.25 0 002.3-.88 3.64 3.64 0 01-1.6 2 7.23 7.23 0 002.08-.57 7.79 7.79 0 01-1.88 1.97z"/></svg></a>
+        <a aria-label="Discord" href="#"><svg class="icon" viewBox="0 0 245 240" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M104.4 104.9c-5.7 0-10.2 5-10.2 11.1 0 6.2 4.6 11.1 10.2 11.1 5.7 0 10.2-5 10.2-11.1.1-6.1-4.5-11.1-10.2-11.1zm36.2 0c-5.7 0-10.2 5-10.2 11.1 0 6.2 4.6 11.1 10.2 11.1 5.7 0 10.2-5 10.2-11.1 0-6.1-4.5-11.1-10.2-11.1z"/><path d="M189.5 20h-134C24.1 20 0 44.1 0 73.5v93c0 29.4 24.1 53.5 55.5 53.5h112l-5.2-18 12.6 11.7 11.9 11.2 21.6 19.1V73.5C208.5 44.1 184.4 20 153 20h36.5zM163 161s-5-6-9.1-11.4c18.1-5.1 25-16.1 25-16.1-5.7 3.7-11.1 6.3-16 8.1-7 3-13.6 5-20 6-13.2 2.5-25.3 1.8-35.8-.1-7.9-1.5-14.7-3.7-20.4-6-3.2-1.2-6.7-2.9-10.2-5-0.4-0.2-0.8-0.3-1.2-0.5-0.3-0.1-0.5-0.2-0.8-0.4-0.1 0-0.1 0-0.1 0s6.6 11 24.1 16.1c-4.1 5.4-9.2 11.6-9.2 11.6-30.4-1-41.9-20.9-41.9-20.9 0-44.3 19.8-80.2 19.8-80.2 19.8-14.8 38.6-14.4 38.6-14.4l1.4 1.6C73.8 52.6 61.3 62.6 61.3 62.6S64.1 61.4 70 59.3c12.7-4.4 22.8-5.6 27-5.9.7-.1 1.3-.1 2-.1 7.2-.1 15.1.9 23.5 3.4 11.8 3.4 24.5 9.4 37.4 18.3 0 0-11.8-10.6-37.2-16l2-2.3s18.8-.4 38.6 14.4c0 0 19.8 35.9 19.8 80.2 0 .1-11.5 20.8-42 20.9z"/></svg></a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Year in footer
+    document.getElementById('yr').textContent = new Date().getFullYear();
+
+    // Reveal on scroll
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => e.isIntersecting && e.target.classList.add('in'))
+    }, { threshold: .16 });
+    document.querySelectorAll('[data-reveal]').forEach(el => obs.observe(el));
+  </script>
 </body>
 </html>
