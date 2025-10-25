@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zindigon — Games I Play</title>
+  <meta name="theme-color" content="#0b1020" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1020; --ink:#eef2ff; --muted:#9aa3c7; --border:rgba(255,255,255,.08);
+      --card:rgba(255,255,255,.045); --radius:18px; --blue:#5cc8ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .nav{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:14px 22px;background:linear-gradient(to bottom, rgba(11,16,32,.9), rgba(11,16,32,.35));border-bottom:1px solid var(--border);backdrop-filter:saturate(150%) blur(6px)}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand .logo{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:radial-gradient(circle at 30% 35%, #5cc8ff, transparent 60%), radial-gradient(circle at 70% 65%, #ff4fa6, transparent 60%), #11183b}
+    .brand span{font-family:Cinzel,serif;font-size:18px;font-weight:800}
+    a.link{color:var(--blue);text-decoration:none}
+    a.link:hover{text-decoration:underline}
+
+    .wrap{max-width:1000px;margin:0 auto;padding:24px 22px 60px}
+    h1{font-family:Cinzel,serif;font-size:clamp(28px,4.5vw,48px);margin:12px 0 8px}
+    p{color:var(--muted);margin:0 0 20px}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+    .card{grid-column:span 12;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+    @media(min-width:760px){.card{grid-column:span 6}}
+    @media(min-width:1024px){.card{grid-column:span 4}}
+
+    .title{font-weight:800;margin:0 0 6px}
+    .tag{display:inline-block;margin:0 6px 6px 0;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <span>ZINDIGON</span>
+    </div>
+    <div><a class="link" href="index.html">← Back to Home</a></div>
+  </nav>
+
+  <div class="wrap">
+    <h1>Games I Play</h1>
+    <p>These are the worlds I grind in the most. If you play too, hit me up.</p>
+
+    <div class="grid">
+      <!-- Diablo IV -->
+      <article class="card">
+        <div class="title">Diablo IV</div>
+        <div class="tag">Platform: PlayStation</div>
+        <div class="tag">Role: Necromancer / theorycraft</div>
+        <div class="tag">Interests: seasonal push, build testing</div>
+      </article>
+
+      <!-- League -->
+      <article class="card">
+        <div class="title">League of Legends</div>
+        <div class="tag">Platform: PC</div>
+        <div class="tag">Role: Bot lane support (Gold/Plat)</div>
+        <div class="tag">Focus: macro, vision, mid-game calls</div>
+      </article>
+
+      <!-- Add more -->
+      <article class="card">
+        <div class="title">Add Your Next Game</div>
+        <div class="tag">Platform: —</div>
+        <div class="tag">Role: —</div>
+        <div class="tag">Notes: —</div>
+      </article>
+    </div>
+  </div>
+</body>
+</html>
