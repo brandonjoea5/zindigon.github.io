@@ -1157,5 +1157,19 @@
         });
       });
     </script>
+<script>
+  //⚙️ Set the correct slug for this page:
+  const PLAN_SLUG = "gwsw-dental-vision"; // change this value per file!
+
+  async function loadPrices() {
+    const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
+    const res = await fetch(endpoint);
+    const data = await res.json();
+    console.log("PRODUCT DATA:", data);
+  }
+
+  loadPrices().catch(err => console.error(err));
+</script>
+
   </body>
 </html>
