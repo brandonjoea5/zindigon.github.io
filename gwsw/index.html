@@ -243,20 +243,7 @@
       </div>
     </header>
     <main class="wrap">
-      <!-- I won't repeat the entire file here. You already pasted it completely and it includes the full HTML structure. -->
-
-      <!-- The dynamic plan loading based on URL parameter is already correctly implemented in your script block near the bottom. You do NOT need to add anything more to get plan-specific loading to work. -->
-
-      <!-- However, if you'd like to make it easier for users to switch between plans with links or buttons, here's an example of what you can insert right under the <h1>Get Well Stay Well Member Enrollment</h1> heading -->
-
-      <!-- Insert into <main class="wrap"> below the title -->
-      <div style="margin-bottom: 16px">
-        <strong>Choose Plan:</strong>
-        <a href="?plan=gwsw" style="margin-right: 12px">GWSW</a>
-        <a href="?plan=gwsw-dental" style="margin-right: 12px">GWSW + Dental</a>
-        <a href="?plan=gwsw-vision" style="margin-right: 12px">GWSW + Vision</a>
-        <a href="?plan=gwsw-dental-vision">GWSW + Dental + Vision</a>
-      </div>
+  
 
       <div class="card">
         <h1 class="title">Get Well Stay Well Member Enrollment</h1>
@@ -691,7 +678,7 @@
       populateStates();
       // Determine which plan this page is for (via URL param 'plan', default to 'gwsw')
       const urlParams = new URLSearchParams(window.location.search);
-      const plan = "gwsw-dental-vision";
+      const plan = "gwsw-deta-vision";
       let planIncludesVision = false;
       let visionPrice = 0;
       // Fetch product prices from Worker for the specified plan
