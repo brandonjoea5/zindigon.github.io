@@ -680,7 +680,7 @@
       // Determine which plan this page is for (via URL param 'plan')
       const urlParams = new URLSearchParams(window.location.search);
       const plan = "gwsw-dental-vision";
-      let planIncludesVision = false;
+      let planIncludesVision = true;
       let visionPrice = 0;
       // Fetch product prices for the specified plan
       fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
