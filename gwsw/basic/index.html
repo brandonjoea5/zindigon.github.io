@@ -243,8 +243,6 @@
       </div>
     </header>
     <main class="wrap">
-  
-
       <div class="card">
         <h1 class="title">Get Well Stay Well Member Enrollment</h1>
         <p class="sub"></p>
@@ -463,6 +461,9 @@
             </select>
           </div>
         </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+          <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
+        </div>
       </div>
     </template>
 
@@ -470,7 +471,7 @@
       /* =====================
          Configuration
       ====================== */
-      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev"; // Your worker base URL
+      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev";
       const PROMO_VALIDATE_URL = WORKER_BASE_URL + "/promo/validate";
       const PRODUCTS_URL = WORKER_BASE_URL + "/products";
       const CHARGE_URL = WORKER_BASE_URL + "/payment/charge";
@@ -502,7 +503,7 @@
           const levelVal = $("benefit_level").value;
           if (levelVal === "spouse" || levelVal === "family") numPeople += 1; // spouse included
           if (levelVal === "child" || levelVal === "family") {
-            // number of children entries (ensure at least 1 if section visible)
+            // number of children entries
             const childCount =
               document.querySelectorAll("#childList .child-entry").length || 0;
             numPeople += childCount;
@@ -617,11 +618,13 @@
         input.addEventListener("input", (e) => {
           let v = e.target.value.replace(/[^\d]/g, "");
           if (v.length > 8) v = v.slice(0, 8);
-          if (v.length >= 5)
+          if (v.length >= 5) {
             e.target.value = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
-          else if (v.length >= 3)
+          } else if (v.length >= 3) {
             e.target.value = `${v.slice(0, 2)}/${v.slice(2)}`;
-          else e.target.value = v;
+          } else {
+            e.target.value = v;
+          }
         });
         input.addEventListener("blur", () => {
           const dt = parseDobUS(input.value);
@@ -671,6 +674,32 @@
         return age < 26;
       }
 
+      // Update visibility of Remove Child buttons and renumber child labels
+      function updateRemoveButtons() {
+        const entries = document.querySelectorAll("#childList .child-entry");
+        entries.forEach((entry, idx) => {
+          const removeBtn = entry.querySelector(".removeChildBtn");
+          if (removeBtn) {
+            if (entries.length === 1) {
+              // Hide remove button if only one child entry
+              removeBtn.style.display = "none";
+            } else {
+              // Only show remove button on the last child entry
+              removeBtn.style.display =
+                idx === entries.length - 1 ? "inline-block" : "none";
+            }
+          }
+          // Renumber labels for each child entry
+          const labels = entry.querySelectorAll("label");
+          if (labels.length >= 3) {
+            const num = idx + 1;
+            labels[0].innerText = `Child ${num} Name`;
+            labels[1].innerText = `Child ${num} Date of Birth (MM/DD/YYYY)`;
+            labels[2].innerText = `Child ${num} Gender`;
+          }
+        });
+      }
+
       /* =====================
          Initialization
       ====================== */
@@ -678,7 +707,7 @@
       populateStates();
       // Determine which plan this page is for (via URL param 'plan', default to 'gwsw')
       const urlParams = new URLSearchParams(window.location.search);
-      const plan = "gwsw";
+      const plan = "gwsw-dental-vision";
       let planIncludesVision = false;
       let visionPrice = 0;
       // Fetch product prices from Worker for the specified plan
@@ -712,7 +741,7 @@
             planIncludesVision = false;
             visionPrice = 0;
           }
-          // Recalculate total price display in case initial selection (if any)
+          // Recalculate total price display
           refreshTotal();
         })
         .catch((err) => console.error("Error fetching product prices:", err));
@@ -760,6 +789,19 @@
         }
         // Append clone to list
         $("childList").appendChild(clone);
+        // Reference the newly added entry and attach remove event
+        const newChildEntry = document.querySelector(
+          "#childList .child-entry:last-child"
+        );
+        const removeBtn = newChildEntry.querySelector(".removeChildBtn");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", () => {
+            newChildEntry.remove();
+            // Update total price and remove buttons after removing a child
+            refreshTotal();
+            updateRemoveButtons();
+          });
+        }
         // Initialize date picker and mask for the new child DOB field
         const childDobInputs = document.querySelectorAll(
           "#childList .child-entry:last-child .childDob"
@@ -789,6 +831,8 @@
         });
         // Update total price if vision plan (each new child adds vision cost)
         refreshTotal();
+        // Adjust remove button visibility/numbers after adding a child
+        updateRemoveButtons();
       }
 
       // Benefit level change handler: show/hide spouse/child sections and refresh price
@@ -801,7 +845,6 @@
         if (spouseNeeded) {
           $("spouseSection").style.display = "block";
           if (!spouseInitialized) {
-            // Initialize spouse DOB picker and mask the first time
             flatpickr("#spouseDob", {
               dateFormat: "m/d/Y",
               maxDate: new Date(),
@@ -895,7 +938,7 @@
           const data = await res.json();
           if (data.success && data.valid) {
             promoApplied = true;
-            promoPercent = data.discount || 20; // use returned discount percent if provided, default 20%
+            promoPercent = data.discount || 20;
             promoCode = code;
             msgEl.textContent = `Promo applied: ${promoPercent}% off.`;
             msgEl.style.color = "#166534";
@@ -1063,8 +1106,7 @@
           // Build payload for server
           const memberData = {
             benefit_level: $("benefit_level").value
-              ? $("benefit_level").options[$("benefit_level").selectedIndex]
-                  .text
+              ? $("benefit_level").options[$("benefit_level").selectedIndex].text
               : "",
             planStartDate: $("start_date").value,
             firstName: $("firstname").value,
@@ -1075,12 +1117,13 @@
             phone: $("phone").value,
             zip: $("zip").value,
             address: $("address").value,
-            address2: "", // not captured in form (if needed, add a field)
+            address2: "",
             city: $("city").value,
             state: $("state").value,
             Country: "USA",
             Benefit_Level:
-              $("benefit_level").options[$("benefit_level").selectedIndex].text, // e.g. "Member + Family"
+              $("benefit_level").options[$("benefit_level").selectedIndex]
+                .text,
             Plan_Start_Date: $("start_date").value,
           };
           // Gather dependents (spouse/children) data
@@ -1098,7 +1141,6 @@
             const childEntries = document.querySelectorAll(
               "#childList .child-entry"
             );
-            let index = 1;
             childEntries.forEach((entry) => {
               const name = entry.querySelector(".childName").value.trim();
               const dob = entry.querySelector(".childDob").value.trim();
@@ -1111,7 +1153,6 @@
                   relationship: "Child",
                 });
               }
-              index++;
             });
           }
           // Prepare payload to send to worker
@@ -1157,19 +1198,20 @@
         });
       });
     </script>
-<script>
-  // ⚙️ Set the correct slug for this page:
-  const PLAN_SLUG = "gwsw"; // change this value per file!
+    <script>
+      //⚙️ Set the correct slug for this page:
+      const PLAN_SLUG = "gwsw-dental-vision"; // change this value per file!
 
-  async function loadPrices() {
-    const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    console.log("PRODUCT DATA:", data);
-  }
+      async function loadPrices() {
+        const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(
+          PLAN_SLUG
+        )}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        console.log("PRODUCT DATA:", data);
+      }
 
-  loadPrices().catch(err => console.error(err));
-</script>
-
+      loadPrices().catch((err) => console.error(err));
+    </script>
   </body>
 </html>
