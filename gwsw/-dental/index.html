@@ -243,8 +243,6 @@
       </div>
     </header>
     <main class="wrap">
-  
-
       <div class="card">
         <h1 class="title">Get Well Stay Well Member Enrollment</h1>
         <p class="sub"></p>
@@ -463,6 +461,9 @@
             </select>
           </div>
         </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+          <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
+        </div>
       </div>
     </template>
 
@@ -470,13 +471,13 @@
       /* =====================
          Configuration
       ====================== */
-      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev"; // Your worker base URL
+      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev";
       const PROMO_VALIDATE_URL = WORKER_BASE_URL + "/promo/validate";
       const PRODUCTS_URL = WORKER_BASE_URL + "/products";
       const CHARGE_URL = WORKER_BASE_URL + "/payment/charge";
       const ANET_CLIENT_KEY =
-        "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ"; // Authorize.Net client key
-      const ANET_API_LOGIN_ID = "9mRy427Md"; // Authorize.Net API Login ID
+        "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ";
+      const ANET_API_LOGIN_ID = "9mRy427Md";
 
       /* =====================
          Utility functions
@@ -500,7 +501,7 @@
           // Calculate vision cost for all covered individuals
           let numPeople = 1; // member always
           const levelVal = $("benefit_level").value;
-          if (levelVal === "spouse" || levelVal === "family") numPeople += 1; // spouse included
+          if (levelVal === "spouse" || levelVal === "family") numPeople += 1;
           if (levelVal === "child" || levelVal === "family") {
             // number of children entries (ensure at least 1 if section visible)
             const childCount =
@@ -676,20 +677,16 @@
       ====================== */
       populatePlanDates();
       populateStates();
-      // Determine which plan this page is for (via URL param 'plan', default to 'gwsw')
       const urlParams = new URLSearchParams(window.location.search);
-      const plan = "gwsw-dental";
+      const plan = "gwsw-dental-vision";
       let planIncludesVision = false;
       let visionPrice = 0;
-      // Fetch product prices from Worker for the specified plan
+      // Fetch product prices for the specified plan
       fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
         .then((res) => res.json())
         .then((data) => {
           if (!data.success) {
-            console.error(
-              "Failed to load product pricing:",
-              data.error || data
-            );
+            console.error("Failed to load product pricing:", data.error || data);
             return;
           }
           // Update benefit level options with retrieved prices
@@ -699,7 +696,6 @@
             if (!opt.value) return;
             if (data.basePrices && opt.value in data.basePrices) {
               const price = data.basePrices[opt.value];
-              // Set dataset price and update displayed text
               opt.dataset.price = price;
               const labelText = opt.textContent.split("—")[0].trim();
               opt.textContent = labelText + " — " + dollars(price);
@@ -712,7 +708,6 @@
             planIncludesVision = false;
             visionPrice = 0;
           }
-          // Recalculate total price display in case initial selection (if any)
           refreshTotal();
         })
         .catch((err) => console.error("Error fetching product prices:", err));
@@ -727,9 +722,7 @@
           const v = $("dob").value.trim();
           const dt = parseDobUS(v);
           if (!dt) {
-            $("dob").setCustomValidity(
-              "Enter a valid date in MM/DD/YYYY format."
-            );
+            $("dob").setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
           } else {
             $("dob").setCustomValidity("");
             const mm = String(dt.getMonth() + 1).padStart(2, "0");
@@ -743,6 +736,20 @@
 
       // Track if spouse DOB calendar initialized to avoid duplicate init
       let spouseInitialized = false;
+
+      // Function to update remove child button visibility (only last child removable)
+      function updateRemoveButtonsVisibility() {
+        const childEntries = document.querySelectorAll("#childList .child-entry");
+        childEntries.forEach((entry, idx) => {
+          const removeBtn = entry.querySelector(".removeChildBtn");
+          if (!removeBtn) return;
+          if (idx === childEntries.length - 1 && childEntries.length > 1) {
+            removeBtn.style.display = "";
+          } else {
+            removeBtn.style.display = "none";
+          }
+        });
+      }
 
       // Function to add a new child entry section
       function addChild() {
@@ -773,9 +780,7 @@
             onClose: () => {
               const dtVal = parseDobUS(input.value);
               if (!dtVal) {
-                input.setCustomValidity(
-                  "Enter a valid date in MM/DD/YYYY format."
-                );
+                input.setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
               } else {
                 input.setCustomValidity("");
                 const mm = String(dtVal.getMonth() + 1).padStart(2, "0");
@@ -787,7 +792,20 @@
           });
           attachDobMask(input);
         });
-        // Update total price if vision plan (each new child adds vision cost)
+        // Attach event handler for remove button on new child entry
+        const childEntries = document.querySelectorAll("#childList .child-entry");
+        const newEntry = childEntries[childEntries.length - 1];
+        const removeBtn = newEntry.querySelector(".removeChildBtn");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", () => {
+            newEntry.remove();
+            updateRemoveButtonsVisibility();
+            refreshTotal();
+          });
+        }
+        // Update remove button visibility for all child entries
+        updateRemoveButtonsVisibility();
+        // Update total price display
         refreshTotal();
       }
 
@@ -801,7 +819,6 @@
         if (spouseNeeded) {
           $("spouseSection").style.display = "block";
           if (!spouseInitialized) {
-            // Initialize spouse DOB picker and mask the first time
             flatpickr("#spouseDob", {
               dateFormat: "m/d/Y",
               maxDate: new Date(),
@@ -811,9 +828,7 @@
                 const v = $("spouseDob").value.trim();
                 const dt = parseDobUS(v);
                 if (!dt) {
-                  $("spouseDob").setCustomValidity(
-                    "Enter a valid date in MM/DD/YYYY format."
-                  );
+                  $("spouseDob").setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
                 } else {
                   $("spouseDob").setCustomValidity("");
                   const mm = String(dt.getMonth() + 1).padStart(2, "0");
@@ -833,11 +848,10 @@
         // Toggle children section
         if (childNeeded) {
           $("childSection").style.display = "block";
-          // If no child entry exists yet, add the first child
-          if (
-            document.querySelectorAll("#childList .child-entry").length === 0
-          ) {
+          if (document.querySelectorAll("#childList .child-entry").length === 0) {
             addChild();
+          } else {
+            updateRemoveButtonsVisibility();
           }
         } else {
           $("childSection").style.display = "none";
@@ -895,7 +909,7 @@
           const data = await res.json();
           if (data.success && data.valid) {
             promoApplied = true;
-            promoPercent = data.discount || 20; // use returned discount percent if provided, default 20%
+            promoPercent = data.discount || 20;
             promoCode = code;
             msgEl.textContent = `Promo applied: ${promoPercent}% off.`;
             msgEl.style.color = "#166534";
@@ -912,7 +926,7 @@
         }
       });
 
-      // Continue to Payment button handler (validations for all fields)
+      // Continue to Payment button handler (validate required fields)
       $("continueBtn").addEventListener("click", () => {
         const requiredIds = [
           "benefit_level",
@@ -929,63 +943,40 @@
         for (const id of requiredIds) {
           const el = $(id);
           if (!el || !el.value) {
-            return showModal(
-              "Missing Information",
-              "Please complete all required fields first."
-            );
+            return showModal("Missing Information", "Please complete all required fields first.");
           }
         }
         // Validate primary member DOB age
         const dobStr = $("dob").value.trim();
         const dobDate = parseDobUS(dobStr);
         if (!dobDate) {
-          return showModal(
-            "Invalid DOB",
-            "Enter a valid date of birth in MM/DD/YYYY format."
-          );
+          return showModal("Invalid DOB", "Enter a valid date of birth in MM/DD/YYYY format.");
         }
         if (!isAdult18(dobDate)) {
-          return showModal(
-            "Age Restriction",
-            "You must be 18 or older to enroll as the primary member."
-          );
+          return showModal("Age Restriction", "You must be 18 or older to enroll as the primary member.");
         }
-        // If spouse is required, validate spouse info
+        // If spouse required, validate spouse info
         const levelVal = $("benefit_level").value;
         if (levelVal === "spouse" || levelVal === "family") {
           const sName = $("spouseName").value.trim();
           const sDobStr = $("spouseDob").value.trim();
           const sGender = $("spouseGender").value;
           if (!sName || !sDobStr || !sGender) {
-            return showModal(
-              "Missing Spouse Info",
-              "Please enter your spouse's name, date of birth, and gender."
-            );
+            return showModal("Missing Spouse Info", "Please enter your spouse's name, date of birth, and gender.");
           }
           const sDobDate = parseDobUS(sDobStr);
           if (!sDobDate) {
-            return showModal(
-              "Invalid Spouse DOB",
-              "Enter a valid date of birth for spouse (MM/DD/YYYY)."
-            );
+            return showModal("Invalid Spouse DOB", "Enter a valid date of birth for spouse (MM/DD/YYYY).");
           }
           if (!isAdult18(sDobDate)) {
-            return showModal(
-              "Age Restriction",
-              "Spouse must be 18 or older to be included."
-            );
+            return showModal("Age Restriction", "Spouse must be 18 or older to be included.");
           }
         }
-        // If children are required, validate at least one child and their info
+        // If children required, validate at least one child and their info
         if (levelVal === "child" || levelVal === "family") {
-          const childEntries = document.querySelectorAll(
-            "#childList .child-entry"
-          );
+          const childEntries = document.querySelectorAll("#childList .child-entry");
           if (childEntries.length === 0) {
-            return showModal(
-              "Missing Child Info",
-              "Please add and enter information for at least one child."
-            );
+            return showModal("Missing Child Info", "Please add and enter information for at least one child.");
           }
           let childIndex = 1;
           for (const entry of childEntries) {
@@ -993,23 +984,14 @@
             const dobStr = entry.querySelector(".childDob")?.value.trim();
             const gender = entry.querySelector(".childGender")?.value;
             if (!name || !dobStr || !gender) {
-              return showModal(
-                "Missing Child Info",
-                `Please complete all fields for Child ${childIndex}.`
-              );
+              return showModal("Missing Child Info", `Please complete all fields for Child ${childIndex}.`);
             }
             const dobDate = parseDobUS(dobStr);
             if (!dobDate) {
-              return showModal(
-                "Invalid Child DOB",
-                `Enter a valid date of birth for Child ${childIndex} (MM/DD/YYYY).`
-              );
+              return showModal("Invalid Child DOB", `Enter a valid date of birth for Child ${childIndex} (MM/DD/YYYY).`);
             }
             if (!isUnder26(dobDate)) {
-              return showModal(
-                "Age Restriction",
-                "All dependent children must be under 26 years old."
-              );
+              return showModal("Age Restriction", "All dependent children must be under 26 years old.");
             }
             childIndex++;
           }
@@ -1023,23 +1005,15 @@
 
       // Pay Now button handler: tokenize card via Accept.js, then send to Worker
       $("payBtn").addEventListener("click", () => {
-        const btn = $("payBtn"),
-          note = $("payNote");
-        // Basic card fields validation
-        const expParts = ($("cardExp").value || "")
-          .split("/")
-          .map((s) => s.trim());
+        const btn = $("payBtn"), note = $("payNote");
+        const expParts = ($("cardExp").value || "").split("/").map((s) => s.trim());
         if (expParts.length !== 2 || expParts[0] === "" || expParts[1] === "") {
-          return showModal(
-            "Invalid Expiration",
-            "Please enter card expiration in MM/YY format."
-          );
+          return showModal("Invalid Expiration", "Please enter card expiration in MM/YY format.");
         }
         const [expMonth, expYear] = expParts;
         btn.classList.add("loading");
         btn.disabled = true;
         note.textContent = "Processing…";
-        // Authorize.Net Accept.js dispatch
         const authData = {
           clientKey: ANET_CLIENT_KEY,
           apiLoginID: ANET_API_LOGIN_ID,
@@ -1052,9 +1026,7 @@
         };
         Accept.dispatchData({ authData, cardData }, async (response) => {
           if (response.messages.resultCode === "Error") {
-            const errorText = response.messages.message
-              .map((m) => m.text)
-              .join(" ");
+            const errorText = response.messages.message.map((m) => m.text).join(" ");
             btn.classList.remove("loading");
             btn.disabled = false;
             note.textContent = "";
@@ -1063,8 +1035,7 @@
           // Build payload for server
           const memberData = {
             benefit_level: $("benefit_level").value
-              ? $("benefit_level").options[$("benefit_level").selectedIndex]
-                  .text
+              ? $("benefit_level").options[$("benefit_level").selectedIndex].text
               : "",
             planStartDate: $("start_date").value,
             firstName: $("firstname").value,
@@ -1075,17 +1046,15 @@
             phone: $("phone").value,
             zip: $("zip").value,
             address: $("address").value,
-            address2: "", // not captured in form (if needed, add a field)
+            address2: "",
             city: $("city").value,
             state: $("state").value,
             Country: "USA",
-            Benefit_Level:
-              $("benefit_level").options[$("benefit_level").selectedIndex].text, // e.g. "Member + Family"
+            Benefit_Level: $("benefit_level").options[$("benefit_level").selectedIndex].text,
             Plan_Start_Date: $("start_date").value,
           };
           // Gather dependents (spouse/children) data
           const dependentsArr = [];
-          const levelVal = $("benefit_level").value;
           if (levelVal === "spouse" || levelVal === "family") {
             dependentsArr.push({
               name: $("spouseName").value.trim(),
@@ -1095,10 +1064,7 @@
             });
           }
           if (levelVal === "child" || levelVal === "family") {
-            const childEntries = document.querySelectorAll(
-              "#childList .child-entry"
-            );
-            let index = 1;
+            const childEntries = document.querySelectorAll("#childList .child-entry");
             childEntries.forEach((entry) => {
               const name = entry.querySelector(".childName").value.trim();
               const dob = entry.querySelector(".childDob").value.trim();
@@ -1111,10 +1077,8 @@
                   relationship: "Child",
                 });
               }
-              index++;
             });
           }
-          // Prepare payload to send to worker
           const payload = {
             opaqueData: {
               dataDescriptor: response.opaqueData.dataDescriptor,
@@ -1122,9 +1086,7 @@
             },
             amount: finalPrice(),
             member: memberData,
-            promo: promoApplied
-              ? { code: promoCode, discount: promoPercent }
-              : null,
+            promo: promoApplied ? { code: promoCode, discount: promoPercent } : null,
             dependents: dependentsArr.length > 0 ? dependentsArr : null,
           };
           try {
@@ -1149,27 +1111,23 @@
             btn.classList.remove("loading");
             btn.disabled = false;
             note.textContent = "";
-            showModal(
-              "Network Error",
-              "Could not reach the payment server. Please try again."
-            );
+            showModal("Network Error", "Could not reach the payment server. Please try again.");
           }
         });
       });
     </script>
-<script>
-  // ⚙️ Set the correct slug for this page:
-  const PLAN_SLUG = "gwsw-dental"; // change this value per file!
+    <script>
+      // ⚙️ Set the correct slug for this page:
+      const PLAN_SLUG = "gwsw-dental-vision";
 
-  async function loadPrices() {
-    const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    console.log("PRODUCT DATA:", data);
-  }
+      async function loadPrices() {
+        const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        console.log("PRODUCT DATA:", data);
+      }
 
-  loadPrices().catch(err => console.error(err));
-</script>
-
+      loadPrices().catch(err => console.error(err));
+    </script>
   </body>
 </html>
