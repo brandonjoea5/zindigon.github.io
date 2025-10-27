@@ -243,8 +243,6 @@
       </div>
     </header>
     <main class="wrap">
-  
-
       <div class="card">
         <h1 class="title">Get Well Stay Well Member Enrollment</h1>
         <p class="sub"></p>
@@ -443,44 +441,43 @@
 
     <!-- Template for child dependent fields (for cloning) -->
     <template id="childTemplate">
-  <div class="child-entry">
-    <div class="field">
-      <label>Child Name</label>
-      <input class="input childName" />
-    </div>
-    <div class="grid">
-      <div class="field">
-        <label>Child Date of Birth (MM/DD/YYYY)</label>
-        <input class="input dob-field childDob" placeholder="MM/DD/YYYY" />
-        <div class="hint">Child must be under 26 years old.</div>
+      <div class="child-entry">
+        <div class="field">
+          <label>Child Name</label>
+          <input class="input childName" />
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label>Child Date of Birth (MM/DD/YYYY)</label>
+            <input class="input dob-field childDob" placeholder="MM/DD/YYYY" />
+            <div class="hint">Child must be under 26 years old.</div>
+          </div>
+          <div class="field">
+            <label>Child Gender</label>
+            <select class="childGender">
+              <option value="">Select</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+          <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
+        </div>
       </div>
-      <div class="field">
-        <label>Child Gender</label>
-        <select class="childGender">
-          <option value="">Select</option>
-          <option>Male</option>
-          <option>Female</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-      <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
-    </div>
-  </div>
-</template>
-
+    </template>
 
     <script>
       /* =====================
          Configuration
       ====================== */
-      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev"; // Your worker base URL
+      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev";
       const PROMO_VALIDATE_URL = WORKER_BASE_URL + "/promo/validate";
       const PRODUCTS_URL = WORKER_BASE_URL + "/products";
       const CHARGE_URL = WORKER_BASE_URL + "/payment/charge";
       const ANET_CLIENT_KEY =
-        "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ"; // Authorize.Net client key
-      const ANET_API_LOGIN_ID = "9mRy427Md"; // Authorize.Net API Login ID
+        "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ";
+      const ANET_API_LOGIN_ID = "9mRy427Md";
 
       /* =====================
          Utility functions
@@ -506,7 +503,7 @@
           const levelVal = $("benefit_level").value;
           if (levelVal === "spouse" || levelVal === "family") numPeople += 1; // spouse included
           if (levelVal === "child" || levelVal === "family") {
-            // number of children entries (ensure at least 1 if section visible)
+            // number of children entries
             const childCount =
               document.querySelectorAll("#childList .child-entry").length || 0;
             numPeople += childCount;
@@ -680,12 +677,12 @@
       ====================== */
       populatePlanDates();
       populateStates();
-      // Determine which plan this page is for (via URL param 'plan', default to 'gwsw')
+      // Determine which plan this page is for (via URL param 'plan')
       const urlParams = new URLSearchParams(window.location.search);
       const plan = "gwsw-dental-vision";
       let planIncludesVision = false;
       let visionPrice = 0;
-      // Fetch product prices from Worker for the specified plan
+      // Fetch product prices for the specified plan
       fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
         .then((res) => res.json())
         .then((data) => {
@@ -716,7 +713,7 @@
             planIncludesVision = false;
             visionPrice = 0;
           }
-          // Recalculate total price display in case initial selection (if any)
+          // Recalculate total price display in case initial selection
           refreshTotal();
         })
         .catch((err) => console.error("Error fetching product prices:", err));
@@ -764,34 +761,74 @@
         }
         // Append clone to list
         $("childList").appendChild(clone);
+        const childEntries = document.querySelectorAll("#childList .child-entry");
+        // Hide remove button if only one child entry, otherwise ensure all remove buttons are shown
+        if (childEntries.length === 1) {
+          const removeBtn = childEntries[0].querySelector(".removeChildBtn");
+          if (removeBtn) removeBtn.style.display = "none";
+        } else {
+          childEntries.forEach((entry) => {
+            const removeBtn = entry.querySelector(".removeChildBtn");
+            if (removeBtn) removeBtn.style.display = "";
+          });
+        }
         // Initialize date picker and mask for the new child DOB field
-        const childDobInputs = document.querySelectorAll(
-          "#childList .child-entry:last-child .childDob"
-        );
-        childDobInputs.forEach((input) => {
-          flatpickr(input, {
+        const newChildEntry = childEntries[childEntries.length - 1];
+        const dobInput = newChildEntry.querySelector(".childDob");
+        if (dobInput) {
+          flatpickr(dobInput, {
             dateFormat: "m/d/Y",
             maxDate: new Date(),
             allowInput: true,
             disableMobile: true,
             onClose: () => {
-              const dtVal = parseDobUS(input.value);
+              const dtVal = parseDobUS(dobInput.value);
               if (!dtVal) {
-                input.setCustomValidity(
+                dobInput.setCustomValidity(
                   "Enter a valid date in MM/DD/YYYY format."
                 );
               } else {
-                input.setCustomValidity("");
+                dobInput.setCustomValidity("");
                 const mm = String(dtVal.getMonth() + 1).padStart(2, "0");
                 const dd = String(dtVal.getDate()).padStart(2, "0");
                 const yyyy = dtVal.getFullYear();
-                input.value = `${mm}/${dd}/${yyyy}`;
+                dobInput.value = `${mm}/${dd}/${yyyy}`;
               }
             },
           });
-          attachDobMask(input);
-        });
-        // Update total price if vision plan (each new child adds vision cost)
+          attachDobMask(dobInput);
+        }
+        // Attach remove handler for this child entry
+        const removeBtn = newChildEntry.querySelector(".removeChildBtn");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", () => {
+            // Remove the selected child entry
+            newChildEntry.remove();
+            const remainingEntries = document.querySelectorAll("#childList .child-entry");
+            // If only one child remains, hide its remove button; if more, ensure all remove buttons visible
+            if (remainingEntries.length === 1) {
+              const remainingRemoveBtn = remainingEntries[0].querySelector(".removeChildBtn");
+              if (remainingRemoveBtn) remainingRemoveBtn.style.display = "none";
+            } else {
+              remainingEntries.forEach((entry) => {
+                const btn = entry.querySelector(".removeChildBtn");
+                if (btn) btn.style.display = "";
+              });
+            }
+            // Renumber labels for all remaining children
+            remainingEntries.forEach((entry, idx) => {
+              const labs = entry.querySelectorAll("label");
+              if (labs.length >= 3) {
+                labs[0].innerText = `Child ${idx + 1} Name`;
+                labs[1].innerText = `Child ${idx + 1} Date of Birth (MM/DD/YYYY)`;
+                labs[2].innerText = `Child ${idx + 1} Gender`;
+              }
+            });
+            // Update total price (especially for vision add-on)
+            refreshTotal();
+          });
+        }
+        // Update total price now that a child was added (for vision cost calculation)
         refreshTotal();
       }
 
@@ -805,7 +842,6 @@
         if (spouseNeeded) {
           $("spouseSection").style.display = "block";
           if (!spouseInitialized) {
-            // Initialize spouse DOB picker and mask the first time
             flatpickr("#spouseDob", {
               dateFormat: "m/d/Y",
               maxDate: new Date(),
@@ -838,9 +874,7 @@
         if (childNeeded) {
           $("childSection").style.display = "block";
           // If no child entry exists yet, add the first child
-          if (
-            document.querySelectorAll("#childList .child-entry").length === 0
-          ) {
+          if (document.querySelectorAll("#childList .child-entry").length === 0) {
             addChild();
           }
         } else {
@@ -899,7 +933,7 @@
           const data = await res.json();
           if (data.success && data.valid) {
             promoApplied = true;
-            promoPercent = data.discount || 20; // use returned discount percent if provided, default 20%
+            promoPercent = data.discount || 20;
             promoCode = code;
             msgEl.textContent = `Promo applied: ${promoPercent}% off.`;
             msgEl.style.color = "#166534";
@@ -1079,12 +1113,13 @@
             phone: $("phone").value,
             zip: $("zip").value,
             address: $("address").value,
-            address2: "", // not captured in form (if needed, add a field)
+            address2: "",
             city: $("city").value,
             state: $("state").value,
             Country: "USA",
             Benefit_Level:
-              $("benefit_level").options[$("benefit_level").selectedIndex].text, // e.g. "Member + Family"
+              $("benefit_level").options[$("benefit_level").selectedIndex]
+                .text,
             Plan_Start_Date: $("start_date").value,
           };
           // Gather dependents (spouse/children) data
@@ -1102,7 +1137,6 @@
             const childEntries = document.querySelectorAll(
               "#childList .child-entry"
             );
-            let index = 1;
             childEntries.forEach((entry) => {
               const name = entry.querySelector(".childName").value.trim();
               const dob = entry.querySelector(".childDob").value.trim();
@@ -1115,7 +1149,6 @@
                   relationship: "Child",
                 });
               }
-              index++;
             });
           }
           // Prepare payload to send to worker
@@ -1161,19 +1194,20 @@
         });
       });
     </script>
-<script>
-  //⚙️ Set the correct slug for this page:
-  const PLAN_SLUG = "gwsw-dental-vision"; // change this value per file!
+    <script>
+      // ⚙️ Set the correct slug for this page:
+      const PLAN_SLUG = "gwsw-dental-vision";
 
-  async function loadPrices() {
-    const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    console.log("PRODUCT DATA:", data);
-  }
+      async function loadPrices() {
+        const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(
+          PLAN_SLUG
+        )}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        console.log("PRODUCT DATA:", data);
+      }
 
-  loadPrices().catch(err => console.error(err));
-</script>
-
+      loadPrices().catch((err) => console.error(err));
+    </script>
   </body>
 </html>
