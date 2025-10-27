@@ -9,10 +9,7 @@
     <script src="https://js.authorize.net/v1/Accept.js"></script>
 
     <!-- Flatpickr for date selection (DOB fields) -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <style>
@@ -33,8 +30,7 @@
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial,
-          sans-serif;
+        font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       }
       .site-header {
         background: var(--brand);
@@ -61,8 +57,7 @@
       .card {
         background: var(--card);
         border-radius: var(--radius);
-        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08),
-          0 2px 8px rgba(2, 6, 23, 0.06);
+        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08), 0 2px 8px rgba(2, 6, 23, 0.06);
         padding: 24px;
       }
       .title {
@@ -370,15 +365,11 @@
           <div id="childSection" class="section" style="display: none">
             <h3>Dependent Children</h3>
             <div id="childList"></div>
-            <button type="button" id="addChildBtn" class="btn btn-ghost">
-              Add Child
-            </button>
+            <button type="button" id="addChildBtn" class="btn btn-ghost">Add Child</button>
           </div>
           <!-- Continue to Payment Button -->
           <div id="payGate" class="section">
-            <button type="button" id="continueBtn" class="btn btn-primary">
-              Continue to Payment
-            </button>
+            <button type="button" id="continueBtn" class="btn btn-primary">Continue to Payment</button>
           </div>
           <!-- Payment Details Section (hidden until continue) -->
           <div id="payArea" class="section">
@@ -415,9 +406,7 @@
               </div>
             </div>
             <div class="paybar">
-              <button type="button" id="payBtn" class="btn btn-primary">
-                Pay Now
-              </button>
+              <button type="button" id="payBtn" class="btn btn-primary">Pay Now</button>
               <span id="payNote" class="hint"></span>
             </div>
           </div>
@@ -438,7 +427,8 @@
         </div>
       </div>
     </div>
-    <!-- Template for child dependent fields -->
+
+    <!-- Template for child dependent fields (for cloning) -->
     <template id="childTemplate">
       <div class="child-entry">
         <div class="field">
@@ -460,18 +450,26 @@
             </select>
           </div>
         </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+          <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
+        </div>
       </div>
     </template>
+
     <script>
-      /* ===================== Configuration ====================== */
-      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev"; // worker base URL
+      /* =====================
+         Configuration
+      ====================== */
+      const WORKER_BASE_URL = "https://form.brandonjoea3.workers.dev";
       const PROMO_VALIDATE_URL = WORKER_BASE_URL + "/promo/validate";
       const PRODUCTS_URL = WORKER_BASE_URL + "/products";
       const CHARGE_URL = WORKER_BASE_URL + "/payment/charge";
-      const ANET_CLIENT_KEY =
-        "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ"; // Authorize.Net client key
+      const ANET_CLIENT_KEY = "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ"; // Authorize.Net client key
       const ANET_API_LOGIN_ID = "9mRy427Md"; // Authorize.Net API Login ID
-     /* ===================== Utility functions ====================== */
+
+      /* =====================
+         Utility functions
+      ====================== */
       const $ = (id) => document.getElementById(id);
       function dollars(n) {
         return "$" + Number(n).toFixed(2);
@@ -482,6 +480,7 @@
         const opt = sel.options[sel.selectedIndex];
         return Number(opt?.dataset?.price || 0);
       }
+
       // Determine final price including any vision add-on and promo discount
       function finalPrice() {
         const base = basePrice();
@@ -493,8 +492,7 @@
           if (levelVal === "spouse" || levelVal === "family") numPeople += 1; // spouse included
           if (levelVal === "child" || levelVal === "family") {
             // number of children entries (ensure at least 1 if section visible)
-            const childCount =
-              document.querySelectorAll("#childList .child-entry").length || 0;
+            const childCount = document.querySelectorAll("#childList .child-entry").length || 0;
             numPeople += childCount;
           }
           const visionCostTotal = visionPrice * numPeople;
@@ -516,6 +514,7 @@
       $("closeModal").addEventListener("click", () => {
         $("modal").style.display = "none";
       });
+
       function nextTwoFirsts() {
         const today = new Date();
         const a = new Date(today.getFullYear(), today.getMonth() + 1, 1);
@@ -540,56 +539,19 @@
       }
       function populateStates() {
         const STATES = [
-          ["AL", "Alabama"],
-          ["AK", "Alaska"],
-          ["AZ", "Arizona"],
-          ["AR", "Arkansas"],
-          ["CA", "California"],
-          ["CO", "Colorado"],
-          ["CT", "Connecticut"],
-          ["DE", "Delaware"],
-          ["FL", "Florida"],
-          ["GA", "Georgia"],
-          ["HI", "Hawaii"],
-          ["ID", "Idaho"],
-          ["IL", "Illinois"],
-          ["IN", "Indiana"],
-          ["IA", "Iowa"],
-          ["KS", "Kansas"],
-          ["KY", "Kentucky"],
-          ["LA", "Louisiana"],
-          ["ME", "Maine"],
-          ["MD", "Maryland"],
-          ["MA", "Massachusetts"],
-          ["MI", "Michigan"],
-          ["MN", "Minnesota"],
-          ["MS", "Mississippi"],
-          ["MO", "Missouri"],
-          ["MT", "Montana"],
-          ["NE", "Nebraska"],
-          ["NV", "Nevada"],
-          ["NH", "New Hampshire"],
-          ["NJ", "New Jersey"],
-          ["NM", "New Mexico"],
-          ["NY", "New York"],
-          ["NC", "North Carolina"],
-          ["ND", "North Dakota"],
-          ["OH", "Ohio"],
-          ["OK", "Oklahoma"],
-          ["OR", "Oregon"],
-          ["PA", "Pennsylvania"],
-          ["RI", "Rhode Island"],
-          ["SC", "South Carolina"],
-          ["SD", "South Dakota"],
-          ["TN", "Tennessee"],
-          ["TX", "Texas"],
-          ["UT", "Utah"],
-          ["VT", "Vermont"],
-          ["VA", "Virginia"],
-          ["WA", "Washington"],
-          ["WV", "West Virginia"],
-          ["WI", "Wisconsin"],
-          ["WY", "Wyoming"],
+          ["AL", "Alabama"], ["AK", "Alaska"], ["AZ", "Arizona"], ["AR", "Arkansas"],
+          ["CA", "California"], ["CO", "Colorado"], ["CT", "Connecticut"], ["DE", "Delaware"],
+          ["FL", "Florida"], ["GA", "Georgia"], ["HI", "Hawaii"], ["ID", "Idaho"],
+          ["IL", "Illinois"], ["IN", "Indiana"], ["IA", "Iowa"], ["KS", "Kansas"],
+          ["KY", "Kentucky"], ["LA", "Louisiana"], ["ME", "Maine"], ["MD", "Maryland"],
+          ["MA", "Massachusetts"], ["MI", "Michigan"], ["MN", "Minnesota"], ["MS", "Mississippi"],
+          ["MO", "Missouri"], ["MT", "Montana"], ["NE", "Nebraska"], ["NV", "Nevada"],
+          ["NH", "New Hampshire"], ["NJ", "New Jersey"], ["NM", "New Mexico"], ["NY", "New York"],
+          ["NC", "North Carolina"], ["ND", "North Dakota"], ["OH", "Ohio"], ["OK", "Oklahoma"],
+          ["OR", "Oregon"], ["PA", "Pennsylvania"], ["RI", "Rhode Island"], ["SC", "South Carolina"],
+          ["SD", "South Dakota"], ["TN", "Tennessee"], ["TX", "Texas"], ["UT", "Utah"],
+          ["VT", "Vermont"], ["VA", "Virginia"], ["WA", "Washington"], ["WV", "West Virginia"],
+          ["WI", "Wisconsin"], ["WY", "Wyoming"],
         ];
         const sel = $("state");
         sel.innerHTML = '<option value="">Select State</option>';
@@ -600,6 +562,7 @@
           sel.appendChild(o);
         }
       }
+
       // Date of Birth input handling: formatting mask and parse
       function attachDobMask(input) {
         input.addEventListener("input", (e) => {
@@ -626,19 +589,11 @@
       }
       function parseDobUS(str) {
         if (!str) return null;
-        const m = String(str).match(
-          /^\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\s*$/
-        );
+        const m = String(str).match(/^\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\s*$/);
         if (!m) return null;
-        const mm = +m[1],
-          dd = +m[2],
-          yyyy = +m[3];
+        const mm = +m[1], dd = +m[2], yyyy = +m[3];
         const dt = new Date(yyyy, mm - 1, dd);
-        if (
-          dt.getFullYear() !== yyyy ||
-          dt.getMonth() + 1 !== mm ||
-          dt.getDate() !== dd
-        )
+        if (dt.getFullYear() !== yyyy || dt.getMonth() + 1 !== mm || dt.getDate() !== dd)
           return null;
         return dt;
       }
@@ -646,24 +601,25 @@
         const today = new Date();
         let age = today.getFullYear() - dob.getFullYear();
         const mdiff = today.getMonth() - dob.getMonth();
-        if (mdiff < 0 || (mdiff === 0 && today.getDate() < dob.getDate()))
-          age--;
+        if (mdiff < 0 || (mdiff === 0 && today.getDate() < dob.getDate())) age--;
         return age >= 18;
       }
       function isUnder26(dob) {
         const today = new Date();
         let age = today.getFullYear() - dob.getFullYear();
         const mdiff = today.getMonth() - dob.getMonth();
-        if (mdiff < 0 || (mdiff === 0 && today.getDate() < dob.getDate()))
-          age--;
+        if (mdiff < 0 || (mdiff === 0 && today.getDate() < dob.getDate())) age--;
         return age < 26;
       }
-      /* ===================== Initialization ====================== */
+
+      /* =====================
+         Initialization
+      ====================== */
       populatePlanDates();
       populateStates();
-      // Determine which plan this page is for (via URL param 'plan', default to 'gwsw')
+      // Determine which plan this page is for
       const urlParams = new URLSearchParams(window.location.search);
-      const plan = "gwsw-vision";
+      const plan = "gwsw-dental-vision";
       let planIncludesVision = false;
       let visionPrice = 0;
       // Fetch product prices from Worker for the specified plan
@@ -671,10 +627,7 @@
         .then((res) => res.json())
         .then((data) => {
           if (!data.success) {
-            console.error(
-              "Failed to load product pricing:",
-              data.error || data
-            );
+            console.error("Failed to load product pricing:", data.error || data);
             return;
           }
           // Update benefit level options with retrieved prices
@@ -684,7 +637,6 @@
             if (!opt.value) return;
             if (data.basePrices && opt.value in data.basePrices) {
               const price = data.basePrices[opt.value];
-              // Set dataset price and update displayed text
               opt.dataset.price = price;
               const labelText = opt.textContent.split("—")[0].trim();
               opt.textContent = labelText + " — " + dollars(price);
@@ -697,10 +649,11 @@
             planIncludesVision = false;
             visionPrice = 0;
           }
-          // Recalculate total price display in case initial selection (if any)
+          // Recalculate total price display for initial selection (if any)
           refreshTotal();
         })
         .catch((err) => console.error("Error fetching product prices:", err));
+
       // Initialize main DOB field with calendar and mask
       flatpickr("#dob", {
         dateFormat: "m/d/Y",
@@ -711,9 +664,7 @@
           const v = $("dob").value.trim();
           const dt = parseDobUS(v);
           if (!dt) {
-            $("dob").setCustomValidity(
-              "Enter a valid date in MM/DD/YYYY format."
-            );
+            $("dob").setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
           } else {
             $("dob").setCustomValidity("");
             const mm = String(dt.getMonth() + 1).padStart(2, "0");
@@ -724,62 +675,91 @@
         },
       });
       attachDobMask($("dob"));
+
+      // Track if spouse DOB calendar initialized to avoid duplicate init
       let spouseInitialized = false;
+
+      // Utility to update remove button visibility on child entries
+      function updateChildRemoveButtons() {
+        const entries = document.querySelectorAll("#childList .child-entry");
+        const count = entries.length;
+        entries.forEach((entry, idx) => {
+          const removeBtn = entry.querySelector(".removeChildBtn");
+          if (!removeBtn) return;
+          if (count <= 1) {
+            removeBtn.style.display = "none";
+          } else if (idx === count - 1) {
+            removeBtn.style.display = "inline-block";
+          } else {
+            removeBtn.style.display = "none";
+          }
+        });
+      }
+
       // Function to add a new child entry section
       function addChild() {
         const template = $("childTemplate");
         if (!template) return;
         const clone = document.importNode(template.content, true);
         // Determine child index (1-based)
-        const index =
-          document.querySelectorAll("#childList .child-entry").length + 1;
+        const index = document.querySelectorAll("#childList .child-entry").length + 1;
         const labels = clone.querySelectorAll("label");
         if (labels.length >= 3) {
           labels[0].innerText = `Child ${index} Name`;
           labels[1].innerText = `Child ${index} Date of Birth (MM/DD/YYYY)`;
           labels[2].innerText = `Child ${index} Gender`;
         }
+        // Append clone to list
         $("childList").appendChild(clone);
-        // Initialize date picker and mask for the new child DOB field
-        const childDobInputs = document.querySelectorAll(
-          "#childList .child-entry:last-child .childDob"
-        );
-        childDobInputs.forEach((input) => {
-          flatpickr(input, {
+        // Initialize date picker and mask for the new child's DOB field
+        const newEntry = document.querySelector("#childList .child-entry:last-child");
+        const childDobInput = newEntry.querySelector(".childDob");
+        if (childDobInput) {
+          flatpickr(childDobInput, {
             dateFormat: "m/d/Y",
             maxDate: new Date(),
             allowInput: true,
             disableMobile: true,
             onClose: () => {
-              const dtVal = parseDobUS(input.value);
+              const dtVal = parseDobUS(childDobInput.value);
               if (!dtVal) {
-                input.setCustomValidity(
-                  "Enter a valid date in MM/DD/YYYY format."
-                );
+                childDobInput.setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
               } else {
-                input.setCustomValidity("");
+                childDobInput.setCustomValidity("");
                 const mm = String(dtVal.getMonth() + 1).padStart(2, "0");
                 const dd = String(dtVal.getDate()).padStart(2, "0");
                 const yyyy = dtVal.getFullYear();
-                input.value = `${mm}/${dd}/${yyyy}`;
+                childDobInput.value = `${mm}/${dd}/${yyyy}`;
               }
             },
           });
-          attachDobMask(input);
-        });
-        // Update total price if vision plan (each new child adds vision cost)
+          attachDobMask(childDobInput);
+        }
+        // Attach event listener for the remove button on the new entry
+        const removeBtn = newEntry.querySelector(".removeChildBtn");
+        if (removeBtn) {
+          removeBtn.addEventListener("click", () => {
+            newEntry.remove();
+            updateChildRemoveButtons();
+            refreshTotal();
+          });
+        }
+        // Update remove button visibility for all children
+        updateChildRemoveButtons();
+        // Update total price (if vision plan, adding child adds cost)
         refreshTotal();
       }
+
       // Benefit level change handler: show/hide spouse/child sections and refresh price
       $("benefit_level").addEventListener("change", () => {
         const levelVal = $("benefit_level").value;
         const spouseNeeded = levelVal === "spouse" || levelVal === "family";
         const childNeeded = levelVal === "child" || levelVal === "family";
+
         // Toggle spouse section
         if (spouseNeeded) {
           $("spouseSection").style.display = "block";
           if (!spouseInitialized) {
-            // Initialize spouse DOB picker and mask the first time
             flatpickr("#spouseDob", {
               dateFormat: "m/d/Y",
               maxDate: new Date(),
@@ -789,9 +769,7 @@
                 const v = $("spouseDob").value.trim();
                 const dt = parseDobUS(v);
                 if (!dt) {
-                  $("spouseDob").setCustomValidity(
-                    "Enter a valid date in MM/DD/YYYY format."
-                  );
+                  $("spouseDob").setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
                 } else {
                   $("spouseDob").setCustomValidity("");
                   const mm = String(dt.getMonth() + 1).padStart(2, "0");
@@ -807,25 +785,27 @@
         } else {
           $("spouseSection").style.display = "none";
         }
+
         // Toggle children section
         if (childNeeded) {
           $("childSection").style.display = "block";
           // If no child entry exists yet, add the first child
-          if (
-            document.querySelectorAll("#childList .child-entry").length === 0
-          ) {
+          if (document.querySelectorAll("#childList .child-entry").length === 0) {
             addChild();
           }
         } else {
           $("childSection").style.display = "none";
         }
+
         // Refresh the total price display
         refreshTotal();
       });
-      // Add child button handler
+
+      // Add Child button handler
       $("addChildBtn").addEventListener("click", () => {
         addChild();
       });
+
       // Promo code apply/remove
       let promoApplied = false,
         promoPercent = 0,
@@ -833,6 +813,7 @@
       $("applyPromoBtn").addEventListener("click", async () => {
         const code = ($("promoCode").value || "").trim();
         const msgEl = $("promoMsg");
+
         // Remove current promo
         if (promoApplied) {
           promoApplied = false;
@@ -845,6 +826,7 @@
           refreshTotal();
           return;
         }
+
         // Apply new promo
         if (!code) {
           msgEl.textContent = "Enter a promo code.";
@@ -867,7 +849,7 @@
           const data = await res.json();
           if (data.success && data.valid) {
             promoApplied = true;
-            promoPercent = data.discount || 20;
+            promoPercent = data.discount || 20; // default 20% if not provided
             promoCode = code;
             msgEl.textContent = `Promo applied: ${promoPercent}% off.`;
             msgEl.style.color = "#166534";
@@ -883,80 +865,50 @@
           msgEl.style.color = "#b91c1c";
         }
       });
-      // Continue to Payment button handler (validations for all fields)
+
+      // Continue to Payment button handler (validate required fields)
       $("continueBtn").addEventListener("click", () => {
         const requiredIds = [
-          "benefit_level",
-          "start_date",
-          "firstname",
-          "lastname",
-          "dob",
-          "gender",
-          "email",
-          "phone",
-          "zip",
-          "state",
+          "benefit_level", "start_date", "firstname", "lastname", "dob",
+          "gender", "email", "phone", "zip", "state",
         ];
         for (const id of requiredIds) {
           const el = $(id);
           if (!el || !el.value) {
-            return showModal(
-              "Missing Information",
-              "Please complete all required fields first."
-            );
+            return showModal("Missing Information", "Please complete all required fields first.");
           }
         }
-        // Validate primary member DOB age
+        // Validate primary member DOB (must be 18+)
         const dobStr = $("dob").value.trim();
         const dobDate = parseDobUS(dobStr);
         if (!dobDate) {
-          return showModal(
-            "Invalid DOB",
-            "Enter a valid date of birth in MM/DD/YYYY format."
-          );
+          return showModal("Invalid DOB", "Enter a valid date of birth in MM/DD/YYYY format.");
         }
         if (!isAdult18(dobDate)) {
-          return showModal(
-            "Age Restriction",
-            "You must be 18 or older to enroll as the primary member."
-          );
+          return showModal("Age Restriction", "You must be 18 or older to enroll as the primary member.");
         }
-        // If spouse is required, validate spouse info
+        // If spouse is included, validate spouse info
         const levelVal = $("benefit_level").value;
         if (levelVal === "spouse" || levelVal === "family") {
           const sName = $("spouseName").value.trim();
           const sDobStr = $("spouseDob").value.trim();
           const sGender = $("spouseGender").value;
           if (!sName || !sDobStr || !sGender) {
-            return showModal(
-              "Missing Spouse Info",
-              "Please enter your spouse's name, date of birth, and gender."
-            );
+            return showModal("Missing Spouse Info", "Please enter your spouse's name, date of birth, and gender.");
           }
           const sDobDate = parseDobUS(sDobStr);
           if (!sDobDate) {
-            return showModal(
-              "Invalid Spouse DOB",
-              "Enter a valid date of birth for spouse (MM/DD/YYYY)."
-            );
+            return showModal("Invalid Spouse DOB", "Enter a valid date of birth for spouse (MM/DD/YYYY).");
           }
           if (!isAdult18(sDobDate)) {
-            return showModal(
-              "Age Restriction",
-              "Spouse must be 18 or older to be included."
-            );
+            return showModal("Age Restriction", "Spouse must be 18 or older to be included.");
           }
         }
-        // If children are required, validate at least one child and their info
+        // If children are included, validate each child
         if (levelVal === "child" || levelVal === "family") {
-          const childEntries = document.querySelectorAll(
-            "#childList .child-entry"
-          );
+          const childEntries = document.querySelectorAll("#childList .child-entry");
           if (childEntries.length === 0) {
-            return showModal(
-              "Missing Child Info",
-              "Please add and enter information for at least one child."
-            );
+            return showModal("Missing Child Info", "Please add and enter information for at least one child.");
           }
           let childIndex = 1;
           for (const entry of childEntries) {
@@ -964,56 +916,39 @@
             const dobStr = entry.querySelector(".childDob")?.value.trim();
             const gender = entry.querySelector(".childGender")?.value;
             if (!name || !dobStr || !gender) {
-              return showModal(
-                "Missing Child Info",
-                `Please complete all fields for Child ${childIndex}.`
-              );
+              return showModal("Missing Child Info", `Please complete all fields for Child ${childIndex}.`);
             }
             const dobDate = parseDobUS(dobStr);
             if (!dobDate) {
-              return showModal(
-                "Invalid Child DOB",
-                `Enter a valid date of birth for Child ${childIndex} (MM/DD/YYYY).`
-              );
+              return showModal("Invalid Child DOB", `Enter a valid date of birth for Child ${childIndex} (MM/DD/YYYY).`);
             }
             if (!isUnder26(dobDate)) {
-              return showModal(
-                "Age Restriction",
-                "All dependent children must be under 26 years old."
-              );
+              return showModal("Age Restriction", "All dependent children must be under 26 years old.");
             }
             childIndex++;
           }
         }
-        // If all validation passes, reveal payment section
+        // If all validation passes, show payment section
         $("payArea").style.display = "block";
         $("payNote").textContent =
           "Card details are tokenized via Authorize.Net. We do not store card data.";
         $("payArea").scrollIntoView({ behavior: "smooth", block: "start" });
       });
-      // Pay Now button handler: tokenize card via Accept.js, then send to Worker
+
+      // Pay Now button handler: tokenize card via Accept.js, then send to server
       $("payBtn").addEventListener("click", () => {
-        const btn = $("payBtn"),
-          note = $("payNote");
+        const btn = $("payBtn"), note = $("payNote");
         // Basic card fields validation
-        const expParts = ($("cardExp").value || "")
-          .split("/")
-          .map((s) => s.trim());
+        const expParts = ($("cardExp").value || "").split("/").map((s) => s.trim());
         if (expParts.length !== 2 || expParts[0] === "" || expParts[1] === "") {
-          return showModal(
-            "Invalid Expiration",
-            "Please enter card expiration in MM/YY format."
-          );
+          return showModal("Invalid Expiration", "Please enter card expiration in MM/YY format.");
         }
         const [expMonth, expYear] = expParts;
         btn.classList.add("loading");
         btn.disabled = true;
         note.textContent = "Processing…";
         // Authorize.Net Accept.js dispatch
-        const authData = {
-          clientKey: ANET_CLIENT_KEY,
-          apiLoginID: ANET_API_LOGIN_ID,
-        };
+        const authData = { clientKey: ANET_CLIENT_KEY, apiLoginID: ANET_API_LOGIN_ID };
         const cardData = {
           cardNumber: $("cardNumber").value.replace(/\s+/g, ""),
           month: expMonth,
@@ -1022,9 +957,7 @@
         };
         Accept.dispatchData({ authData, cardData }, async (response) => {
           if (response.messages.resultCode === "Error") {
-            const errorText = response.messages.message
-              .map((m) => m.text)
-              .join(" ");
+            const errorText = response.messages.message.map((m) => m.text).join(" ");
             btn.classList.remove("loading");
             btn.disabled = false;
             note.textContent = "";
@@ -1033,8 +966,7 @@
           // Build payload for server
           const memberData = {
             benefit_level: $("benefit_level").value
-              ? $("benefit_level").options[$("benefit_level").selectedIndex]
-                  .text
+              ? $("benefit_level").options[$("benefit_level").selectedIndex].text
               : "",
             planStartDate: $("start_date").value,
             firstName: $("firstname").value,
@@ -1049,13 +981,11 @@
             city: $("city").value,
             state: $("state").value,
             Country: "USA",
-            Benefit_Level:
-              $("benefit_level").options[$("benefit_level").selectedIndex].text, // e.g. "Member + Family"
+            Benefit_Level: $("benefit_level").options[$("benefit_level").selectedIndex].text,
             Plan_Start_Date: $("start_date").value,
           };
-          // Gather dependents (spouse/children) data
+          // Gather dependents data
           const dependentsArr = [];
-          const levelVal = $("benefit_level").value;
           if (levelVal === "spouse" || levelVal === "family") {
             dependentsArr.push({
               name: $("spouseName").value.trim(),
@@ -1065,10 +995,7 @@
             });
           }
           if (levelVal === "child" || levelVal === "family") {
-            const childEntries = document.querySelectorAll(
-              "#childList .child-entry"
-            );
-            let index = 1;
+            const childEntries = document.querySelectorAll("#childList .child-entry");
             childEntries.forEach((entry) => {
               const name = entry.querySelector(".childName").value.trim();
               const dob = entry.querySelector(".childDob").value.trim();
@@ -1081,7 +1008,6 @@
                   relationship: "Child",
                 });
               }
-              index++;
             });
           }
           // Prepare payload to send to worker
@@ -1092,9 +1018,7 @@
             },
             amount: finalPrice(),
             member: memberData,
-            promo: promoApplied
-              ? { code: promoCode, discount: promoPercent }
-              : null,
+            promo: promoApplied ? { code: promoCode, discount: promoPercent } : null,
             dependents: dependentsArr.length > 0 ? dependentsArr : null,
           };
           try {
@@ -1119,23 +1043,23 @@
             btn.classList.remove("loading");
             btn.disabled = false;
             note.textContent = "";
-            showModal(
-              "Network Error",
-              "Could not reach the payment server. Please try again."
-            );
+            showModal("Network Error", "Could not reach the payment server. Please try again.");
           }
         });
       });
     </script>
-<script>
-  const PLAN_SLUG = "gwsw-vision"; 
-  async function loadPrices() {
-    const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
-    const res = await fetch(endpoint);
-    const data = await res.json();
-    console.log("PRODUCT DATA:", data);
-  }
-  loadPrices().catch(err => console.error(err));
-</script>
+    <script>
+      // ⚙️ Set the correct slug for this page:
+      const PLAN_SLUG = "gwsw-dental-vision";
+
+      async function loadPrices() {
+        const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        console.log("PRODUCT DATA:", data);
+      }
+
+      loadPrices().catch(err => console.error(err));
+    </script>
   </body>
 </html>
