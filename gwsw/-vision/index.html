@@ -619,8 +619,8 @@
       populateStates();
       // Determine which plan this page is for
       const urlParams = new URLSearchParams(window.location.search);
-      const plan = "gwsw-dental-vision";
-      let planIncludesVision = false;
+      const plan = "gwsw-vision";
+      let planIncludesVision = true;
       let visionPrice = 0;
       // Fetch product prices from Worker for the specified plan
       fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
