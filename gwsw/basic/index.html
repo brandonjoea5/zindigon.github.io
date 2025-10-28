@@ -1074,6 +1074,11 @@
           year: expYear,   // <-- 4-digit
           cardCode: $("cardCvc").value,
         };
+        console.log("anet authData (masked):", {
+          apiLoginID: authData.apiLoginID?.slice(0,2) + "***" + authData.apiLoginID?.slice(-2),
+          clientKey_head: authData.clientKey?.slice(0,6) + "...",
+        });
+
         Accept.dispatchData({ authData, cardData }, async (response) => {
           if (response.messages.resultCode === "Error") {
             const errorText = response.messages.message
