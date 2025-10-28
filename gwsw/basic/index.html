@@ -492,33 +492,19 @@
         const opt = sel.options[sel.selectedIndex];
         return Number(opt?.dataset?.price || 0);
       }
-
-      // Determine final price including any vision add-on and promo discount
+          // Final price = base price (from Worker) minus 20% if a promo is applied
       function finalPrice() {
-        const base = basePrice();
-        let total = base;
-        if (planIncludesVision) {
-          // Calculate vision cost for all covered individuals
-          let numPeople = 1; // member always
-          const levelVal = $("benefit_level").value;
-          if (levelVal === "spouse" || levelVal === "family") numPeople += 1; // spouse included
-          if (levelVal === "child" || levelVal === "family") {
-            // number of children entries
-            const childCount =
-              document.querySelectorAll("#childList .child-entry").length || 0;
-            numPeople += childCount;
-          }
-          const visionCostTotal = visionPrice * numPeople;
-          total = base + visionCostTotal;
-        }
-        if (promoApplied && promoPercent > 0) {
-          total = Math.round(total * (1 - promoPercent / 100) * 100) / 100;
+        let total = basePrice();
+        if (promoApplied) {
+          total = Math.round(total * 0.80 * 100) / 100; // always 20% off
         }
         return total;
       }
+      
       function refreshTotal() {
         $("totalPrice").textContent = dollars(finalPrice());
       }
+
       function showModal(title, body) {
         $("modalTitle").textContent = title;
         $("modalBody").textContent = body;
@@ -708,8 +694,7 @@
       // Determine which plan this page is for (via URL param 'plan', default to 'gwsw')
       const urlParams = new URLSearchParams(window.location.search);
       const plan = "gwsw";
-      let planIncludesVision = false;
-      let visionPrice = 0;
+
       // Fetch product prices from Worker for the specified plan
       fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
         .then((res) => res.json())
@@ -734,13 +719,6 @@
               opt.textContent = labelText + " — " + dollars(price);
             }
           });
-          if (data.visionPrice !== undefined) {
-            planIncludesVision = true;
-            visionPrice = Number(data.visionPrice) || 0;
-          } else {
-            planIncludesVision = false;
-            visionPrice = 0;
-          }
           // Recalculate total price display
           refreshTotal();
         })
@@ -896,64 +874,66 @@
       });
 
       // Promo code apply/remove
-      let promoApplied = false,
-        promoPercent = 0,
-        promoCode = "";
+      let promoApplied = false;
+      let promoCode = "";
+
       $("applyPromoBtn").addEventListener("click", async () => {
-        const code = ($("promoCode").value || "").trim();
-        const msgEl = $("promoMsg");
-
-        // Remove current promo
-        if (promoApplied) {
-          promoApplied = false;
-          promoPercent = 0;
-          promoCode = "";
-          msgEl.textContent = "Promo removed.";
-          msgEl.style.color = "#475569";
-          $("applyPromoBtn").textContent = "Apply";
-          $("promoCode").disabled = false;
-          refreshTotal();
-          return;
-        }
-
-        // Apply new promo
-        if (!code) {
-          msgEl.textContent = "Enter a promo code.";
-          msgEl.style.color = "#b91c1c";
-          return;
-        }
-        if (basePrice() <= 0) {
-          msgEl.textContent = "Select a benefit level first.";
-          msgEl.style.color = "#b91c1c";
-          return;
-        }
-        msgEl.textContent = "Checking…";
+      const code = ($("promoCode").value || "").trim();
+      const msgEl = $("promoMsg");
+    
+      // Remove current promo
+      if (promoApplied) {
+        promoApplied = false;
+        promoCode = "";
+        msgEl.textContent = "Promo removed.";
         msgEl.style.color = "#475569";
-        try {
-          const res = await fetch(PROMO_VALIDATE_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code }),
-          });
-          const data = await res.json();
-          if (data.success && data.valid) {
-            promoApplied = true;
-            promoPercent = data.discount || 20;
-            promoCode = code;
-            msgEl.textContent = `Promo applied: ${promoPercent}% off.`;
-            msgEl.style.color = "#166534";
-            $("applyPromoBtn").textContent = "Remove";
-            $("promoCode").disabled = true;
-            refreshTotal();
-          } else {
-            msgEl.textContent = "Invalid promo code.";
-            msgEl.style.color = "#b91c1c";
-          }
-        } catch {
-          msgEl.textContent = "Could not verify promo code.";
+        $("applyPromoBtn").textContent = "Apply";
+        $("promoCode").disabled = false;
+        refreshTotal();
+        return;
+      }
+    
+      // Apply new promo
+      if (!code) {
+        msgEl.textContent = "Enter a promo code.";
+        msgEl.style.color = "#b91c1c";
+        return;
+      }
+      if (basePrice() <= 0) {
+        msgEl.textContent = "Select a benefit level first.";
+        msgEl.style.color = "#b91c1c";
+        return;
+      }
+    
+      msgEl.textContent = "Checking…";
+      msgEl.style.color = "#475569";
+    
+      try {
+        const res = await fetch(PROMO_VALIDATE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+    
+        if (data.success && data.valid) {
+          promoApplied = true;
+          promoCode = code; // optional: send to backend
+          msgEl.textContent = "Promo applied: 20% off.";
+          msgEl.style.color = "#166534";
+          $("applyPromoBtn").textContent = "Remove";
+          $("promoCode").disabled = true;
+          refreshTotal();
+        } else {
+          msgEl.textContent = "Invalid promo code.";
           msgEl.style.color = "#b91c1c";
         }
-      });
+      } catch {
+        msgEl.textContent = "Could not verify promo code.";
+        msgEl.style.color = "#b91c1c";
+      }
+    });
+
 
       // Continue to Payment button handler (validations for all fields)
       $("continueBtn").addEventListener("click", () => {
@@ -1078,7 +1058,8 @@
             "Please enter card expiration in MM/YY format."
           );
         }
-        const [expMonth, expYear] = expParts;
+        const [expMonth, yy] = ($("cardExp").value || "").split("/").map(s => s.trim());
+        const expYear = yy.length === 2 ? `20${yy}` : yy;
         btn.classList.add("loading");
         btn.disabled = true;
         note.textContent = "Processing…";
@@ -1090,7 +1071,7 @@
         const cardData = {
           cardNumber: $("cardNumber").value.replace(/\s+/g, ""),
           month: expMonth,
-          year: expYear,
+          year: expYear,   // <-- 4-digit
           cardCode: $("cardCvc").value,
         };
         Accept.dispatchData({ authData, cardData }, async (response) => {
@@ -1163,9 +1144,7 @@
             },
             amount: finalPrice(),
             member: memberData,
-            promo: promoApplied
-              ? { code: promoCode, discount: promoPercent }
-              : null,
+            promo: promoApplied ? { code: promoCode } : null,
             dependents: dependentsArr.length > 0 ? dependentsArr : null,
           };
           try {
@@ -1197,21 +1176,6 @@
           }
         });
       });
-    </script>
-    <script>
-      //⚙️ Set the correct slug for this page:
-      const PLAN_SLUG = "gwsw-dental-vision"; // change this value per file!
-
-      async function loadPrices() {
-        const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(
-          PLAN_SLUG
-        )}`;
-        const res = await fetch(endpoint);
-        const data = await res.json();
-        console.log("PRODUCT DATA:", data);
-      }
-
-      loadPrices().catch((err) => console.error(err));
     </script>
   </body>
 </html>
