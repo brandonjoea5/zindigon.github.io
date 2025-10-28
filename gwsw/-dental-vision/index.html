@@ -365,8 +365,6 @@
         if(data.basePrices && opt.value in data.basePrices){
           const price=data.basePrices[opt.value];
           opt.dataset.price = price;
-          const labelText = opt.textContent.split("—")[0].trim();
-          opt.textContent = `${labelText} — ${dollars(price)}`;
         }
       });
       refreshTotal();
