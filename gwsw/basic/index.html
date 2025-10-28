@@ -65,11 +65,25 @@
 </header>
 
 <main class="wrap">
-  <div class="card">
+  <!-- Plan Selection -->
+  <div id="planSelection" class="card">
+    <h1 class="title">Choose a Plan</h1>
+    <p class="sub">Select your plan below:</p>
+    <div class="grid">
+      <button type="button" class="btn btn-primary plan-btn" data-plan="gwsw" style="width:100%;">GWSW Only</button>
+      <button type="button" class="btn btn-primary plan-btn" data-plan="gwsw-dental" style="width:100%;">GWSW Dental</button>
+      <button type="button" class="btn btn-primary plan-btn" data-plan="gwsw-vision" style="width:100%;">GWSW Vision</button>
+      <button type="button" class="btn btn-primary plan-btn" data-plan="gwsw-dental-vision" style="width:100%;">GWSW Dental + Vision</button>
+    </div>
+  </div>
+
+  <!-- Enrollment Form -->
+  <div id="enrollCard" class="card" style="display:none;">
+    <button type="button" id="backToPlans" class="btn btn-ghost" style="margin-bottom:20px;">&larr; Back to Plans</button>
     <h1 class="title">Get Well Stay Well Member Enrollment</h1>
     <p class="sub"></p>
 
-    <!-- Plan Selection -->
+    <!-- Benefit and Start Date -->
     <div class="grid">
       <div class="field">
         <label for="benefit_level">Benefit Level</label>
@@ -160,13 +174,21 @@
         </div>
       </div>
 
-      <!-- Spouse -->
+      <!-- Spouse Info (shown when applicable) -->
       <div id="spouseSection" class="section" style="display:none">
         <h3>Spouse Information</h3>
-        <div class="field">
-          <label for="spouseName">Spouse Name</label>
-          <input id="spouseName" class="input" />
+      
+        <div class="grid">
+          <div class="field">
+            <label for="spouseFirstName">Spouse First Name</label>
+            <input id="spouseFirstName" class="input" />
+          </div>
+          <div class="field">
+            <label for="spouseLastName">Spouse Last Name</label>
+            <input id="spouseLastName" class="input" />
+          </div>
         </div>
+      
         <div class="grid">
           <div class="field">
             <label for="spouseDob">Spouse Date of Birth (MM/DD/YYYY)</label>
@@ -183,6 +205,7 @@
           </div>
         </div>
       </div>
+  
 
       <!-- Children -->
       <div id="childSection" class="section" style="display:none">
@@ -240,21 +263,26 @@
   </div>
 </div>
 
-<!-- Child template -->
 <template id="childTemplate">
   <div class="child-entry">
-    <div class="field">
-      <label>Child Name</label>
-      <input class="input childName" />
+    <div class="grid">
+      <div class="field">
+        <label>Child 1 First Name</label>
+        <input class="input childFirst" />
+      </div>
+      <div class="field">
+        <label>Child 1 Last Name</label>
+        <input class="input childLast" />
+      </div>
     </div>
     <div class="grid">
       <div class="field">
-        <label>Child Date of Birth (MM/DD/YYYY)</label>
-        <input class="input childDob" placeholder="MM/DD/YYYY" />
+        <label>Child 1 Date of Birth (MM/DD/YYYY)</label>
+        <input class="input dob-field childDob" placeholder="MM/DD/YYYY" />
         <div class="hint">Child must be under 26 years old.</div>
       </div>
       <div class="field">
-        <label>Child Gender</label>
+        <label>Child 1 Gender</label>
         <select class="childGender">
           <option value="">Select</option>
           <option>Male</option>
@@ -276,7 +304,11 @@
   const CHARGE_URL        = WORKER_BASE_URL + "/payment/charge";
   const ANET_CLIENT_KEY   = "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ";
   const ANET_API_LOGIN_ID = "9mRy427Md";
-  const PLAN = "gwsw"; // this page is the GWSW-only page
+
+  // Plan selection setup
+  const PLAN_LIST = ["gwsw","gwsw-dental","gwsw-vision","gwsw-dental-vision"];
+  let planData = {};
+  let selectedPlan = "";
 
   /* ========= Helpers ========= */
   const $ = (id) => document.getElementById(id);
@@ -297,19 +329,19 @@
     const hint = sel.nextElementSibling; if(hint && sel.options.length>0){ hint.textContent = `Coverage begins ${sel.options[0].value}`; }
   }
   function populateStates(){
-    const STATES=[["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"]];
+    const STATES=[["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevad...
     const sel=$("state"); sel.innerHTML='<option value="">Select State</option>';
     for(const [abbr,name] of STATES){ const o=document.createElement("option"); o.value=abbr; o.textContent=name; sel.appendChild(o); }
   }
 
   // DOB helpers
-  function parseDobUS(str){ if(!str) return null; const m=String(str).match(/^\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\s*$/); if(!m) return null;
+  function parseDobUS(str){ if(!str) return null; const m=String(str).match(/^\\s*(\\d{1,2})[\\/\\-\\.](\\d{1,2})[\\/\\-\\.](\\d{4})\\s*$/); if(!m) return null;
     const mm=+m[1], dd=+m[2], yyyy=+m[3]; const dt=new Date(yyyy,mm-1,dd);
     if(dt.getFullYear()!==yyyy || (dt.getMonth()+1)!==mm || dt.getDate()!==dd) return null; return dt; }
   function isAdult18(dob){ const t=new Date(); let a=t.getFullYear()-dob.getFullYear(); const m=t.getMonth()-dob.getMonth(); if(m<0||(m===0&&t.getDate()<dob.getDate())) a--; return a>=18; }
   function isUnder26(dob){ const t=new Date(); let a=t.getFullYear()-dob.getFullYear(); const m=t.getMonth()-dob.getMonth(); if(m<0||(m===0&&t.getDate()<dob.getDate())) a--; return a<26; }
   function attachDobMask(input){
-    input.addEventListener("input",(e)=>{ let v=e.target.value.replace(/[^\d]/g,""); if(v.length>8) v=v.slice(0,8);
+    input.addEventListener("input",(e)=>{ let v=e.target.value.replace(/[^\\d]/g,""); if(v.length>8) v=v.slice(0,8);
       if(v.length>=5) e.target.value=`${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;
       else if(v.length>=3) e.target.value=`${v.slice(0,2)}/${v.slice(2)}`; else e.target.value=v; });
     input.addEventListener("blur",()=>{ const dt=parseDobUS(input.value); if(!dt){ input.setCustomValidity("Enter a valid date in MM/DD/YYYY format."); }
@@ -327,22 +359,73 @@
     entries.forEach((entry,idx)=>{
       const removeBtn=entry.querySelector(".removeChildBtn");
       if(removeBtn){ removeBtn.style.display = entries.length===1 ? "none" : (idx===entries.length-1 ? "inline-block" : "none"); }
-      const labels=entry.querySelectorAll("label");
-      if(labels.length>=3){ const num=idx+1; labels[0].innerText=`Child ${num} Name`; labels[1].innerText=`Child ${num} Date of Birth (MM/DD/YYYY)`; labels[2].innerText=`Child ${num} Gender`; }
+      const labels = entry.querySelectorAll("label");
+      const num = idx + 1;
+      if (labels[0]) labels[0].innerText = `Child ${num} First Name`;
+      if (labels[1]) labels[1].innerText = `Child ${num} Last Name`;
+      if (labels[2]) labels[2].innerText = `Child ${num} Date of Birth (MM/DD/YYYY)`;
+      if (labels[3]) labels[3].innerText = `Child ${num} Gender`; }
     });
   }
-  function addChild(){
-    const template=$("childTemplate"); if(!template) return;
-    const clone=document.importNode(template.content,true);
-    $("childList").appendChild(clone);
-    const newEntry=document.querySelector("#childList .child-entry:last-child");
-    const removeBtn=newEntry.querySelector(".removeChildBtn");
-    if(removeBtn){ removeBtn.addEventListener("click",()=>{ newEntry.remove(); refreshTotal(); updateRemoveButtons(); }); }
-    const childDobInputs=document.querySelectorAll("#childList .child-entry:last-child .childDob");
-    childDobInputs.forEach((input)=>{ flatpickr(input,{dateFormat:"m/d/Y", maxDate:new Date(), allowInput:true, disableMobile:true, onClose:()=>{ const dtVal=parseDobUS(input.value);
-        if(!dtVal){ input.setCustomValidity("Enter a valid date in MM/DD/YYYY format."); } else { input.setCustomValidity(""); const mm=String(dtVal.getMonth()+1).padStart(2,"0"); const dd=String(dtVal.getDate()).padStart(2,"0"); const yyyy=dtVal.getFullYear(); input.value=`${mm}/${dd}/${yyyy}`; }}}); attachDobMask(input); });
-    refreshTotal(); updateRemoveButtons();
-  }
+    function addChild() {
+      const template = $("childTemplate");
+      if (!template) return;
+
+      // Determine 1-based index for the new child
+      const index = document.querySelectorAll("#childList .child-entry").length + 1;
+
+      // Clone and set initial labels for this child
+      const clone = document.importNode(template.content, true);
+      const labels = clone.querySelectorAll("label");
+      if (labels[0]) labels[0].innerText = `Child ${index} First Name`;
+      if (labels[1]) labels[1].innerText = `Child ${index} Last Name`;
+      if (labels[2]) labels[2].innerText = `Child ${index} Date of Birth (MM/DD/YYYY)`;
+      if (labels[3]) labels[3].innerText = `Child ${index} Gender`;
+
+      // Append to list
+      $("childList").appendChild(clone);
+
+      // Grab the newly added entry
+      const newEntry = document.querySelector("#childList .child-entry:last-child");
+
+      // Wire up Remove button
+      const removeBtn = newEntry.querySelector(".removeChildBtn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          newEntry.remove();
+          refreshTotal();
+          updateRemoveButtons(); // re-number and toggle remove buttons
+        });
+      }
+
+      // Init datepicker + mask for this child’s DOB
+      const dobInput = newEntry.querySelector(".childDob");
+      if (dobInput) {
+        flatpickr(dobInput, {
+          dateFormat: "m/d/Y",
+          maxDate: new Date(),
+          allowInput: true,
+          disableMobile: true,
+          onClose: () => {
+            const dtVal = parseDobUS(dobInput.value);
+            if (!dtVal) {
+              dobInput.setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
+            } else {
+              dobInput.setCustomValidity("");
+              const mm = String(dtVal.getMonth() + 1).padStart(2, "0");
+              const dd = String(dtVal.getDate()).padStart(2, "0");
+              const yyyy = dtVal.getFullYear();
+              dobInput.value = `${mm}/${dd}/${yyyy}`;
+            }
+          },
+        });
+        attachDobMask(dobInput);
+      }
+
+      // Recalculate price (if you add per-child costs later) and adjust UI
+      refreshTotal();
+      updateRemoveButtons();
+    }
 
   /* ========= Page State ========= */
   let promoApplied   = false;
@@ -353,23 +436,66 @@
   populatePlanDates();
   populateStates();
 
-  // Load prices for this page's plan
-  fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
-    .then((r)=>r.json())
-    .then((data)=>{
-      if(!data.success){ console.error("Failed to load product pricing:", data.error || data); return; }
-      const select=$("benefit_level");
-      const opts=select.querySelectorAll("option");
-      opts.forEach((opt)=>{
-        if(!opt.value) return;
-        if(data.basePrices && opt.value in data.basePrices){
-          const price=data.basePrices[opt.value];
-          opt.dataset.price = price;
-        }
-      });
-      refreshTotal();
-    })
-    .catch((e)=>console.error("Error fetching product prices:", e));
+  // Pre-load all plan prices
+  PLAN_LIST.forEach(plan => {
+    fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
+      .then((r)=>r.json())
+      .then((data)=>{ planData[plan] = data; })
+      .catch((e)=>console.error("Error fetching prices for " + plan + ":", e));
+  });
+
+  // Plan selection handlers
+  document.querySelectorAll(".plan-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedPlan = btn.getAttribute("data-plan");
+      // show form, hide plan selection
+      $("planSelection").style.display = "none";
+      $("enrollCard").style.display = "block";
+      // reset benefit level selection
+      $("benefit_level").value = "";
+      // set pricing for selected plan
+      if(planData[selectedPlan] && planData[selectedPlan].success){
+        const data = planData[selectedPlan];
+        const select=$("benefit_level");
+        const opts=select.querySelectorAll("option");
+        opts.forEach((opt)=>{
+          if(!opt.value) return;
+          if(data.basePrices && opt.value in data.basePrices){
+            const price=data.basePrices[opt.value];
+            opt.dataset.price = price;
+          }
+        });
+        refreshTotal();
+      } else {
+        // fetch if not loaded
+        fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(selectedPlan)}`)
+          .then((r)=>r.json())
+          .then((data)=>{
+            planData[selectedPlan] = data;
+            const select=$("benefit_level");
+            const opts=select.querySelectorAll("option");
+            opts.forEach((opt)=>{
+              if(!opt.value) return;
+              if(data.basePrices && opt.value in data.basePrices){
+                const price=data.basePrices[opt.value];
+                opt.dataset.price = price;
+              }
+            });
+            refreshTotal();
+          })
+          .catch((e)=>console.error("Error fetching product prices:", e));
+      }
+    });
+  });
+
+  $("backToPlans").addEventListener("click", ()=>{
+    // go back to plan selection
+    $("enrollCard").style.display = "none";
+    $("planSelection").style.display = "block";
+    // clear benefit and total
+    $("benefit_level").value = "";
+    refreshTotal();
+  });
 
   // DOB init
   flatpickr("#dob", { dateFormat:"m/d/Y", maxDate:new Date(), allowInput:true, disableMobile:true,
@@ -475,10 +601,11 @@
       if(entries.length===0) return showModal("Missing Child Info","Please add and enter information for at least one child.");
       let idx=1;
       for(const entry of entries){
-        const name=entry.querySelector(".childName")?.value.trim();
+        const name=entry.querySelector(".childFirst")?.value.trim();
+        const last=entry.querySelector(".childLast")?.value.trim();
         const dobStr=entry.querySelector(".childDob")?.value.trim();
         const gender=entry.querySelector(".childGender")?.value;
-        if(!name || !dobStr || !gender) return showModal("Missing Child Info",`Please complete all fields for Child ${idx}.`);
+        if(!name || !last || !dobStr || !gender) return showModal("Missing Child Info",`Please complete all fields for Child ${idx}.`);
         const cDob=parseDobUS(dobStr); if(!cDob) return showModal("Invalid Child DOB",`Enter a valid date of birth for Child ${idx} (MM/DD/YYYY).`);
         if(!isUnder26(cDob)) return showModal("Age Restriction","All dependent children must be under 26 years old.");
         idx++;
@@ -505,7 +632,7 @@
 
     const authData = { clientKey: ANET_CLIENT_KEY, apiLoginID: ANET_API_LOGIN_ID };
     const cardData = {
-      cardNumber: $("cardNumber").value.replace(/\s+/g,""),
+      cardNumber: $("cardNumber").value.replace(/\\s+/g,""),
       month: expMonth,
       year: expYear,
       cardCode: $("cardCvc").value
@@ -554,11 +681,12 @@
       if(levelVal==="child" || levelVal==="family"){
         const entries=document.querySelectorAll("#childList .child-entry");
         entries.forEach((entry)=>{
-          const name=entry.querySelector(".childName").value.trim();
+          const name=entry.querySelector(".childFirst").value.trim();
+          const last=entry.querySelector(".childLast").value.trim();
           const dob=entry.querySelector(".childDob").value.trim();
           const gender=entry.querySelector(".childGender").value;
-          if(name && dob && gender){
-            dependentsArr.push({ name, dateOfBirth: dob, gender, relationship: "Child" });
+          if(name && last && dob && gender){
+            dependentsArr.push({ name: name + " " + last, dateOfBirth: dob, gender, relationship: "Child" });
           }
         });
       }
@@ -570,10 +698,10 @@
           dataValue: response.opaqueData.dataValue
         },
         amount: finalPrice(),
-        plan: PLAN,
+        plan: selectedPlan,
         member: memberData,
         promo: promoApplied ? { code: promoCode, accountId: promoAccountId } : null,
-        dependents: dependentsArr // always an array
+        dependents: dependentsArr
       };
 
       try{
@@ -581,8 +709,8 @@
         const result = await res.json();
         btn.classList.remove("loading"); btn.disabled=false; note.textContent="";
         if(result.success){
-          let msg = `Payment approved.\nTransaction ID: ${result.transactionId}`;
-          if(result.warning) msg += `\n\nNote: ${result.warning}`;
+          let msg = `Payment approved.\\nTransaction ID: ${result.transactionId}`;
+          if(result.warning) msg += `\\n\\nNote: ${result.warning}`;
           showModal("Success", msg);
         } else {
           showModal("Payment Declined", result.error || "Payment failed.");
