@@ -1,1133 +1,601 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>GWSW Member Enrollment</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+  <meta charset="utf-8" />
+  <title>GWSW Member Enrollment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Authorize.Net Accept.js for tokenizing card details -->
-    <script src="https://js.authorize.net/v1/Accept.js"></script>
+  <!-- SANDBOX Accept.js -->
+  <script src="https://jstest.authorize.net/v1/Accept.js"></script>
 
-    <!-- Flatpickr for date selection (DOB fields) -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
-    />
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <style>
-      :root {
-        --brand: #c1161e;
-        --brand-dark: #9e0f16;
-        --ink: #0f172a;
-        --muted: #475569;
-        --card: #ffffff;
-        --bg: #f7f8fb;
-        --ring: rgba(193, 22, 30, 0.18);
-        --radius: 16px;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--ink);
-        font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial,
-          sans-serif;
-      }
-      .site-header {
-        background: var(--brand);
-        padding: 28px 16px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .logo-tile {
-        background: #fff;
-        border-radius: 12px;
-        padding: 10px 16px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-      }
-      .logo-tile img {
-        height: 36px;
-        display: block;
-      }
-      .wrap {
-        max-width: 860px;
-        margin: 24px auto;
-        padding: 0 16px;
-      }
-      .card {
-        background: var(--card);
-        border-radius: var(--radius);
-        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08),
-          0 2px 8px rgba(2, 6, 23, 0.06);
-        padding: 24px;
-      }
-      .title {
-        font-size: 22px;
-        margin: 0 0 8px 0;
-      }
-      .sub {
-        color: var(--muted);
-        margin: 0 0 20px 0;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-      }
-      .grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 14px;
-      }
-      .full {
-        grid-column: 1 / -1;
-      }
-      label {
-        display: block;
-        font-weight: 600;
-        margin: 6px 0;
-      }
-      .field {
-        display: flex;
-        flex-direction: column;
-      }
-      .input,
-      select {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        background: #fff;
-        outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
-      }
-      .input:focus,
-      select:focus {
-        border-color: var(--brand);
-        box-shadow: 0 0 0 4px var(--ring);
-      }
-      .hint {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-      .toolbar {
-        display: flex;
-        gap: 10px;
-        align-items: end;
-        flex-wrap: wrap;
-      }
-      .sm {
-        max-width: 240px;
-      }
-      .price {
-        margin-left: auto;
-        font-weight: 800;
-        font-size: 20px;
-      }
-      .btn {
-        cursor: pointer;
-        border: 0;
-        border-radius: 14px;
-        padding: 12px 16px;
-        font-weight: 700;
-      }
-      .btn-primary {
-        background: var(--brand);
-        color: #fff;
-      }
-      .btn-primary:hover {
-        background: var(--brand-dark);
-      }
-      .btn-ghost {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-      }
-      .section {
-        margin-top: 22px;
-        padding-top: 18px;
-        border-top: 1px dashed #e5e7eb;
-      }
-      /* Additional spacing between multiple child entries */
-      .child-entry {
-        margin-bottom: 16px;
-      }
-      #payArea {
-        display: none;
-      }
-      .paybar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .btn.loading {
-        position: relative;
-        pointer-events: none;
-        opacity: 0.85;
-      }
-      .btn.loading:after {
-        content: "";
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        border: 2px solid #fff;
-        border-top-color: transparent;
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: translateY(-50%) rotate(360deg);
-        }
-      }
-      .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(2, 6, 23, 0.52);
-        display: none;
-        place-items: center;
-        padding: 16px;
-        z-index: 9999;
-      }
-      .modal {
-        background: #fff;
-        border-radius: 16px;
-        max-width: 480px;
-        width: 100%;
-        box-shadow: 0 30px 70px rgba(2, 6, 23, 0.35);
-        padding: 22px;
-      }
-      .modal h3 {
-        margin: 0 0 10px 0;
-      }
-      .modal .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 16px;
-      }
-      footer {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-        align-items: center;
-        margin: 30px 0;
-        color: var(--muted);
-      }
-      footer img {
-        height: 18px;
-      }
-      @media (max-width: 720px) {
-        .grid,
-        .grid-3 {
-          grid-template-columns: 1fr;
-        }
-        .sm {
-          max-width: 100%;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header class="site-header">
-      <div class="logo-tile">
-        <img src="https://www.gwsw.com/assets/img/logo.png" alt="GWSW" />
+  <style>
+    :root {
+      --brand:#c1161e; --brand-dark:#9e0f16; --ink:#0f172a; --muted:#475569;
+      --card:#ffffff; --bg:#f7f8fb; --ring:rgba(193,22,30,.18); --radius:16px;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    .site-header { background:var(--brand); padding:28px 16px; display:flex; justify-content:center; align-items:center; }
+    .logo-tile { background:#fff; border-radius:12px; padding:10px 16px; box-shadow:0 6px 20px rgba(0,0,0,.18); }
+    .logo-tile img { height:36px; display:block; }
+    .wrap { max-width:860px; margin:24px auto; padding:0 16px; }
+    .card { background:var(--card); border-radius:var(--radius); box-shadow:0 10px 30px rgba(2,6,23,.08),0 2px 8px rgba(2,6,23,.06); padding:24px; }
+    .title { font-size:22px; margin:0 0 8px; }
+    .sub { color:var(--muted); margin:0 0 20px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .full { grid-column:1 / -1; }
+    label { display:block; font-weight:600; margin:6px 0; }
+    .field { display:flex; flex-direction:column; }
+    .input, select { width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:12px; background:#fff; outline:none; transition:border-color .15s, box-shadow .15s; }
+    .input:focus, select:focus { border-color:var(--brand); box-shadow:0 0 0 4px var(--ring); }
+    .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+    .toolbar { display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
+    .sm { max-width:240px; }
+    .price { margin-left:auto; font-weight:800; font-size:20px; }
+    .btn { cursor:pointer; border:0; border-radius:14px; padding:12px 16px; font-weight:700; }
+    .btn-primary { background:var(--brand); color:#fff; }
+    .btn-primary:hover { background:var(--brand-dark); }
+    .btn-ghost { background:#fff; border:1px solid #e5e7eb; }
+    .section { margin-top:22px; padding-top:18px; border-top:1px dashed #e5e7eb; }
+    .child-entry { margin-bottom:16px; }
+    #payArea { display:none; }
+    .paybar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .btn.loading { position:relative; pointer-events:none; opacity:.85; }
+    .btn.loading:after { content:""; width:16px; height:16px; border-radius:50%; border:2px solid #fff; border-top-color:transparent; position:absolute; right:12px; top:50%; transform:translateY(-50%); animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:translateY(-50%) rotate(360deg); } }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,.52); display:none; place-items:center; padding:16px; z-index:9999; }
+    .modal { background:#fff; border-radius:16px; max-width:480px; width:100%; box-shadow:0 30px 70px rgba(2,6,23,.35); padding:22px; }
+    .modal h3 { margin:0 0 10px; }
+    .modal .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+    footer { display:flex; gap:8px; justify-content:center; align-items:center; margin:30px 0; color:var(--muted); }
+    footer img { height:18px; }
+    @media (max-width:720px){ .grid, .grid-3 { grid-template-columns:1fr; } .sm{max-width:100%;} }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <div class="logo-tile">
+    <img src="https://www.gwsw.com/assets/img/logo.png" alt="GWSW" />
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="card">
+    <h1 class="title">Get Well Stay Well Member Enrollment</h1>
+    <p class="sub"></p>
+
+    <!-- Plan Selection -->
+    <div class="grid">
+      <div class="field">
+        <label for="benefit_level">Benefit Level</label>
+        <select id="benefit_level" required>
+          <option value="">Select benefit level</option>
+          <option value="member">Member Only — $0.00</option>
+          <option value="spouse">Member + Spouse — $0.00</option>
+          <option value="child">Member + Child(ren) — $0.00</option>
+          <option value="family">Member + Family — $0.00</option>
+        </select>
       </div>
-    </header>
-    <main class="wrap">
-      <div class="card">
-        <h1 class="title">Get Well Stay Well Member Enrollment</h1>
-        <p class="sub"></p>
-        <!-- Plan Selection: Benefit level & Start date -->
-        <div class="grid">
-          <div class="field">
-            <label for="benefit_level">Benefit Level</label>
-            <select id="benefit_level" required>
-              <option value="">Select benefit level</option>
-              <option value="member">Member Only — $0.00</option>
-              <option value="spouse">Member + Spouse — $0.00</option>
-              <option value="child">Member + Child(ren) — $0.00</option>
-              <option value="family">Member + Family — $0.00</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="start_date">Plan Start Date</label>
-            <select id="start_date" required></select>
-            <div class="hint"></div>
-          </div>
-        </div>
-        <!-- Promo Code -->
-        <div class="section toolbar">
-          <div class="field sm" style="flex: 1 1 240px">
-            <label for="promoCode">Promo Code (optional)</label>
-            <input id="promoCode" class="input" placeholder="Enter code" />
-          </div>
-          <button id="applyPromoBtn" class="btn btn-ghost">Apply</button>
-          <div class="price" id="totalPrice">$0.00</div>
-          <span id="promoMsg" class="hint"></span>
-        </div>
-        <!-- Personal Info Form -->
-        <form id="enrollForm" novalidate>
-          <div class="grid">
-            <div class="field">
-              <label for="firstname">First Name</label>
-              <input id="firstname" class="input" required />
-            </div>
-            <div class="field">
-              <label for="lastname">Last Name</label>
-              <input id="lastname" class="input" required />
-            </div>
-          </div>
-          <div class="grid-3">
-            <div class="field">
-              <label for="dob">Date of Birth (MM/DD/YYYY)</label>
-              <input
-                id="dob"
-                class="input"
-                placeholder="MM/DD/YYYY"
-                inputmode="numeric"
-                autocomplete="bday"
-                maxlength="10"
-                required
-              />
-              <div class="hint">Use MM/DD/YYYY (e.g., 04/09/1994)</div>
-            </div>
-            <div class="field">
-              <label for="gender">Gender</label>
-              <select id="gender" required>
-                <option value="">Select</option>
-                <option>Male</option>
-                <option>Female</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="zip">ZIP</label>
-              <input id="zip" class="input" required />
-            </div>
-          </div>
-          <div class="grid">
-            <div class="field">
-              <label for="email">Email</label>
-              <input id="email" type="email" class="input" required />
-            </div>
-            <div class="field">
-              <label for="phone">Phone</label>
-              <input id="phone" class="input" required />
-            </div>
-          </div>
-          <div class="grid">
-            <div class="field">
-              <label for="address">Address</label>
-              <input id="address" class="input" />
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label for="city">City</label>
-                <input id="city" class="input" />
-              </div>
-              <div class="field">
-                <label for="state">State</label>
-                <select id="state" required></select>
-              </div>
-            </div>
-          </div>
-          <!-- Spouse Info (shown when applicable) -->
-          <div id="spouseSection" class="section" style="display: none">
-            <h3>Spouse Information</h3>
-            <div class="field">
-              <label for="spouseName">Spouse Name</label>
-              <input id="spouseName" class="input" />
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label for="spouseDob">Spouse Date of Birth (MM/DD/YYYY)</label>
-                <input
-                  id="spouseDob"
-                  class="input dob-field"
-                  placeholder="MM/DD/YYYY"
-                />
-                <div class="hint">Spouse must be 18 or older.</div>
-              </div>
-              <div class="field">
-                <label for="spouseGender">Spouse Gender</label>
-                <select id="spouseGender">
-                  <option value="">Select</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <!-- Children Info (shown when applicable) -->
-          <div id="childSection" class="section" style="display: none">
-            <h3>Dependent Children</h3>
-            <div id="childList"></div>
-            <button type="button" id="addChildBtn" class="btn btn-ghost">
-              Add Child
-            </button>
-          </div>
-          <!-- Continue to Payment Button -->
-          <div id="payGate" class="section">
-            <button type="button" id="continueBtn" class="btn btn-primary">
-              Continue to Payment
-            </button>
-          </div>
-          <!-- Payment Details Section (hidden until continue) -->
-          <div id="payArea" class="section">
-            <h3 style="margin: 0 0 8px 0">Payment</h3>
-            <div class="grid">
-              <div class="field">
-                <label for="cardNumber">Card Number</label>
-                <input
-                  id="cardNumber"
-                  class="input"
-                  autocomplete="cc-number"
-                  inputmode="numeric"
-                />
-              </div>
-              <div class="field">
-                <label for="cardExp">Expiration (MM/YY)</label>
-                <input
-                  id="cardExp"
-                  class="input"
-                  placeholder="MM/YY"
-                  autocomplete="cc-exp"
-                />
-              </div>
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label for="cardCvc">CVV</label>
-                <input
-                  id="cardCvc"
-                  class="input"
-                  autocomplete="cc-csc"
-                  inputmode="numeric"
-                />
-              </div>
-            </div>
-            <div class="paybar">
-              <button type="button" id="payBtn" class="btn btn-primary">
-                Pay Now
-              </button>
-              <span id="payNote" class="hint"></span>
-            </div>
-          </div>
-        </form>
-      </div>
-    </main>
-    <footer>
-      <span>Copyright © 2025 GWSW | All Rights Reserved</span>
-      <img src="https://www.gwsw.com/assets/img/v_logo.png" alt="GWSW" />
-    </footer>
-    <!-- Modal for status messages -->
-    <div id="modal" class="modal-backdrop" role="dialog" aria-modal="true">
-      <div class="modal">
-        <h3 id="modalTitle">Status</h3>
-        <div id="modalBody" style="white-space: pre-wrap"></div>
-        <div class="actions">
-          <button class="btn btn-ghost" id="closeModal">Close</button>
-        </div>
+      <div class="field">
+        <label for="start_date">Plan Start Date</label>
+        <select id="start_date" required></select>
+        <div class="hint"></div>
       </div>
     </div>
 
-    <!-- Template for child dependent fields (for cloning) -->
-    <template id="childTemplate">
-      <div class="child-entry">
+    <!-- Promo Code -->
+    <div class="section toolbar">
+      <div class="field sm" style="flex:1 1 240px">
+        <label for="promoCode">Promo Code (optional)</label>
+        <input id="promoCode" class="input" placeholder="Enter code" />
+      </div>
+      <button id="applyPromoBtn" class="btn btn-ghost">Apply</button>
+      <div class="price" id="totalPrice">$0.00</div>
+      <span id="promoMsg" class="hint"></span>
+    </div>
+
+    <!-- Personal Info Form -->
+    <form id="enrollForm" novalidate>
+      <div class="grid">
         <div class="field">
-          <label>Child Name</label>
-          <input class="input childName" />
+          <label for="firstname">First Name</label>
+          <input id="firstname" class="input" required />
+        </div>
+        <div class="field">
+          <label for="lastname">Last Name</label>
+          <input id="lastname" class="input" required />
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label for="dob">Date of Birth (MM/DD/YYYY)</label>
+          <input id="dob" class="input" placeholder="MM/DD/YYYY" inputmode="numeric" autocomplete="bday" maxlength="10" required />
+          <div class="hint">Use MM/DD/YYYY (e.g., 04/09/1994)</div>
+        </div>
+        <div class="field">
+          <label for="gender">Gender</label>
+          <select id="gender" required>
+            <option value="">Select</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="zip">ZIP</label>
+          <input id="zip" class="input" required />
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" class="input" required />
+        </div>
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input id="phone" class="input" required />
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label for="address">Address</label>
+          <input id="address" class="input" />
         </div>
         <div class="grid">
           <div class="field">
-            <label>Child Date of Birth (MM/DD/YYYY)</label>
-            <input class="input dob-field childDob" placeholder="MM/DD/YYYY" />
-            <div class="hint">Child must be under 26 years old.</div>
+            <label for="city">City</label>
+            <input id="city" class="input" />
           </div>
           <div class="field">
-            <label>Child Gender</label>
-            <select class="childGender">
+            <label for="state">State</label>
+            <select id="state" required></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spouse -->
+      <div id="spouseSection" class="section" style="display:none">
+        <h3>Spouse Information</h3>
+        <div class="field">
+          <label for="spouseName">Spouse Name</label>
+          <input id="spouseName" class="input" />
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label for="spouseDob">Spouse Date of Birth (MM/DD/YYYY)</label>
+            <input id="spouseDob" class="input dob-field" placeholder="MM/DD/YYYY" />
+            <div class="hint">Spouse must be 18 or older.</div>
+          </div>
+          <div class="field">
+            <label for="spouseGender">Spouse Gender</label>
+            <select id="spouseGender">
               <option value="">Select</option>
               <option>Male</option>
               <option>Female</option>
             </select>
           </div>
         </div>
-        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-          <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
+      </div>
+
+      <!-- Children -->
+      <div id="childSection" class="section" style="display:none">
+        <h3>Dependent Children</h3>
+        <div id="childList"></div>
+        <button type="button" id="addChildBtn" class="btn btn-ghost">Add Child</button>
+      </div>
+
+      <!-- Continue -->
+      <div id="payGate" class="section">
+        <button type="button" id="continueBtn" class="btn btn-primary">Continue to Payment</button>
+      </div>
+
+      <!-- Payment -->
+      <div id="payArea" class="section">
+        <h3 style="margin:0 0 8px">Payment</h3>
+        <div class="grid">
+          <div class="field">
+            <label for="cardNumber">Card Number</label>
+            <input id="cardNumber" class="input" autocomplete="cc-number" inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="cardExp">Expiration (MM/YY)</label>
+            <input id="cardExp" class="input" placeholder="MM/YY" autocomplete="cc-exp" />
+          </div>
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label for="cardCvc">CVV</label>
+            <input id="cardCvc" class="input" autocomplete="cc-csc" inputmode="numeric" />
+          </div>
+        </div>
+        <div class="paybar">
+          <button type="button" id="payBtn" class="btn btn-primary">Pay Now</button>
+          <span id="payNote" class="hint"></span>
         </div>
       </div>
-    </template>
+    </form>
+  </div>
+</main>
 
-    <script>
-      /* =====================
-         Configuration
-      ====================== */
-      const WORKER_BASE_URL = "https://gwsw-enroll.bjones-85a.workers.dev";
-      const PROMO_VALIDATE_URL = WORKER_BASE_URL + "/promo/validate";
-      const PRODUCTS_URL = WORKER_BASE_URL + "/products";
-      const CHARGE_URL = WORKER_BASE_URL + "/payment/charge";
-      const ANET_CLIENT_KEY =
-        "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ";
-      const ANET_API_LOGIN_ID = "9mRy427Md";
+<footer>
+  <span>Copyright © 2025 GWSW | All Rights Reserved</span>
+  <img src="https://www.gwsw.com/assets/img/v_logo.png" alt="GWSW" />
+</footer>
 
-      /* =====================
-         Utility functions
-      ====================== */
-      const $ = (id) => document.getElementById(id);
-      function dollars(n) {
-        return "$" + Number(n).toFixed(2);
-      }
-      // Base membership price for current selection (from dataset)
-      function basePrice() {
-        const sel = $("benefit_level");
-        const opt = sel.options[sel.selectedIndex];
-        return Number(opt?.dataset?.price || 0);
-      }
+<!-- Modal -->
+<div id="modal" class="modal-backdrop" role="dialog" aria-modal="true">
+  <div class="modal">
+    <h3 id="modalTitle">Status</h3>
+    <div id="modalBody" style="white-space: pre-wrap"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="closeModal">Close</button>
+    </div>
+  </div>
+</div>
 
-      // Determine final price including any vision add-on and promo discount
-      function finalPrice() {
-        const base = basePrice();
-        let total = base;
-        if (planIncludesVision) {
-          // Calculate vision cost for all covered individuals
-          let numPeople = 1; // member always
-          const levelVal = $("benefit_level").value;
-          if (levelVal === "spouse" || levelVal === "family") numPeople += 1;
-          if (levelVal === "child" || levelVal === "family") {
-            // number of children entries (ensure at least 1 if section visible)
-            const childCount =
-              document.querySelectorAll("#childList .child-entry").length || 0;
-            numPeople += childCount;
-          }
-          const visionCostTotal = visionPrice * numPeople;
-          total = base + visionCostTotal;
+<!-- Child template -->
+<template id="childTemplate">
+  <div class="child-entry">
+    <div class="field">
+      <label>Child Name</label>
+      <input class="input childName" />
+    </div>
+    <div class="grid">
+      <div class="field">
+        <label>Child Date of Birth (MM/DD/YYYY)</label>
+        <input class="input childDob" placeholder="MM/DD/YYYY" />
+        <div class="hint">Child must be under 26 years old.</div>
+      </div>
+      <div class="field">
+        <label>Child Gender</label>
+        <select class="childGender">
+          <option value="">Select</option>
+          <option>Male</option>
+          <option>Female</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+      <button type="button" class="btn btn-ghost removeChildBtn">Remove Child</button>
+    </div>
+  </div>
+</template>
+
+<script>
+  /* ========= Config ========= */
+  const WORKER_BASE_URL   = "https://gwsw-enroll.bjones-85a.workers.dev";
+  const PROMO_VALIDATE_URL= WORKER_BASE_URL + "/promo/validate";
+  const PRODUCTS_URL      = WORKER_BASE_URL + "/products";
+  const CHARGE_URL        = WORKER_BASE_URL + "/payment/charge";
+  const ANET_CLIENT_KEY   = "52Srt5Gs2EWyTT7Uz6XZee68RwgyesdE6xw7FjUrwW534P34bT7VHqtHJB9S3P5g";
+  const ANET_API_LOGIN_ID = "69HgeMn5x";
+  const PLAN = "gwsw-dental"; // this page is the GWSW-only page
+
+  /* ========= Helpers ========= */
+  const $ = (id) => document.getElementById(id);
+  function dollars(n){ return "$" + Number(n||0).toFixed(2); }
+  function showModal(title, body){ $("modalTitle").textContent=title; $("modalBody").textContent=body; $("modal").style.display="grid"; }
+  $("closeModal").addEventListener("click",()=>{ $("modal").style.display="none"; });
+
+  function nextTwoFirsts(){
+    const today = new Date();
+    const a = new Date(today.getFullYear(), today.getMonth()+1, 1);
+    const b = new Date(today.getFullYear(), today.getMonth()+2, 1);
+    const fmt = (d)=> String(d.getMonth()+1).padStart(2,"0")+"/01/"+d.getFullYear();
+    return [fmt(a), fmt(b)];
+  }
+  function populatePlanDates(){
+    const sel = $("start_date"); sel.innerHTML="";
+    for(const v of nextTwoFirsts()){ const o=document.createElement("option"); o.value=o.textContent=v; sel.appendChild(o); }
+    const hint = sel.nextElementSibling; if(hint && sel.options.length>0){ hint.textContent = `Coverage begins ${sel.options[0].value}`; }
+  }
+  function populateStates(){
+    const STATES=[["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],["CT","Connecticut"],["DE","Delaware"],["FL","Florida"],["GA","Georgia"],["HI","Hawaii"],["ID","Idaho"],["IL","Illinois"],["IN","Indiana"],["IA","Iowa"],["KS","Kansas"],["KY","Kentucky"],["LA","Louisiana"],["ME","Maine"],["MD","Maryland"],["MA","Massachusetts"],["MI","Michigan"],["MN","Minnesota"],["MS","Mississippi"],["MO","Missouri"],["MT","Montana"],["NE","Nebraska"],["NV","Nevada"],["NH","New Hampshire"],["NJ","New Jersey"],["NM","New Mexico"],["NY","New York"],["NC","North Carolina"],["ND","North Dakota"],["OH","Ohio"],["OK","Oklahoma"],["OR","Oregon"],["PA","Pennsylvania"],["RI","Rhode Island"],["SC","South Carolina"],["SD","South Dakota"],["TN","Tennessee"],["TX","Texas"],["UT","Utah"],["VT","Vermont"],["VA","Virginia"],["WA","Washington"],["WV","West Virginia"],["WI","Wisconsin"],["WY","Wyoming"]];
+    const sel=$("state"); sel.innerHTML='<option value="">Select State</option>';
+    for(const [abbr,name] of STATES){ const o=document.createElement("option"); o.value=abbr; o.textContent=name; sel.appendChild(o); }
+  }
+
+  // DOB helpers
+  function parseDobUS(str){ if(!str) return null; const m=String(str).match(/^\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\s*$/); if(!m) return null;
+    const mm=+m[1], dd=+m[2], yyyy=+m[3]; const dt=new Date(yyyy,mm-1,dd);
+    if(dt.getFullYear()!==yyyy || (dt.getMonth()+1)!==mm || dt.getDate()!==dd) return null; return dt; }
+  function isAdult18(dob){ const t=new Date(); let a=t.getFullYear()-dob.getFullYear(); const m=t.getMonth()-dob.getMonth(); if(m<0||(m===0&&t.getDate()<dob.getDate())) a--; return a>=18; }
+  function isUnder26(dob){ const t=new Date(); let a=t.getFullYear()-dob.getFullYear(); const m=t.getMonth()-dob.getMonth(); if(m<0||(m===0&&t.getDate()<dob.getDate())) a--; return a<26; }
+  function attachDobMask(input){
+    input.addEventListener("input",(e)=>{ let v=e.target.value.replace(/[^\d]/g,""); if(v.length>8) v=v.slice(0,8);
+      if(v.length>=5) e.target.value=`${v.slice(0,2)}/${v.slice(2,4)}/${v.slice(4)}`;
+      else if(v.length>=3) e.target.value=`${v.slice(0,2)}/${v.slice(2)}`; else e.target.value=v; });
+    input.addEventListener("blur",()=>{ const dt=parseDobUS(input.value); if(!dt){ input.setCustomValidity("Enter a valid date in MM/DD/YYYY format."); }
+      else{ input.setCustomValidity(""); const mm=String(dt.getMonth()+1).padStart(2,"0"); const dd=String(dt.getDate()).padStart(2,"0"); const yyyy=dt.getFullYear(); input.value=`${mm}/${dd}/${yyyy}`; }});
+  }
+
+  // Prices
+  function basePrice(){ const sel=$("benefit_level"); const opt=sel.options[sel.selectedIndex]; return Number(opt?.dataset?.price || 0); }
+  function finalPrice(){ let total=basePrice(); if(promoApplied){ total=Math.round(total*0.80*100)/100; } return total; }
+  function refreshTotal(){ $("totalPrice").textContent = dollars(finalPrice()); }
+
+  // Child helpers
+  function updateRemoveButtons(){
+    const entries=document.querySelectorAll("#childList .child-entry");
+    entries.forEach((entry,idx)=>{
+      const removeBtn=entry.querySelector(".removeChildBtn");
+      if(removeBtn){ removeBtn.style.display = entries.length===1 ? "none" : (idx===entries.length-1 ? "inline-block" : "none"); }
+      const labels=entry.querySelectorAll("label");
+      if(labels.length>=3){ const num=idx+1; labels[0].innerText=`Child ${num} Name`; labels[1].innerText=`Child ${num} Date of Birth (MM/DD/YYYY)`; labels[2].innerText=`Child ${num} Gender`; }
+    });
+  }
+  function addChild(){
+    const template=$("childTemplate"); if(!template) return;
+    const clone=document.importNode(template.content,true);
+    $("childList").appendChild(clone);
+    const newEntry=document.querySelector("#childList .child-entry:last-child");
+    const removeBtn=newEntry.querySelector(".removeChildBtn");
+    if(removeBtn){ removeBtn.addEventListener("click",()=>{ newEntry.remove(); refreshTotal(); updateRemoveButtons(); }); }
+    const childDobInputs=document.querySelectorAll("#childList .child-entry:last-child .childDob");
+    childDobInputs.forEach((input)=>{ flatpickr(input,{dateFormat:"m/d/Y", maxDate:new Date(), allowInput:true, disableMobile:true, onClose:()=>{ const dtVal=parseDobUS(input.value);
+        if(!dtVal){ input.setCustomValidity("Enter a valid date in MM/DD/YYYY format."); } else { input.setCustomValidity(""); const mm=String(dtVal.getMonth()+1).padStart(2,"0"); const dd=String(dtVal.getDate()).padStart(2,"0"); const yyyy=dtVal.getFullYear(); input.value=`${mm}/${dd}/${yyyy}`; }}}); attachDobMask(input); });
+    refreshTotal(); updateRemoveButtons();
+  }
+
+  /* ========= Page State ========= */
+  let promoApplied   = false;
+  let promoCode      = "";
+  let promoAccountId = null; // <-- stored from /promo/validate response
+
+  /* ========= Init ========= */
+  populatePlanDates();
+  populateStates();
+
+  // Load prices for this page's plan
+  fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
+    .then((r)=>r.json())
+    .then((data)=>{
+      if(!data.success){ console.error("Failed to load product pricing:", data.error || data); return; }
+      const select=$("benefit_level");
+      const opts=select.querySelectorAll("option");
+      opts.forEach((opt)=>{
+        if(!opt.value) return;
+        if(data.basePrices && opt.value in data.basePrices){
+          const price=data.basePrices[opt.value];
+          opt.dataset.price = price;
+          const labelText = opt.textContent.split("—")[0].trim();
+          opt.textContent = `${labelText} — ${dollars(price)}`;
         }
-        if (promoApplied && promoPercent > 0) {
-          total = Math.round(total * (1 - promoPercent / 100) * 100) / 100;
-        }
-        return total;
-      }
-      function refreshTotal() {
-        $("totalPrice").textContent = dollars(finalPrice());
-      }
-      function showModal(title, body) {
-        $("modalTitle").textContent = title;
-        $("modalBody").textContent = body;
-        $("modal").style.display = "grid";
-      }
-      $("closeModal").addEventListener("click", () => {
-        $("modal").style.display = "none";
       });
+      refreshTotal();
+    })
+    .catch((e)=>console.error("Error fetching product prices:", e));
 
-      function nextTwoFirsts() {
-        const today = new Date();
-        const a = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        const b = new Date(today.getFullYear(), today.getMonth() + 2, 1);
-        const toStr = (d) =>
-          String(d.getMonth() + 1).padStart(2, "0") + "/01/" + d.getFullYear();
-        return [toStr(a), toStr(b)];
+  // DOB init
+  flatpickr("#dob", { dateFormat:"m/d/Y", maxDate:new Date(), allowInput:true, disableMobile:true,
+    onClose:()=>{ const v=$("dob").value.trim(); const dt=parseDobUS(v);
+      if(!dt){ $("dob").setCustomValidity("Enter a valid date in MM/DD/YYYY format."); }
+      else{ $("dob").setCustomValidity(""); const mm=String(dt.getMonth()+1).padStart(2,"0"); const dd=String(dt.getDate()).padStart(2,"0"); const yyyy=dt.getFullYear(); $("dob").value=`${mm}/${dd}/${yyyy}`; } }});
+  attachDobMask($("dob"));
+
+  let spouseInitialized=false;
+
+  // Benefit Level UI toggles
+  $("benefit_level").addEventListener("change",()=>{
+    const levelVal=$("benefit_level").value;
+    const spouseNeeded = (levelVal==="spouse" || levelVal==="family");
+    const childNeeded  = (levelVal==="child"  || levelVal==="family");
+
+    // spouse
+    $("spouseSection").style.display = spouseNeeded ? "block" : "none";
+    if(spouseNeeded && !spouseInitialized){
+      flatpickr("#spouseDob",{ dateFormat:"m/d/Y", maxDate:new Date(), allowInput:true, disableMobile:true,
+        onClose:()=>{ const v=$("spouseDob").value.trim(); const dt=parseDobUS(v);
+          if(!dt){ $("spouseDob").setCustomValidity("Enter a valid date in MM/DD/YYYY format."); }
+          else{ $("spouseDob").setCustomValidity(""); const mm=String(dt.getMonth()+1).padStart(2,"0"); const dd=String(dt.getDate()).padStart(2,"0"); const yyyy=dt.getFullYear(); $("spouseDob").value=`${mm}/${dd}/${yyyy}`; } }});
+      attachDobMask($("spouseDob"));
+      spouseInitialized=true;
+    }
+
+    // children
+    $("childSection").style.display = childNeeded ? "block" : "none";
+    if(childNeeded && document.querySelectorAll("#childList .child-entry").length===0){
+      addChild();
+    }
+    refreshTotal();
+  });
+
+  $("addChildBtn").addEventListener("click", addChild);
+
+  // Promo Apply / Remove
+  $("applyPromoBtn").addEventListener("click", async ()=>{
+    const code = ($("promoCode").value || "").trim();
+    const msgEl = $("promoMsg");
+
+    // Remove
+    if(promoApplied){
+      promoApplied=false; promoCode=""; promoAccountId=null;
+      msgEl.textContent="Promo removed."; msgEl.style.color="#475569";
+      $("applyPromoBtn").textContent="Apply"; $("promoCode").disabled=false;
+      refreshTotal(); return;
+    }
+
+    // Apply
+    if(!code){ msgEl.textContent="Enter a promo code."; msgEl.style.color="#b91c1c"; return; }
+    if(basePrice()<=0){ msgEl.textContent="Select a benefit level first."; msgEl.style.color="#b91c1c"; return; }
+
+    msgEl.textContent="Checking…"; msgEl.style.color="#475569";
+    try{
+      const res = await fetch(PROMO_VALIDATE_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+
+      if(data.success && data.valid){
+        promoApplied   = true;
+        promoCode      = code;
+        promoAccountId = data.accountId || (data.row?.CRM_Record?.ID || data.row?.CRM_Record?.id) || null;
+
+        msgEl.textContent = "Promo applied: 20% off.";
+        msgEl.style.color = "#166534";
+        $("applyPromoBtn").textContent = "Remove";
+        $("promoCode").disabled = true;
+        refreshTotal();
+      } else {
+        msgEl.textContent = "Invalid promo code.";
+        msgEl.style.color = "#b91c1c";
       }
-      function populatePlanDates() {
-        const sel = $("start_date");
-        sel.innerHTML = "";
-        for (const v of nextTwoFirsts()) {
-          const o = document.createElement("option");
-          o.value = o.textContent = v;
-          sel.appendChild(o);
-        }
-        // Add a hint text (assume first option is soonest)
-        const hint = sel.nextElementSibling;
-        if (hint && sel.options.length > 0) {
-          hint.textContent = `Coverage begins ${sel.options[0].value}`;
-        }
+    } catch {
+      msgEl.textContent = "Could not verify promo code.";
+      msgEl.style.color = "#b91c1c";
+    }
+  });
+
+  // Continue validations
+  $("continueBtn").addEventListener("click", ()=>{
+    const requiredIds = ["benefit_level","start_date","firstname","lastname","dob","gender","email","phone","zip","state"];
+    for(const id of requiredIds){ const el=$(id); if(!el || !el.value){ return showModal("Missing Information","Please complete all required fields first."); } }
+
+    const dob = parseDobUS($("dob").value.trim()); if(!dob) return showModal("Invalid DOB","Enter a valid date of birth in MM/DD/YYYY format.");
+    if(!isAdult18(dob)) return showModal("Age Restriction","You must be 18 or older to enroll as the primary member.");
+
+    const levelVal=$("benefit_level").value;
+    if(levelVal==="spouse" || levelVal==="family"){
+      const sName=$("spouseName").value.trim();
+      const sDobStr=$("spouseDob").value.trim();
+      const sGender=$("spouseGender").value;
+      if(!sName || !sDobStr || !sGender) return showModal("Missing Spouse Info","Please enter your spouse's name, date of birth, and gender.");
+      const sDob=parseDobUS(sDobStr); if(!sDob) return showModal("Invalid Spouse DOB","Enter a valid date of birth for spouse (MM/DD/YYYY).");
+      if(!isAdult18(sDob)) return showModal("Age Restriction","Spouse must be 18 or older to be included.");
+    }
+    if(levelVal==="child" || levelVal==="family"){
+      const entries=document.querySelectorAll("#childList .child-entry");
+      if(entries.length===0) return showModal("Missing Child Info","Please add and enter information for at least one child.");
+      let idx=1;
+      for(const entry of entries){
+        const name=entry.querySelector(".childName")?.value.trim();
+        const dobStr=entry.querySelector(".childDob")?.value.trim();
+        const gender=entry.querySelector(".childGender")?.value;
+        if(!name || !dobStr || !gender) return showModal("Missing Child Info",`Please complete all fields for Child ${idx}.`);
+        const cDob=parseDobUS(dobStr); if(!cDob) return showModal("Invalid Child DOB",`Enter a valid date of birth for Child ${idx} (MM/DD/YYYY).`);
+        if(!isUnder26(cDob)) return showModal("Age Restriction","All dependent children must be under 26 years old.");
+        idx++;
       }
-      function populateStates() {
-        const STATES = [
-          ["AL", "Alabama"],
-          ["AK", "Alaska"],
-          ["AZ", "Arizona"],
-          ["AR", "Arkansas"],
-          ["CA", "California"],
-          ["CO", "Colorado"],
-          ["CT", "Connecticut"],
-          ["DE", "Delaware"],
-          ["FL", "Florida"],
-          ["GA", "Georgia"],
-          ["HI", "Hawaii"],
-          ["ID", "Idaho"],
-          ["IL", "Illinois"],
-          ["IN", "Indiana"],
-          ["IA", "Iowa"],
-          ["KS", "Kansas"],
-          ["KY", "Kentucky"],
-          ["LA", "Louisiana"],
-          ["ME", "Maine"],
-          ["MD", "Maryland"],
-          ["MA", "Massachusetts"],
-          ["MI", "Michigan"],
-          ["MN", "Minnesota"],
-          ["MS", "Mississippi"],
-          ["MO", "Missouri"],
-          ["MT", "Montana"],
-          ["NE", "Nebraska"],
-          ["NV", "Nevada"],
-          ["NH", "New Hampshire"],
-          ["NJ", "New Jersey"],
-          ["NM", "New Mexico"],
-          ["NY", "New York"],
-          ["NC", "North Carolina"],
-          ["ND", "North Dakota"],
-          ["OH", "Ohio"],
-          ["OK", "Oklahoma"],
-          ["OR", "Oregon"],
-          ["PA", "Pennsylvania"],
-          ["RI", "Rhode Island"],
-          ["SC", "South Carolina"],
-          ["SD", "South Dakota"],
-          ["TN", "Tennessee"],
-          ["TX", "Texas"],
-          ["UT", "Utah"],
-          ["VT", "Vermont"],
-          ["VA", "Virginia"],
-          ["WA", "Washington"],
-          ["WV", "West Virginia"],
-          ["WI", "Wisconsin"],
-          ["WY", "Wyoming"],
-        ];
-        const sel = $("state");
-        sel.innerHTML = '<option value="">Select State</option>';
-        for (const [abbr, name] of STATES) {
-          const o = document.createElement("option");
-          o.value = abbr;
-          o.textContent = name;
-          sel.appendChild(o);
-        }
+    }
+
+    $("payArea").style.display="block";
+    $("payNote").textContent="Card details are tokenized via Authorize.Net. We do not store card data.";
+    $("payArea").scrollIntoView({ behavior:"smooth", block:"start" });
+  });
+
+  // Pay Now
+  $("payBtn").addEventListener("click", ()=>{
+    const btn=$("payBtn"), note=$("payNote");
+
+    const expParts=($("cardExp").value||"").split("/").map(s=>s.trim());
+    if(expParts.length!==2 || expParts[0]==="" || expParts[1]===""){
+      return showModal("Invalid Expiration","Please enter card expiration in MM/YY format.");
+    }
+    const [expMonth, yy] = expParts;
+    const expYear = yy.length===2 ? `20${yy}` : yy;
+
+    btn.classList.add("loading"); btn.disabled=true; note.textContent="Processing…";
+
+    const authData = { clientKey: ANET_CLIENT_KEY, apiLoginID: ANET_API_LOGIN_ID };
+    const cardData = {
+      cardNumber: $("cardNumber").value.replace(/\s+/g,""),
+      month: expMonth,
+      year: expYear,
+      cardCode: $("cardCvc").value
+    };
+
+    Accept.dispatchData({ authData, cardData }, async (response)=>{
+      if(response.messages.resultCode === "Error"){
+        const errorText = response.messages.message.map(m=>m.text).join(" ");
+        btn.classList.remove("loading"); btn.disabled=false; note.textContent=""; return showModal("Payment Error", errorText);
       }
 
-      // Date of Birth input handling: formatting mask and parse
-      function attachDobMask(input) {
-        input.addEventListener("input", (e) => {
-          let v = e.target.value.replace(/[^\d]/g, "");
-          if (v.length > 8) v = v.slice(0, 8);
-          if (v.length >= 5)
-            e.target.value = `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4)}`;
-          else if (v.length >= 3)
-            e.target.value = `${v.slice(0, 2)}/${v.slice(2)}`;
-          else e.target.value = v;
+      // Build member payload
+      const memberData = {
+        benefit_level: $("benefit_level").options[$("benefit_level").selectedIndex]?.text || "",
+        planStartDate: $("start_date").value,
+        firstName: $("firstname").value,
+        lastName: $("lastname").value,
+        dateOfBirth: $("dob").value,
+        gender: $("gender").value,
+        email: $("email").value,
+        phone: $("phone").value,
+        zip: $("zip").value,
+        address: $("address").value,
+        address2: "",
+        city: $("city").value,
+        state: $("state").value,
+        Country: "USA",
+        Benefit_Level: $("benefit_level").options[$("benefit_level").selectedIndex]?.text || "",
+        Plan_Start_Date: $("start_date").value,
+
+        // IMPORTANT: also pass Account_Name so CRM can attach lookup
+        Account_Name: promoAccountId || undefined
+      };
+
+      // Dependents array (never undefined)
+      const dependentsArr = [];
+      const levelVal=$("benefit_level").value;
+      if(levelVal==="spouse" || levelVal==="family"){
+        dependentsArr.push({
+          name: $("spouseName").value.trim(),
+          dateOfBirth: $("spouseDob").value.trim(),
+          gender: $("spouseGender").value,
+          relationship: "Spouse",
         });
-        input.addEventListener("blur", () => {
-          const dt = parseDobUS(input.value);
-          if (!dt) {
-            input.setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
-          } else {
-            input.setCustomValidity("");
-            const mm = String(dt.getMonth() + 1).padStart(2, "0");
-            const dd = String(dt.getDate()).padStart(2, "0");
-            const yyyy = dt.getFullYear();
-            input.value = `${mm}/${dd}/${yyyy}`;
+      }
+      if(levelVal==="child" || levelVal==="family"){
+        const entries=document.querySelectorAll("#childList .child-entry");
+        entries.forEach((entry)=>{
+          const name=entry.querySelector(".childName").value.trim();
+          const dob=entry.querySelector(".childDob").value.trim();
+          const gender=entry.querySelector(".childGender").value;
+          if(name && dob && gender){
+            dependentsArr.push({ name, dateOfBirth: dob, gender, relationship: "Child" });
           }
         });
       }
-      function parseDobUS(str) {
-        if (!str) return null;
-        const m = String(str).match(
-          /^\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\s*$/
-        );
-        if (!m) return null;
-        const mm = +m[1],
-          dd = +m[2],
-          yyyy = +m[3];
-        const dt = new Date(yyyy, mm - 1, dd);
-        if (
-          dt.getFullYear() !== yyyy ||
-          dt.getMonth() + 1 !== mm ||
-          dt.getDate() !== dd
-        )
-          return null;
-        return dt;
-      }
-      function isAdult18(dob) {
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const mdiff = today.getMonth() - dob.getMonth();
-        if (mdiff < 0 || (mdiff === 0 && today.getDate() < dob.getDate()))
-          age--;
-        return age >= 18;
-      }
-      function isUnder26(dob) {
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const mdiff = today.getMonth() - dob.getMonth();
-        if (mdiff < 0 || (mdiff === 0 && today.getDate() < dob.getDate()))
-          age--;
-        return age < 26;
-      }
 
-      /* =====================
-         Initialization
-      ====================== */
-      populatePlanDates();
-      populateStates();
-      const urlParams = new URLSearchParams(window.location.search);
-      const plan = "gwsw-dental";
-      let planIncludesVision = false;
-      let visionPrice = 0;
-      // Fetch product prices for the specified plan
-      fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(plan)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data.success) {
-            console.error("Failed to load product pricing:", data.error || data);
-            return;
-          }
-          // Update benefit level options with retrieved prices
-          const select = $("benefit_level");
-          const opts = select.querySelectorAll("option");
-          opts.forEach((opt) => {
-            if (!opt.value) return;
-            if (data.basePrices && opt.value in data.basePrices) {
-              const price = data.basePrices[opt.value];
-              opt.dataset.price = price;
-              const labelText = opt.textContent.split("—")[0].trim();
-              opt.textContent = labelText + " — " + dollars(price);
-            }
-          });
-          if (data.visionPrice !== undefined) {
-            planIncludesVision = true;
-            visionPrice = Number(data.visionPrice) || 0;
-          } else {
-            planIncludesVision = false;
-            visionPrice = 0;
-          }
-          refreshTotal();
-        })
-        .catch((err) => console.error("Error fetching product prices:", err));
-
-      // Initialize main DOB field with calendar and mask
-      flatpickr("#dob", {
-        dateFormat: "m/d/Y",
-        maxDate: new Date(),
-        allowInput: true,
-        disableMobile: true,
-        onClose: () => {
-          const v = $("dob").value.trim();
-          const dt = parseDobUS(v);
-          if (!dt) {
-            $("dob").setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
-          } else {
-            $("dob").setCustomValidity("");
-            const mm = String(dt.getMonth() + 1).padStart(2, "0");
-            const dd = String(dt.getDate()).padStart(2, "0");
-            const yyyy = dt.getFullYear();
-            $("dob").value = `${mm}/${dd}/${yyyy}`;
-          }
+      // Final payload
+      const payload = {
+        opaqueData: {
+          dataDescriptor: response.opaqueData.dataDescriptor,
+          dataValue: response.opaqueData.dataValue
         },
-      });
-      attachDobMask($("dob"));
+        amount: finalPrice(),
+        plan: PLAN,
+        member: memberData,
+        promo: promoApplied ? { code: promoCode, accountId: promoAccountId } : null,
+        dependents: dependentsArr // always an array
+      };
 
-      // Track if spouse DOB calendar initialized to avoid duplicate init
-      let spouseInitialized = false;
-
-      // Function to update remove child button visibility (only last child removable)
-      function updateRemoveButtonsVisibility() {
-        const childEntries = document.querySelectorAll("#childList .child-entry");
-        childEntries.forEach((entry, idx) => {
-          const removeBtn = entry.querySelector(".removeChildBtn");
-          if (!removeBtn) return;
-          if (idx === childEntries.length - 1 && childEntries.length > 1) {
-            removeBtn.style.display = "";
-          } else {
-            removeBtn.style.display = "none";
-          }
-        });
-      }
-
-      // Function to add a new child entry section
-      function addChild() {
-        const template = $("childTemplate");
-        if (!template) return;
-        const clone = document.importNode(template.content, true);
-        // Determine child index (1-based)
-        const index =
-          document.querySelectorAll("#childList .child-entry").length + 1;
-        const labels = clone.querySelectorAll("label");
-        if (labels.length >= 3) {
-          labels[0].innerText = `Child ${index} Name`;
-          labels[1].innerText = `Child ${index} Date of Birth (MM/DD/YYYY)`;
-          labels[2].innerText = `Child ${index} Gender`;
-        }
-        // Append clone to list
-        $("childList").appendChild(clone);
-        // Initialize date picker and mask for the new child DOB field
-        const childDobInputs = document.querySelectorAll(
-          "#childList .child-entry:last-child .childDob"
-        );
-        childDobInputs.forEach((input) => {
-          flatpickr(input, {
-            dateFormat: "m/d/Y",
-            maxDate: new Date(),
-            allowInput: true,
-            disableMobile: true,
-            onClose: () => {
-              const dtVal = parseDobUS(input.value);
-              if (!dtVal) {
-                input.setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
-              } else {
-                input.setCustomValidity("");
-                const mm = String(dtVal.getMonth() + 1).padStart(2, "0");
-                const dd = String(dtVal.getDate()).padStart(2, "0");
-                const yyyy = dtVal.getFullYear();
-                input.value = `${mm}/${dd}/${yyyy}`;
-              }
-            },
-          });
-          attachDobMask(input);
-        });
-        // Attach event handler for remove button on new child entry
-        const childEntries = document.querySelectorAll("#childList .child-entry");
-        const newEntry = childEntries[childEntries.length - 1];
-        const removeBtn = newEntry.querySelector(".removeChildBtn");
-        if (removeBtn) {
-          removeBtn.addEventListener("click", () => {
-            newEntry.remove();
-            updateRemoveButtonsVisibility();
-            refreshTotal();
-          });
-        }
-        // Update remove button visibility for all child entries
-        updateRemoveButtonsVisibility();
-        // Update total price display
-        refreshTotal();
-      }
-
-      // Benefit level change handler: show/hide spouse/child sections and refresh price
-      $("benefit_level").addEventListener("change", () => {
-        const levelVal = $("benefit_level").value;
-        const spouseNeeded = levelVal === "spouse" || levelVal === "family";
-        const childNeeded = levelVal === "child" || levelVal === "family";
-
-        // Toggle spouse section
-        if (spouseNeeded) {
-          $("spouseSection").style.display = "block";
-          if (!spouseInitialized) {
-            flatpickr("#spouseDob", {
-              dateFormat: "m/d/Y",
-              maxDate: new Date(),
-              allowInput: true,
-              disableMobile: true,
-              onClose: () => {
-                const v = $("spouseDob").value.trim();
-                const dt = parseDobUS(v);
-                if (!dt) {
-                  $("spouseDob").setCustomValidity("Enter a valid date in MM/DD/YYYY format.");
-                } else {
-                  $("spouseDob").setCustomValidity("");
-                  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-                  const dd = String(dt.getDate()).padStart(2, "0");
-                  const yyyy = dt.getFullYear();
-                  $("spouseDob").value = `${mm}/${dd}/${yyyy}`;
-                }
-              },
-            });
-            attachDobMask($("spouseDob"));
-            spouseInitialized = true;
-          }
+      try{
+        const res = await fetch(CHARGE_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+        const result = await res.json();
+        btn.classList.remove("loading"); btn.disabled=false; note.textContent="";
+        if(result.success){
+          let msg = `Payment approved.\nTransaction ID: ${result.transactionId}`;
+          if(result.warning) msg += `\n\nNote: ${result.warning}`;
+          showModal("Success", msg);
         } else {
-          $("spouseSection").style.display = "none";
+          showModal("Payment Declined", result.error || "Payment failed.");
         }
-
-        // Toggle children section
-        if (childNeeded) {
-          $("childSection").style.display = "block";
-          if (document.querySelectorAll("#childList .child-entry").length === 0) {
-            addChild();
-          } else {
-            updateRemoveButtonsVisibility();
-          }
-        } else {
-          $("childSection").style.display = "none";
-        }
-
-        // Refresh the total price display
-        refreshTotal();
-      });
-
-      // Add child button handler
-      $("addChildBtn").addEventListener("click", () => {
-        addChild();
-      });
-
-      // Promo code apply/remove
-      let promoApplied = false,
-        promoPercent = 0,
-        promoCode = "";
-      $("applyPromoBtn").addEventListener("click", async () => {
-        const code = ($("promoCode").value || "").trim();
-        const msgEl = $("promoMsg");
-
-        // Remove current promo
-        if (promoApplied) {
-          promoApplied = false;
-          promoPercent = 0;
-          promoCode = "";
-          msgEl.textContent = "Promo removed.";
-          msgEl.style.color = "#475569";
-          $("applyPromoBtn").textContent = "Apply";
-          $("promoCode").disabled = false;
-          refreshTotal();
-          return;
-        }
-
-        // Apply new promo
-        if (!code) {
-          msgEl.textContent = "Enter a promo code.";
-          msgEl.style.color = "#b91c1c";
-          return;
-        }
-        if (basePrice() <= 0) {
-          msgEl.textContent = "Select a benefit level first.";
-          msgEl.style.color = "#b91c1c";
-          return;
-        }
-        msgEl.textContent = "Checking…";
-        msgEl.style.color = "#475569";
-        try {
-          const res = await fetch(PROMO_VALIDATE_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code }),
-          });
-          const data = await res.json();
-          if (data.success && data.valid) {
-            promoApplied = true;
-            promoPercent = data.discount || 20;
-            promoCode = code;
-            msgEl.textContent = `Promo applied: ${promoPercent}% off.`;
-            msgEl.style.color = "#166534";
-            $("applyPromoBtn").textContent = "Remove";
-            $("promoCode").disabled = true;
-            refreshTotal();
-          } else {
-            msgEl.textContent = "Invalid promo code.";
-            msgEl.style.color = "#b91c1c";
-          }
-        } catch {
-          msgEl.textContent = "Could not verify promo code.";
-          msgEl.style.color = "#b91c1c";
-        }
-      });
-
-      // Continue to Payment button handler (validate required fields)
-      $("continueBtn").addEventListener("click", () => {
-        const requiredIds = [
-          "benefit_level",
-          "start_date",
-          "firstname",
-          "lastname",
-          "dob",
-          "gender",
-          "email",
-          "phone",
-          "zip",
-          "state",
-        ];
-        for (const id of requiredIds) {
-          const el = $(id);
-          if (!el || !el.value) {
-            return showModal("Missing Information", "Please complete all required fields first.");
-          }
-        }
-        // Validate primary member DOB age
-        const dobStr = $("dob").value.trim();
-        const dobDate = parseDobUS(dobStr);
-        if (!dobDate) {
-          return showModal("Invalid DOB", "Enter a valid date of birth in MM/DD/YYYY format.");
-        }
-        if (!isAdult18(dobDate)) {
-          return showModal("Age Restriction", "You must be 18 or older to enroll as the primary member.");
-        }
-        // If spouse required, validate spouse info
-        const levelVal = $("benefit_level").value;
-        if (levelVal === "spouse" || levelVal === "family") {
-          const sName = $("spouseName").value.trim();
-          const sDobStr = $("spouseDob").value.trim();
-          const sGender = $("spouseGender").value;
-          if (!sName || !sDobStr || !sGender) {
-            return showModal("Missing Spouse Info", "Please enter your spouse's name, date of birth, and gender.");
-          }
-          const sDobDate = parseDobUS(sDobStr);
-          if (!sDobDate) {
-            return showModal("Invalid Spouse DOB", "Enter a valid date of birth for spouse (MM/DD/YYYY).");
-          }
-          if (!isAdult18(sDobDate)) {
-            return showModal("Age Restriction", "Spouse must be 18 or older to be included.");
-          }
-        }
-        // If children required, validate at least one child and their info
-        if (levelVal === "child" || levelVal === "family") {
-          const childEntries = document.querySelectorAll("#childList .child-entry");
-          if (childEntries.length === 0) {
-            return showModal("Missing Child Info", "Please add and enter information for at least one child.");
-          }
-          let childIndex = 1;
-          for (const entry of childEntries) {
-            const name = entry.querySelector(".childName")?.value.trim();
-            const dobStr = entry.querySelector(".childDob")?.value.trim();
-            const gender = entry.querySelector(".childGender")?.value;
-            if (!name || !dobStr || !gender) {
-              return showModal("Missing Child Info", `Please complete all fields for Child ${childIndex}.`);
-            }
-            const dobDate = parseDobUS(dobStr);
-            if (!dobDate) {
-              return showModal("Invalid Child DOB", `Enter a valid date of birth for Child ${childIndex} (MM/DD/YYYY).`);
-            }
-            if (!isUnder26(dobDate)) {
-              return showModal("Age Restriction", "All dependent children must be under 26 years old.");
-            }
-            childIndex++;
-          }
-        }
-        // If all validation passes, reveal payment section
-        $("payArea").style.display = "block";
-        $("payNote").textContent =
-          "Card details are tokenized via Authorize.Net. We do not store card data.";
-        $("payArea").scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-
-      // Pay Now button handler: tokenize card via Accept.js, then send to Worker
-      $("payBtn").addEventListener("click", () => {
-        const btn = $("payBtn"), note = $("payNote");
-        const expParts = ($("cardExp").value || "").split("/").map((s) => s.trim());
-        if (expParts.length !== 2 || expParts[0] === "" || expParts[1] === "") {
-          return showModal("Invalid Expiration", "Please enter card expiration in MM/YY format.");
-        }
-        const [expMonth, expYear] = expParts;
-        btn.classList.add("loading");
-        btn.disabled = true;
-        note.textContent = "Processing…";
-        const authData = {
-          clientKey: ANET_CLIENT_KEY,
-          apiLoginID: ANET_API_LOGIN_ID,
-        };
-        const cardData = {
-          cardNumber: $("cardNumber").value.replace(/\s+/g, ""),
-          month: expMonth,
-          year: expYear,
-          cardCode: $("cardCvc").value,
-        };
-        Accept.dispatchData({ authData, cardData }, async (response) => {
-          if (response.messages.resultCode === "Error") {
-            const errorText = response.messages.message.map((m) => m.text).join(" ");
-            btn.classList.remove("loading");
-            btn.disabled = false;
-            note.textContent = "";
-            return showModal("Payment Error", errorText);
-          }
-          // Build payload for server
-          const memberData = {
-            benefit_level: $("benefit_level").value
-              ? $("benefit_level").options[$("benefit_level").selectedIndex].text
-              : "",
-            planStartDate: $("start_date").value,
-            firstName: $("firstname").value,
-            lastName: $("lastname").value,
-            dateOfBirth: $("dob").value,
-            gender: $("gender").value,
-            email: $("email").value,
-            phone: $("phone").value,
-            zip: $("zip").value,
-            address: $("address").value,
-            address2: "",
-            city: $("city").value,
-            state: $("state").value,
-            Country: "USA",
-            Benefit_Level: $("benefit_level").options[$("benefit_level").selectedIndex].text,
-            Plan_Start_Date: $("start_date").value,
-          };
-          // Gather dependents (spouse/children) data
-          const dependentsArr = [];
-          if (levelVal === "spouse" || levelVal === "family") {
-            dependentsArr.push({
-              name: $("spouseName").value.trim(),
-              dateOfBirth: $("spouseDob").value.trim(),
-              gender: $("spouseGender").value,
-              relationship: "Spouse",
-            });
-          }
-          if (levelVal === "child" || levelVal === "family") {
-            const childEntries = document.querySelectorAll("#childList .child-entry");
-            childEntries.forEach((entry) => {
-              const name = entry.querySelector(".childName").value.trim();
-              const dob = entry.querySelector(".childDob").value.trim();
-              const gender = entry.querySelector(".childGender").value;
-              if (name && dob && gender) {
-                dependentsArr.push({
-                  name: name,
-                  dateOfBirth: dob,
-                  gender: gender,
-                  relationship: "Child",
-                });
-              }
-            });
-          }
-          const payload = {
-            opaqueData: {
-              dataDescriptor: response.opaqueData.dataDescriptor,
-              dataValue: response.opaqueData.dataValue,
-            },
-            amount: finalPrice(),
-            member: memberData,
-            promo: promoApplied ? { code: promoCode, discount: promoPercent } : null,
-            dependents: dependentsArr.length > 0 ? dependentsArr : null,
-          };
-          try {
-            const res = await fetch(CHARGE_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const result = await res.json();
-            btn.classList.remove("loading");
-            btn.disabled = false;
-            note.textContent = "";
-            if (result.success) {
-              let msg = `Payment approved.\nTransaction ID: ${result.transactionId}`;
-              if (result.warning) msg += `\n\nNote: ${result.warning}`;
-              showModal("Success", msg);
-            } else {
-              const errMsg = result.error || "Payment failed.";
-              showModal("Payment Declined", errMsg);
-            }
-          } catch (e) {
-            btn.classList.remove("loading");
-            btn.disabled = false;
-            note.textContent = "";
-            showModal("Network Error", "Could not reach the payment server. Please try again.");
-          }
-        });
-      });
-    </script>
-    <script>
-      // ⚙️ Set the correct slug for this page:
-      const PLAN_SLUG = "gwsw-dental-vision";
-
-      async function loadPrices() {
-        const endpoint = `https://form.brandonjoea3.workers.dev/products?plan=${encodeURIComponent(PLAN_SLUG)}`;
-        const res = await fetch(endpoint);
-        const data = await res.json();
-        console.log("PRODUCT DATA:", data);
+      } catch(e){
+        btn.classList.remove("loading"); btn.disabled=false; note.textContent="";
+        showModal("Network Error","Could not reach the payment server. Please try again.");
       }
+    });
+  });
 
-      loadPrices().catch(err => console.error(err));
-    </script>
-  </body>
+</script>
+</body>
 </html>
