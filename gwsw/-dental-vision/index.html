@@ -612,42 +612,20 @@
       }
     });
   });
-  function selectPlan(level) {
-    // Map levels to plan names (adjust these to match your actual backend plan names)
-    const planMap = {
-      member: "gwsw-member",
-      spouse: "gwsw-spouse",
-      child: "gwsw-child",
-      family: "gwsw-family"
-    };
-  
   const planMap = {
     "gwsw": "Get Well Stay Well",
     "gwsw-dental": "GWSW + Dental",
     "gwsw-vision": "GWSW + Vision",
     "gwsw-dental-vision": "GWSW + Dental & Vision"
   };
-  
-  
-  let PLAN = "gwsw";
-  
-  
   function selectPlan(planId) {
     PLAN = planId;
     const label = planMap[planId] || "Unknown Plan";
-  
-  
-    // Update label and show/hide UI
     document.getElementById("currentPlanLabel").textContent = "Current Plan: " + label;
     document.getElementById("planSelection").style.display = "none";
     document.getElementById("formContainer").style.display = "block";
     document.getElementById("backBtn").style.display = "inline-block";
-  
-    
-    // Scroll and fetch updated pricing
     window.scrollTo({ top: 0, behavior: "smooth" });
-    
-  
     fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
       .then((r) => r.json())
       .then((data) => {
@@ -668,8 +646,6 @@
     })
     .catch((e) => console.error("Error fetching product prices:", e));
   }
-    
-    
   document.getElementById("backBtn").addEventListener("click", () => {
     document.getElementById("formContainer").style.display = "none";
     document.getElementById("planSelection").style.display = "block";
