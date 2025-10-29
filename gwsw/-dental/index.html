@@ -13,75 +13,165 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
 
   <style>
-    :root{
-      --brand:#c1161e; --brand-dark:#9e0f16; --ink:#0f172a; --muted:#475569;
-      --card:#ffffff; --bg:#f5f6f8; --ring:rgba(193,22,30,.18); --radius:16px;
+    :root {
+      --brand: #c1161e; --brand-dark: #9e0f16; --ink: #0f172a; --muted: #475569;
+      --card: #ffffff; --bg: #f5f6f8; --ring: rgba(193,22,30,.18); --radius: 16px;
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
-    a{color:inherit;text-decoration:none}
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    a { color: inherit; text-decoration: none; }
 
-    /* Top bar */
-    .topbar{background:#fff;border-bottom:1px solid #eceff3}
-    .topwrap{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:16px;padding:10px 16px}
-    .brand{font-weight:800;color:var(--brand);font-size:1.15rem;letter-spacing:.2px}
-    .nav{margin-left:auto;display:flex;gap:18px}
-    .nav a{font-weight:600;color:#2b3443;opacity:.9}
-    .nav a:hover{color:var(--brand)}
+    /* Top bar / nav */
+    .topbar { background: #fff; border-bottom: 1px solid #eceff3; }
+    .topwrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 16px;
+    }
+    .brand {
+      font-weight: 800;
+      color: var(--brand);
+      font-size: 1.15rem;
+      letter-spacing: .2px;
+    }
+    .nav {
+      margin-left: auto;
+      display: flex;
+      gap: 18px;
+    }
+    .nav a { font-weight: 600; color: #2b3443; opacity: .9; }
+    .nav a:hover { color: var(--brand); }
 
-    /* Hero section: left text / right form card */
-    .hero{background:#fff}
-    .herowrap{max-width:1100px;margin:0 auto;padding:28px 16px 10px;display:grid;gap:28px;grid-template-columns:1.1fr .9fr}
-    @media (max-width:900px){.herowrap{grid-template-columns:1fr}}
-    .h-eyebrow{color:var(--brand);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:.8rem;margin:6px 0 10px}
-    .h-title{font-size:2rem;line-height:1.1;margin:0 0 10px;font-weight:900}
-    .h-sub{color:var(--muted);font-size:1.05rem;line-height:1.5;margin:0 0 6px}
+    /* Hero section: show only plan select */
+    .hero { background: #fff; }
+    .herowrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    @media (max-width: 900px) {
+      .herowrap { padding: 28px 16px; }
+    }
 
     /* Card + layout */
-    .card{background:var(--card);border-radius:var(--radius);box-shadow:0 8px 30px rgba(22,29,37,.06);border:1px solid #eef1f5}
-    .card.pad{padding:18px}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px 16px}
-    .wrap { padding-bottom: 8px; } /* reduced bottom padding */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 30px rgba(22,29,37,.06);
+      border: 1px solid #eef1f5;
+    }
+    .card.pad { padding: 18px; }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px 16px;
+    }
 
-    /* Plan buttons layout (screen 1) */
+    /* Plan buttons grid */
     .plans {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
       gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-content: center;
     }
-    .planbtn{
-      display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;border:1px solid #e7eaf0;background:#fff;cursor:pointer;
-      box-shadow:0 4px 14px rgba(10,22,40,.05); transition:transform .06s ease, box-shadow .2s ease, border-color .2s ease;
-      flex: 0 0 45%; max-width: 45%;
+    @media (max-width: 600px) {
+      .plans { grid-template-columns: 1fr; }
     }
-    .planbtn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(10,22,40,.10);border-color:#e0e4ea}
-    .pill{background:rgba(193,22,30,.08);color:var(--brand);padding:4px 10px;border-radius:999px;font-size:.8rem;font-weight:700;white-space:nowrap}
-    .muted{color:var(--muted);font-size:.93rem}
-    .title-sm{font-size:1.05rem;font-weight:800}
-    @media (max-width:600px){
-      .planbtn { flex: 0 0 100%; max-width: 100%; }
+    .planbtn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 14px;
+      border: 1px solid #e7eaf0;
+      background: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(10,22,40,.05);
+      transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease;
     }
+    .planbtn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(10,22,40,.10);
+      border-color: #e0e4ea;
+    }
+    .pill {
+      background: rgba(193,22,30,.08);
+      color: var(--brand);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: .8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .muted { color: var(--muted); font-size: .93rem; }
+    .title-sm { font-size: 1.05rem; font-weight: 800; }
 
-    /* Bar over form (back button + selected plan) */
-    .bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-    .btn{border:none;background:var(--brand);color:#fff;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer}
-    .btn:hover{background:var(--brand-dark)}
-    .btn-ghost{background:#fff;border:1px solid #e7eaf0;color:#1a2430}
-    .btn-ghost:hover{border-color:#dfe3ea}
+    /* Bar over the form */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .btn {
+      border: none;
+      background: var(--brand);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--brand-dark); }
+    .btn-ghost {
+      background: #fff;
+      border: 1px solid #e7eaf0;
+      color: #1a2430;
+    }
+    .btn-ghost:hover { border-color: #dfe3ea; }
 
     /* Form styling */
-    form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .colspan-2{grid-column:span 2}
-    @media (max-width:700px){form{grid-template-columns:1fr}}
-    label{font-size:.9rem;font-weight:700;color:#2a3341}
-    input, select{width:100%;padding:12px;border:1px solid #d7dbe3;border-radius:12px;background:#fff;font-size:1rem}
-    input:focus, select:focus{outline:4px solid var(--ring);border-color:#cfd6df}
-    .help{font-size:.8rem;color:#6b7483}
-    .hidden{display:none}
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .colspan-2 { grid-column: span 2; }
+    @media (max-width: 700px) {
+      form { grid-template-columns: 1fr; }
+    }
+    label {
+      font-size: .9rem;
+      font-weight: 700;
+      color: #2a3341;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d7dbe3;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 1rem;
+    }
+    input:focus, select:focus {
+      outline: 4px solid var(--ring);
+      border-color: #cfd6df;
+    }
+    .help { font-size: .8rem; color: #6b7483; }
+    .hidden { display: none; }
 
-    /* Footer-ish info */
-    .info{color:#5f6b7a;font-size:.92rem}
+    /* Footer-ish info band */
+    .info { color: #5f6b7a; font-size: .92rem; }
   </style>
 </head>
 <body>
@@ -101,18 +191,11 @@
     </div>
   </header>
 
-  <!-- Hero: left text / right card (plan selection first) -->
+  <!-- Plan selection (centered) -->
   <section class="hero">
     <div class="herowrap">
-      <div>
-        <div class="h-eyebrow">An Affordable & Reliable Healthcare Alternative</div>
-        <h1 class="h-title">You are supported every step of the way</h1>
-        <p class="h-sub">Pick a plan below and complete the short enrollment form. You can go back and change your plan any time before you submit.</p>
-        <div class="info" style="margin-top:12px">Questions? Call <strong>(469) 936-GWSW</strong> or email <strong>service@gwsw.com</strong>.</div>
-      </div>
-
       <aside class="card pad">
-        <!-- SCREEN: Plan Select -->
+        <!-- Plan Select -->
         <section id="plan-screen">
           <h3 class="title-sm" style="margin:4px 0 12px">Choose your plan</h3>
           <div class="plans" id="plan-grid">
@@ -123,7 +206,6 @@
                 <div class="muted">Core plan</div>
               </div>
             </button>
-
             <button type="button" class="planbtn" data-plan="gwsw-dental">
               <span class="pill">+ Dental</span>
               <div>
@@ -131,7 +213,6 @@
                 <div class="muted">Adds dental benefits</div>
               </div>
             </button>
-
             <button type="button" class="planbtn" data-plan="gwsw-vision">
               <span class="pill">+ Vision</span>
               <div>
@@ -139,7 +220,6 @@
                 <div class="muted">Adds vision benefits</div>
               </div>
             </button>
-
             <button type="button" class="planbtn" data-plan="gwsw-dental-vision">
               <span class="pill">+ Dental & Vision</span>
               <div>
@@ -150,14 +230,14 @@
           </div>
         </section>
 
-        <!-- SCREEN: Enrollment Form (hidden until a plan is selected) -->
+        <!-- Enrollment Form (hidden until a plan is selected) -->
         <section id="form-screen" class="hidden">
           <div class="bar">
             <div>
               <div class="muted" style="font-weight:700">Selected Plan</div>
               <div id="plan-label" class="title-sm">—</div>
             </div>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex; gap:8px;">
               <button id="back-btn" type="button" class="btn btn-ghost">← Back</button>
               <button id="submit-btn-top" type="submit" form="enroll-form" class="btn">Submit</button>
             </div>
@@ -179,7 +259,7 @@
               </select>
             </div>
 
-            <!-- Member -->
+            <!-- Member Info -->
             <div>
               <label for="member_first">Member First Name</label>
               <input id="member_first" name="member_first" autocomplete="given-name" required />
@@ -188,7 +268,6 @@
               <label for="member_last">Member Last Name</label>
               <input id="member_last" name="member_last" autocomplete="family-name" required />
             </div>
-
             <div>
               <label for="member_dob">Member DOB</label>
               <input id="member_dob" name="member_dob" class="dob" type="text" inputmode="numeric" placeholder="MM/DD/YYYY" required />
@@ -199,9 +278,9 @@
             </div>
 
             <!-- Spouse (toggles) -->
-            <div id="spouse_block" class="hidden colspan-2 card pad" style="padding:14px">
-              <div class="title-sm" style="margin-bottom:8px">Spouse</div>
-              <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div id="spouse_block" class="hidden colspan-2 card pad" style="padding:14px;">
+              <div class="title-sm" style="margin-bottom:8px;">Spouse</div>
+              <div class="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                 <div>
                   <label for="spouse_first">Spouse First Name</label>
                   <input id="spouse_first" name="spouse_first" autocomplete="given-name" />
@@ -228,16 +307,15 @@
             </div>
 
             <!-- Children (add up to 4) -->
-            <div id="children_block" class="hidden colspan-2 card pad" style="padding:14px">
-              <div class="title-sm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+            <div id="children_block" class="hidden colspan-2 card pad" style="padding:14px;">
+              <div class="title-sm" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
                 <span>Children</span>
-                <div style="display:flex;gap:8px">
-                  <button type="button" id="child_add" class="btn btn-ghost" style="padding:6px 10px">+ Add Child</button>
-                  <button type="button" id="child_remove" class="btn btn-ghost" style="padding:6px 10px">− Remove</button>
+                <div style="display:flex; gap:8px;">
+                  <button type="button" id="child_add" class="btn btn-ghost" style="padding:6px 10px;">+ Add Child</button>
+                  <button type="button" id="child_remove" class="btn btn-ghost" style="padding:6px 10px;">− Remove</button>
                 </div>
               </div>
-
-              <div id="children_container" class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+              <div id="children_container" class="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div>
               <div class="help">You can add up to 4 dependents.</div>
             </div>
 
@@ -266,13 +344,13 @@
             </div>
 
             <!-- Submit -->
-            <div class="colspan-2" style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+            <div class="colspan-2" style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
               <button class="btn btn-ghost" type="button" id="back-btn-bottom">← Back</button>
               <button class="btn" type="submit">Submit Enrollment</button>
             </div>
 
             <!-- Compliance note -->
-            <div class="colspan-2 help" style="margin-top:4px">
+            <div class="colspan-2 help" style="margin-top:4px;">
               By submitting, you consent to be contacted by telephone, email, or SMS. You may opt out at any time.
             </div>
           </form>
@@ -290,7 +368,7 @@
   </div>
 
   <script>
-    (function(){
+    (function() {
       // ---------- Constants ----------
       const STATES = [
         ["AL","Alabama"],["AK","Alaska"],["AZ","Arizona"],["AR","Arkansas"],["CA","California"],["CO","Colorado"],
@@ -327,8 +405,8 @@
       const MAX_CHILDREN = 4;
 
       // ---------- Helpers ----------
-      function labelForPlan(plan){
-        switch(plan){
+      function labelForPlan(plan) {
+        switch(plan) {
           case "gwsw": return "GWSW";
           case "gwsw-dental": return "GWSW + Dental";
           case "gwsw-vision": return "GWSW + Vision";
@@ -337,31 +415,32 @@
         }
       }
 
-      function populateStates(selectEl){
-        selectEl.innerHTML = '<option value="">State</option>' + STATES.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+      function populateStates(selectEl) {
+        selectEl.innerHTML = '<option value="">State</option>' +
+          STATES.map(([v,t]) => `<option value="${v}">${t}</option>`).join('');
       }
 
-      function initFlatpickr(){
+      function initFlatpickr() {
         if (!window.flatpickr) return;
-        document.querySelectorAll('input.dob').forEach(el=>{
-          flatpickr(el,{
-            dateFormat:"m/d/Y",
-            allowInput:true,
-            clickOpens:true,
-            maxDate:"today"
+        document.querySelectorAll('input.dob').forEach(el => {
+          flatpickr(el, {
+            dateFormat: "m/d/Y",
+            allowInput: true,
+            clickOpens: true,
+            maxDate: "today"
           });
         });
       }
 
-      function toggleBlocks(){
+      function toggleBlocks() {
         const val = benefit.value;
         spouseBlock.classList.toggle('hidden', !(val==="spouse" || val==="family"));
         const showKids = (val==="child" || val==="family");
         childrenBlock.classList.toggle('hidden', !showKids);
-        if (!showKids){ clearChildren(); }
+        if (!showKids) clearChildren();
       }
 
-      function addChild(){
+      function addChild() {
         if (childCount >= MAX_CHILDREN) return;
         childCount++;
         const num = childCount;
@@ -372,19 +451,19 @@
         childFrag.style.borderTop = "1px dashed #e7eaf0";
         childFrag.style.paddingTop = "12px";
         childFrag.innerHTML = `
-          <div class="title-sm" style="margin:0 0 8px">Child ${num}</div>
-          <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="title-sm" style="margin:0 0 8px;">Child ${num}</div>
+          <div class="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div>
               <label for="child${num}_first">Child ${num} First Name</label>
-              <input id="child${num}_first" name="child${num}_first" autocomplete="given-name">
+              <input id="child${num}_first" name="child${num}_first" autocomplete="given-name" />
             </div>
             <div>
               <label for="child${num}_last">Child ${num} Last Name</label>
-              <input id="child${num}_last" name="child${num}_last" autocomplete="family-name">
+              <input id="child${num}_last" name="child${num}_last" autocomplete="family-name" />
             </div>
             <div>
               <label for="child${num}_dob">Child ${num} DOB</label>
-              <input id="child${num}_dob" name="child${num}_dob" class="dob" type="text" inputmode="numeric" placeholder="MM/DD/YYYY">
+              <input id="child${num}_dob" name="child${num}_dob" class="dob" type="text" inputmode="numeric" placeholder="MM/DD/YYYY" />
             </div>
             <div>
               <label for="child${num}_gender">Child ${num} Gender</label>
@@ -402,21 +481,24 @@
         initFlatpickr();
       }
 
-      function removeChild(){
+      function removeChild() {
         if (childCount <= 0) return;
-        const last = childrenWrap.querySelector('[data-child="'+childCount+'"]');
+        const last = childrenWrap.querySelector(`[data-child="${childCount}"]`);
         if (last) last.remove();
         childCount--;
       }
 
-      function clearChildren(){
+      function clearChildren() {
         childrenWrap.innerHTML = "";
         childCount = 0;
       }
 
       // ---------- Wire up ----------
+      // Populate states
       populateStates(memberStateSel);
-      planGrid.addEventListener('click', (e)=>{
+
+      // Plan selection → show form
+      planGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.planbtn');
         if (!btn) return;
         selectedPlan = btn.dataset.plan || "";
@@ -428,35 +510,42 @@
         initFlatpickr();
       });
 
-      function goBack(){
+      // Back buttons
+      function goBack() {
         formScreen.classList.add('hidden');
         planScreen.classList.remove('hidden');
       }
       backTop.addEventListener('click', goBack);
       backBottom.addEventListener('click', goBack);
 
+      // Benefit-level toggle spouse/children
       benefit.addEventListener('change', toggleBlocks);
       toggleBlocks();
 
+      // Add/remove children
       addChildBtn.addEventListener('click', addChild);
       remChildBtn.addEventListener('click', removeChild);
 
+      // Init flatpickr on load
       window.addEventListener('load', initFlatpickr);
 
-      enrollForm.addEventListener('submit', async (e)=>{
+      // Submit (replace with your Worker POST)
+      enrollForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(enrollForm).entries());
-        for (let i=1;i<=MAX_CHILDREN;i++){
-          if (!data[`child${i}_first`] && !data[`child${i}_last`] && !data[`child${i}_dob`]){
+        // Remove any empty child sets
+        for (let i=1; i<=MAX_CHILDREN; i++) {
+          if (!data[`child${i}_first`] && !data[`child${i}_last`] && !data[`child${i}_dob`]) {
             delete data[`child${i}_first`];
             delete data[`child${i}_last`];
             delete data[`child${i}_dob`];
             delete data[`child${i}_gender`];
           }
         }
+
         console.log("Submitting payload:", data);
         alert("Form would submit now. (Hook up to your Worker POST).");
-        // Example:
+        // Example Worker call:
         // const res = await fetch("https://YOUR-WORKER-URL/enroll", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(data) });
         // const json = await res.json();
         // handle response...
