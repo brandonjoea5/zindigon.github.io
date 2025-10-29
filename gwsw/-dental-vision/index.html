@@ -641,8 +641,16 @@
         plan: PLAN,
         member: memberData,
         promo: promoApplied ? { code: promoCode, accountId: promoAccountId } : null,
-        dependents: dependentsArr // always an array
+        dependents: dependentsArr,
+        billing: {
+          zip: $("billingZip").value.trim(),
+          address: $("address").value.trim(),
+          city: $("city").value.trim(),
+          state: $("state").value.trim(),
+          country: "USA"
+        }
       };
+
 
       try{
         const res = await fetch(CHARGE_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
