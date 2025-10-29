@@ -482,7 +482,7 @@
 
     const levelVal=$("benefit_level").value;
     if(levelVal==="spouse" || levelVal==="family"){
-      const sName=$("spouseName").value.trim();
+      const sName = `${$("spouseFirst").value.trim()} ${$("spouseLast").value.trim()}`.trim();
       const sDobStr=$("spouseDob").value.trim();
       const sGender=$("spouseGender").value;
       if(!sName || !sDobStr || !sGender) return showModal("Missing Spouse Info","Please enter your spouse's name, date of birth, and gender.");
