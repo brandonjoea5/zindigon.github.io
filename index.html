@@ -186,6 +186,41 @@
     /* Link resets */
     a{ color: inherit }
   </style>
+  <style>
+  /* === Tweaks: smaller header, right-pinned Twitch, more bg visible === */
+
+  /* Header smaller */
+  header .nav { padding: 8px 16px; }                /* was 14px 20px */
+  .sigil { width: 28px; height: 28px; border-radius: 10px; }  /* was 36px */
+  .logo-text { font-size: 1.1rem; }                 /* was 1.35rem */
+  header { backdrop-filter: blur(8px); }            /* slightly lighter */
+
+  /* Hero layout: main left, slim sidebar right */
+  .hero {
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
+    gap: 16px;                                      /* a bit tighter */
+    margin: 24px auto 20px;                         /* slightly less top margin */
+    padding: 0 16px;                                /* a touch tighter */
+  }
+
+  /* Twitch card as a right sidebar */
+  .twitch-aside {
+    max-width: 340px;          /* smaller box */
+    justify-self: end;         /* pin to right in the grid */
+    position: sticky;          /* “pinned” effect while scrolling */
+    top: 72px;                 /* sits under the shrunken header */
+  }
+  .twitch-aside .twitch-frame {
+    aspect-ratio: 16/9;        /* keeps proportions at the smaller width */
+  }
+
+  /* Keep mobile stacked & full width */
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: 1fr; gap: 14px; }
+    .twitch-aside { position: static; max-width: none; justify-self: stretch; }
+  }
+</style>
+
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -244,7 +279,7 @@
       </p>
     </div>
 
-    <div class="twitch-card arcane-card">
+    <div class="twitch-card arcane-card twitch-aside">
       <h3 class="h">Twitch — Live Now (if online)</h3>
       <!-- Note: Twitch uses twitch.tv (not twitch.com). Update your channel if needed. -->
       <!-- Replace 'zindigon' if your exact channel name differs. -->
