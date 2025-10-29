@@ -302,6 +302,40 @@
 
   /* ========= Helpers ========= */
   const $ = (id) => document.getElementById(id);
+    const planMap = {
+    "gwsw": "Get Well Stay Well",
+    "gwsw-dental": "GWSW + Dental",
+    "gwsw-vision": "GWSW + Vision",
+    "gwsw-dental-vision": "GWSW + Dental & Vision"
+  };
+  function selectPlan(planId) {
+    PLAN = planId;
+    const label = planMap[planId] || "Unknown Plan";
+    document.getElementById("currentPlanLabel").textContent = "Current Plan: " + label;
+    document.getElementById("planSelection").style.display = "none";
+    document.getElementById("formContainer").style.display = "block";
+    document.getElementById("backBtn").style.display = "inline-block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success) {
+          console.error("Failed to load product pricing:", data.error || data);
+          return;
+        }
+        const select = document.getElementById("benefit_level");
+        const opts = select.querySelectorAll("option");
+        opts.forEach((opt) => {
+          if (!opt.value) return;
+          if (data.basePrices && opt.value in data.basePrices) {
+            const price = data.basePrices[opt.value];
+            opt.dataset.price = price;
+        }
+      });
+      refreshTotal();
+    })
+    .catch((e) => console.error("Error fetching product prices:", e));
+  }
   function dollars(n){ return "$" + Number(n||0).toFixed(2); }
   function showModal(title, body){ $("modalTitle").textContent=title; $("modalBody").textContent=body; $("modal").style.display="grid"; }
   $("closeModal").addEventListener("click",()=>{ $("modal").style.display="none"; });
@@ -622,40 +656,7 @@
       }
     });
   });
-  const planMap = {
-    "gwsw": "Get Well Stay Well",
-    "gwsw-dental": "GWSW + Dental",
-    "gwsw-vision": "GWSW + Vision",
-    "gwsw-dental-vision": "GWSW + Dental & Vision"
-  };
-  function selectPlan(planId) {
-    PLAN = planId;
-    const label = planMap[planId] || "Unknown Plan";
-    document.getElementById("currentPlanLabel").textContent = "Current Plan: " + label;
-    document.getElementById("planSelection").style.display = "none";
-    document.getElementById("formContainer").style.display = "block";
-    document.getElementById("backBtn").style.display = "inline-block";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.success) {
-          console.error("Failed to load product pricing:", data.error || data);
-          return;
-        }
-        const select = document.getElementById("benefit_level");
-        const opts = select.querySelectorAll("option");
-        opts.forEach((opt) => {
-          if (!opt.value) return;
-          if (data.basePrices && opt.value in data.basePrices) {
-            const price = data.basePrices[opt.value];
-            opt.dataset.price = price;
-        }
-      });
-      refreshTotal();
-    })
-    .catch((e) => console.error("Error fetching product prices:", e));
-  }
+
   document.getElementById("backBtn").addEventListener("click", () => {
     document.getElementById("formContainer").style.display = "none";
     document.getElementById("planSelection").style.display = "block";
