@@ -16,7 +16,7 @@
     * { box-sizing: border-box; }
     body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
     .site-header { background:var(--brand); padding:28px 16px; display:flex; justify-content:center; align-items:center; }
-    .logo-tile { background:#fff; border-radius:12px; padding:10px 16px; box-shadow:0 6px 20px rgba(0,0,0,.18); }
+    .logo-tile { background:#fff; border-radius:5px; padding:10px 16px; box-shadow:0 6px 20px rgba(0,0,0,.18); }
     .logo-tile img { height:36px; display:block; }
     .wrap { max-width:860px; margin:24px auto; padding:0 16px; }
     .card { background:var(--card); border-radius:var(--radius); box-shadow:0 10px 30px rgba(2,6,23,.08),0 2px 8px rgba(2,6,23,.06); padding:24px; }
@@ -27,13 +27,13 @@
     .full { grid-column:1 / -1; }
     label { display:block; font-weight:600; margin:6px 0; }
     .field { display:flex; flex-direction:column; }
-    .input, select { width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:12px; background:#fff; outline:none; transition:border-color .15s, box-shadow .15s; }
+    .input, select { width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:5px; background:#fff; outline:none; transition:border-color .15s, box-shadow .15s; }
     .input:focus, select:focus { border-color:var(--brand); box-shadow:0 0 0 4px var(--ring); }
     .hint { font-size:12px; color:var(--muted); margin-top:6px; }
     .toolbar { display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
     .sm { max-width:240px; }
     .price { margin-left:auto; font-weight:800; font-size:20px; }
-    .btn { cursor:pointer; border:0; border-radius:14px; padding:12px 16px; font-weight:700; }
+    .btn { cursor:pointer; border:0; border-radius:5px; padding:12px 16px; font-weight:700; }
     .btn-primary { background:var(--brand); color:#fff; }
     .btn-primary:hover { background:var(--brand-dark); }
     .btn-ghost { background:#fff; border:1px solid #e5e7eb; }
@@ -45,7 +45,7 @@
     .btn.loading:after { content:""; width:16px; height:16px; border-radius:50%; border:2px solid #fff; border-top-color:transparent; position:absolute; right:12px; top:50%; transform:translateY(-50%); animation:spin 1s linear infinite; }
     @keyframes spin { to { transform:translateY(-50%) rotate(360deg); } }
     .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,.52); display:none; place-items:center; padding:16px; z-index:9999; }
-    .modal { background:#fff; border-radius:16px; max-width:480px; width:100%; box-shadow:0 30px 70px rgba(2,6,23,.35); padding:22px; }
+    .modal { background:#fff; border-radius:8px; max-width:480px; width:100%; box-shadow:0 30px 70px rgba(2,6,23,.35); padding:22px; }
     .modal h3 { margin:0 0 10px; }
     .modal .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
     footer { display:flex; gap:8px; justify-content:center; align-items:center; margin:30px 0; color:var(--muted); }
