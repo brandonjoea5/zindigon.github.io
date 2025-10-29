@@ -1,107 +1,438 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <title>Zindigon — From imagination to expectation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Choose Your GWSW Plan</title>
+  <meta name="description" content="Zindigon — where fun, magic, and creativity live. Anime, games, streams, and more." />
+
+  <!-- Fonts (elegant + sharp) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
   <style>
-    :root {
-      --primary: #b40000;     /* deep red */
-      --accent: #ff4d4d;      /* lighter red for hover */
-      --bg: #ffffff;          /* white background */
-      --text: #222222;
+    :root{
+      --bg: #07070d;
+      --bg2:#0b0b16;
+      --ink:#e6e6ff;
+      --muted:#aab0ff;
+      --accent:#7c4dff;       /* violet arcane */
+      --accent-2:#00e0ff;     /* cyan sparks */
+      --accent-3:#ff3bf5;     /* pink flare */
+      --card:#0f0f1d;
+      --ring: rgba(124,77,255,.35);
+      --radius: 16px;
+      --shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
     }
 
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+    *{box-sizing:border-box}
+    html,body{margin:0; padding:0; background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed; color:var(--ink); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif; }
+
+    /* Subtle starfield canvas sits behind everything */
+    #starfield{position:fixed; inset:0; z-index:-2;}
+
+    /* Arcane fog gradient */
+    .aurora{
+      position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(60vw 60vh at 15% 10%, rgba(0,224,255,.08), transparent 60%),
+        radial-gradient(70vw 70vh at 85% -5%, rgba(255,59,245,.06), transparent 60%),
+        radial-gradient(80vw 80vh at 50% -15%, rgba(124,77,255,.10), transparent 60%);
+      filter: blur(30px) saturate(120%);
     }
 
-    header {
-      background: var(--primary);
-      color: white;
-      width: 100%;
-      padding: 1.25rem;
-      text-align: center;
-      font-size: 1.3rem;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(10,10,22,.65), rgba(10,10,22,.25));
+      border-bottom: 1px solid rgba(124,77,255,.25);
+    }
+    .nav{
+      max-width:1200px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:14px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; text-decoration:none;
+    }
+    .sigil{
+      width:36px; height:36px; border-radius:12px;
+      background:
+        radial-gradient(60% 60% at 30% 30%, var(--accent-2), transparent 70%),
+        radial-gradient(60% 60% at 70% 70%, var(--accent-3), transparent 70%),
+        radial-gradient(100% 100% at 50% 50%, rgba(124,77,255,.75), rgba(124,77,255,.25));
+      box-shadow: 0 0 25px rgba(124,77,255,.55), inset 0 0 20px rgba(0,224,255,.35);
+    }
+    .logo-text{
+      font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800;
+      font-size:1.35rem; line-height:1; color:white; text-shadow:
+        0 0 10px rgba(124,77,255,.45),
+        0 0 25px rgba(0,224,255,.25);
+    }
+    .spacer{flex:1}
+    .tabs{display:flex; gap:10px; flex-wrap:wrap}
+    .tab-btn{
+      appearance:none; border:none; cursor:pointer;
+      color:var(--muted); background:transparent;
+      padding:10px 14px; border-radius:12px; font-weight:600;
+      outline: none; position:relative;
+    }
+    .tab-btn:hover{color:var(--ink)}
+    .tab-btn.active{
+      color:white; background:linear-gradient(180deg, rgba(124,77,255,.35), rgba(124,77,255,.12));
+      box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
     }
 
-    main {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      width: 100%;
-      max-width: 900px;
-      padding: 2rem 1rem;
-      box-sizing: border-box;
+    .hero{
+      max-width:1200px; margin:40px auto 24px; padding:0 20px; display:grid; grid-template-columns:1.5fr 1fr; gap:24px;
+    }
+    @media (max-width:980px){ .hero{grid-template-columns:1fr} }
+
+    .arcane-card{
+      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
+      border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow);
+    }
+    .hero-card{ padding:28px; position:relative; overflow:clip; }
+    .hero-title{
+      font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2.2rem, 3.8vw, 4rem);
+      line-height:1.05; letter-spacing:.8px;
+      background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
+    }
+    .hero-sub{
+      margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px;
+      text-shadow: 0 0 12px rgba(124,77,255,.25);
     }
 
-    a.plan {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: white;
-      border: 2px solid var(--primary);
-      color: var(--primary);
-      text-decoration: none;
-      font-size: 1.25rem;
-      font-weight: 600;
-      border-radius: 10px;
-      height: 120px;
-      transition: all 0.25s ease;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    .sigils{
+      position:absolute; inset:-20% -10% auto auto; height:180%;
+      background:
+        radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%),
+        radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%),
+        conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0));
+      filter: blur(45px) saturate(140%);
+      pointer-events:none;
+      transform: translateZ(0);
     }
 
-    a.plan:hover {
-      background: var(--primary);
-      color: white;
-      transform: translateY(-3px);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;}
+    .btn{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px;
+      text-decoration:none; color:white; background:
+        radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%),
+        linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
+      box-shadow: 0 8px 30px rgba(124,77,255,.35);
+      border: 1px solid rgba(124,77,255,.55);
+    }
+    .btn:hover{transform: translateY(-1px); box-shadow: 0 12px 40px rgba(124,77,255,.45);}
+    .btn-ghost{
+      color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .icon{width:18px; height:18px; display:inline-block;}
+
+    .twitch-card{ padding:18px; display:flex; flex-direction:column; gap:12px; }
+    .twitch-frame{
+      aspect-ratio:16/9; width:100%; border:0; border-radius:12px; overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .mini{
+      color:var(--muted); font-size:.92rem; line-height:1.4;
     }
 
-    footer {
-      margin-top: auto;
-      background: var(--primary);
-      color: white;
-      width: 100%;
-      text-align: center;
-      padding: 1rem;
-      font-size: 0.9rem;
+    /* Tabbed sections */
+    main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
+    .section{
+      display:none; margin-top:16px; padding:22px; border-radius:var(--radius);
+      background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6));
+      border: 1px solid rgba(124,77,255,.24);
+      box-shadow: var(--shadow);
+      animation: rise .35s ease-out;
+    }
+    .section.show{ display:block; }
+    @keyframes rise{ from{ transform:translateY(6px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
+
+    .grid{
+      display:grid; gap:16px; grid-template-columns: repeat(12, 1fr);
+    }
+    .col-12{ grid-column: span 12; }
+    .col-6{ grid-column: span 6; }
+    .col-4{ grid-column: span 4; }
+    @media (max-width:980px){ .col-6{grid-column:span 12} .col-4{grid-column: span 12} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:14px; padding:16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .h{
+      font-family:'Cinzel', serif; font-weight:800; letter-spacing:.6px;
+      margin:0 0 8px; color:#fff;
+      text-shadow: 0 0 16px rgba(124,77,255,.35);
+    }
+    .p{ margin:0; color:#d7dcff; }
+
+    footer{
+      max-width:1200px; margin:60px auto 40px; padding:0 20px; color:var(--muted); text-align:center;
+    }
+    .support{
+      display:inline-flex; align-items:center; gap:10px; margin-top:14px;
+      padding:12px 16px; border-radius:14px; text-decoration:none; font-weight:800; color:#101015; background:
+        linear-gradient(180deg, #00e0ff, #7c4dff);
+      box-shadow: 0 12px 40px rgba(0,224,255,.35), 0 8px 25px rgba(124,77,255,.35);
+      border:1px solid rgba(255,255,255,.24);
     }
 
-    @media (max-width: 480px) {
-      header {
-        font-size: 1.1rem;
-      }
-      a.plan {
-        height: 100px;
-        font-size: 1.1rem;
-      }
-    }
+    /* Link resets */
+    a{ color: inherit }
   </style>
 </head>
 <body>
-  <header>Select Your GWSW Benefit Plan</header>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <header>
+    <nav class="nav">
+      <a class="brand" href="#" data-tab="home" aria-label="Zindigon Home">
+        <span class="sigil"></span>
+        <span class="logo-text">Zindigon</span>
+      </a>
+      <div class="spacer"></div>
+      <div class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">Home</button>
+        <button class="tab-btn" data-tab="anime" role="tab">Anime</button>
+        <button class="tab-btn" data-tab="games" role="tab">Games</button>
+        <button class="tab-btn" data-tab="gaming" role="tab">Gaming</button>
+        <button class="tab-btn" data-tab="about" role="tab">About</button>
+        <button class="tab-btn" data-tab="contact" role="tab">Contact</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section id="home" class="hero section show" aria-labelledby="hero-title">
+    <div class="hero-card arcane-card">
+      <div class="sigils"></div>
+      <h1 id="hero-title" class="hero-title">Where Fun, Magic, and Creativity Live.</h1>
+      <div class="hero-sub">From imagination to expectation</div>
+
+      <div class="actions" style="margin-top:18px">
+        <!-- YouTube -->
+        <a class="btn" href="https://youtube.com/@zindigon?si=N-CuSjB1Cqsr8p0C" target="_blank" rel="noopener">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8ZM9.6 15.5V8.5L15.9 12l-6.3 3.5Z"/>
+          </svg>
+          YouTube
+        </a>
+
+        <!-- TikTok -->
+        <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96?_t=ZP-90xFluWfH0Z&_r=1" target="_blank" rel="noopener">
+          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M16.7 3.1c.7 1.3 2 2.3 3.5 2.6l1.1.2v3a8 8 0 0 1-4.6-1.5v7.1a6.5 6.5 0 1 1-6.6-6.5c.4 0 .7 0 1 .1v3.4a3 3 0 0 0-1-.2 3.1 3.1 0 1 0 3.1 3.1V2h3.5Z"/>
+          </svg>
+          TikTok
+        </a>
+
+        <!-- Support -->
+        <a class="btn" href="#support" data-tab="contact">
+          ✨ Support Us
+        </a>
+      </div>
+
+      <p class="mini" style="margin-top:10px">
+        Explore original anime projects, game worlds, and live streams—crafted by Zindigon.
+      </p>
+    </div>
+
+    <div class="twitch-card arcane-card">
+      <h3 class="h">Twitch — Live Now (if online)</h3>
+      <!-- Note: Twitch uses twitch.tv (not twitch.com). Update your channel if needed. -->
+      <!-- Replace 'zindigon' if your exact channel name differs. -->
+      <iframe
+        class="twitch-frame"
+        title="Twitch"
+        src="https://player.twitch.tv/?channel=zindigon&parent=zindigon.com&muted=true"
+        allowfullscreen>
+      </iframe>
+      <div class="actions">
+        <a class="btn btn-ghost" href="https://www.twitch.tv/zindigon" target="_blank" rel="noopener">Open on Twitch</a>
+      </div>
+      <p class="mini">If the player is blank, the channel may be offline. Follow to catch the next stream!</p>
+    </div>
+  </section>
 
   <main>
-  <a class="plan" href="gwsw/basic/">GWSW</a>
-  <a class="plan" href="gwsw/-dental/">GWSW + Dental</a>
-  <a class="plan" href="gwsw/-vision/">GWSW + Vision</a>
-  <a class="plan" href="gwsw/-dental-vision/">GWSW + Dental &amp; Vision</a>
-</main>
+    <!-- ANIME -->
+    <section id="anime" class="section" aria-labelledby="anime-title">
+      <h2 id="anime-title" class="h" style="font-size:1.6rem">Anime</h2>
+      <div class="grid">
+        <div class="col-12 card">
+          <h3 class="h" style="font-size:1.2rem">Bloodline Zero</h3>
+          <p class="p">
+            A grounded, adult-leaning saga where the hidden world of might-enabled users collides
+            with a relentless organization. Expect arcane relics, seismic power tiers, and a universe
+            where destiny is forged in paradox.
+          </p>
+        </div>
+        <div class="col-6 card">
+          <h4 class="h" style="font-size:1.1rem">Lore & World</h4>
+          <p class="p">Timelines, factions, and living myths—refined to avoid plot holes and reward rewatchers.</p>
+        </div>
+        <div class="col-6 card">
+          <h4 class="h" style="font-size:1.1rem">Visual & Voice</h4>
+          <p class="p">Cinematic teasers, character sheets, and behind-the-mic sessions as the world takes shape.</p>
+        </div>
+      </div>
+    </section>
 
+    <!-- GAMES -->
+    <section id="games" class="section" aria-labelledby="games-title">
+      <h2 id="games-title" class="h" style="font-size:1.6rem">Games</h2>
+      <div class="grid">
+        <div class="col-12 card">
+          <h3 class="h" style="font-size:1.2rem">The Adventures of the Troll King</h3>
+          <p class="p">
+            A strategic journey across a color-coded hex world—grind smart routes, face world bosses,
+            and chase seasonal leaderboards. Fair, skill-first, and endlessly replayable.
+          </p>
+        </div>
+        <div class="col-6 card">
+          <h4 class="h" style="font-size:1.1rem">Design Notes</h4>
+          <p class="p">Seasonal vs. core world balance, ethical monetization, and guild-based cooperation.</p>
+        </div>
+        <div class="col-6 card">
+          <h4 class="h" style="font-size:1.1rem">Progress</h4>
+          <p class="p">Godot builds, combat prototypes, and map shaders—documented as features land.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAMING -->
+    <section id="gaming" class="section" aria-labelledby="gaming-title">
+      <h2 id="gaming-title" class="h" style="font-size:1.6rem">Gaming Profiles</h2>
+      <div class="grid">
+        <div class="col-4 card">
+          <h4 class="h" style="font-size:1.1rem">Gamertags</h4>
+          <p class="p">
+            Zindigon (primary). Reach out on Discord/Twitch for collabs, raids, and ranked queues.
+          </p>
+        </div>
+        <div class="col-4 card">
+          <h4 class="h" style="font-size:1.1rem">Platforms</h4>
+          <p class="p">PC / Xbox / PlayStation — links coming online as we standardize handles.</p>
+        </div>
+        <div class="col-4 card">
+          <h4 class="h" style="font-size:1.1rem">Highlights</h4>
+          <p class="p">Curated clips from streams and scrims—top plays and spicy fails alike.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="section" aria-labelledby="about-title">
+      <h2 id="about-title" class="h" style="font-size:1.6rem">About Us</h2>
+      <div class="card">
+        <p class="p">
+          Zindigon is a creative banner spanning anime, game development, and live content.
+          We build worlds for explorers and tell stories for believers—where rules bend,
+          and imagination sets the expectation.
+        </p>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="section" aria-labelledby="contact-title">
+      <h2 id="contact-title" class="h" style="font-size:1.6rem">Contact</h2>
+      <div class="grid">
+        <div class="col-6 card" id="support">
+          <h3 class="h" style="font-size:1.2rem">Support the Journey</h3>
+          <p class="p">Fuel the magic. Every contribution goes back into art, music, servers, and tools.</p>
+          <!-- Replace href with your donation URL (Stripe, PayPal, BuyMeACoffee, etc.) -->
+          <p style="margin-top:10px">
+            <a class="support" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
+          </p>
+        </div>
+        <div class="col-6 card">
+          <h3 class="h" style="font-size:1.2rem">Reach Out</h3>
+          <p class="p">Business & collabs: <a href="mailto:hello@zindigon.com">hello@zindigon.com</a></p>
+          <p class="p">Press & licensing: <a href="mailto:press@zindigon.com">press@zindigon.com</a></p>
+          <p class="p">General: <a href="mailto:contact@zindigon.com">contact@zindigon.com</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <footer>
-    © 2025 Secure Health / GWSW
+    <div>© <span id="year"></span> Zindigon — All worlds reserved.</div>
   </footer>
+
+  <script>
+    // ====== Starfield (no libs)
+    (function(){
+      const c = document.getElementById('starfield');
+      const ctx = c.getContext('2d');
+      let w=0,h=0, stars=[];
+      function resize(){
+        w = c.width = innerWidth * devicePixelRatio;
+        h = c.height = innerHeight * devicePixelRatio;
+        ctx.scale(1,1);
+        stars = new Array(180).fill(0).map(()=>({
+          x: Math.random()*w, y: Math.random()*h,
+          r: Math.random()*1.3 + .2,
+          s: Math.random()*0.6 + 0.2,
+          hue: 200 + Math.random()*80
+        }));
+      }
+      addEventListener('resize', resize, {passive:true});
+      resize();
+      let t=0;
+      (function loop(){
+        t+=0.01;
+        ctx.clearRect(0,0,w,h);
+        for(const st of stars){
+          st.y += st.s; if(st.y>h) st.y = -10;
+          ctx.beginPath();
+          const glow = 0.45 + 0.45*Math.sin(t+st.x*0.001);
+          ctx.fillStyle = `hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
+          ctx.shadowBlur = 12 + glow*18;
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+          ctx.fill();
+        }
+        requestAnimationFrame(loop);
+      })();
+    })();
+
+    // ====== Tabs (no reload)
+    const sections = document.querySelectorAll('.section');
+    const tabBtns = document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
+    function showTab(id){
+      sections.forEach(s => s.classList.toggle('show', s.id === id));
+      document.querySelectorAll('.tab-btn').forEach(b=>{
+        b.classList.toggle('active', b.dataset.tab === id);
+        b.setAttribute('aria-selected', b.classList.contains('active') ? 'true':'false');
+      });
+      // Scroll to top of section when switching
+      const el = document.getElementById(id);
+      if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
+    }
+    tabBtns.forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        const id = btn.dataset.tab || 'home';
+        if(id){ e.preventDefault(); showTab(id); }
+      });
+    });
+
+    // If user clicks “Support Us” on hero, jump to Contact tab
+    document.querySelectorAll('a.btn[data-tab="contact"]').forEach(a=>{
+      a.addEventListener('click', (e)=>{ e.preventDefault(); showTab('contact'); });
+    });
+
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // FYI: Twitch embedding requires the correct parent domain. If testing locally,
+    // replace parent=zindigon.com with parent=localhost or your dev host.
+  </script>
 </body>
 </html>
