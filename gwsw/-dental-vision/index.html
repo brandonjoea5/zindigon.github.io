@@ -495,7 +495,9 @@
       if(entries.length===0) return showModal("Missing Child Info","Please add and enter information for at least one child.");
       let idx=1;
       for(const entry of entries){
-        const name=entry.querySelector(".childName")?.value.trim();
+        const first = entry.querySelector(".childFirst")?.value.trim() || "";
+        const last  = entry.querySelector(".childLast")?.value.trim() || "";
+        const name  = `${first} ${last}`.trim();
         const dobStr=entry.querySelector(".childDob")?.value.trim();
         const gender=entry.querySelector(".childGender")?.value;
         if(!name || !dobStr || !gender) return showModal("Missing Child Info",`Please complete all fields for Child ${idx}.`);
@@ -565,7 +567,7 @@
       const levelVal=$("benefit_level").value;
       if(levelVal==="spouse" || levelVal==="family"){
         dependentsArr.push({
-          name: $("spouseName").value.trim(),
+          name: `${$("spouseFirst").value.trim()} ${$("spouseLast").value.trim()}`.trim(),
           dateOfBirth: $("spouseDob").value.trim(),
           gender: $("spouseGender").value,
           relationship: "Spouse",
@@ -574,7 +576,9 @@
       if(levelVal==="child" || levelVal==="family"){
         const entries=document.querySelectorAll("#childList .child-entry");
         entries.forEach((entry)=>{
-          const name=entry.querySelector(".childName").value.trim();
+          const first = entry.querySelector(".childFirst")?.value.trim() || "";
+          const last  = entry.querySelector(".childLast")?.value.trim() || "";
+          const name  = `${first} ${last}`.trim();
           const dob=entry.querySelector(".childDob").value.trim();
           const gender=entry.querySelector(".childGender").value;
           if(name && dob && gender){
