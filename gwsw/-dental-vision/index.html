@@ -671,13 +671,15 @@
         member: memberData,
         promo: promoApplied ? { code: promoCode, accountId: promoAccountId } : null,
         dependents: dependentsArr,
-        billing: {
-          billingZip: $("billingZip").value.trim(),
-          address: $("address").value.trim(),
-          city: $("city").value.trim(),
-          state: $("state").value.trim(),
-          country: "USA"
-        }
+      
+        // Flatten billing fields here:
+        billingFirst: $("billingFirst").value.trim(),
+        billingLast: $("billingLast").value.trim(),
+        billingAddress: $("billingAddress").value.trim(),
+        billingCity: $("billingCity").value.trim(),
+        billingState: $("billingState").value.trim(),
+        billingZip: $("billingZip").value.trim(),
+        billingCountry: "USA"
       };
 
 
