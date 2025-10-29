@@ -71,7 +71,9 @@
 
 <main class="wrap" id="formContainer" style="display:none;">
   <div class="card">
+    <button id="backBtn" class="btn btn-ghost" style="margin-bottom: 12px; display: none; align-self: flex-start;">← Back to Plan Selection</button>
     <h1 class="title">Get Well Stay Well Member Enrollment</h1>
+    <p class="sub" id="currentPlanLabel" style="font-weight:600; margin-bottom: 24px;"></p>
     <p class="sub"></p>
 
     <!-- Plan Selection -->
@@ -290,7 +292,7 @@
   const CHARGE_URL        = WORKER_BASE_URL + "/payment/charge";
   const ANET_CLIENT_KEY   = "5xFSW2MHGjyt26HMvPf7bh3U7Sk3sDctGgEyYuGG7AG9KrkA672r4FyDwd5yZ3xJ";
   const ANET_API_LOGIN_ID = "9mRy427Md";
-  const PLAN = "gwsw-dental-vision"; // this page is the GWSW-only page
+  let PLAN = ""; // this page is the GWSW-only page
 
   /* ========= Helpers ========= */
   const $ = (id) => document.getElementById(id);
@@ -610,20 +612,47 @@
     });
   });
   function selectPlan(level) {
-  // Set the benefit level
-  const select = $("benefit_level");
-  select.value = level;
-  select.dispatchEvent(new Event("change"));
-
-  // Hide buttons, show form
-  $("planSelection").style.display = "none";
-  $("formContainer").style.display = "block";
-  window.scrollTo({ top: 0, behavior: "smooth" });
-
-  // Refresh total after setting level
-  refreshTotal();
-}
-
+    // Map levels to plan names (adjust these to match your actual backend plan names)
+    const planMap = {
+      member: "gwsw-member",
+      spouse: "gwsw-spouse",
+      child: "gwsw-child",
+      family: "gwsw-family"
+    };
+  
+    // Set plan ID and benefit level dropdown
+    PLAN = planMap[level];
+    let label = PLAN === "gwsw" ? "Basic Plan" : PLAN.replace("gwsw-", "").replace(/^\w/, c => c.toUpperCase()) + " Plan";
+    $("currentPlanLabel").textContent = "Current Plan: " + label;
+    const select = $("benefit_level");
+    select.value = level;
+    select.dispatchEvent(new Event("change"));
+  
+    // Hide selection and show form
+    $("planSelection").style.display = "none";
+    $("formContainer").style.display = "block";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  
+    // Show back button
+    $("backBtn").style.display = "inline-block"; // 👈 ADD THIS HERE
+  
+    // Fetch prices for the new plan
+    fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
+      .then((r)=>r.json())
+      .then((data)=>{
+        if(!data.success){ console.error("Failed to load product pricing:", data.error || data); return; }
+        const opts=select.querySelectorAll("option");
+        opts.forEach((opt)=>{
+          if(!opt.value) return;
+          if(data.basePrices && opt.value in data.basePrices){
+            const price=data.basePrices[opt.value];
+            opt.dataset.price = price;
+          }
+        });
+        refreshTotal();
+      })
+      .catch((e)=>console.error("Error fetching product prices:", e));
+  }
 </script>
 </body>
 </html>
