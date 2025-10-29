@@ -383,8 +383,15 @@
     entries.forEach((entry,idx)=>{
       const removeBtn=entry.querySelector(".removeChildBtn");
       if(removeBtn){ removeBtn.style.display = entries.length===1 ? "none" : (idx===entries.length-1 ? "inline-block" : "none"); }
-      const labels=entry.querySelectorAll("label");
-      if(labels.length>=3){ const num=idx+1; labels[0].innerText=`Child ${num} Name`; labels[1].innerText=`Child ${num} Date of Birth (MM/DD/YYYY)`; labels[2].innerText=`Child ${num} Gender`; }
+      const labels = entry.querySelectorAll("label");
+      if (labels.length >= 4) {
+        const num = idx + 1;
+        labels[0].innerText = `Child ${num} First Name`;
+        labels[1].innerText = `Child ${num} Last Name`;
+        labels[2].innerText = `Child ${num} Date of Birth (MM/DD/YYYY)`;
+        labels[3].innerText = `Child ${num} Gender`;
+      }
+
     });
   }
   function addChild(){
