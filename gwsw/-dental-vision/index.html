@@ -226,9 +226,38 @@
             <label for="cardCvc">CVV</label>
             <input id="cardCvc" class="input" autocomplete="cc-csc" inputmode="numeric" />
           </div>
-          <div class="field">
-            <label for="billingZip">Billing ZIP Code</label>
-            <input id="billingZip" class="input" autocomplete="postal-code" inputmode="numeric" required />
+          <div class="card section">
+            <h2 class="title">Billing Address</h2>
+            <div class="grid">
+              <div class="field">
+                <label>Billing First Name</label>
+                <input id="billingFirst" class="input" required />
+              </div>
+              <div class="field">
+                <label>Billing Last Name</label>
+                <input id="billingLast" class="input" required />
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label>Billing Address</label>
+                <input id="billingAddress" class="input" required />
+              </div>
+              <div class="field">
+                <label>Billing City</label>
+                <input id="billingCity" class="input" required />
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label>Billing State</label>
+                <input id="billingState" class="input" maxlength="2" required />
+              </div>
+              <div class="field">
+                <label>Billing Zip Code</label>
+                <input id="billingZip" class="input" inputmode="numeric" required />
+              </div>
+            </div>
           </div>
         </div>
         <div class="paybar">
