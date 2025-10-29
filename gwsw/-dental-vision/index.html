@@ -226,6 +226,10 @@
             <label for="cardCvc">CVV</label>
             <input id="cardCvc" class="input" autocomplete="cc-csc" inputmode="numeric" />
           </div>
+          <div class="field">
+            <label for="billingZip">Billing ZIP Code</label>
+            <input id="billingZip" class="input" autocomplete="postal-code" inputmode="numeric" required />
+          </div>
         </div>
         <div class="paybar">
           <button type="button" id="payBtn" class="btn btn-primary">Pay Now</button>
@@ -531,6 +535,7 @@
       month: expMonth,
       year: expYear,
       cardCode: $("cardCvc").value
+      zip: $("billingZip").value.trim()
     };
 
     Accept.dispatchData({ authData, cardData }, async (response)=>{
