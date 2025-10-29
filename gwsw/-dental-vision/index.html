@@ -59,21 +59,22 @@
     <img src="https://www.gwsw.com/assets/img/logo.png" alt="GWSW" />
   </div>
 </header>
-<section id="planSelection" style="text-align:center; padding:60px 20px;">
-  <h2 style="font-size:28px; margin-bottom:20px;">Select Your Plan</h2>
-  <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
-    <button class="btn btn-primary" onclick="selectPlan('member')">Member Only</button>
-    <button class="btn btn-primary" onclick="selectPlan('spouse')">Member + Spouse</button>
-    <button class="btn btn-primary" onclick="selectPlan('child')">Member + Child(ren)</button>
-    <button class="btn btn-primary" onclick="selectPlan('family')">Member + Family</button>
+<div id="planSelection" class="wrap">
+  <h1 class="title">Choose Your Plan</h1>
+  <div id="planButtons" class="toolbar" style="flex-wrap: wrap; justify-content: center;">
+    <button class="btn btn-primary" onclick="selectPlan('gwsw')">Get Well Stay Well</button>
+    <button class="btn btn-primary" onclick="selectPlan('gwsw-dental')">GWSW + Dental</button>
+    <button class="btn btn-primary" onclick="selectPlan('gwsw-vision')">GWSW + Vision (XP Health)</button>
+    <button class="btn btn-primary" onclick="selectPlan('gwsw-dental-vision')">GWSW + Dental & Vision</button>
   </div>
+</div>
 </section>
 
 <main class="wrap" id="formContainer" style="display:none;">
   <div class="card">
-    <button id="backBtn" class="btn btn-ghost" style="margin-bottom: 12px; display: none; align-self: flex-start;">← Back to Plan Selection</button>
+    <button id="backBtn" class="btn btn-ghost" style="display:none; position:absolute; top:20px; left:20px;">← Back</button>
     <h1 class="title">Get Well Stay Well Member Enrollment</h1>
-    <p class="sub" id="currentPlanLabel" style="font-weight:600; margin-bottom: 24px;"></p>
+    <p class="sub" id="currentPlanLabel">Current Plan: </p>
     <p class="sub"></p>
 
     <!-- Plan Selection -->
@@ -620,39 +621,60 @@
       family: "gwsw-family"
     };
   
-    // Set plan ID and benefit level dropdown
-    PLAN = planMap[level];
-    let label = PLAN === "gwsw" ? "Basic Plan" : PLAN.replace("gwsw-", "").replace(/^\w/, c => c.toUpperCase()) + " Plan";
-    $("currentPlanLabel").textContent = "Current Plan: " + label;
-    const select = $("benefit_level");
-    select.value = level;
-    select.dispatchEvent(new Event("change"));
+  const planMap = {
+    "gwsw": "Get Well Stay Well",
+    "gwsw-dental": "GWSW + Dental",
+    "gwsw-vision": "GWSW + Vision",
+    "gwsw-dental-vision": "GWSW + Dental & Vision"
+  };
   
-    // Hide selection and show form
-    $("planSelection").style.display = "none";
-    $("formContainer").style.display = "block";
+  
+  let PLAN = "gwsw";
+  
+  
+  function selectPlan(planId) {
+    PLAN = planId;
+    const label = planMap[planId] || "Unknown Plan";
+  
+  
+    // Update label and show/hide UI
+    document.getElementById("currentPlanLabel").textContent = "Current Plan: " + label;
+    document.getElementById("planSelection").style.display = "none";
+    document.getElementById("formContainer").style.display = "block";
+    document.getElementById("backBtn").style.display = "inline-block";
+  
+    
+    // Scroll and fetch updated pricing
     window.scrollTo({ top: 0, behavior: "smooth" });
+    
   
-    // Show back button
-    $("backBtn").style.display = "inline-block"; // 👈 ADD THIS HERE
-  
-    // Fetch prices for the new plan
     fetch(`${PRODUCTS_URL}?plan=${encodeURIComponent(PLAN)}`)
-      .then((r)=>r.json())
-      .then((data)=>{
-        if(!data.success){ console.error("Failed to load product pricing:", data.error || data); return; }
-        const opts=select.querySelectorAll("option");
-        opts.forEach((opt)=>{
-          if(!opt.value) return;
-          if(data.basePrices && opt.value in data.basePrices){
-            const price=data.basePrices[opt.value];
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success) {
+          console.error("Failed to load product pricing:", data.error || data);
+          return;
+        }
+        const select = document.getElementById("benefit_level");
+        const opts = select.querySelectorAll("option");
+        opts.forEach((opt) => {
+          if (!opt.value) return;
+          if (data.basePrices && opt.value in data.basePrices) {
+            const price = data.basePrices[opt.value];
             opt.dataset.price = price;
-          }
-        });
-        refreshTotal();
-      })
-      .catch((e)=>console.error("Error fetching product prices:", e));
+        }
+      });
+      refreshTotal();
+    })
+    .catch((e) => console.error("Error fetching product prices:", e));
   }
+    
+    
+  document.getElementById("backBtn").addEventListener("click", () => {
+    document.getElementById("formContainer").style.display = "none";
+    document.getElementById("planSelection").style.display = "block";
+    document.getElementById("backBtn").style.display = "none";
+  });
 </script>
 </body>
 </html>
