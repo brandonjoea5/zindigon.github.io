@@ -59,8 +59,17 @@
     <img src="https://www.gwsw.com/assets/img/logo.png" alt="GWSW" />
   </div>
 </header>
+<section id="planSelection" style="text-align:center; padding:60px 20px;">
+  <h2 style="font-size:28px; margin-bottom:20px;">Select Your Plan</h2>
+  <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center;">
+    <button class="btn btn-primary" onclick="selectPlan('member')">Member Only</button>
+    <button class="btn btn-primary" onclick="selectPlan('spouse')">Member + Spouse</button>
+    <button class="btn btn-primary" onclick="selectPlan('child')">Member + Child(ren)</button>
+    <button class="btn btn-primary" onclick="selectPlan('family')">Member + Family</button>
+  </div>
+</section>
 
-<main class="wrap">
+<main class="wrap" id="formContainer" style="display:none;">
   <div class="card">
     <h1 class="title">Get Well Stay Well Member Enrollment</h1>
     <p class="sub"></p>
@@ -600,6 +609,20 @@
       }
     });
   });
+  function selectPlan(level) {
+  // Set the benefit level
+  const select = $("benefit_level");
+  select.value = level;
+  select.dispatchEvent(new Event("change"));
+
+  // Hide buttons, show form
+  $("planSelection").style.display = "none";
+  $("formContainer").style.display = "block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // Refresh total after setting level
+  refreshTotal();
+}
 
 </script>
 </body>
