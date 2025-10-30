@@ -2,472 +2,399 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Zindigon — From imagination to expectation</title>
+  <title>Andersons Appliance Pros</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Zindigon — where fun, magic, and creativity live. Anime, games, streams, and more." />
-
-  <!-- Fonts (elegant + sharp) -->
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-
   <style>
     :root{
-      --bg: #07070d;
-      --bg2:#0b0b16;
-      --ink:#e6e6ff;
-      --muted:#aab0ff;
-      --accent:#7c4dff;       /* violet arcane */
-      --accent-2:#00e0ff;     /* cyan sparks */
-      --accent-3:#ff3bf5;     /* pink flare */
-      --card:#0f0f1d;
-      --ring: rgba(124,77,255,.35);
-      --radius: 16px;
-      --shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
+      --bg:#f6f8fb; --panel:#ffffff; --ink:#0f172a; --muted:#475569;
+      --brand:#143a5c; --brand-2:#1f6fb2; --accent:#14b8a6;
+      --ring:rgba(20,58,92,.18);
+      --radius:14px;
+      --ribbon-h:5px;
     }
-
     *{box-sizing:border-box}
-    html,body{margin:0; padding:0; background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed; color:var(--ink); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif; }
-
-    /* Subtle starfield canvas sits behind everything */
-    #starfield{position:fixed; inset:0; z-index:-2;}
-
-    /* Arcane fog gradient */
-    .aurora{
-      position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
-      background:
-        radial-gradient(60vw 60vh at 15% 10%, rgba(0,224,255,.08), transparent 60%),
-        radial-gradient(70vw 70vh at 85% -5%, rgba(255,59,245,.06), transparent 60%),
-        radial-gradient(80vw 80vh at 50% -15%, rgba(124,77,255,.10), transparent 60%);
-      filter: blur(30px) saturate(120%);
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      -webkit-text-size-adjust:100%;
+      overflow-x:hidden;
     }
 
-    header{
-      position:sticky; top:0; z-index:50;
-      backdrop-filter: blur(10px);
-      background: linear-gradient(180deg, rgba(10,10,22,.65), rgba(10,10,22,.25));
-      border-bottom: 1px solid rgba(124,77,255,.25);
+    /* Header */
+    .site-header{
+      position:sticky; top:0; z-index:30;
+      background:linear-gradient(90deg,var(--brand),var(--brand-2));
+      color:#fff; box-shadow:0 6px 14px rgba(0,0,0,.06);
     }
+    .header-inner{
+      max-width:1100px; margin:0 auto;
+      padding:10px 14px 8px;
+      display:flex; align-items:center; gap:14px;
+    }
+    .brand-logo{
+      width:160px; height:60px; flex:0 0 auto;
+      background:#fff; border-radius:12px; padding:8px;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.06);
+    }
+    .brand-logo img{max-width:100%; max-height:100%; object-fit:contain}
+
+    .brand-meta{flex:1 1 auto; min-width:0}
+    .brand-title{
+      margin:0; font-weight:800; letter-spacing:.3px;
+      font-size:clamp(1.1rem,3.6vw,1.8rem);
+      text-shadow:0 1px 2px rgba(0,0,0,.18);
+    }
+    .brand-sub{margin:2px 0 0; opacity:.92; font-size:.95rem}
+
+    .ribbon{
+      height:var(--ribbon-h);
+      background:linear-gradient(90deg,#c1121f,#ffffff,#002654);
+    }
+
+    /* Nav */
     .nav{
-      max-width:1200px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:14px;
+      display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+      padding:8px 12px 12px;
     }
-    .brand{
-      display:flex; align-items:center; gap:12px; text-decoration:none;
+    .nav button{
+      appearance:none; border:1px solid rgba(255,255,255,.35);
+      background:rgba(255,255,255,.12); color:#fff;
+      padding:10px 16px; border-radius:999px; cursor:pointer; font-weight:700;
+      transition:.18s ease; min-height:44px; font-size:1rem;
+      touch-action:manipulation;
     }
-    .sigil{
-      width:36px; height:36px; border-radius:12px;
-      background:
-        radial-gradient(60% 60% at 30% 30%, var(--accent-2), transparent 70%),
-        radial-gradient(60% 60% at 70% 70%, var(--accent-3), transparent 70%),
-        radial-gradient(100% 100% at 50% 50%, rgba(124,77,255,.75), rgba(124,77,255,.25));
-      box-shadow: 0 0 25px rgba(124,77,255,.55), inset 0 0 20px rgba(0,224,255,.35);
+    .nav button:hover{background:rgba(255,255,255,.22)}
+    .nav button.active{background:#fff;color:var(--brand);border-color:#fff;box-shadow:0 0 0 3px var(--ring)}
+
+    /* Layout */
+    .wrap{max-width:1100px;margin:20px auto 80px;padding:0 14px}
+    .page{display:none}
+    .page.active{display:block}
+    .panel{
+      background:var(--panel); border-radius:var(--radius);
+      padding:18px; box-shadow:0 8px 24px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.05);
     }
-    .logo-text{
-      font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800;
-      font-size:1.35rem; line-height:1; color:white; text-shadow:
-        0 0 10px rgba(124,77,255,.45),
-        0 0 25px rgba(0,224,255,.25);
+    h1{margin:0 0 10px; line-height:1.2; font-size:clamp(1.1rem,3.5vw,1.6rem)}
+    .lead{color:var(--muted); margin:0 0 12px; font-size:1rem}
+
+    /* Highlights */
+    .highlight{
+      background:linear-gradient(180deg,#fff,#f7fbff);
+      border:1px solid #e6eef8;
+      padding:12px 14px; border-radius:12px; margin:12px 0 6px;
     }
-    .spacer{flex:1}
-    .tabs{display:flex; gap:10px; flex-wrap:wrap}
-    .tab-btn{
-      appearance:none; border:none; cursor:pointer;
-      color:var(--muted); background:transparent;
-      padding:10px 14px; border-radius:12px; font-weight:600;
-      outline: none; position:relative;
-    }
-    .tab-btn:hover{color:var(--ink)}
-    .tab-btn.active{
-      color:white; background:linear-gradient(180deg, rgba(124,77,255,.35), rgba(124,77,255,.12));
-      box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
+    .badge{
+      display:inline-block; font-weight:800; font-size:.9rem;
+      padding:6px 10px; border-radius:999px; background:#e9f7ef; color:#106b45; margin-right:8px;
     }
 
-    .hero{
-      max-width:1200px; margin:40px auto 24px; padding:0 20px; display:grid; grid-template-columns:1.5fr 1fr; gap:24px;
+    /* Logo grid – UNIFORM SIZE using a frame */
+    .logo-grid{
+      display:grid; gap:10px;
+      grid-template-columns:repeat(2,1fr); /* phones: 2 per row */
+      margin-top:8px;
     }
-    @media (max-width:980px){ .hero{grid-template-columns:1fr} }
+    @media (min-width:520px){ .logo-grid{grid-template-columns:repeat(3,1fr);} }
+    @media (min-width:820px){ .logo-grid{grid-template-columns:repeat(4,1fr);} }
 
-    .arcane-card{
-      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
-      border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow);
+    .logo-card{
+      display:flex; align-items:center; gap:10px;
+      background:#fff; border:1px solid #e8edf3; border-radius:12px; padding:10px 12px;
+      min-height:64px;
     }
-    .hero-card{ padding:28px; position:relative; overflow:clip; }
-    .hero-title{
-      font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2.2rem, 3.8vw, 4rem);
-      line-height:1.05; letter-spacing:.8px;
-      background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
+    .logo-frame{
+      width:112px; height:36px; flex:0 0 auto; display:grid; place-items:center;
     }
-    .hero-sub{
-      margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px;
-      text-shadow: 0 0 12px rgba(124,77,255,.25);
+    @media (min-width:820px){ .logo-frame{width:140px; height:44px;} }
+    .logo-frame img{
+      max-width:100%; max-height:100%; object-fit:contain; image-rendering:auto;
     }
+    .logo-name{font-weight:600; color:#1f2937; font-size:.95rem}
 
-    .sigils{
-      position:absolute; inset:-20% -10% auto auto; height:180%;
-      background:
-        radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%),
-        radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%),
-        conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0));
-      filter: blur(45px) saturate(140%);
-      pointer-events:none;
-      transform: translateZ(0);
+    /* Form */
+    .grid{display:grid; gap:10px; grid-template-columns:1fr 1fr}
+    label{font-weight:600; font-size:.95rem; display:block; margin:6px 0 6px}
+    input,select,textarea{
+      width:100%; padding:12px; border-radius:10px; border:1px solid #cbd5e1;
+      background:#fff; font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; /* 16px iOS zoom fix */
+      color:var(--ink); outline:none;
     }
-
-    .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;}
+    input:focus,select:focus,textarea:focus{border-color:var(--brand-2); box-shadow:0 0 0 3px var(--ring)}
     .btn{
-      display:inline-flex; align-items:center; gap:10px;
-      padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px;
-      text-decoration:none; color:white; background:
-        radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%),
-        linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
-      box-shadow: 0 8px 30px rgba(124,77,255,.35);
-      border: 1px solid rgba(124,77,255,.55);
+      border:none; background:var(--brand-2); color:#fff; padding:14px 16px;
+      border-radius:12px; font-weight:800; cursor:pointer; width:100%;
+      font-size:1rem; min-height:48px;
     }
-    .btn:hover{transform: translateY(-1px); box-shadow: 0 12px 40px rgba(124,77,255,.45);}
-    .btn-ghost{
-      color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-    .icon{width:18px; height:18px; display:inline-block;}
+    .btn:hover{filter:brightness(1.05)}
+    .actions{margin-top:10px}
 
-    .twitch-card{ padding:18px; display:flex; flex-direction:column; gap:12px; }
-    .twitch-frame{
-      aspect-ratio:16/9; width:100%; border:0; border-radius:12px; overflow:hidden;
-      box-shadow:var(--shadow);
-    }
-    .mini{
-      color:var(--muted); font-size:.92rem; line-height:1.4;
-    }
+    /* Footer */
+    footer{margin:28px 0; color:var(--muted); font-size:.92rem}
+    .footer-inner{max-width:1100px; margin:0 auto; padding:0 14px}
+    .fine{font-size:.85rem; color:#64748b}
 
-    /* Tabbed sections */
-    main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
-    .section{
-      display:none; margin-top:16px; padding:22px; border-radius:var(--radius);
-      background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6));
-      border: 1px solid rgba(124,77,255,.24);
-      box-shadow: var(--shadow);
-      animation: rise .35s ease-out;
+    /* Sticky mobile action bar */
+    .mobile-cta{
+      position:fixed; bottom:0; left:0; right:0; z-index:40;
+      background:#ffffff; border-top:1px solid #e5eaf1;
+      display:flex; gap:10px; padding:10px; align-items:center; justify-content:center;
     }
-    .section.show{ display:block; }
-    @keyframes rise{ from{ transform:translateY(6px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
-
-    .grid{
-      display:grid; gap:16px; grid-template-columns: repeat(12, 1fr);
+    .mobile-cta a{
+      flex:1 1 0; text-align:center; display:inline-block; text-decoration:none;
+      padding:12px 14px; border-radius:12px; font-weight:800; font-size:1rem; min-height:48px;
+      color:#fff; background:var(--brand-2);
     }
-    .col-12{ grid-column: span 12; }
-    .col-6{ grid-column: span 6; }
-    .col-4{ grid-column: span 4; }
-    @media (max-width:980px){ .col-6{grid-column:span 12} .col-4{grid-column: span 12} }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:14px; padding:16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
-    }
-    .h{
-      font-family:'Cinzel', serif; font-weight:800; letter-spacing:.6px;
-      margin:0 0 8px; color:#fff;
-      text-shadow: 0 0 16px rgba(124,77,255,.35);
-    }
-    .p{ margin:0; color:#d7dcff; }
-
-    footer{
-      max-width:1200px; margin:60px auto 40px; padding:0 20px; color:var(--muted); text-align:center;
-    }
-    .support{
-      display:inline-flex; align-items:center; gap:10px; margin-top:14px;
-      padding:12px 16px; border-radius:14px; text-decoration:none; font-weight:800; color:#101015; background:
-        linear-gradient(180deg, #00e0ff, #7c4dff);
-      box-shadow: 0 12px 40px rgba(0,224,255,.35), 0 8px 25px rgba(124,77,255,.35);
-      border:1px solid rgba(255,255,255,.24);
+    .mobile-cta a.secondary{background:#10b981}
+    @media (min-width:820px){
+      .mobile-cta{display:none} /* hide on tablets/desktop */
     }
 
-    /* Link resets */
-    a{ color: inherit }
+    /* Responsive header stacking */
+    @media (max-width:860px){
+      .header-inner{flex-direction:column; align-items:stretch; gap:8px; padding:10px 12px 6px}
+      .brand-logo{width:100%; height:72px}
+      .brand-meta{text-align:center}
+    }
+
+    /* Form grid collapses on phones */
+    @media (max-width:720px){ .grid{grid-template-columns:1fr} }
   </style>
-  <style>
-  /* === Tweaks: smaller header, right-pinned Twitch, more bg visible === */
-
-  /* Header smaller */
-  header .nav { padding: 8px 16px; }                /* was 14px 20px */
-  .sigil { width: 28px; height: 28px; border-radius: 10px; }  /* was 36px */
-  .logo-text { font-size: 1.1rem; }                 /* was 1.35rem */
-  header { backdrop-filter: blur(8px); }            /* slightly lighter */
-
-  /* Hero layout: main left, slim sidebar right */
-  .hero {
-    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
-    gap: 16px;                                      /* a bit tighter */
-    margin: 24px auto 20px;                         /* slightly less top margin */
-    padding: 0 16px;                                /* a touch tighter */
-  }
-
-  /* Twitch card as a right sidebar */
-  .twitch-aside {
-    max-width: 340px;          /* smaller box */
-    justify-self: end;         /* pin to right in the grid */
-    position: sticky;          /* “pinned” effect while scrolling */
-    top: 72px;                 /* sits under the shrunken header */
-  }
-  .twitch-aside .twitch-frame {
-    aspect-ratio: 16/9;        /* keeps proportions at the smaller width */
-  }
-
-  /* Keep mobile stacked & full width */
-  @media (max-width: 980px) {
-    .hero { grid-template-columns: 1fr; gap: 14px; }
-    .twitch-aside { position: static; max-width: none; justify-self: stretch; }
-  }
-</style>
-
 </head>
 <body>
-  <canvas id="starfield" aria-hidden="true"></canvas>
-  <div class="aurora" aria-hidden="true"></div>
-
-  <header>
-    <nav class="nav">
-      <a class="brand" href="#" data-tab="home" aria-label="Zindigon Home">
-        <span class="sigil"></span>
-        <span class="logo-text">Zindigon</span>
-      </a>
-      <div class="spacer"></div>
-      <div class="tabs" role="tablist" aria-label="Sections">
-        <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">Home</button>
-        <button class="tab-btn" data-tab="anime" role="tab">Anime</button>
-        <button class="tab-btn" data-tab="games" role="tab">Games</button>
-        <button class="tab-btn" data-tab="gaming" role="tab">Gaming</button>
-        <button class="tab-btn" data-tab="about" role="tab">About</button>
-        <button class="tab-btn" data-tab="contact" role="tab">Contact</button>
+  <!-- Header -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <div class="brand-logo" aria-label="Company Logo">
+        <!-- Replace with the DIRECT image URL from your Imgur album -->
+        <img src="YOUR_IMGUR_IMAGE_URL" alt="Andersons Appliance Pros Logo"
+             onerror="this.src='https://i.imgur.com/LAfmEdX.jpeg'">
       </div>
+      <div class="brand-meta">
+        <h1 class="brand-title">Andersons Appliance Pros</h1>
+        <p class="brand-sub">Repair &amp; installation of all major brand appliances • Dallas–Fort Worth metro</p>
+      </div>
+    </div>
+    <div class="ribbon" aria-hidden="true"></div>
+    <nav class="nav" aria-label="Primary">
+      <button class="active" data-target="home">Home</button>
+      <button data-target="schedule">Schedule</button>
+      <button data-target="contact">Contact</button>
+      <button data-target="about">About</button>
     </nav>
   </header>
 
-  <!-- HERO -->
-  <section id="home" class="hero section show" aria-labelledby="hero-title">
-    <div class="hero-card arcane-card">
-      <div class="sigils"></div>
-      <h1 id="hero-title" class="hero-title">Where Fun, Magic, and Creativity Live.</h1>
-      <div class="hero-sub">From imagination to expectation</div>
-
-      <div class="actions" style="margin-top:18px">
-        <!-- YouTube -->
-        <a class="btn" href="https://youtube.com/@zindigon?si=N-CuSjB1Cqsr8p0C" target="_blank" rel="noopener">
-          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8ZM9.6 15.5V8.5L15.9 12l-6.3 3.5Z"/>
-          </svg>
-          YouTube
-        </a>
-
-        <!-- TikTok -->
-        <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96?_t=ZP-90xFluWfH0Z&_r=1" target="_blank" rel="noopener">
-          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M16.7 3.1c.7 1.3 2 2.3 3.5 2.6l1.1.2v3a8 8 0 0 1-4.6-1.5v7.1a6.5 6.5 0 1 1-6.6-6.5c.4 0 .7 0 1 .1v3.4a3 3 0 0 0-1-.2 3.1 3.1 0 1 0 3.1 3.1V2h3.5Z"/>
-          </svg>
-          TikTok
-        </a>
-
-        <!-- Support -->
-        <a class="btn" href="#support" data-tab="contact">
-          ✨ Support Us
-        </a>
-      </div>
-
-      <p class="mini" style="margin-top:10px">
-        Explore original anime projects, game worlds, and live streams—crafted by Zindigon.
-      </p>
-    </div>
-
-    <div class="twitch-card arcane-card twitch-aside">
-      <h3 class="h">Twitch — Live Now (if online)</h3>
-      <!-- Note: Twitch uses twitch.tv (not twitch.com). Update your channel if needed. -->
-      <!-- Replace 'zindigon' if your exact channel name differs. -->
-      <iframe
-        class="twitch-frame"
-        title="Twitch"
-        src="https://player.twitch.tv/?channel=zindigon&parent=zindigon.com&muted=true"
-        allowfullscreen>
-      </iframe>
-      <div class="actions">
-        <a class="btn btn-ghost" href="https://www.twitch.tv/zindigon" target="_blank" rel="noopener">Open on Twitch</a>
-      </div>
-      <p class="mini">If the player is blank, the channel may be offline. Follow to catch the next stream!</p>
-    </div>
-  </section>
-
-  <main>
-    <!-- ANIME -->
-    <section id="anime" class="section" aria-labelledby="anime-title">
-      <h2 id="anime-title" class="h" style="font-size:1.6rem">Anime</h2>
-      <div class="grid">
-        <div class="col-12 card">
-          <h3 class="h" style="font-size:1.2rem">Bloodline Zero</h3>
-          <p class="p">
-            A grounded, adult-leaning saga where the hidden world of might-enabled users collides
-            with a relentless organization. Expect arcane relics, seismic power tiers, and a universe
-            where destiny is forged in paradox.
-          </p>
+  <main class="wrap">
+    <!-- HOME -->
+    <section id="home" class="page active" aria-labelledby="home-hd">
+      <div class="panel">
+        <h1 id="home-hd">Welcome</h1>
+        <p class="lead">Fast, honest, and local appliance service—done right the first time.</p>
+        <div class="highlight" role="note" aria-label="Discount">
+          <span class="badge">10% OFF</span>
+          First responders, military, senior citizens, and repeat customers. Thank you for your service &amp; loyalty.
         </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Lore & World</h4>
-          <p class="p">Timelines, factions, and living myths—refined to avoid plot holes and reward rewatchers.</p>
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Visual & Voice</h4>
-          <p class="p">Cinematic teasers, character sheets, and behind-the-mic sessions as the world takes shape.</p>
-        </div>
-      </div>
-    </section>
+        <p style="margin-top:8px">
+          We service: ovens, cooktops, microwaves, vent hoods, refrigerators, freezers, ice makers, dishwashers, disposals,
+          trash compactors, washers, dryers, and wine coolers.
+        </p>
 
-    <!-- GAMES -->
-    <section id="games" class="section" aria-labelledby="games-title">
-      <h2 id="games-title" class="h" style="font-size:1.6rem">Games</h2>
-      <div class="grid">
-        <div class="col-12 card">
-          <h3 class="h" style="font-size:1.2rem">The Adventures of the Troll King</h3>
-          <p class="p">
-            A strategic journey across a color-coded hex world—grind smart routes, face world bosses,
-            and chase seasonal leaderboards. Fair, skill-first, and endlessly replayable.
-          </p>
+        <h2 style="margin:16px 0 8px; font-size:1.1rem">Brands We Service</h2>
+        <!-- Uniform logos via .logo-frame -->
+        <div class="logo-grid" role="list">
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/Kenmore_logo.svg" alt="Kenmore logo">
+            </div><div class="logo-name">Kenmore</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/10/Whirlpool_Corporation_Logo.png" alt="Whirlpool logo">
+            </div><div class="logo-name">Whirlpool</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/Maytag_logo.svg" alt="Maytag logo">
+            </div><div class="logo-name">Maytag</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/c/c6/Kitchenaid_logo.svg" alt="KitchenAid logo">
+            </div><div class="logo-name">KitchenAid</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/0/0c/JennAir_Logo.svg" alt="JennAir logo">
+            </div><div class="logo-name">JennAir</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/66/Frigidaire.svg" alt="Frigidaire logo">
+            </div><div class="logo-name">Frigidaire</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/General_Electric_logo.svg" alt="GE logo">
+            </div><div class="logo-name">GE</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg" alt="Samsung logo">
+            </div><div class="logo-name">Samsung</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/LG_logo_%282015%29.svg" alt="LG logo">
+            </div><div class="logo-name">LG</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Speed_Queen_logo.png" alt="Speed Queen logo">
+            </div><div class="logo-name">Speed Queen</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Viking_Range_logo.svg" alt="Viking logo">
+            </div><div class="logo-name">Viking</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Wolf_Logo.svg" alt="Wolf logo">
+            </div><div class="logo-name">Wolf</div>
+          </div>
+          <div class="logo-card" role="listitem">
+            <div class="logo-frame">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/17/Scotsman-logo.png" alt="Scotsman logo">
+            </div><div class="logo-name">Scotsman</div>
+          </div>
         </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Design Notes</h4>
-          <p class="p">Seasonal vs. core world balance, ethical monetization, and guild-based cooperation.</p>
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Progress</h4>
-          <p class="p">Godot builds, combat prototypes, and map shaders—documented as features land.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- GAMING -->
-    <section id="gaming" class="section" aria-labelledby="gaming-title">
-      <h2 id="gaming-title" class="h" style="font-size:1.6rem">Gaming Profiles</h2>
-      <div class="grid">
-        <div class="col-4 card">
-          <h4 class="h" style="font-size:1.1rem">Gamertags</h4>
-          <p class="p">
-            Zindigon (primary). Reach out on Discord/Twitch for collabs, raids, and ranked queues.
-          </p>
-        </div>
-        <div class="col-4 card">
-          <h4 class="h" style="font-size:1.1rem">Platforms</h4>
-          <p class="p">PC / Xbox / PlayStation — links coming online as we standardize handles.</p>
-        </div>
-        <div class="col-4 card">
-          <h4 class="h" style="font-size:1.1rem">Highlights</h4>
-          <p class="p">Curated clips from streams and scrims—top plays and spicy fails alike.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="about" class="section" aria-labelledby="about-title">
-      <h2 id="about-title" class="h" style="font-size:1.6rem">About Us</h2>
-      <div class="card">
-        <p class="p">
-          Zindigon is a creative banner spanning anime, game development, and live content.
-          We build worlds for explorers and tell stories for believers—where rules bend,
-          and imagination sets the expectation.
+        <p style="margin-top:8px; font-size:.9rem; color:#6b7280">
+          All trademarks and brand names are the property of their respective owners and are used for identification only.
         </p>
       </div>
     </section>
 
-    <!-- CONTACT -->
-    <section id="contact" class="section" aria-labelledby="contact-title">
-      <h2 id="contact-title" class="h" style="font-size:1.6rem">Contact</h2>
-      <div class="grid">
-        <div class="col-6 card" id="support">
-          <h3 class="h" style="font-size:1.2rem">Support the Journey</h3>
-          <p class="p">Fuel the magic. Every contribution goes back into art, music, servers, and tools.</p>
-          <!-- Replace href with your donation URL (Stripe, PayPal, BuyMeACoffee, etc.) -->
-          <p style="margin-top:10px">
-            <a class="support" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
-          </p>
-        </div>
-        <div class="col-6 card">
-          <h3 class="h" style="font-size:1.2rem">Reach Out</h3>
-          <p class="p">Business & collabs: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a></p>
-          <p class="p">Press & licensing: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a></p>
-          <p class="p">General: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a></p>
-        </div>
+    <!-- SCHEDULE -->
+    <section id="schedule" class="page" aria-labelledby="sched-hd">
+      <div class="panel">
+        <h1 id="sched-hd">Schedule</h1>
+        <p class="lead">Tell us a few details and we’ll reach out to confirm your time.</p>
+        <form id="apptForm" onsubmit="event.preventDefault(); alert('Thanks! We received your request.');" novalidate>
+          <div class="grid">
+            <div>
+              <label for="name">Full Name</label>
+              <input id="name" name="name" type="text" placeholder="Jane Doe" autocomplete="name" required>
+            </div>
+            <div>
+              <label for="phone">Phone Number</label>
+              <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="(817) 856-9211" autocomplete="tel" required>
+            </div>
+            <div>
+              <label for="address">Street Address</label>
+              <input id="address" name="address" type="text" placeholder="123 Main St" autocomplete="address-line1" required>
+            </div>
+            <div>
+              <label for="city">City</label>
+              <input id="city" name="city" type="text" placeholder="Your City" autocomplete="address-level2" required>
+            </div>
+            <div>
+              <label for="state">State</label>
+              <input id="state" name="state" type="text" placeholder="TX" maxlength="2" autocapitalize="characters" required>
+            </div>
+            <div>
+              <label for="zip">ZIP Code</label>
+              <input id="zip" name="zip" type="text" inputmode="numeric" pattern="[0-9]{5}" placeholder="75001" autocomplete="postal-code" required>
+            </div>
+            <div>
+              <label for="appliance">Appliance Type</label>
+              <select id="appliance" name="appliance" required>
+                <option value="">-- Select an appliance --</option>
+                <option>Refrigerator</option>
+                <option>Freezer / Ice Maker</option>
+                <option>Washer</option>
+                <option>Dryer</option>
+                <option>Dishwasher</option>
+                <option>Oven / Range / Stove</option>
+                <option>Microwave</option>
+                <option>Garbage Disposal</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="issue">Brief Description of Issue (optional)</label>
+              <textarea id="issue" name="issue" rows="2" placeholder="e.g., not cooling, makes noise, error code E21"></textarea>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn" type="submit">Submit Request</button>
+          </div>
+        </form>
       </div>
     </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="page" aria-labelledby="contact-hd">
+      <div class="panel">
+        <h1 id="contact-hd">Contact</h1>
+        <p class="lead">We’re here to help.</p>
+        <p>
+          <strong>Trenton Anderson — Lead Technician/Owner</strong><br>
+          Phone: <a href="tel:+18178569211">(817) 856-9211</a><br>
+          Email: <a href="mailto:andersonsappliancepros@gmail.com">andersonsappliancepros@gmail.com</a><br>
+          Hours: Mon–Fri 8:00am–5:00pm
+        </p>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="page" aria-labelledby="about-hd">
+      <div class="panel">
+        <h1 id="about-hd">About</h1>
+        <p class="lead">Transparent pricing. Quality repairs. Proudly serving the DFW metroplex.</p>
+        <p>
+          Andersons Appliance Pros is locally owned and operated by Trenton Anderson. We handle repair and installation
+          on all major appliances and most brands listed above. Not sure if we service your model? Just reach out.
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-inner">
+        <div><strong>Andersons Appliance Pros LLC</strong></div>
+        <div class="fine" style="margin-top:6px">
+          Disclaimer: Service availability may vary by location. Diagnostic fees, parts, and labor are quoted before work begins.
+          All trademarks and brand names are the property of their respective owners and are used for identification only. Nothing herein implies endorsement or affiliation.
+        </div>
+      </div>
+    </footer>
   </main>
 
-  <footer>
-    <div>© <span id="year"></span> Zindigon — All worlds reserved.</div>
-  </footer>
+  <!-- Sticky mobile CTA -->
+  <div class="mobile-cta" role="navigation" aria-label="Quick actions">
+    <a href="tel:+18178569211">Call Now</a>
+    <a class="secondary" href="#schedule" onclick="showPage('schedule')">Schedule</a>
+  </div>
 
   <script>
-    // ====== Starfield (no libs)
-    (function(){
-      const c = document.getElementById('starfield');
-      const ctx = c.getContext('2d');
-      let w=0,h=0, stars=[];
-      function resize(){
-        w = c.width = innerWidth * devicePixelRatio;
-        h = c.height = innerHeight * devicePixelRatio;
-        ctx.scale(1,1);
-        stars = new Array(180).fill(0).map(()=>({
-          x: Math.random()*w, y: Math.random()*h,
-          r: Math.random()*1.3 + .2,
-          s: Math.random()*0.6 + 0.2,
-          hue: 200 + Math.random()*80
-        }));
-      }
-      addEventListener('resize', resize, {passive:true});
-      resize();
-      let t=0;
-      (function loop(){
-        t+=0.01;
-        ctx.clearRect(0,0,w,h);
-        for(const st of stars){
-          st.y += st.s; if(st.y>h) st.y = -10;
-          ctx.beginPath();
-          const glow = 0.45 + 0.45*Math.sin(t+st.x*0.001);
-          ctx.fillStyle = `hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
-          ctx.shadowBlur = 12 + glow*18;
-          ctx.shadowColor = ctx.fillStyle;
-          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-          ctx.fill();
-        }
-        requestAnimationFrame(loop);
-      })();
-    })();
-
-    // ====== Tabs (no reload)
-    const sections = document.querySelectorAll('.section');
-    const tabBtns = document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
-    function showTab(id){
-      sections.forEach(s => s.classList.toggle('show', s.id === id));
-      document.querySelectorAll('.tab-btn').forEach(b=>{
-        b.classList.toggle('active', b.dataset.tab === id);
-        b.setAttribute('aria-selected', b.classList.contains('active') ? 'true':'false');
-      });
-      // Scroll to top of section when switching
-      const el = document.getElementById(id);
-      if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
+    // Simple single-page navigation
+    const buttons = document.querySelectorAll(".nav button");
+    const pages = document.querySelectorAll(".page");
+    function showPage(id){
+      pages.forEach(p=>p.classList.toggle("active", p.id===id));
+      buttons.forEach(b=>b.classList.toggle("active", b.dataset.target===id));
+      if(location.hash !== '#'+id) history.replaceState(null,'','#'+id);
+      // scroll to top of main content after switching (mobile UX)
+      document.querySelector('.wrap')?.scrollIntoView({behavior:'smooth', block:'start'});
     }
-    tabBtns.forEach(btn=>{
-      btn.addEventListener('click', (e)=>{
-        const id = btn.dataset.tab || 'home';
-        if(id){ e.preventDefault(); showTab(id); }
-      });
+    buttons.forEach(btn=>btn.addEventListener("click", ()=>showPage(btn.dataset.target)));
+    const initial = (location.hash||'#home').replace('#','');
+    if(document.getElementById(initial)) showPage(initial);
+
+    // Make mobile CTA "Schedule" work even if tapped from another section
+    document.querySelectorAll('.mobile-cta a[href="#schedule"]').forEach(a=>{
+      a.addEventListener('click', e=>{ e.preventDefault(); showPage('schedule'); });
     });
-
-    // If user clicks “Support Us” on hero, jump to Contact tab
-    document.querySelectorAll('a.btn[data-tab="contact"]').forEach(a=>{
-      a.addEventListener('click', (e)=>{ e.preventDefault(); showTab('contact'); });
-    });
-
-    // Year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // FYI: Twitch embedding requires the correct parent domain. If testing locally,
-    // replace parent=zindigon.com with parent=localhost or your dev host.
   </script>
 </body>
 </html>
