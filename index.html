@@ -6,31 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Zindigon — where fun, magic, and creativity live. Anime, games, streams, and more." />
 
-  <!-- Fonts (elegant + sharp) -->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --bg: #07070d;
-      --bg2:#0b0b16;
-      --ink:#e6e6ff;
-      --muted:#aab0ff;
-      --accent:#7c4dff;       /* violet arcane */
-      --accent-2:#00e0ff;     /* cyan sparks */
-      --accent-3:#ff3bf5;     /* pink flare */
-      --card:#0f0f1d;
-      --ring: rgba(124,77,255,.35);
-      --radius: 16px;
-      --shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
+      --bg:#07070d; --bg2:#0b0b16; --ink:#e6e6ff; --muted:#aab0ff;
+      --accent:#7c4dff; --accent-2:#00e0ff; --accent-3:#ff3bf5;
+      --card:#0f0f1d; --ring:rgba(124,77,255,.35); --radius:16px;
+      --shadow:0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0; padding:0;
+      background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed;
+      color:var(--ink);
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
     }
 
-    *{box-sizing:border-box}
-    html,body{margin:0; padding:0; background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed; color:var(--ink); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif; }
-
-    /* Subtle starfield canvas sits behind everything */
+    /* Background layers */
     #starfield{position:fixed; inset:0; z-index:-2;}
-
-    /* Arcane fog gradient */
     .aurora{
       position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
       background:
@@ -40,39 +35,30 @@
       filter: blur(30px) saturate(120%);
     }
 
+    /* Header */
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(10px);
       background: linear-gradient(180deg, rgba(10,10,22,.65), rgba(10,10,22,.25));
       border-bottom: 1px solid rgba(124,77,255,.25);
     }
-    .nav{
-      max-width:1200px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:14px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:12px; text-decoration:none;
-    }
+    .nav{max-width:1200px; margin:0 auto; padding:8px 16px; display:flex; align-items:center; gap:14px;}
+    .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
     .sigil{
-      width:36px; height:36px; border-radius:12px;
+      width:28px; height:28px; border-radius:10px;
       background:
         radial-gradient(60% 60% at 30% 30%, var(--accent-2), transparent 70%),
         radial-gradient(60% 60% at 70% 70%, var(--accent-3), transparent 70%),
         radial-gradient(100% 100% at 50% 50%, rgba(124,77,255,.75), rgba(124,77,255,.25));
       box-shadow: 0 0 25px rgba(124,77,255,.55), inset 0 0 20px rgba(0,224,255,.35);
     }
-    .logo-text{
-      font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800;
-      font-size:1.35rem; line-height:1; color:white; text-shadow:
-        0 0 10px rgba(124,77,255,.45),
-        0 0 25px rgba(0,224,255,.25);
-    }
+    .logo-text{font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1; color:white; text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);}
     .spacer{flex:1}
     .tabs{display:flex; gap:10px; flex-wrap:wrap}
     .tab-btn{
       appearance:none; border:none; cursor:pointer;
       color:var(--muted); background:transparent;
-      padding:10px 14px; border-radius:12px; font-weight:600;
-      outline: none; position:relative;
+      padding:10px 14px; border-radius:12px; font-weight:600; outline:none;
     }
     .tab-btn:hover{color:var(--ink)}
     .tab-btn.active{
@@ -80,175 +66,91 @@
       box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
     }
 
+    /* HERO layout: left = 4 parts, right = 1 part; with vertical padding */
     .hero{
-      max-width:1200px; margin:40px auto 24px; padding:0 20px; display:grid; grid-template-columns:1.5fr 1fr; gap:24px;
+      max-width:1200px; margin:24px auto 20px; padding:24px 16px;
+      display:grid; grid-template-columns:minmax(0, 4fr) minmax(260px, 1fr); gap:20px;
     }
-    @media (max-width:980px){ .hero{grid-template-columns:1fr} }
+    @media (max-width:980px){
+      .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;}
+    }
 
     .arcane-card{
       background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
       border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow);
     }
-    .hero-card {
-      padding: 22px;
-      margin-bottom: 20px;
-      position: relative;
-      overflow: clip;
-    }
+    .hero-card{ padding:22px; margin-bottom:20px; position:relative; overflow:clip; }
     .hero-title{
       font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2.2rem, 3.8vw, 4rem);
       line-height:1.05; letter-spacing:.8px;
       background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
+      -webkit-background-clip:text; background-clip:text; color:transparent;
       text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
     }
-    .hero-sub{
-      margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px;
-      text-shadow: 0 0 12px rgba(124,77,255,.25);
-    }
-
+    .hero-sub{ margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px; text-shadow:0 0 12px rgba(124,77,255,.25); }
     .sigils{
       position:absolute; inset:-20% -10% auto auto; height:180%;
       background:
         radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%),
         radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%),
         conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0));
-      filter: blur(45px) saturate(140%);
-      pointer-events:none;
-      transform: translateZ(0);
+      filter: blur(45px) saturate(140%); pointer-events:none; transform: translateZ(0);
     }
 
     .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;}
     .btn{
       display:inline-flex; align-items:center; gap:10px;
       padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px;
-      text-decoration:none; color:white; background:
-        radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%),
-        linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
-      box-shadow: 0 8px 30px rgba(124,77,255,.35);
-      border: 1px solid rgba(124,77,255,.55);
+      text-decoration:none; color:white;
+      background: radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%), linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
+      box-shadow: 0 8px 30px rgba(124,77,255,.35); border:1px solid rgba(124,77,255,.55);
     }
-    .btn:hover{transform: translateY(-1px); box-shadow: 0 12px 40px rgba(124,77,255,.45);}
+    .btn:hover{transform:translateY(-1px); box-shadow:0 12px 40px rgba(124,77,255,.45);}
     .btn-ghost{
       color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
     }
     .icon{width:18px; height:18px; display:inline-block;}
+    .mini{ color:var(--muted); font-size:.92rem; line-height:1.4; }
 
-    /* NEW YouTube card styles */
-    .youtube-card{
-      margin-top:12px;
-      padding:16px;
-      border-radius:var(--radius);
-      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
-      border:1px solid rgba(124,77,255,.25);
-      box-shadow:var(--shadow);
-    }
-    .youtube-frame{
-      width:100%;
-      aspect-ratio:16/9;
-      border:0;
-      border-radius:12px;
-      box-shadow:var(--shadow);
-    }
+    /* YouTube card (left column) */
+    .youtube-card{ margin-top:12px; padding:16px; border-radius:var(--radius); border:1px solid rgba(124,77,255,.25); box-shadow:var(--shadow); }
+    .youtube-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
 
-    .twitch-card {
-      padding: 16px;
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .twitch-frame{
-      aspect-ratio:16/9; width:100%; border:0; border-radius:12px; overflow:hidden;
-      box-shadow:var(--shadow);
-    }
-    .mini{
-      color:var(--muted); font-size:.92rem; line-height:1.4;
-    }
+    /* RIGHT column: stack a small info card and Twitch */
+    .sidebar{ display:grid; gap:12px; align-content:start; position:sticky; top:72px; }
+    .sidebar-top{ padding:14px; }
 
-    /* Tabbed sections */
+    .twitch-card{ padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .twitch-frame{ aspect-ratio:16/9; width:100%; border:0; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+
+    /* Sections below */
     main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
-    .section{
-      display:none; margin-top:16px; padding:22px; border-radius:var(--radius);
+    .section{ display:none; margin-top:16px; padding:22px; border-radius:var(--radius);
       background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6));
-      border: 1px solid rgba(124,77,255,.24);
-      box-shadow: var(--shadow);
-      animation: rise .35s ease-out;
-    }
+      border: 1px solid rgba(124,77,255,.24); box-shadow: var(--shadow); animation: rise .35s ease-out; }
     .section.show{ display:block; }
     @keyframes rise{ from{ transform:translateY(6px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
 
-    .grid{
-      display:grid; gap:16px; grid-template-columns: repeat(12, 1fr);
-    }
-    .col-12{ grid-column: span 12; }
-    .col-6{ grid-column: span 6; }
-    .col-4{ grid-column: span 4; }
+    .grid{ display:grid; gap:16px; grid-template-columns: repeat(12, 1fr); }
+    .col-12{ grid-column: span 12; } .col-6{ grid-column: span 6; } .col-4{ grid-column: span 4; }
     @media (max-width:980px){ .col-6{grid-column:span 12} .col-4{grid-column: span 12} }
 
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:14px; padding:16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
-    }
-    .h{
-      font-family:'Cinzel', serif; font-weight:800; letter-spacing:.6px;
-      margin:0 0 8px; color:#fff;
-      text-shadow: 0 0 16px rgba(124,77,255,.35);
-    }
+    .card{ background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
+    .h{ font-family:'Cinzel', serif; font-weight:800; letter-spacing:.6px; margin:0 0 8px; color:#fff; text-shadow: 0 0 16px rgba(124,77,255,.35); }
     .p{ margin:0; color:#d7dcff; }
 
-    footer{
-      max-width:1200px; margin:60px auto 40px; padding:0 20px; color:var(--muted); text-align:center;
-    }
+    footer{ max-width:1200px; margin:60px auto 40px; padding:0 20px; color:var(--muted); text-align:center; }
     .support{
       display:inline-flex; align-items:center; gap:10px; margin-top:14px;
-      padding:12px 16px; border-radius:14px; text-decoration:none; font-weight:800; color:#101015; background:
-        linear-gradient(180deg, #00e0ff, #7c4dff);
+      padding:12px 16px; border-radius:14px; text-decoration:none; font-weight:800; color:#101015;
+      background: linear-gradient(180deg, #00e0ff, #7c4dff);
       box-shadow: 0 12px 40px rgba(0,224,255,.35), 0 8px 25px rgba(124,77,255,.35);
       border:1px solid rgba(255,255,255,.24);
     }
 
-    /* Link resets */
-    a{ color: inherit }
+    a{ color:inherit }
   </style>
-  <style>
-  /* === Tweaks: smaller header, right-pinned Twitch, more bg visible === */
-
-  /* Header smaller */
-  header .nav { padding: 8px 16px; }
-  .sigil { width: 28px; height: 28px; border-radius: 10px; }
-  .logo-text { font-size: 1.1rem; }
-  header { backdrop-filter: blur(8px); }
-
-  /* Hero layout: main left, slim sidebar right */
-  .hero {
-    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
-    gap: 16px;
-    margin: 24px auto 20px;
-    padding: 0 16px;
-  }
-
-  /* Twitch card as a right sidebar */
-  .twitch-aside {
-    max-width: 340px;
-    justify-self: end;
-    position: sticky;
-    top: 72px;
-  }
-  .twitch-aside .twitch-frame {
-    aspect-ratio: 16/9;
-  }
-
-  /* Keep mobile stacked & full width */
-  @media (max-width: 980px) {
-    .hero { grid-template-columns: 1fr; gap: 14px; }
-    .twitch-aside { position: static; max-width: none; justify-self: stretch; }
-  }
-</style>
-
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -257,8 +159,7 @@
   <header>
     <nav class="nav">
       <a class="brand" href="#" data-tab="home" aria-label="Zindigon Home">
-        <span class="sigil"></span>
-        <span class="logo-text">Zindigon</span>
+        <span class="sigil"></span><span class="logo-text">Zindigon</span>
       </a>
       <div class="spacer"></div>
       <div class="tabs" role="tablist" aria-label="Sections">
@@ -274,64 +175,61 @@
 
   <!-- HERO -->
   <section id="home" class="hero section show" aria-labelledby="hero-title">
-    <div class="hero-card arcane-card">
-      <div class="sigils"></div>
-      <h1 id="hero-title" class="hero-title">Where Fun, Magic, and Creativity Live.</h1>
-      <div class="hero-sub">From imagination to expectation</div>
+    <!-- LEFT column (4x width): hero + youtube -->
+    <div>
+      <div class="hero-card arcane-card">
+        <div class="sigils"></div>
+        <h1 id="hero-title" class="hero-title">Where Fun, Magic, and Creativity Live.</h1>
+        <div class="hero-sub">From imagination to expectation</div>
 
-      <div class="actions" style="margin-top:18px">
-        <!-- YouTube -->
-        <a class="btn" href="https://youtube.com/@zindigon?si=N-CuSjB1Cqsr8p0C" target="_blank" rel="noopener">
-          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8ZM9.6 15.5V8.5L15.9 12l-6.3 3.5Z"/>
-          </svg>
-          YouTube
-        </a>
+        <div class="actions" style="margin-top:18px">
+          <a class="btn" href="https://youtube.com/@zindigon?si=N-CuSjB1Cqsr8p0C" target="_blank" rel="noopener">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8ZM9.6 15.5V8.5L15.9 12l-6.3 3.5Z"/></svg>
+            YouTube
+          </a>
+          <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96?_t=ZP-90xFluWfH0Z&_r=1" target="_blank" rel="noopener">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 3.1c.7 1.3 2 2.3 3.5 2.6l1.1.2v3a8 8 0 0 1-4.6-1.5v7.1a6.5 6.5 0 1 1-6.6-6.5c.4 0 .7 0 1 .1v3.4a3 3 0 0 0-1-.2 3.1 3.1 0 1 0 3.1 3.1V2h3.5Z"/></svg>
+            TikTok
+          </a>
+          <a class="btn" href="#support" data-tab="contact">✨ Support Us</a>
+        </div>
 
-        <!-- TikTok -->
-        <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96?_t=ZP-90xFluWfH0Z&_r=1" target="_blank" rel="noopener">
-          <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M16.7 3.1c.7 1.3 2 2.3 3.5 2.6l1.1.2v3a8 8 0 0 1-4.6-1.5v7.1a6.5 6.5 0 1 1-6.6-6.5c.4 0 .7 0 1 .1v3.4a3 3 0 0 0-1-.2 3.1 3.1 0 1 0 3.1 3.1V2h3.5Z"/>
-          </svg>
-          TikTok
-        </a>
-
-        <!-- Support -->
-        <a class="btn" href="#support" data-tab="contact">
-          ✨ Support Us
-        </a>
+        <p class="mini" style="margin-top:10px">
+          Explore original anime projects, game worlds, and live streams—crafted by Zindigon.
+        </p>
       </div>
 
-      <p class="mini" style="margin-top:10px">
-        Explore original anime projects, game worlds, and live streams—crafted by Zindigon.
-      </p>
-    </div>
-
-    <!-- NEW: YouTube card on the left -->
-    <div class="youtube-card arcane-card">
-      <h3 class="h">Featured Video</h3>
-      <iframe
-        class="youtube-frame"
-        title="Zindigon YouTube Video"
-        src="https://www.youtube.com/embed/qTNXxz_y9-w?si=Xb8x613LgAFs9zHI"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen>
-      </iframe>
-    </div>
-
-    <div class="twitch-card arcane-card twitch-aside">
-      <h3 class="h">Zindigon on Twitch</h3>
-      <iframe
-        class="twitch-frame"
-        title="Twitch"
-        src="https://player.twitch.tv/?channel=zindigon&parent=localhost&parent=zindigon.com&muted=true"
-        allowfullscreen>
-      </iframe>
-      <div class="actions">
-        <a class="btn btn-ghost" href="https://www.twitch.tv/zindigon" target="_blank" rel="noopener">Open on Twitch</a>
+      <div class="youtube-card arcane-card">
+        <h3 class="h">Featured Video</h3>
+        <iframe
+          class="youtube-frame"
+          title="Zindigon YouTube Video"
+          src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen></iframe>
       </div>
-      <p class="mini">Follow to catch the next stream!</p>
+    </div>
+
+    <!-- RIGHT column (1x width): info/donate + twitch -->
+    <div class="sidebar">
+      <div class="sidebar-top arcane-card">
+        <h3 class="h" style="font-size:1.05rem; margin-bottom:6px;">Stay in the loop</h3>
+        <p class="mini" style="margin:0 0 10px;">Streams, dev logs, and drops. Thanks for being here!</p>
+        <a class="btn btn-ghost" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
+      </div>
+
+      <div class="twitch-card arcane-card">
+        <h3 class="h">Zindigon on Twitch</h3>
+        <iframe
+          class="twitch-frame"
+          title="Twitch"
+          src="https://player.twitch.tv/?channel=zindigon&parent=localhost&parent=zindigon.com&muted=true"
+          allowfullscreen></iframe>
+        <div class="actions">
+          <a class="btn btn-ghost" href="https://www.twitch.tv/zindigon" target="_blank" rel="noopener">Open on Twitch</a>
+        </div>
+        <p class="mini">Follow to catch the next stream!</p>
+      </div>
     </div>
   </section>
 
@@ -342,11 +240,7 @@
       <div class="grid">
         <div class="col-12 card">
           <h3 class="h" style="font-size:1.2rem">Bloodline Zero</h3>
-          <p class="p">
-            A grounded, adult-leaning saga where the hidden world of might-enabled users collides
-            with a relentless organization. Expect arcane relics, seismic power tiers, and a universe
-            where destiny is forged in paradox.
-          </p>
+          <p class="p">A grounded, adult-leaning saga where the hidden world of might-enabled users collides with a relentless organization. Expect arcane relics, seismic power tiers, and a universe where destiny is forged in paradox.</p>
         </div>
         <div class="col-6 card">
           <h4 class="h" style="font-size:1.1rem">Lore & World</h4>
@@ -365,10 +259,7 @@
       <div class="grid">
         <div class="col-12 card">
           <h3 class="h" style="font-size:1.2rem">The Adventures of the Troll King</h3>
-          <p class="p">
-            A strategic journey across a color-coded hex world—grind smart routes, face world bosses,
-            and chase seasonal leaderboards. Fair, skill-first, and endlessly replayable.
-          </p>
+          <p class="p">A strategic journey across a color-coded hex world—grind smart routes, face world bosses, and chase seasonal leaderboards. Fair, skill-first, and endlessly replayable.</p>
         </div>
         <div class="col-6 card">
           <h4 class="h" style="font-size:1.1rem">Design Notes</h4>
@@ -381,36 +272,11 @@
       </div>
     </section>
 
-    <!-- GAMING -->
-    <section id="gaming" class="section" aria-labelledby="gaming-title">
-      <h2 id="gaming-title" class="h" style="font-size:1.6rem">Gaming Profiles</h2>
-      <div class="grid">
-        <div class="col-4 card">
-          <h4 class="h" style="font-size:1.1rem">Gamertags</h4>
-          <p class="p">
-            Zindigon (primary). Reach out on Discord/Twitch for collabs, raids, and ranked queues.
-          </p>
-        </div>
-        <div class="col-4 card">
-          <h4 class="h" style="font-size:1.1rem">Platforms</h4>
-          <p class="p">PC / Xbox / PlayStation — links coming online as we standardize handles.</p>
-        </div>
-        <div class="col-4 card">
-          <h4 class="h" style="font-size:1.1rem">Highlights</h4>
-          <p class="p">Curated clips from streams and scrims—top plays and spicy fails alike.</p>
-        </div>
-      </div>
-    </section>
-
     <!-- ABOUT -->
     <section id="about" class="section" aria-labelledby="about-title">
       <h2 id="about-title" class="h" style="font-size:1.6rem">About Us</h2>
       <div class="card">
-        <p class="p">
-          Zindigon Enterprises is a creative company from anime, game development, and live content.
-          We build worlds for explorers and tell stories for believers—where rules bend,
-          and imagination sets the expectation.
-        </p>
+        <p class="p">Zindigon Enterprises is a creative company from anime, game development, and live content. We build worlds for explorers and tell stories for believers—where rules bend, and imagination sets the expectation.</p>
       </div>
     </section>
 
@@ -421,9 +287,7 @@
         <div class="col-6 card" id="support">
           <h3 class="h" style="font-size:1.2rem">Support the Journey</h3>
           <p class="p">Fuel the magic. Every contribution goes back into art, music, servers, and tools.</p>
-          <p style="margin-top:10px">
-            <a class="support" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
-          </p>
+          <p style="margin-top:10px"><a class="support" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a></p>
         </div>
         <div class="col-6 card">
           <h3 class="h" style="font-size:1.2rem">Reach Out</h3>
@@ -440,72 +304,55 @@
   </footer>
 
   <script>
-    // ====== Starfield (no libs)
+    // Starfield
     (function(){
-      const c = document.getElementById('starfield');
-      const ctx = c.getContext('2d');
-      let w=0,h=0, stars=[];
+      const c=document.getElementById('starfield'); const ctx=c.getContext('2d');
+      let w=0,h=0,stars=[];
       function resize(){
-        w = c.width = innerWidth * devicePixelRatio;
-        h = c.height = innerHeight * devicePixelRatio;
+        w=c.width=innerWidth*devicePixelRatio; h=c.height=innerHeight*devicePixelRatio;
         ctx.scale(1,1);
-        stars = new Array(180).fill(0).map(()=>({
-          x: Math.random()*w, y: Math.random()*h,
-          r: Math.random()*1.3 + .2,
-          s: Math.random()*0.6 + 0.2,
-          hue: 200 + Math.random()*80
-        }));
+        stars=new Array(180).fill(0).map(()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.3+.2,s:Math.random()*0.6+0.2,hue:200+Math.random()*80}));
       }
-      addEventListener('resize', resize, {passive:true});
-      resize();
-      let t=0;
-      (function loop(){
-        t+=0.01;
-        ctx.clearRect(0,0,w,h);
+      addEventListener('resize', resize, {passive:true}); resize();
+      let t=0; (function loop(){
+        t+=0.01; ctx.clearRect(0,0,w,h);
         for(const st of stars){
-          st.y += st.s; if(st.y>h) st.y = -10;
+          st.y+=st.s; if(st.y>h) st.y=-10;
           ctx.beginPath();
-          const glow = 0.45 + 0.45*Math.sin(t+st.x*0.001);
-          ctx.fillStyle = `hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
-          ctx.shadowBlur = 12 + glow*18;
-          ctx.shadowColor = ctx.fillStyle;
-          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-          ctx.fill();
+          const glow=0.45+0.45*Math.sin(t+st.x*0.001);
+          ctx.fillStyle=`hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
+          ctx.shadowBlur=12+glow*18; ctx.shadowColor=ctx.fillStyle;
+          ctx.arc(st.x,st.y,st.r,0,Math.PI*2); ctx.fill();
         }
         requestAnimationFrame(loop);
       })();
     })();
 
-    // ====== Tabs (no reload)
-    const sections = document.querySelectorAll('.section');
-    const tabBtns = document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
+    // Tabs
+    const sections=document.querySelectorAll('.section');
+    const tabBtns=document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
     function showTab(id){
-      sections.forEach(s => s.classList.toggle('show', s.id === id));
+      sections.forEach(s=>s.classList.toggle('show', s.id===id));
       document.querySelectorAll('.tab-btn').forEach(b=>{
-        b.classList.toggle('active', b.dataset.tab === id);
-        b.setAttribute('aria-selected', b.classList.contains('active') ? 'true':'false');
+        b.classList.toggle('active', b.dataset.tab===id);
+        b.setAttribute('aria-selected', b.classList.contains('active')?'true':'false');
       });
-      const el = document.getElementById(id);
-      if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
+      const el=document.getElementById(id); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
     }
     tabBtns.forEach(btn=>{
       btn.addEventListener('click', (e)=>{
-        const id = btn.dataset.tab || 'home';
+        const id=btn.dataset.tab||'home';
         if(id){ e.preventDefault(); showTab(id); }
       });
     });
-
-    // If user clicks “Support Us” on hero, jump to Contact tab
     document.querySelectorAll('a.btn[data-tab="contact"]').forEach(a=>{
-      a.addEventListener('click', (e)=>{ e.preventDefault(); showTab('contact'); });
+      a.addEventListener('click',(e)=>{ e.preventDefault(); showTab('contact'); });
     });
 
     // Year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Replace YOUR_VIDEO_ID_HERE with your real YouTube video ID.
-    // Twitch embed note: the 'parent' query param must match your site domain(s).
-    // If you deploy on a different domain, add another &parent=yourdomain.com.
+    document.getElementById('year').textContent=new Date().getFullYear();
+    // NOTE: Replace YOUR_VIDEO_ID_HERE with your YouTube video ID.
+    // Twitch embed 'parent' must match your domain(s).
   </script>
 </body>
 </html>
