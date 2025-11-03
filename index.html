@@ -90,8 +90,8 @@
       border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow);
     }
     .hero-card {
-      padding: 22px;              /* slightly smaller inner box */
-      margin-bottom: 20px;        /* space below it */
+      padding: 22px;
+      margin-bottom: 20px;
       position: relative;
       overflow: clip;
     }
@@ -136,9 +136,26 @@
     }
     .icon{width:18px; height:18px; display:inline-block;}
 
+    /* NEW YouTube card styles */
+    .youtube-card{
+      margin-top:12px;
+      padding:16px;
+      border-radius:var(--radius);
+      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
+      border:1px solid rgba(124,77,255,.25);
+      box-shadow:var(--shadow);
+    }
+    .youtube-frame{
+      width:100%;
+      aspect-ratio:16/9;
+      border:0;
+      border-radius:12px;
+      box-shadow:var(--shadow);
+    }
+
     .twitch-card {
-      padding: 16px;              /* slightly smaller inner box */
-      margin-top: 10px;           /* space above it */
+      padding: 16px;
+      margin-top: 10px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -201,28 +218,28 @@
   /* === Tweaks: smaller header, right-pinned Twitch, more bg visible === */
 
   /* Header smaller */
-  header .nav { padding: 8px 16px; }                /* was 14px 20px */
-  .sigil { width: 28px; height: 28px; border-radius: 10px; }  /* was 36px */
-  .logo-text { font-size: 1.1rem; }                 /* was 1.35rem */
-  header { backdrop-filter: blur(8px); }            /* slightly lighter */
+  header .nav { padding: 8px 16px; }
+  .sigil { width: 28px; height: 28px; border-radius: 10px; }
+  .logo-text { font-size: 1.1rem; }
+  header { backdrop-filter: blur(8px); }
 
   /* Hero layout: main left, slim sidebar right */
   .hero {
     grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
-    gap: 16px;                                      /* a bit tighter */
-    margin: 24px auto 20px;                         /* slightly less top margin */
-    padding: 0 16px;                                /* a touch tighter */
+    gap: 16px;
+    margin: 24px auto 20px;
+    padding: 0 16px;
   }
 
   /* Twitch card as a right sidebar */
   .twitch-aside {
-    max-width: 340px;          /* smaller box */
-    justify-self: end;         /* pin to right in the grid */
-    position: sticky;          /* “pinned” effect while scrolling */
-    top: 72px;                 /* sits under the shrunken header */
+    max-width: 340px;
+    justify-self: end;
+    position: sticky;
+    top: 72px;
   }
   .twitch-aside .twitch-frame {
-    aspect-ratio: 16/9;        /* keeps proportions at the smaller width */
+    aspect-ratio: 16/9;
   }
 
   /* Keep mobile stacked & full width */
@@ -290,14 +307,25 @@
       </p>
     </div>
 
+    <!-- NEW: YouTube card on the left -->
+    <div class="youtube-card arcane-card">
+      <h3 class="h">Featured Video</h3>
+      <iframe
+        class="youtube-frame"
+        title="Zindigon YouTube Video"
+        src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+
     <div class="twitch-card arcane-card twitch-aside">
       <h3 class="h">Zindigon on Twitch</h3>
-      <!-- Note: Twitch uses twitch.tv (not twitch.com). Update your channel if needed. -->
-      <!-- Replace 'zindigon' if your exact channel name differs. -->
       <iframe
         class="twitch-frame"
         title="Twitch"
-        src="https://player.twitch.tv/zindigon&muted=true"
+        src="https://player.twitch.tv/?channel=zindigon&parent=localhost&parent=zindigon.com&muted=true"
         allowfullscreen>
       </iframe>
       <div class="actions">
@@ -393,7 +421,6 @@
         <div class="col-6 card" id="support">
           <h3 class="h" style="font-size:1.2rem">Support the Journey</h3>
           <p class="p">Fuel the magic. Every contribution goes back into art, music, servers, and tools.</p>
-          <!-- Replace href with your donation URL (Stripe, PayPal, BuyMeACoffee, etc.) -->
           <p style="margin-top:10px">
             <a class="support" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
           </p>
@@ -458,7 +485,6 @@
         b.classList.toggle('active', b.dataset.tab === id);
         b.setAttribute('aria-selected', b.classList.contains('active') ? 'true':'false');
       });
-      // Scroll to top of section when switching
       const el = document.getElementById(id);
       if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
     }
@@ -477,8 +503,9 @@
     // Year
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // FYI: Twitch embedding requires the correct parent domain. If testing locally,
-    // replace parent=zindigon.com with parent=localhost or your dev host.
+    // Replace YOUR_VIDEO_ID_HERE with your real YouTube video ID.
+    // Twitch embed note: the 'parent' query param must match your site domain(s).
+    // If you deploy on a different domain, add another &parent=yourdomain.com.
   </script>
 </body>
 </html>
