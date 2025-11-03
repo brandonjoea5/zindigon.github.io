@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Zindigon — where fun, magic, and creativity live. Anime, games, streams, and more." />
 
-  <!-- Fonts -->
+  <!---------- Fonts ---------->
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
@@ -24,7 +24,7 @@
       font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
     }
 
-    /* Background layers */
+    /*---------- Background layers ----------*/
     #starfield{position:fixed; inset:0; z-index:-2;}
     .aurora{
       position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
@@ -35,7 +35,7 @@
       filter: blur(30px) saturate(120%);
     }
 
-    /* Header */
+    /*---------- Header ----------*/
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(10px);
@@ -66,7 +66,7 @@
       box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
     }
 
-    /* HERO layout: left = 4 parts, right = 1 part; with vertical padding */
+    /*---------- HERO ----------*/
     .hero{
       max-width:1200px; margin:24px auto 20px; padding:24px 16px;
       display:grid; grid-template-columns:minmax(0, 4fr) minmax(260px, 1fr); gap:20px;
@@ -113,18 +113,18 @@
     .icon{width:18px; height:18px; display:inline-block;}
     .mini{ color:var(--muted); font-size:.92rem; line-height:1.4; }
 
-    /* YouTube card (left column) */
+    /*---------- YouTube card (left column) ----------*/
     .youtube-card{ margin-top:12px; padding:16px; border-radius:var(--radius); border:1px solid rgba(124,77,255,.25); box-shadow:var(--shadow); }
     .youtube-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
 
-    /* RIGHT column: stack a small info card and Twitch */
+    /*---------- info card and Twitch (right column) ----------*/
     .sidebar{ display:grid; gap:12px; align-content:start; position:sticky; top:72px; }
     .sidebar-top{ padding:14px; }
 
     .twitch-card{ padding:16px; display:flex; flex-direction:column; gap:12px; }
     .twitch-frame{ aspect-ratio:16/9; width:100%; border:0; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
 
-    /* Sections below */
+    /*---------- Sections below ----------*/
     main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
     .section{ display:none; margin-top:16px; padding:22px; border-radius:var(--radius);
       background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6));
@@ -173,9 +173,9 @@
     </nav>
   </header>
 
-  <!-- HERO -->
+  <!---------- HERO ---------->
   <section id="home" class="hero section show" aria-labelledby="hero-title">
-    <!-- LEFT column (4x width): hero + youtube -->
+    <!---------- LEFT column (4x width): hero + youtube ---------->
     <div>
       <div class="hero-card arcane-card">
         <div class="sigils"></div>
@@ -210,7 +210,7 @@
       </div>
     </div>
 
-    <!-- RIGHT column (1x width): info/donate + twitch -->
+    <!---------- RIGHT column (1x width): info/donate + twitch ---------->
     <div class="sidebar">
       <div class="sidebar-top arcane-card">
         <h3 class="h" style="font-size:1.05rem; margin-bottom:6px;">Stay in the loop</h3>
@@ -234,7 +234,7 @@
   </section>
 
   <main>
-    <!-- ANIME -->
+    <!---------- ANIME ---------->
     <section id="anime" class="section" aria-labelledby="anime-title">
       <h2 id="anime-title" class="h" style="font-size:1.6rem">Anime</h2>
       <div class="grid">
@@ -253,7 +253,7 @@
       </div>
     </section>
 
-    <!-- GAMES -->
+    <!---------- GAMES ---------->
     <section id="games" class="section" aria-labelledby="games-title">
       <h2 id="games-title" class="h" style="font-size:1.6rem">Games</h2>
       <div class="grid">
@@ -272,7 +272,7 @@
       </div>
     </section>
 
-    <!-- ABOUT -->
+    <!---------- ABOUT ---------->
     <section id="about" class="section" aria-labelledby="about-title">
       <h2 id="about-title" class="h" style="font-size:1.6rem">About Us</h2>
       <div class="card">
@@ -280,7 +280,7 @@
       </div>
     </section>
 
-    <!-- CONTACT -->
+    <!---------- CONTACT ---------->
     <section id="contact" class="section" aria-labelledby="contact-title">
       <h2 id="contact-title" class="h" style="font-size:1.6rem">Contact</h2>
       <div class="grid">
@@ -304,7 +304,7 @@
   </footer>
 
   <script>
-    // Starfield
+    //-------------------- Starfield --------------------
     (function(){
       const c=document.getElementById('starfield'); const ctx=c.getContext('2d');
       let w=0,h=0,stars=[];
@@ -328,7 +328,7 @@
       })();
     })();
 
-    // Tabs
+    //---------- Tabs ----------
     const sections=document.querySelectorAll('.section');
     const tabBtns=document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
     function showTab(id){
@@ -349,10 +349,8 @@
       a.addEventListener('click',(e)=>{ e.preventDefault(); showTab('contact'); });
     });
 
-    // Year
+    //---------- Year ----------
     document.getElementById('year').textContent=new Date().getFullYear();
-    // NOTE: Replace YOUR_VIDEO_ID_HERE with your YouTube video ID.
-    // Twitch embed 'parent' must match your domain(s).
   </script>
 </body>
 </html>
