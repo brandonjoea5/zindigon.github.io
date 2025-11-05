@@ -44,27 +44,35 @@
     }
     .nav{max-width:1200px; margin:0 auto; padding:8px 16px; display:flex; align-items:center; gap:14px;}
     .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
-    .sigil{
-      width:28px; height:28px; border-radius:10px;
-      background:
-        radial-gradient(60% 60% at 30% 30%, var(--accent-2), transparent 70%),
-        radial-gradient(60% 60% at 70% 70%, var(--accent-3), transparent 70%),
-        radial-gradient(100% 100% at 50% 50%, rgba(124,77,255,.75), rgba(124,77,255,.25));
-      box-shadow: 0 0 25px rgba(124,77,255,.55), inset 0 0 20px rgba(0,224,255,.35);
-    }
-    .logo-text{font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1; color:white; text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);}
+    /* Replaced square sigil with a real logo image */
+    .logo-img{ height:28px; width:auto; display:block; border-radius:8px; box-shadow:0 0 18px rgba(124,77,255,.35);} 
+    .logo-text{font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1; color:white; text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);} 
     .spacer{flex:1}
-    .tabs{display:flex; gap:10px; flex-wrap:wrap}
-    .tab-btn{
+
+    .tabs{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .tab-btn, .menu-btn{
       appearance:none; border:none; cursor:pointer;
       color:var(--muted); background:transparent;
-      padding:10px 14px; border-radius:12px; font-weight:600; outline:none;
+      padding:10px 14px; border-radius:12px; font-weight:600; outline:none; display:inline-flex; align-items:center; gap:8px;
     }
-    .tab-btn:hover{color:var(--ink)}
+    .tab-btn:hover,.menu-btn:hover{color:var(--ink)}
     .tab-btn.active{
       color:white; background:linear-gradient(180deg, rgba(124,77,255,.35), rgba(124,77,255,.12));
       box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
     }
+
+    /* Projects dropdown */
+    .dropdown{ position:relative; }
+    .menu{ position:absolute; top:100%; left:0; margin-top:8px; min-width:180px; 
+      background: linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.75));
+      border:1px solid rgba(124,77,255,.4); border-radius:12px; box-shadow:var(--shadow);
+      padding:8px; display:none; backdrop-filter: blur(8px);
+    }
+    .menu.show{ display:block; }
+    .menu a{
+      display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--ink);
+    }
+    .menu a:hover{ background:rgba(124,77,255,.15); }
 
     /*---------- HERO ----------*/
     .hero{
@@ -73,6 +81,7 @@
     }
     @media (max-width:980px){
       .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;}
+      .dropdown .menu{ position:fixed; left:16px; right:16px; top:64px; }
     }
 
     .arcane-card{
@@ -105,7 +114,7 @@
       background: radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%), linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
       box-shadow: 0 8px 30px rgba(124,77,255,.35); border:1px solid rgba(124,77,255,.55);
     }
-    .btn:hover{transform:translateY(-1px); box-shadow:0 12px 40px rgba(124,77,255,.45);}
+    .btn:hover{transform:translateY(-1px); box-shadow:0 12px 40px rgba(124,77,255,.45);} 
     .btn-ghost{
       color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
       border:1px solid rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
@@ -159,13 +168,25 @@
   <header>
     <nav class="nav">
       <a class="brand" href="#" data-tab="home" aria-label="Zindigon Home">
-        <span class="sigil"></span><span class="logo-text">Zindigon</span>
+        <!-- Replace LOGO_URL_HERE with the direct image URL from your Imgur album (not the embed script) -->
+        <img class="logo-img" src="LOGO_URL_HERE" alt="Zindigon logo" />
+        <span class="logo-text">Zindigon</span>
       </a>
       <div class="spacer"></div>
       <div class="tabs" role="tablist" aria-label="Sections">
         <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">Home</button>
-        <button class="tab-btn" data-tab="anime" role="tab">Anime</button>
-        <button class="tab-btn" data-tab="games" role="tab">Games</button>
+
+        <!-- Projects parent with submenu for Anime & Games -->
+        <div class="dropdown">
+          <button class="menu-btn" id="projectsBtn" aria-haspopup="true" aria-expanded="false">Projects
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+          </button>
+          <div class="menu" role="menu" aria-labelledby="projectsBtn">
+            <a href="#anime" role="menuitem" data-tab="anime">Anime</a>
+            <a href="#games" role="menuitem" data-tab="games">Games</a>
+          </div>
+        </div>
+
         <button class="tab-btn" data-tab="gaming" role="tab">Gaming</button>
         <button class="tab-btn" data-tab="about" role="tab">About</button>
         <button class="tab-btn" data-tab="contact" role="tab">Contact</button>
@@ -234,6 +255,23 @@
   </section>
 
   <main>
+    <!---------- PROJECTS (new parent section) ---------->
+    <section id="projects" class="section" aria-labelledby="projects-title">
+      <h2 id="projects-title" class="h" style="font-size:1.6rem">Projects</h2>
+      <div class="grid">
+        <div class="col-6 card">
+          <h3 class="h" style="font-size:1.2rem">Anime</h3>
+          <p class="p">Dive into our original series and production notes.</p>
+          <div class="actions" style="margin-top:10px"><a class="btn btn-ghost" href="#anime" data-tab="anime">Open Anime</a></div>
+        </div>
+        <div class="col-6 card">
+          <h3 class="h" style="font-size:1.2rem">Games</h3>
+          <p class="p">Design logs, builds, and dev progress.</p>
+          <div class="actions" style="margin-top:10px"><a class="btn btn-ghost" href="#games" data-tab="games">Open Games</a></div>
+        </div>
+      </div>
+    </section>
+
     <!---------- ANIME ---------->
     <section id="anime" class="section" aria-labelledby="anime-title">
       <h2 id="anime-title" class="h" style="font-size:1.6rem">Anime</h2>
@@ -330,7 +368,7 @@
 
     //---------- Tabs ----------
     const sections=document.querySelectorAll('.section');
-    const tabBtns=document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
+    const tabBtns=document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab], .menu a[data-tab]');
     function showTab(id){
       sections.forEach(s=>s.classList.toggle('show', s.id===id));
       document.querySelectorAll('.tab-btn').forEach(b=>{
@@ -338,6 +376,8 @@
         b.setAttribute('aria-selected', b.classList.contains('active')?'true':'false');
       });
       const el=document.getElementById(id); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
+      // close dropdown after navigating
+      dropdown(false);
     }
     tabBtns.forEach(btn=>{
       btn.addEventListener('click', (e)=>{
@@ -349,8 +389,28 @@
       a.addEventListener('click',(e)=>{ e.preventDefault(); showTab('contact'); });
     });
 
+    //---------- Projects dropdown behavior ----------
+    const projectsBtn=document.getElementById('projectsBtn');
+    const menu=document.querySelector('.dropdown .menu');
+    function dropdown(open){
+      const willOpen = (open!==undefined)? open : !menu.classList.contains('show');
+      menu.classList.toggle('show', willOpen);
+      projectsBtn.setAttribute('aria-expanded', String(willOpen));
+    }
+    projectsBtn.addEventListener('click', (e)=>{ e.preventDefault(); dropdown(); });
+    document.addEventListener('click', (e)=>{
+      if(!e.target.closest('.dropdown')) dropdown(false);
+    });
+    // Keyboard accessibility
+    projectsBtn.addEventListener('keydown', (e)=>{ if(e.key==='ArrowDown'){ dropdown(true); menu.querySelector('a')?.focus(); }});
+
     //---------- Year ----------
     document.getElementById('year').textContent=new Date().getFullYear();
+
+    //---------- Default visible tab is Home; but you can deep-link: ?tab=anime etc. ----------
+    const urlParams=new URLSearchParams(location.search);
+    const initial=urlParams.get('tab');
+    if(initial){ showTab(initial); }
   </script>
 </body>
 </html>
