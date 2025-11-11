@@ -44,7 +44,6 @@
     }
     .nav{max-width:1200px; margin:0 auto; padding:8px 16px; display:flex; align-items:center; gap:14px;}
     .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
-    /* Replaced square sigil with a real logo image */
     .logo-img{ height:28px; width:auto; display:block; border-radius:8px; box-shadow:0 0 18px rgba(124,77,255,.35);} 
     .logo-text{font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1; color:white; text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);} 
     .spacer{flex:1}
@@ -69,96 +68,55 @@
       padding:8px; display:none; backdrop-filter: blur(8px);
     }
     .menu.show{ display:block; }
-    .menu a{
-      display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--ink);
-    }
+    .menu a{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--ink); }
     .menu a:hover{ background:rgba(124,77,255,.15); }
 
     /*---------- HERO ----------*/
-    .hero{
-      max-width:1200px; margin:24px auto 20px; padding:24px 16px;
-      display:grid; grid-template-columns:minmax(0, 4fr) minmax(260px, 1fr); gap:20px;
-    }
-    @media (max-width:980px){
-      .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;}
-      .dropdown .menu{ position:fixed; left:16px; right:16px; top:64px; }
-    }
+    .hero{ max-width:1200px; margin:24px auto 20px; padding:24px 16px; display:grid; grid-template-columns:minmax(0, 4fr) minmax(260px, 1fr); gap:20px; }
+    @media (max-width:980px){ .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;} .dropdown .menu{ position:fixed; left:16px; right:16px; top:64px; } }
 
-    .arcane-card{
-      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
-      border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow);
-    }
+    .arcane-card{ background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65)); border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow); }
     .hero-card{ padding:22px; margin-bottom:20px; position:relative; overflow:clip; }
-    .hero-title{
-      font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2.2rem, 3.8vw, 4rem);
-      line-height:1.05; letter-spacing:.8px;
-      background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%);
-      -webkit-background-clip:text; background-clip:text; color:transparent;
-      text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
-    }
+    .hero-title{ font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2.2rem, 3.8vw, 4rem); line-height:1.05; letter-spacing:.8px; background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25); }
     .hero-sub{ margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px; text-shadow:0 0 12px rgba(124,77,255,.25); }
-    .sigils{
-      position:absolute; inset:-20% -10% auto auto; height:180%;
-      background:
-        radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%),
-        radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%),
-        conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0));
-      filter: blur(45px) saturate(140%); pointer-events:none; transform: translateZ(0);
-    }
+    .sigils{ position:absolute; inset:-20% -10% auto auto; height:180%; background: radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%), radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%), conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0)); filter: blur(45px) saturate(140%); pointer-events:none; transform: translateZ(0); }
 
     .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;}
-    .btn{
-      display:inline-flex; align-items:center; gap:10px;
-      padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px;
-      text-decoration:none; color:white;
-      background: radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%), linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
-      box-shadow: 0 8px 30px rgba(124,77,255,.35); border:1px solid rgba(124,77,255,.55);
-    }
+    .btn{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px; text-decoration:none; color:white; background: radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%), linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65)); box-shadow: 0 8px 30px rgba(124,77,255,.35); border:1px solid rgba(124,77,255,.55); }
     .btn:hover{transform:translateY(-1px); box-shadow:0 12px 40px rgba(124,77,255,.45);} 
-    .btn-ghost{
-      color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-    }
+    .btn-ghost{ color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
     .icon{width:18px; height:18px; display:inline-block;}
     .mini{ color:var(--muted); font-size:.92rem; line-height:1.4; }
 
-    /*---------- YouTube card (left column) ----------*/
-    .youtube-card{ margin-top:12px; padding:16px; border-radius:var(--radius); border:1px solid rgba(124,77,255,.25); box-shadow:var(--shadow); }
-    .youtube-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
+    /*---------- Frames ----------*/
+    .youtube-frame,.twitch-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
 
-    /*---------- info card and Twitch (right column) ----------*/
-    .sidebar{ display:grid; gap:12px; align-content:start; position:sticky; top:72px; }
-    .sidebar-top{ padding:14px; }
-
-    .twitch-card{ padding:16px; display:flex; flex-direction:column; gap:12px; }
-    .twitch-frame{ aspect-ratio:16/9; width:100%; border:0; border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
-
-    /*---------- Sections below ----------*/
+    /*---------- Layout below ----------*/
     main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
-    .section{ display:none; margin-top:16px; padding:22px; border-radius:var(--radius);
-      background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6));
-      border: 1px solid rgba(124,77,255,.24); box-shadow: var(--shadow); animation: rise .35s ease-out; }
+    .section{ display:none; margin-top:16px; padding:22px; border-radius:var(--radius); background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6)); border: 1px solid rgba(124,77,255,.24); box-shadow: var(--shadow); animation: rise .35s ease-out; }
     .section.show{ display:block; }
     @keyframes rise{ from{ transform:translateY(6px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
 
     .grid{ display:grid; gap:16px; grid-template-columns: repeat(12, 1fr); }
-    .col-12{ grid-column: span 12; } .col-6{ grid-column: span 6; } .col-4{ grid-column: span 4; }
-    @media (max-width:980px){ .col-6{grid-column:span 12} .col-4{grid-column: span 12} }
+    .col-12{ grid-column: span 12; } .col-8{grid-column: span 8;} .col-6{ grid-column: span 6; } .col-4{ grid-column: span 4; }
+    @media (max-width:980px){ .col-8,.col-6{grid-column:span 12} .col-4{grid-column: span 12} }
 
     .card{ background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
     .h{ font-family:'Cinzel', serif; font-weight:800; letter-spacing:.6px; margin:0 0 8px; color:#fff; text-shadow: 0 0 16px rgba(124,77,255,.35); }
     .p{ margin:0; color:#d7dcff; }
 
     footer{ max-width:1200px; margin:60px auto 40px; padding:0 20px; color:var(--muted); text-align:center; }
-    .support{
-      display:inline-flex; align-items:center; gap:10px; margin-top:14px;
-      padding:12px 16px; border-radius:14px; text-decoration:none; font-weight:800; color:#101015;
-      background: linear-gradient(180deg, #00e0ff, #7c4dff);
-      box-shadow: 0 12px 40px rgba(0,224,255,.35), 0 8px 25px rgba(124,77,255,.35);
-      border:1px solid rgba(255,255,255,.24);
-    }
+    .support{ display:inline-flex; align-items:center; gap:10px; margin-top:14px; padding:12px 16px; border-radius:14px; text-decoration:none; font-weight:800; color:#101015; background: linear-gradient(180deg, #00e0ff, #7c4dff); box-shadow: 0 12px 40px rgba(0,224,255,.35), 0 8px 25px rgba(124,77,255,.35); border:1px solid rgba(255,255,255,.24); }
 
     a{ color:inherit }
+
+    /* Partners */
+    .partner-card{ display:grid; grid-template-columns: 1.5fr 1fr; gap:14px; }
+    @media (max-width:980px){ .partner-card{grid-template-columns:1fr;} }
+    .partner-meta{ display:grid; align-content:start; gap:8px; }
+    .partner-title{ font-weight:900; font-size:1.2rem; }
+    .partner-badges{ display:flex; gap:8px; flex-wrap:wrap; }
+    .badge{ font-size:.78rem; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); color:#dfe3ff; background:rgba(255,255,255,.04); }
   </style>
 </head>
 <body>
@@ -168,7 +126,6 @@
   <header>
     <nav class="nav">
       <a class="brand" href="#" data-tab="home" aria-label="Zindigon Home">
-        <!-- Replace LOGO_URL_HERE with the direct image URL from your Imgur album (not the embed script) -->
         <img class="logo-img" src="https://i.imgur.com/xnxvXeA.jpeg" alt="Zindigon logo" />
         <span class="logo-text">Zindigon</span>
       </a>
@@ -187,6 +144,7 @@
           </div>
         </div>
 
+        <button class="tab-btn" data-tab="partners" role="tab">Partners</button>
         <button class="tab-btn" data-tab="gaming" role="tab">Gaming</button>
         <button class="tab-btn" data-tab="about" role="tab">About</button>
         <button class="tab-btn" data-tab="contact" role="tab">Contact</button>
@@ -196,7 +154,7 @@
 
   <!---------- HERO ---------->
   <section id="home" class="hero section show" aria-labelledby="hero-title">
-    <!---------- LEFT column (4x width): hero + youtube ---------->
+    <!---------- LEFT column: hero + featured video ---------->
     <div>
       <div class="hero-card arcane-card">
         <div class="sigils"></div>
@@ -215,47 +173,28 @@
           <a class="btn" href="#support" data-tab="contact">✨ Support Us</a>
         </div>
 
-        <p class="mini" style="margin-top:10px">
-          Explore original anime projects, game worlds, and live streams—crafted by Zindigon.
-        </p>
+        <p class="mini" style="margin-top:10px">Explore original anime projects, game worlds, and live streams—crafted by Zindigon.</p>
       </div>
 
       <div class="youtube-card arcane-card">
         <h3 class="h">Featured Video</h3>
-        <iframe
-          class="youtube-frame"
-          title="Zindigon YouTube Video"
-          src="https://www.youtube.com/embed/qTNXxz_y9-w?si=Xb8x613LgAFs9zHl"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen></iframe>
+        <iframe class="youtube-frame" title="Zindigon YouTube Video" src="https://www.youtube.com/embed/qTNXxz_y9-w?si=Xb8x613LgAFs9zHl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
       </div>
     </div>
 
-    <!---------- RIGHT column (1x width): info/donate + twitch ---------->
+    <!---------- RIGHT column: Featured Partner live embed ---------->
     <div class="sidebar">
-      <div class="sidebar-top arcane-card">
-        <h3 class="h" style="font-size:1.05rem; margin-bottom:6px;">Stay in the loop</h3>
-        <p class="mini" style="margin:0 0 10px;">Streams, dev logs, and drops. Thanks for being here!</p>
-        <a class="btn btn-ghost" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
-      </div>
-
-      <div class="twitch-card arcane-card">
-        <h3 class="h">Zindigon on Twitch</h3>
-        <iframe
-          class="twitch-frame"
-          title="Twitch"
-          src="https://player.twitch.tv/?channel=zindigon&parent=localhost&parent=zindigon.com&muted=true"
-          allowfullscreen></iframe>
-        <div class="actions">
-          <a class="btn btn-ghost" href="https://www.twitch.tv/zindigon" target="_blank" rel="noopener">Open on Twitch</a>
-        </div>
-        <p class="mini">Follow to catch the next stream!</p>
+      <div class="twitch-card arcane-card" id="featuredPartner">
+        <h3 class="h">Live Now</h3>
+        <div id="featuredPlayer"></div>
+        <div class="actions"><a class="btn btn-ghost" id="featuredLink" href="#" target="_blank" rel="noopener">Open Channel</a></div>
+        <p class="mini" id="featuredMeta">Follow to catch the next stream!</p>
       </div>
     </div>
   </section>
 
   <main>
-    <!---------- PROJECTS (new parent section) ---------->
+    <!---------- PROJECTS (parent) ---------->
     <section id="projects" class="section" aria-labelledby="projects-title">
       <h2 id="projects-title" class="h" style="font-size:1.6rem">Projects</h2>
       <div class="grid">
@@ -270,6 +209,13 @@
           <div class="actions" style="margin-top:10px"><a class="btn btn-ghost" href="#games" data-tab="games">Open Games</a></div>
         </div>
       </div>
+    </section>
+
+    <!---------- PARTNERS ---------->
+    <section id="partners" class="section" aria-labelledby="partners-title">
+      <h2 id="partners-title" class="h" style="font-size:1.6rem">Partners</h2>
+      <p class="p" style="margin-bottom:10px">Creators we vibe with. If they're live, you'll see the stream; if not, enjoy their most recent video or VOD.</p>
+      <div class="grid" id="partnersGrid"></div>
     </section>
 
     <!---------- ANIME ---------->
@@ -307,6 +253,17 @@
           <h4 class="h" style="font-size:1.1rem">Progress</h4>
           <p class="p">Godot builds, combat prototypes, and map shaders—documented as features land.</p>
         </div>
+
+        <!-- New: AtherFall -->
+        <div class="col-12 card">
+          <h3 class="h" style="font-size:1.2rem">AtherFall</h3>
+          <p class="p">Rogue-like tower defense — mankind vs. aliens. Wizards, giants, ninjas, samurai, robots, and soldiers hold the line against the swarm.</p>
+          <div class="actions" style="margin-top:10px">
+            <a class="btn" id="af-download" href="#" target="_blank" rel="noopener">Download</a>
+            <a class="btn btn-ghost" id="af-leaderboards" href="#" target="_blank" rel="noopener">Leaderboards</a>
+            <a class="btn btn-ghost" id="af-guilds" href="#" target="_blank" rel="noopener">Guilds & Members</a>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -342,6 +299,47 @@
   </footer>
 
   <script>
+    //-------------------- Config --------------------
+    // Set your domain so Twitch embeds work (parent param)
+    const SITE_PARENTS = ["zindigon.com", "localhost"];
+
+    // AtherFall links (replace with real URLs when ready)
+    const ATHERFALL_LINKS = {
+      download: "#",         // e.g. https://play.google.com/store/apps/details?id=...
+      leaderboards: "#",      // e.g. https://zindigon.com/atherfall/leaderboards
+      guilds: "#"             // e.g. https://zindigon.com/atherfall/guilds
+    };
+
+    // Partners data
+    // type: 'twitch' | 'youtube'
+    // For YouTube: supply either channelId (for live player) OR a direct video embed URL via embedSrc.
+    // For Twitch: supply channel name. When offline, Twitch shows recent VOD/Offline screen.
+    // Optional isLive flag lets you control who features on Home when you don't have API calls.
+    const PARTNERS = [
+      {
+        type: 'twitch',
+        name: 'Zindigon',
+        gamertag: 'Zindigon',
+        joined: '2025-11-01',
+        description: 'Games, dev logs, and anime vibes.',
+        twitchChannel: 'zindigon',
+        channelUrl: 'https://www.twitch.tv/zindigon',
+        isLive: false
+      },
+      // Example YouTube partner using live player fallback + uploads playlist embed
+      {
+        type: 'youtube',
+        name: 'Sample Creator',
+        gamertag: 'CreatorXYZ',
+        joined: '2025-10-15',
+        description: 'Highlights, guides, and chill streams.',
+        channelId: 'UC_x5XG1OV2P6uZZ5FSM9TQ', // replace with actual channel ID
+        uploadsPlaylist: 'UU_x5XG1OV2P6uZZ5FSM9TQ', // uploads playlist (UU + channel ID without first two chars)
+        channelUrl: 'https://www.youtube.com/@google',
+        isLive: false
+      }
+    ];
+
     //-------------------- Starfield --------------------
     (function(){
       const c=document.getElementById('starfield'); const ctx=c.getContext('2d');
@@ -376,7 +374,6 @@
         b.setAttribute('aria-selected', b.classList.contains('active')?'true':'false');
       });
       const el=document.getElementById(id); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
-      // close dropdown after navigating
       dropdown(false);
     }
     tabBtns.forEach(btn=>{
@@ -398,19 +395,127 @@
       projectsBtn.setAttribute('aria-expanded', String(willOpen));
     }
     projectsBtn.addEventListener('click', (e)=>{ e.preventDefault(); dropdown(); });
-    document.addEventListener('click', (e)=>{
-      if(!e.target.closest('.dropdown')) dropdown(false);
-    });
-    // Keyboard accessibility
+    document.addEventListener('click', (e)=>{ if(!e.target.closest('.dropdown')) dropdown(false); });
     projectsBtn.addEventListener('keydown', (e)=>{ if(e.key==='ArrowDown'){ dropdown(true); menu.querySelector('a')?.focus(); }});
 
     //---------- Year ----------
     document.getElementById('year').textContent=new Date().getFullYear();
 
-    //---------- Default visible tab is Home; but you can deep-link: ?tab=anime etc. ----------
+    //---------- Deep link ?tab=partners etc. ----------
     const urlParams=new URLSearchParams(location.search);
     const initial=urlParams.get('tab');
     if(initial){ showTab(initial); }
+
+    //-------------------- Helpers --------------------
+    function twitchEmbedSrc(channel){
+      const parents = SITE_PARENTS.map(p=>`parent=${encodeURIComponent(p)}`).join('&');
+      return `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&${parents}&muted=true`;
+    }
+    function ytLiveEmbedSrc(channelId){
+      // Shows live stream if live, otherwise a placeholder
+      return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(channelId)}`;
+    }
+    function ytUploadsEmbedSrc(playlistId){
+      // Playlist embed that starts with the latest upload
+      return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(playlistId)}`;
+    }
+
+    //-------------------- Partners rendering --------------------
+    function renderPartnerCard(p){
+      const col = document.createElement('div');
+      col.className = 'col-12 card';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'partner-card';
+
+      // MEDIA
+      const media = document.createElement('div');
+      let iframe = document.createElement('iframe');
+      iframe.className = p.type === 'twitch' ? 'twitch-frame' : 'youtube-frame';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+
+      if(p.type === 'twitch'){
+        iframe.src = twitchEmbedSrc(p.twitchChannel);
+      } else {
+        // Prefer live player; fall back to uploads playlist if provided
+        iframe.src = p.channelId ? ytLiveEmbedSrc(p.channelId) : (p.embedSrc || ytUploadsEmbedSrc(p.uploadsPlaylist));
+      }
+      media.appendChild(iframe);
+
+      // META
+      const meta = document.createElement('div');
+      meta.className = 'partner-meta';
+      const title = document.createElement('div');
+      title.className = 'partner-title h';
+      title.textContent = p.name;
+
+      const badges = document.createElement('div');
+      badges.className = 'partner-badges';
+      const tag = document.createElement('span');
+      tag.className = 'badge';
+      tag.textContent = p.gamertag;
+      const joined = document.createElement('span');
+      joined.className = 'badge';
+      joined.textContent = `Joined ${new Date(p.joined).toLocaleDateString()}`;
+      badges.append(tag, joined);
+
+      const desc = document.createElement('p');
+      desc.className = 'p';
+      desc.textContent = p.description || '';
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const link = document.createElement('a');
+      link.className = 'btn btn-ghost';
+      link.href = p.channelUrl; link.target = '_blank'; link.rel = 'noopener';
+      link.textContent = 'Visit Channel';
+      actions.appendChild(link);
+
+      meta.append(title, badges, desc, actions);
+
+      wrap.append(media, meta);
+      col.appendChild(wrap);
+      return col;
+    }
+
+    function buildPartnersSection(){
+      const grid = document.getElementById('partnersGrid');
+      grid.innerHTML = '';
+      PARTNERS.forEach(p=> grid.appendChild(renderPartnerCard(p)) );
+    }
+
+    //-------------------- Featured Partner on Home --------------------
+    function pickFeatured(){
+      // Try find first marked live; else first partner
+      return PARTNERS.find(p=>p.isLive) || PARTNERS[0];
+    }
+
+    function renderFeatured(){
+      const target = document.getElementById('featuredPlayer');
+      target.innerHTML = '';
+      const p = pickFeatured();
+      if(!p) return;
+      const iframe = document.createElement('iframe');
+      iframe.className = p.type === 'twitch' ? 'twitch-frame' : 'youtube-frame';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.src = (p.type==='twitch') ? twitchEmbedSrc(p.twitchChannel) : (p.channelId ? ytLiveEmbedSrc(p.channelId) : (p.embedSrc || ytUploadsEmbedSrc(p.uploadsPlaylist)));
+      target.appendChild(iframe);
+
+      const link = document.getElementById('featuredLink');
+      link.href = p.channelUrl || '#';
+      document.getElementById('featuredMeta').textContent = `${p.name} — ${p.gamertag}`;
+    }
+
+    // Init partners + featured
+    buildPartnersSection();
+    renderFeatured();
+
+    // Wire AtherFall links
+    document.getElementById('af-download').href = ATHERFALL_LINKS.download;
+    document.getElementById('af-leaderboards').href = ATHERFALL_LINKS.leaderboards;
+    document.getElementById('af-guilds').href = ATHERFALL_LINKS.guilds;
   </script>
 </body>
 </html>
