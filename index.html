@@ -255,14 +255,41 @@
         </div>
 
         <!-- New: AtherFall -->
+        <!-- your game card -->
         <div class="col-12 card">
           <h3 class="h" style="font-size:1.2rem">AtherFall</h3>
-          <p class="p">Rogue-like tower defense — mankind vs. aliens. Men traveled through time to recruit all walks and creations of life to hold the line against the aether swarm.</p>
+          <p class="p">Rogue-like tower defense — mankind vs. aliens...</p>
           <div class="actions" style="margin-top:10px">
-            <a class="btn" id="af-download" href="#" target="_blank" rel="noopener">Download</a>
-            <a class="btn btn-ghost" id="af-leaderboards" href="#" target="_blank" rel="noopener">Leaderboards</a>
-            <a class="btn btn-ghost" id="af-guilds" href="#" target="_blank" rel="noopener">Guilds & Members</a>
+            <a class="btn" id="af-download" href="#">Download</a>
+            <a class="btn btn-ghost" id="af-leaderboards" href="#">Leaderboards</a>
+            <a class="btn btn-ghost" id="af-guilds" href="#">Guilds & Members</a>
           </div>
+        </div>
+        
+        <!-- the dynamic section where content will appear -->
+        <div id="game-content" class="card" style="margin-top:20px; display:none;"></div>
+        
+        <script>
+        document.getElementById('af-leaderboards').addEventListener('click', function(e) {
+          e.preventDefault();
+        
+          const contentBox = document.getElementById('game-content');
+          contentBox.style.display = 'block';
+          contentBox.innerHTML = `
+            <h3 class="h" style="font-size:1.2rem">AetherFall Leaderboards</h3>
+            <p class="p">Top players holding the line against the Aether Swarm.</p>
+            <div class="leaderboard" style="margin-top:10px">
+              <table style="width:100%; text-align:left; border-collapse:collapse;">
+                <tr><th>Rank</th><th>Player</th><th>Guild</th><th>Highest Level</th></tr>
+                <tr><td>1</td><td>Zindigon</td><td>Founders</td><td>42</td></tr>
+                <tr><td>2</td><td>Spazfusc</td><td>Reapers</td><td>39</td></tr>
+                <tr><td>3</td><td>Kazuki</td><td>Wolves</td><td>37</td></tr>
+              </table>
+            </div>
+          `;
+        });
+        </script>
+
         </div>
       </div>
     </section>
