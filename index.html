@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Zindigon — where fun, magic, and creativity live. Anime, games, streams, and more." />
 
-  <!---------- Fonts ---------->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
@@ -24,7 +24,7 @@
       font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
     }
 
-    /*---------- Background layers ----------*/
+    /* Background layers */
     #starfield{position:fixed; inset:0; z-index:-2;}
     .aurora{
       position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
@@ -35,7 +35,7 @@
       filter: blur(30px) saturate(120%);
     }
 
-    /*---------- Header ----------*/
+    /* Header */
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(10px);
@@ -49,20 +49,31 @@
     .spacer{flex:1}
 
     .tabs{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    .tab-btn{
+    .tab-btn, .menu-btn{
       appearance:none; border:none; cursor:pointer;
       color:var(--muted); background:transparent;
       padding:10px 14px; border-radius:12px; font-weight:600; outline:none; display:inline-flex; align-items:center; gap:8px;
     }
-    .tab-btn:hover{color:var(--ink)}
+    .tab-btn:hover,.menu-btn:hover{color:var(--ink)}
     .tab-btn.active{
       color:white; background:linear-gradient(180deg, rgba(124,77,255,.35), rgba(124,77,255,.12));
       box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
     }
 
-    /*---------- HERO ----------*/
+    /* Dropdowns */
+    .dropdown{ position:relative; }
+    .menu{ position:absolute; top:100%; left:0; margin-top:8px; min-width:220px; 
+      background: linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.75));
+      border:1px solid rgba(124,77,255,.4); border-radius:12px; box-shadow:var(--shadow);
+      padding:8px; display:none; backdrop-filter: blur(8px);
+    }
+    .menu.show{ display:block; }
+    .menu a{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--ink); }
+    .menu a:hover{ background:rgba(124,77,255,.15); }
+
+    /* Hero */
     .hero{ max-width:1200px; margin:24px auto 20px; padding:24px 16px; display:grid; grid-template-columns:minmax(0, 4fr) minmax(260px, 1fr); gap:20px; }
-    @media (max-width:980px){ .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;} }
+    @media (max-width:980px){ .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;} .dropdown .menu{ position:fixed; left:16px; right:16px; top:64px; } }
 
     .arcane-card{ background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65)); border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow); }
     .hero-card{ padding:22px; margin-bottom:20px; position:relative; overflow:clip; }
@@ -77,10 +88,10 @@
     .icon{width:18px; height:18px; display:inline-block;}
     .mini{ color:var(--muted); font-size:.92rem; line-height:1.4; }
 
-    /*---------- Frames ----------*/
+    /* Frames */
     .youtube-frame,.twitch-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
 
-    /*---------- Layout below ----------*/
+    /* Layout below */
     main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
     .section{ display:none; margin-top:16px; padding:22px; border-radius:var(--radius); background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6)); border: 1px solid rgba(124,77,255,.24); box-shadow: var(--shadow); animation: rise .35s ease-out; }
     .section.show{ display:block; }
@@ -107,17 +118,14 @@
     .partner-badges{ display:flex; gap:8px; flex-wrap:wrap; }
     .badge{ font-size:.78rem; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); color:#dfe3ff; background:rgba(255,255,255,.04); }
 
-    /* Leaderboard styling */
-    .leaderboard{ margin-top:10px; overflow:auto; }
-    .lb-table{ width:100%; border-collapse:collapse; text-align:left; }
+    /* Leaderboard styles */
+    .lb-wrap{ margin-top:14px; }
+    .lb-table{ width:100%; border-collapse: collapse; }
     .lb-table th, .lb-table td{ padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.08); }
-    .lb-table th{ color:#fff; font-weight:900; background:linear-gradient(180deg, rgba(124,77,255,.25), rgba(124,77,255,.08)); position:sticky; top:0; }
-    .lb-row:nth-child(odd){ background:rgba(255,255,255,.02); }
-    .lb-rank{ font-weight:900; width:64px; }
-    .lb-name{ font-weight:800; }
-    .lb-guild{ color:#d0d4ff; }
-    .lb-score{ text-align:right; font-weight:900; }
-    .lb-bad{ color:#ff99a5; }
+    .lb-table th{ text-align:left; color:#cfd3ff; font-weight:800; }
+    .lb-table tr:hover{ background:rgba(124,77,255,.08); }
+    .lb-badge{ display:inline-block; padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); font-size:.8rem; }
+    .muted{ color:#aab0ff; }
   </style>
 </head>
 <body>
@@ -133,43 +141,62 @@
       <div class="spacer"></div>
       <div class="tabs" role="tablist" aria-label="Sections">
         <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">Home</button>
-        <button class="tab-btn" data-tab="projects" role="tab">Projects</button>
-        <button class="tab-btn" data-tab="games" role="tab">Games</button>
+
+        <!-- Projects dropdown -->
+        <div class="dropdown">
+          <button class="menu-btn" id="projectsBtn" aria-haspopup="true" aria-expanded="false">Projects
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+          </button>
+          <div class="menu" role="menu" aria-labelledby="projectsBtn">
+            <a href="#anime" role="menuitem" data-tab="anime">Anime</a>
+
+            <!-- Games submenu (inline) -->
+            <div style="padding:6px 8px; color:#cfd3ff; font-weight:800;">Games</div>
+            <a href="#game-troll-king" role="menuitem" data-tab="game-troll-king">Adventures of the Troll King</a>
+            <a href="#game-atherfall" role="menuitem" data-tab="game-atherfall">AetherFall</a>
+
+            <!-- Hub -->
+            <a href="#games" role="menuitem" data-tab="games">Games Hub</a>
+          </div>
+        </div>
+
         <button class="tab-btn" data-tab="partners" role="tab">Partners</button>
+        <!-- Removed the old “Gaming” tab -->
         <button class="tab-btn" data-tab="about" role="tab">About</button>
         <button class="tab-btn" data-tab="contact" role="tab">Contact</button>
       </div>
     </nav>
   </header>
 
-  <!---------- HERO ---------->
+  <!-- HERO -->
   <section id="home" class="hero section show" aria-labelledby="hero-title">
-    <!---------- LEFT column: hero + featured video ---------->
     <div>
       <div class="hero-card arcane-card">
         <div class="sigils"></div>
         <h1 id="hero-title" class="hero-title">Where Fun, Magic, and Creativity Live.</h1>
         <div class="hero-sub">From imagination to expectation</div>
+
         <div class="actions" style="margin-top:18px">
-          <a class="btn" href="https://youtube.com/@zindigon?si=N-CuSjB1Cqsr8p0C" target="_blank" rel="noopener">
+          <a class="btn" href="https://youtube.com/@zindigon" target="_blank" rel="noopener">
             <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8ZM9.6 15.5V8.5L15.9 12l-6.3 3.5Z"/></svg>
             YouTube
           </a>
-          <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96?_t=ZP-90xFluWfH0Z&_r=1" target="_blank" rel="noopener">
+          <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96" target="_blank" rel="noopener">
             <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 3.1c.7 1.3 2 2.3 3.5 2.6l1.1.2v3a8 8 0 0 1-4.6-1.5v7.1a6.5 6.5 0 1 1-6.6-6.5c.4 0 .7 0 1 .1v3.4a3 3 0 0 0-1-.2 3.1 3.1 0 1 0 3.1 3.1V2h3.5Z"/></svg>
             TikTok
           </a>
           <a class="btn" href="#support" data-tab="contact">✨ Support Us</a>
         </div>
+
         <p class="mini" style="margin-top:10px">Explore original anime projects, game worlds, and live streams—crafted by Zindigon.</p>
       </div>
+
       <div class="youtube-card arcane-card">
         <h3 class="h">Featured Video</h3>
-        <iframe class="youtube-frame" title="Zindigon YouTube Video" src="https://www.youtube.com/embed/qTNXxz_y9-w?si=Xb8x613LgAFs9zHl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <iframe class="youtube-frame" title="Zindigon YouTube Video" src="https://www.youtube.com/embed/qTNXxz_y9-w" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
       </div>
     </div>
 
-    <!---------- RIGHT column: Featured Partner live embed ---------->
     <div class="sidebar">
       <div class="twitch-card arcane-card" id="featuredPartner">
         <h3 class="h">Live Now</h3>
@@ -181,7 +208,7 @@
   </section>
 
   <main>
-    <!---------- PROJECTS ---------->
+    <!-- PROJECTS hub -->
     <section id="projects" class="section" aria-labelledby="projects-title">
       <h2 id="projects-title" class="h" style="font-size:1.6rem">Projects</h2>
       <div class="grid">
@@ -193,19 +220,22 @@
         <div class="col-6 card">
           <h3 class="h" style="font-size:1.2rem">Games</h3>
           <p class="p">Design logs, builds, and dev progress.</p>
-          <div class="actions" style="margin-top:10px"><a class="btn btn-ghost" href="#games" data-tab="games">Open Games</a></div>
+          <div class="actions" style="margin-top:10px">
+            <a class="btn btn-ghost" href="#game-troll-king" data-tab="game-troll-king">Troll King</a>
+            <a class="btn btn-ghost" href="#game-atherfall" data-tab="game-atherfall">AetherFall</a>
+          </div>
         </div>
       </div>
     </section>
 
-    <!---------- PARTNERS ---------->
+    <!-- PARTNERS -->
     <section id="partners" class="section" aria-labelledby="partners-title">
       <h2 id="partners-title" class="h" style="font-size:1.6rem">Partners</h2>
       <p class="p" style="margin-bottom:10px">Creators we vibe with. If they're live, you'll see the stream; if not, enjoy their most recent video or VOD.</p>
       <div class="grid" id="partnersGrid"></div>
     </section>
 
-    <!---------- ANIME ---------->
+    <!-- ANIME -->
     <section id="anime" class="section" aria-labelledby="anime-title">
       <h2 id="anime-title" class="h" style="font-size:1.6rem">Anime</h2>
       <div class="grid">
@@ -224,43 +254,71 @@
       </div>
     </section>
 
-    <!---------- GAMES ---------->
+    <!-- GAMES HUB (optional landing) -->
     <section id="games" class="section" aria-labelledby="games-title">
       <h2 id="games-title" class="h" style="font-size:1.6rem">Games</h2>
       <div class="grid">
-        <div class="col-12 card">
-          <h3 class="h" style="font-size:1.2rem">The Adventures of the Troll King</h3>
-          <p class="p">A strategic journey across a color-coded hex world—grind smart routes, face world bosses, and chase seasonal leaderboards. Fair, skill-first, and endlessly replayable.</p>
+        <div class="col-6 card">
+          <h3 class="h" style="font-size:1.2rem">Adventures of the Troll King</h3>
+          <p class="p">A strategic journey across a color-coded hex world—grind smart routes, face world bosses, and chase seasonal leaderboards.</p>
+          <div class="actions" style="margin-top:10px"><a class="btn" href="#game-troll-king" data-tab="game-troll-king">Open page</a></div>
         </div>
         <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Design Notes</h4>
-          <p class="p">Seasonal vs. core world balance, ethical monetization, and guild-based cooperation.</p>
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Progress</h4>
-          <p class="p">Godot builds, combat prototypes, and map shaders—documented as features land.</p>
-        </div>
-
-        <!-- AtherFall -->
-        <div class="col-12 card">
-          <h3 class="h" style="font-size:1.2rem">AtherFall</h3>
-          <p class="p">Rogue-like tower defense — mankind vs. aliens. Men traveled through time to recruit all walks and creations of life to hold the line against the aether swarm.</p>
-          <div class="actions" style="margin-top:10px">
-            <a class="btn" id="af-download" href="#">Download</a>
-            <a class="btn btn-ghost" id="af-guilds" href="#">Guilds & Members</a>
-          </div>
-        </div>
-
-        <!-- Live leaderboard renders here -->
-        <div class="col-12 card" id="af-leaderboard-card" aria-live="polite">
-          <h3 class="h" style="font-size:1.2rem">AtherFall — Best Wave Leaderboard</h3>
-          <p class="p" id="lb-status">Loading live data…</p>
-          <div class="leaderboard" id="lb-host" style="display:none;"></div>
+          <h3 class="h" style="font-size:1.2rem">AetherFall</h3>
+          <p class="p">Rogue-like tower defense — mankind vs. aliens. Time-bent recruits hold the line against the aether swarm.</p>
+          <div class="actions" style="margin-top:10px"><a class="btn" href="#game-atherfall" data-tab="game-atherfall">Open page</a></div>
         </div>
       </div>
     </section>
 
-    <!---------- ABOUT ---------->
+    <!-- GAME PAGE: Troll King -->
+    <section id="game-troll-king" class="section" aria-labelledby="gtk-title">
+      <h2 id="gtk-title" class="h" style="font-size:1.6rem">Adventures of the Troll King</h2>
+      <div class="grid">
+        <div class="col-12 card">
+          <p class="p">A seasonal roguelite with a swipe-based hex map, ethical monetization, and guild-driven cooperation.</p>
+          <div class="actions" style="margin-top:10px">
+            <a class="btn" href="#" target="_blank" rel="noopener">Download (coming soon)</a>
+            <a class="btn btn-ghost" href="#games" data-tab="games">Back to Games Hub</a>
+          </div>
+        </div>
+        <div class="col-6 card">
+          <h4 class="h" style="font-size:1.1rem">Design Notes</h4>
+          <p class="p">Season cadence, guild levels, off-season progression, and world events.</p>
+        </div>
+        <div class="col-6 card">
+          <h4 class="h" style="font-size:1.1rem">Progress</h4>
+          <p class="p">Godot scenes, combat prototypes, map shaders, and UI polish.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME PAGE: AetherFall -->
+    <section id="game-atherfall" class="section" aria-labelledby="af-title">
+      <h2 id="af-title" class="h" style="font-size:1.6rem">AetherFall</h2>
+      <div class="grid">
+        <div class="col-12 card">
+          <p class="p">Rogue-like tower defense — mankind vs. aliens. Men traveled through time to recruit all walks and creations of life to hold the line against the aether swarm.</p>
+          <div class="actions" style="margin-top:10px">
+            <a class="btn" id="af-download" href="#" target="_blank" rel="noopener">Download</a>
+            <a class="btn btn-ghost" href="#games" data-tab="games">Back to Games Hub</a>
+          </div>
+        </div>
+
+        <!-- LIVE LEADERBOARD -->
+        <div class="col-12 card">
+          <h3 class="h" style="font-size:1.2rem">Leaderboards — Best Wave</h3>
+          <p class="p muted">Live data from your endpoint <code>/api/leaderboard/best_wave</code>.</p>
+          <div id="af-lb" class="lb-wrap">
+            <div id="af-lb-loading" class="p muted">Loading leaderboard…</div>
+            <div id="af-lb-error" class="p" style="display:none;">Couldn't load leaderboard. Try refreshing.</div>
+            <div id="af-lb-table"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
     <section id="about" class="section" aria-labelledby="about-title">
       <h2 id="about-title" class="h" style="font-size:1.6rem">About Us</h2>
       <div class="card">
@@ -268,7 +326,7 @@
       </div>
     </section>
 
-    <!---------- CONTACT ---------->
+    <!-- CONTACT -->
     <section id="contact" class="section" aria-labelledby="contact-title">
       <h2 id="contact-title" class="h" style="font-size:1.6rem">Contact</h2>
       <div class="grid">
@@ -292,8 +350,12 @@
   </footer>
 
   <script>
-    //-------------------- Config --------------------
-    const SITE_PARENTS = ["zindigon.com","localhost"];
+    // -------------------- Config --------------------
+    const SITE_PARENTS = ["zindigon.com", "www.zindigon.com", "localhost"];
+    const ATHERFALL = {
+      download: "#",       // TODO: your Play Store / itch link later
+      lbUrl: "/api/leaderboard/best_wave?limit=50"
+    };
 
     const PARTNERS = [
       { type:'twitch', name:'Zindigon', gamertag:'Zindigon', joined:'2025-11-01',
@@ -304,7 +366,7 @@
         channelUrl:'https://www.twitch.tv/spazfusc', isLive:false }
     ];
 
-    //-------------------- Starfield --------------------
+    // -------------------- Starfield --------------------
     (function(){
       const c=document.getElementById('starfield'); const ctx=c.getContext('2d');
       let w=0,h=0,stars=[];
@@ -328,9 +390,9 @@
       })();
     })();
 
-    //---------- Tabs ----------
-    const sections=document.querySelectorAll('.section');
-    const tabBtns=document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab]');
+    // -------------------- Tabs / Router --------------------
+    const sections = document.querySelectorAll('.section');
+    const tabBtns = document.querySelectorAll('.tab-btn, a.brand, a.btn[data-tab], .menu a[data-tab]');
     function showTab(id){
       sections.forEach(s=>s.classList.toggle('show', s.id===id));
       document.querySelectorAll('.tab-btn').forEach(b=>{
@@ -338,6 +400,9 @@
         b.setAttribute('aria-selected', b.classList.contains('active')?'true':'false');
       });
       const el=document.getElementById(id); if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
+      dropdown(false);
+      // if navigating to AetherFall, load leaderboard
+      if(id==='game-atherfall') loadAetherfallLeaderboard();
     }
     tabBtns.forEach(btn=>{
       btn.addEventListener('click', (e)=>{
@@ -345,155 +410,160 @@
         if(id){ e.preventDefault(); showTab(id); }
       });
     });
-    document.getElementById('year').textContent=new Date().getFullYear();
-    const urlParams=new URLSearchParams(location.search); const initial=urlParams.get('tab'); if(initial){ showTab(initial); }
 
-    //-------------------- Partners --------------------
+    // Deep link: ?tab=game-atherfall OR ?game=atherfall
+    (function(){
+      const urlParams=new URLSearchParams(location.search);
+      const game=urlParams.get('game');
+      const tab=urlParams.get('tab');
+      if(game==='atherfall') showTab('game-atherfall');
+      else if(game==='troll-king') showTab('game-troll-king');
+      else if(tab) showTab(tab);
+    })();
+
+    // -------------------- Projects dropdown behavior --------------------
+    const projectsBtn=document.getElementById('projectsBtn');
+    const menu=document.querySelector('.dropdown .menu');
+    function dropdown(open){
+      const willOpen = (open!==undefined)? open : !menu.classList.contains('show');
+      menu.classList.toggle('show', willOpen);
+      projectsBtn.setAttribute('aria-expanded', String(willOpen));
+    }
+    projectsBtn.addEventListener('click', (e)=>{ e.preventDefault(); dropdown(); });
+    document.addEventListener('click', (e)=>{ if(!e.target.closest('.dropdown')) dropdown(false); });
+    projectsBtn.addEventListener('keydown', (e)=>{ if(e.key==='ArrowDown'){ dropdown(true); menu.querySelector('a')?.focus(); }});
+
+    // -------------------- Year --------------------
+    document.getElementById('year').textContent=new Date().getFullYear();
+
+    // -------------------- Helpers --------------------
     function twitchEmbedSrc(channel){
       const parents = SITE_PARENTS.map(p=>`parent=${encodeURIComponent(p)}`).join('&');
       return `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&${parents}&muted=true`;
     }
+
+    // -------------------- Partners rendering --------------------
     function renderPartnerCard(p){
       const col = document.createElement('div');
       col.className = 'col-12 card';
+
       const wrap = document.createElement('div');
       wrap.className = 'partner-card';
 
       const media = document.createElement('div');
-      const iframe = document.createElement('iframe');
-      iframe.className = 'twitch-frame';
+      let iframe = document.createElement('iframe');
+      iframe.className = p.type === 'twitch' ? 'twitch-frame' : 'youtube-frame';
       iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
       iframe.allowFullscreen = true;
-      iframe.src = twitchEmbedSrc(p.twitchChannel);
+      iframe.src = p.type === 'twitch' ? twitchEmbedSrc(p.twitchChannel) : '';
       media.appendChild(iframe);
 
       const meta = document.createElement('div');
       meta.className = 'partner-meta';
-      const title = Object.assign(document.createElement('div'), {className:'partner-title h', textContent:p.name});
-      const badges = Object.assign(document.createElement('div'), {className:'partner-badges'});
-      const tag = Object.assign(document.createElement('span'), {className:'badge', textContent:p.gamertag});
-      const joined = Object.assign(document.createElement('span'), {className:'badge', textContent:`Joined ${new Date(p.joined).toLocaleDateString()}`});
-      badges.append(tag, joined);
-      const desc = Object.assign(document.createElement('p'), {className:'p', textContent:p.description||''});
-      const actions = Object.assign(document.createElement('div'), {className:'actions'});
-      const link = Object.assign(document.createElement('a'), {className:'btn btn-ghost', href:p.channelUrl, target:'_blank', rel:'noopener', textContent:'Visit Channel'});
-      actions.appendChild(link);
-      meta.append(title, badges, desc, actions);
+      const title = document.createElement('div');
+      title.className = 'partner-title h';
+      title.textContent = p.name;
 
+      const badges = document.createElement('div');
+      badges.className = 'partner-badges';
+      const tag = document.createElement('span');
+      tag.className = 'badge';
+      tag.textContent = p.gamertag;
+      const joined = document.createElement('span');
+      joined.className = 'badge';
+      joined.textContent = `Joined ${new Date(p.joined).toLocaleDateString()}`;
+      badges.append(tag, joined);
+
+      const desc = document.createElement('p');
+      desc.className = 'p';
+      desc.textContent = p.description || '';
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const link = document.createElement('a');
+      link.className = 'btn btn-ghost';
+      link.href = p.channelUrl; link.target = '_blank'; link.rel = 'noopener';
+      link.textContent = 'Visit Channel';
+      actions.appendChild(link);
+
+      meta.append(title, badges, desc, actions);
       wrap.append(media, meta);
       col.appendChild(wrap);
       return col;
     }
-    (function buildPartners(){
+
+    function buildPartnersSection(){
       const grid = document.getElementById('partnersGrid');
       grid.innerHTML = '';
       PARTNERS.forEach(p=> grid.appendChild(renderPartnerCard(p)) );
-      const feat = PARTNERS[0];
-      const fp = document.getElementById('featuredPlayer');
-      fp.innerHTML = '';
-      const fI = document.createElement('iframe');
-      fI.className = 'twitch-frame';
-      fI.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-      fI.allowFullscreen = true;
-      fI.src = twitchEmbedSrc(feat.twitchChannel);
-      fp.appendChild(fI);
-      const link = document.getElementById('featuredLink'); link.href = feat.channelUrl || '#';
-      document.getElementById('featuredMeta').textContent = `${feat.name} — ${feat.gamertag}`;
-    })();
+    }
 
-    //-------------------- AtherFall: Live Leaderboard --------------------
-    const LB_URL = 'https://dashboard.trytalo.com/leaderboards/best_wave';
+    // -------------------- Featured Partner --------------------
+    function pickFeatured(){ return PARTNERS.find(p=>p.isLive) || PARTNERS[0]; }
+    function renderFeatured(){
+      const target = document.getElementById('featuredPlayer');
+      target.innerHTML = '';
+      const p = pickFeatured();
+      if(!p) return;
+      const iframe = document.createElement('iframe');
+      iframe.className = p.type === 'twitch' ? 'twitch-frame' : 'youtube-frame';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.src = twitchEmbedSrc(p.twitchChannel);
+      target.appendChild(iframe);
 
-    async function loadAtherFallLeaderboard(){
-      const host = document.getElementById('lb-host');
-      const statusEl = document.getElementById('lb-status');
+      const link = document.getElementById('featuredLink');
+      link.href = p.channelUrl || '#';
+      document.getElementById('featuredMeta').textContent = `${p.name} — ${p.gamertag}`;
+    }
 
-      // 1) Try JSON first (common pattern: add ?format=json, but also try raw)
+    buildPartnersSection();
+    renderFeatured();
+
+    // -------------------- Wire game links --------------------
+    document.getElementById('af-download').href = ATHERFALL.download;
+
+    // -------------------- AetherFall Leaderboard --------------------
+    async function loadAetherfallLeaderboard(){
+      const box = document.getElementById('af-lb-table');
+      const loading = document.getElementById('af-lb-loading');
+      const err = document.getElementById('af-lb-error');
+      loading.style.display='block'; err.style.display='none'; box.innerHTML='';
+
       try{
-        let res = await fetch(LB_URL, {headers:{'Accept':'application/json'}});
-        let text = await res.text();
-        let data = null;
-        try{ data = JSON.parse(text); }catch(_){ /* not JSON */ }
-
-        if(Array.isArray(data)){
-          renderLBRows(host, data);
-          statusEl.style.display='none'; host.style.display='block'; return;
+        const r = await fetch(ATHERFALL.lbUrl, { headers: { 'accept': 'application/json' } });
+        const data = await r.json();
+        if(!r.ok || !data?.ok){ throw new Error('bad_response'); }
+        const items = data.items || [];
+        if(!items.length){
+          box.innerHTML = `<p class="p muted">No entries yet. Be the first to hold the line.</p>`;
+        }else{
+          const rows = items.map(it=>`
+            <tr>
+              <td>${it.rank ?? ''}</td>
+              <td>${escapeHtml(it.name ?? 'Unknown')}</td>
+              <td><span class="lb-badge">${escapeHtml(it.guild ?? '-')}</span></td>
+              <td>${Number(it.best_wave ?? it.score ?? 0)}</td>
+            </tr>
+          `).join('');
+          box.innerHTML = `
+            <div style="overflow:auto">
+              <table class="lb-table">
+                <thead>
+                  <tr><th>Rank</th><th>Player</th><th>Guild</th><th>Best Wave</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          `;
         }
-
-        // 2) Not JSON? Try to parse HTML table body
-        const doc = new DOMParser().parseFromString(text, 'text/html');
-        const table = doc.querySelector('table');
-        if(table){
-          const rows = [...table.querySelectorAll('tbody tr')].map((tr,i)=>{
-            const cells = [...tr.children].map(td=>td.textContent.trim());
-            return { rank: cells[0] || (i+1), name: cells[1] || '', guild: cells[2] || '', best_wave: cells[3] || cells[cells.length-1] || '' };
-          });
-          renderLBRows(host, rows);
-          statusEl.style.display='none'; host.style.display='block'; return;
-        }
-
-        // If we got here, content was unexpected — fallback to iframe
-        fallbackIframe(host, statusEl);
-      } catch(err){
-        // Likely CORS block — fallback to iframe
-        fallbackIframe(host, statusEl);
+      }catch(e){
+        err.style.display='block';
+      }finally{
+        loading.style.display='none';
       }
     }
-
-    function renderLBRows(host, rows){
-      // Normalize keys from either JSON shape or parsed HTML
-      const norm = rows.map((r,i)=>({
-        rank: Number(r.rank ?? (r.position ?? i+1)),
-        name: r.name ?? r.player ?? r.username ?? 'Unknown',
-        guild: r.guild ?? r.team ?? r.clan ?? '-',
-        best_wave: r.best_wave ?? r.bestWave ?? r.score ?? r.level ?? r.highest_level ?? ''
-      }));
-
-      host.innerHTML = `
-        <div class="leaderboard">
-          <table class="lb-table">
-            <thead>
-              <tr>
-                <th class="lb-rank">Rank</th>
-                <th>Player</th>
-                <th>Guild</th>
-                <th class="lb-score">Best Wave</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${norm.map(r => `
-                <tr class="lb-row">
-                  <td class="lb-rank">${r.rank ?? ''}</td>
-                  <td class="lb-name">${escapeHTML(r.name)}</td>
-                  <td class="lb-guild">${escapeHTML(r.guild)}</td>
-                  <td class="lb-score">${escapeHTML(String(r.best_wave))}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function fallbackIframe(host, statusEl){
-      statusEl.innerHTML = `<span class="lb-bad">Couldn’t fetch cross-origin data. Showing embedded leaderboard.</span>`;
-      host.style.display='block';
-      host.innerHTML = `
-        <iframe src="${LB_URL}" style="width:100%; height:640px; border:0; border-radius:12px; box-shadow:var(--shadow); background:#0c0c20;"></iframe>
-      `;
-    }
-
-    function escapeHTML(s){
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    // Kick it off
-    loadAtherFallLeaderboard();
-
-    //-------------------- Wire misc --------------------
-    // Example placeholder links (replace later)
-    document.getElementById('af-download').href = '#';
-    document.getElementById('af-guilds').href = '#';
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
   </script>
 </body>
 </html>
