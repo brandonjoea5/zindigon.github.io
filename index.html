@@ -345,6 +345,61 @@
             <div id="af-lb-table"></div>
           </div>
         </div>
+        <script>
+(function(){
+  const api = "/api/leaderboard/best_wave?limit=20"; // same-origin → no CORS headaches
+  const elLoading = document.getElementById("af-lb-loading");
+  const elError   = document.getElementById("af-lb-error");
+  const elTable   = document.getElementById("af-lb-table");
+
+  async function loadLeaderboard() {
+    try {
+      elError.style.display = "none";
+      elLoading.style.display = "block";
+
+      const r = await fetch(api, { cache: "no-store" });
+      const j = await r.json().catch(()=>({ ok:false }));
+      if (!r.ok || !j.ok) throw new Error(JSON.stringify({status:r.status, body:j}));
+
+      const rows = Array.isArray(j.items) ? j.items : [];
+      elTable.innerHTML = renderTable(rows);
+      elLoading.style.display = "none";
+    } catch (e) {
+      elLoading.style.display = "none";
+      elError.style.display = "block";
+      console.warn("Leaderboard load failed:", e);
+    }
+  }
+
+  function renderTable(items){
+    if (!items.length) {
+      return '<div class="p" style="opacity:.8">No entries yet — be the first!</div>';
+    }
+    const header = `
+      <div class="lb-row lb-head" style="display:grid;grid-template-columns:3rem 1fr 1fr 8rem;gap:.5rem;padding:.4rem .6rem;opacity:.85;border-bottom:1px solid #222;">
+        <div>#</div><div>Player</div><div>Guild</div><div style="text-align:right">Best Wave</div>
+      </div>`;
+    const body = items.map(it => `
+      <div class="lb-row" style="display:grid;grid-template-columns:3rem 1fr 1fr 8rem;gap:.5rem;padding:.5rem .6rem;border-bottom:1px dashed #1a1a1f;">
+        <div>${it.rank ?? ""}</div>
+        <div>${escapeHtml(it.name ?? "Unknown")}</div>
+        <div>${escapeHtml(it.guild ?? "-")}</div>
+        <div style="text-align:right">${Number(it.best_wave ?? 0)}</div>
+      </div>
+    `).join("");
+    return header + body;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // initial + auto-refresh every 30s (matches your Worker cache-control)
+  loadLeaderboard();
+  setInterval(loadLeaderboard, 30000);
+})();
+</script>
+
       </div>
     </section>
 
