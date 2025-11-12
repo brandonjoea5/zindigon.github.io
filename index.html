@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Secure CSP that still allows your worker, fonts, ads, YouTube, Twitch -->
+  <!-- CSP: allow inline scripts so your tabs/dropdowns work; keep fonts/ads/embeds -->
   <meta http-equiv="Content-Security-Policy"
     content="
       default-src 'self';
@@ -9,7 +9,7 @@
       font-src 'self' https://fonts.gstatic.com;
       img-src 'self' data: https://i.imgur.com https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net;
       connect-src 'self' https://zindigon-pay.brandonjoea3.workers.dev https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net;
-      script-src 'self' https://pagead2.googlesyndication.com;
+      script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net;
       frame-src 'self' https://www.youtube.com https://player.twitch.tv https://googleads.g.doubleclick.net;
     ">
   <meta charset="utf-8" />
@@ -33,7 +33,13 @@
       background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed;
       color:var(--ink);
       font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
+      overflow-x:hidden;
     }
+
+    /* Global content safety */
+    img,iframe,video{max-width:100%; height:auto; border:0}
+    .p, .card, .section, .h, .mini, .actions, td, th { overflow-wrap:anywhere; word-break:break-word; }
+    .card, .section{ overflow:hidden; }
 
     /* Background layers */
     #starfield{position:fixed; inset:0; z-index:-2;}
@@ -57,7 +63,7 @@
     .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
     .logo-img{
       height:28px; width:28px; display:block; border-radius:8px;
-      background:#232347 url('') center/cover no-repeat; /* <- put your logo URL inside the quotes above */
+      background:#232347 url('') center/cover no-repeat; /* put your logo URL */
       box-shadow:0 0 18px rgba(124,77,255,.35);
     }
     .logo-text{font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1; color:white; text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);}
@@ -81,7 +87,7 @@
       position:absolute; top:100%; left:0; margin-top:8px; min-width:260px;
       background: linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.75));
       border:1px solid rgba(124,77,255,.4); border-radius:12px; box-shadow:var(--shadow);
-      padding:8px; display:none; backdrop-filter: blur(8px);
+      padding:8px; display:none; backdrop-filter: blur(8px); z-index:60;
     }
     .menu.show{ display:block; }
     .menu a{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--ink); }
@@ -103,11 +109,12 @@
     .section.show{ display:block; }
     @keyframes rise{ from{ transform:translateY(6px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
 
-    .hero{ display:grid; grid-template-columns:minmax(0, 4fr) minmax(280px, 1fr); gap:20px; }
+    .hero{ display:grid; grid-template-columns:minmax(0, 4fr) minmax(280px, 1fr); gap:20px; align-items:start; }
     @media (max-width:1100px){ .hero{grid-template-columns:1fr; gap:14px;} }
+    .sidebar{ width:100%; }
 
     .arcane-card{ background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65)); border:1px solid rgba(124,77,255,.25); border-radius:var(--radius); box-shadow:var(--shadow); }
-    .hero-card{ padding:22px; margin-bottom:20px; position:relative; overflow:clip; }
+    .hero-card{ padding:22px; margin-bottom:20px; position:relative; overflow:hidden; }
     .sigils{ position:absolute; inset:-20% -10% auto auto; height:180%; background: radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%), radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%), conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0)); filter: blur(45px) saturate(140%); pointer-events:none; transform: translateZ(0); }
     .hero-title{ font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2rem, 3.2vw, 3.6rem); line-height:1.05; letter-spacing:.8px; background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25); }
     .hero-sub{ margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px; text-shadow:0 0 12px rgba(124,77,255,.25); }
@@ -129,7 +136,7 @@
     .p{ margin:0; color:#d7dcff; }
 
     /* Media frames */
-    .youtube-frame,.twitch-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
+    .youtube-frame,.twitch-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); display:block;}
 
     /* Leaderboard styles */
     .lb-wrap{ margin-top:14px; }
@@ -163,7 +170,7 @@
     footer .legal{ margin-top:14px; font-size:.85rem; line-height:1.5; color:#b9beff; }
   </style>
 
-  <!-- AdSense -->
+  <!-- AdSense loader -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2900666268471871" crossorigin="anonymous"></script>
 </head>
 
@@ -214,7 +221,7 @@
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
           </button>
           <div class="menu" role="menu" aria-labelledby="partnersBtn" id="partnersMenu">
-            <!-- Filled by JS from PARTNERS[] so you don't have to duplicate -->
+            <!-- Filled by JS -->
           </div>
         </div>
 
@@ -413,7 +420,7 @@
     // -------------------- Simple Config --------------------
     const SITE_PARENTS = ["zindigon.com", "www.zindigon.com", "localhost"];
 
-    // YouTube latest: set your CHANNEL_ID below (UC....). We'll auto-embed uploads playlist (newest first).
+    // YouTube latest: fill with your UC... id to auto-embed uploads
     const YT_CHANNEL_ID = ""; // e.g. "UCxxxxxxxxxxxxxxxx"
 
     const ATHERFALL = {
@@ -479,7 +486,7 @@
       showTab(id);
     });
 
-    // Deep link: ?tab=game-atherfall OR ?game=atherfall
+    // Deep link
     (function(){
       const urlParams=new URLSearchParams(location.search);
       const game=urlParams.get('game');
@@ -511,7 +518,7 @@
     }
     function esc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-    // -------------------- Featured Partner (Home, right card) --------------------
+    // -------------------- Featured Partner --------------------
     function anyLive(){ return PARTNERS.some(p=>p.isLive); }
     function pickFeatured(){ return PARTNERS.find(p=>p.isLive) || PARTNERS[0]; }
     function renderFeatured(){
@@ -554,7 +561,6 @@
     function renderPartnerCard(p){
       const card = document.createElement('div');
       card.className = 'partner-card';
-      // Header
       const header = document.createElement('div');
       header.className = 'partner-header';
       const avatar = document.createElement('div');
@@ -567,12 +573,10 @@
       title.append(name, metaLine);
       header.append(avatar, title);
 
-      // Tags
       const tags = document.createElement('div'); tags.className='partner-tags';
       const tLive = document.createElement('span'); tLive.className='lb-badge'; tLive.textContent = p.isLive ? 'LIVE' : 'Offline';
       tags.appendChild(tLive);
 
-      // Media (only if live)
       const media = document.createElement('div');
       if(p.isLive){
         const iframe = document.createElement('iframe');
@@ -583,7 +587,6 @@
         media.appendChild(iframe);
       }
 
-      // Description + actions
       const desc = document.createElement('p'); desc.className='p'; desc.textContent = p.description || '';
       const actions = document.createElement('div'); actions.className='actions';
       const link = document.createElement('a'); link.className='btn btn-ghost'; link.href=p.channelUrl; link.target='_blank'; link.rel='noopener';
@@ -628,7 +631,6 @@
       if(uploads){
         iframe.src = `https://www.youtube.com/embed/videoseries?list=${uploads}`;
       }else{
-        // Fallback direct video (replace with your video id if you like)
         iframe.src = 'https://www.youtube.com/embed/qTNXxz_y9-w';
       }
     }
