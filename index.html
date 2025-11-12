@@ -378,51 +378,7 @@
             <div id="af-lb-table"></div>
           </div>
         </div>
-        <script>
-        const LB_URL = 'https://zindigon-pay.brandonjoea3.workers.dev/api/leaderboard/best_wave';
         
-        async function loadLeaderboard(){
-          const elLoad  = document.getElementById('af-lb-loading');
-          const elErr   = document.getElementById('af-lb-error');
-          const elTable = document.getElementById('af-lb-table');
-        
-          elErr.style.display = 'none';
-          elLoad.style.display = 'block';
-        
-          try {
-            const res = await fetch(LB_URL, { headers: { 'Accept': 'application/json' } });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const body = await res.json();
-        
-            // Accept either {ok:true, data:[...]} or {ok:true, items:[...]} or a plain array
-            const rows = Array.isArray(body?.data) ? body.data
-                       : Array.isArray(body?.items) ? body.items
-                       : Array.isArray(body)        ? body
-                       : [];
-        
-            if (!rows.length) {
-              elTable.innerHTML = '<div class="p" style="opacity:.75">No entries yet. Be the first to hold the line.</div>';
-            } else {
-              elTable.innerHTML =
-                `<table class="lb"><thead><tr><th>#</th><th>Player</th><th>Guild</th><th>Best Wave</th></tr></thead><tbody>` +
-                rows.map((r,i)=>`<tr>
-                  <td>${i+1}</td>
-                  <td>${escapeHtml(r.alias ?? r.player ?? r.player_alias ?? 'Unknown')}</td>
-                  <td>${escapeHtml(r.guild ?? r.guild_name ?? '—')}</td>
-                  <td>${r.best_wave ?? r.wave ?? r.score ?? 0}</td>
-                </tr>`).join('') +
-                `</tbody></table>`;
-            }
-          } catch (e) {
-            elErr.style.display = 'block';
-            console.error(e);
-          } finally {
-            elLoad.style.display = 'none';
-          }
-        }
-        function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-        document.addEventListener('DOMContentLoaded', loadLeaderboard);
-        </script>
 
       </div>
     </section>
@@ -479,9 +435,10 @@
     const YT_CHANNEL_ID = ""; // e.g. "UCxxxxxxxxxxxxxxxx"
 
     const ATHERFALL = {
-      download: "#",       // TODO: your Play Store / itch link later
-      lbUrl: "https://zindigon-pay.brandonjoea3.workers.dev/api/leaderboard/best_wave?limit=50"
+      download: "#",
+      lbUrl: "https://zindigon-pay.brandonjoea3.workers.dev/api/leaderboard/best_wave?limit=50&base=try"
     };
+
 
     const PARTNERS = [
       { type:'twitch', name:'Zindigon', gamertag:'Zindigon', joined:'2025-11-01',
@@ -704,7 +661,12 @@
         const r = await fetch(ATHERFALL.lbUrl, { headers: { 'accept': 'application/json' }, cache:'no-store' });
         const data = await r.json();
         if(!r.ok || !data?.ok){ throw new Error('bad_response'); }
-        const items = data.items || [];
+          const items =
+            (Array.isArray(data?.data) && data.data) ||
+            (Array.isArray(data?.items) && data.items) ||
+            (Array.isArray(data) && data) ||
+            [];
+
         if(!items.length){
           box.innerHTML = `<p class="p" style="opacity:.8">No entries yet. Be the first to hold the line.</p>`;
         }else{
