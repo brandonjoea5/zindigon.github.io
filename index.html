@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
   <meta http-equiv="Content-Security-Policy"
-      content="default-src 'self';
-               style-src 'self' 'unsafe-inline';
-               img-src 'self' data:;
-               connect-src 'self' https://zindigon-pay.brandonjoea3.workers.dev;">
-
-  
+    content="
+      default-src 'self';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net;
+      connect-src 'self' https://zindigon-pay.brandonjoea3.workers.dev https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net;
+      script-src 'self' https://pagead2.googlesyndication.com;
+      frame-src 'self' https://www.youtube.com https://player.twitch.tv https://googleads.g.doubleclick.net;
+    ">
   <meta charset="utf-8" />
   <title>Zindigon — From imagination to expectation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -31,7 +34,6 @@
       font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
     }
 
-    /* Background layers */
     #starfield{position:fixed; inset:0; z-index:-2;}
     .aurora{
       position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
@@ -42,7 +44,6 @@
       filter: blur(30px) saturate(120%);
     }
 
-    /* Header */
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(10px);
@@ -67,7 +68,6 @@
       box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
     }
 
-    /* Dropdowns */
     .dropdown{ position:relative; }
     .menu{ position:absolute; top:100%; left:0; margin-top:8px; min-width:240px; 
       background: linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.75));
@@ -79,7 +79,6 @@
     .menu a:hover{ background:rgba(124,77,255,.15); }
     @media (max-width:980px){ .dropdown .menu{ position:fixed; left:16px; right:16px; top:64px; } }
 
-    /* Hero */
     .hero{ max-width:1200px; margin:24px auto 20px; padding:24px 16px; display:grid; grid-template-columns:minmax(0, 4fr) minmax(280px, 1fr); gap:20px; }
     @media (max-width:1100px){ .hero{grid-template-columns:1fr; gap:14px; padding:20px 16px;} }
 
@@ -87,46 +86,12 @@
     .hero-card{ padding:22px; margin-bottom:20px; position:relative; overflow:clip; }
     .hero-title{ font-family:'Cinzel', serif; font-weight:900; font-size: clamp(2rem, 3.2vw, 3.6rem); line-height:1.05; letter-spacing:.8px; background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25); }
     .hero-sub{ margin-top:10px; color:#d9dcff; font-weight:600; letter-spacing:.4px; text-shadow:0 0 12px rgba(124,77,255,.25); }
-    .sigils{ position:absolute; inset:-20% -10% auto auto; height:180%; background: radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%), radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%), conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0)); filter: blur(45px) saturate(140%); pointer-events:none; transform: translateZ(0); }
 
     .actions{display:flex; gap:12px; flex-wrap:wrap; margin-top:18px;}
     .btn{ display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:14px; font-weight:700; letter-spacing:.2px; text-decoration:none; color:white; background: radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%), linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65)); box-shadow: 0 8px 30px rgba(124,77,255,.35); border:1px solid rgba(124,77,255,.55); }
     .btn:hover{transform:translateY(-1px); box-shadow:0 12px 40px rgba(124,77,255,.45);} 
     .btn-ghost{ color:var(--ink); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
-    .icon{width:18px; height:18px; display:inline-block;}
-    .mini{ color:var(--muted); font-size:.92rem; line-height:1.4; }
 
-    /* Frames */
-    .youtube-frame,.twitch-frame{ width:100%; aspect-ratio:16/9; border:0; border-radius:12px; box-shadow:var(--shadow); }
-
-    /* Layout below */
-    main{ max-width:1200px; margin:12px auto 80px; padding:0 20px; }
-    .section{ display:none; margin-top:16px; padding:22px; border-radius:var(--radius); background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6)); border: 1px solid rgba(124,77,255,.24); box-shadow: var(--shadow); animation: rise .35s ease-out; }
-    .section.show{ display:block; }
-    @keyframes rise{ from{ transform:translateY(6px); opacity:0 } to{ transform:translateY(0); opacity:1 } }
-
-    .grid{ display:grid; gap:16px; grid-template-columns: repeat(12, 1fr); }
-    .col-12{ grid-column: span 12; } .col-8{grid-column: span 8;} .col-6{ grid-column: span 6; } .col-4{ grid-column: span 4; }
-    @media (max-width:980px){ .col-8,.col-6,.col-4{grid-column:span 12} }
-
-    .card{ background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
-    .h{ font-family:'Cinzel', serif; font-weight:800; letter-spacing:.6px; margin:0 0 8px; color:#fff; text-shadow: 0 0 16px rgba(124,77,255,.35); }
-    .p{ margin:0; color:#d7dcff; }
-
-    /* Partner profile cards */
-    .partner-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; }
-    @media (max-width:1100px){ .partner-grid{ grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width:700px){ .partner-grid{ grid-template-columns: 1fr; } }
-    .partner-card{ display:flex; flex-direction:column; gap:12px; border-radius:16px; padding:14px; background:linear-gradient(180deg, rgba(18,18,40,.85), rgba(16,16,32,.65)); border:1px solid rgba(124,77,255,.25); box-shadow:var(--shadow); }
-    .partner-header{ display:flex; align-items:center; gap:10px; }
-    .partner-avatar{ width:48px; height:48px; border-radius:12px; background:#22243b; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
-    .partner-title{ display:flex; flex-direction:column; gap:2px; }
-    .partner-name{ font-weight:900; }
-    .partner-tags{ display:flex; gap:8px; flex-wrap:wrap; }
-    .badge{ font-size:.78rem; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); color:#dfe3ff; background:rgba(255,255,255,.04); }
-    .partner-media{ width:100%; }
-
-    /* Leaderboard styles */
     .lb-wrap{ margin-top:14px; }
     .lb-table{ width:100%; border-collapse: collapse; }
     .lb-table th, .lb-table td{ padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.08); }
@@ -134,21 +99,15 @@
     .lb-table tr:hover{ background:rgba(124,77,255,.08); }
     .lb-badge{ display:inline-block; padding:4px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); font-size:.8rem; }
 
-    /* Ads */
-    .ad-slot{ display:block; width:100%; min-height:90px; border-radius:12px; border:1px dashed rgba(124,77,255,.35); color:#c6cbff; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      display:flex; align-items:center; justify-content:center; font-size:.9rem; text-align:center; padding:10px; }
-    .ad-sticky{ position:sticky; top:76px; }
-    @media (max-width:1100px){ .ad-sticky{ position:static; } }
-
-    /* Bottom live bar */
-    #live-bar{ position:sticky; bottom:0; z-index:45; background:linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.85)); border-top:1px solid rgba(124,77,255,.35); padding:10px 16px; display:none; }
-
     footer{ max-width:1200px; margin:60px auto 40px; padding:0 20px; color:var(--muted); }
     footer .legal{ margin-top:14px; font-size:.85rem; line-height:1.5; color:#b9beff; }
   </style>
+
+  <!-- AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2900666268471871"
      crossorigin="anonymous"></script>
 </head>
+
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
   <div class="aurora" aria-hidden="true"></div>
