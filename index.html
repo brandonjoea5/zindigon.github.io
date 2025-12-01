@@ -1,30 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- CSP: allow inline scripts so your tabs/dropdowns work; keep fonts/ads/embeds -->
+  <!-- CSP: trimmed to what this page actually uses -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https://i.imgur.com https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://static.doubleclick.net;
-    connect-src 'self'
-      https://zindigon-pay.brandonjoea3.workers.dev
-      https://pagead2.googlesyndication.com
-      https://googleads.g.doubleclick.net
-      https://ep1.adtrafficquality.google;
+    img-src 'self' data: https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://static.doubleclick.net;
     script-src 'self' 'unsafe-inline'
       https://pagead2.googlesyndication.com
       https://googleads.g.doubleclick.net
       https://static.doubleclick.net
       https://adservice.google.com
       https://adservice.google.com.br;
-    frame-src 'self' https://www.youtube.com https://player.twitch.tv https://googleads.g.doubleclick.net;
+    connect-src 'self'
+      https://pagead2.googlesyndication.com
+      https://googleads.g.doubleclick.net
+      https://ep1.adtrafficquality.google;
+    frame-src 'self' https://www.youtube.com https://googleads.g.doubleclick.net;
   ">
 
   <meta charset="utf-8" />
   <title>Zindigon — From imagination to expectation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Zindigon — where fun, magic, and creativity live. Anime, games, streams, and more." />
+  <meta name="description" content="Zindigon — an independent creative studio building original games, anime, and live content." />
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -33,7 +32,7 @@
     :root{
       --bg:#07070d; --bg2:#0b0b16; --ink:#e6e6ff; --muted:#aab0ff;
       --accent:#7c4dff; --accent-2:#00e0ff; --accent-3:#ff3bf5;
-      --card:#0f0f1d; --ring:rgba(124,77,255,.35); --radius:16px;
+      --card:#0f0f1d; --radius:16px;
       --shadow:0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
     }
     *{box-sizing:border-box}
@@ -44,11 +43,7 @@
       font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
       overflow-x:hidden;
     }
-
-    /* Global content safety */
-    img,iframe,video{max-width:100%; height:auto; border:0; display:block;}
-    .p, .card, .section, .h, .mini, .actions, td, th { overflow-wrap:anywhere; word-break:break-word; }
-    .card, .section{ overflow:hidden; }
+    img,iframe{max-width:100%; height:auto; border:0; display:block;}
 
     /* Background layers */
     #starfield{position:fixed; inset:0; z-index:-2;}
@@ -65,7 +60,7 @@
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(10px);
-      background: linear-gradient(180deg, rgba(10,10,22,.65), rgba(10,10,22,.25));
+      background: linear-gradient(180deg, rgba(10,10,22,.75), rgba(10,10,22,.35));
       border-bottom: 1px solid rgba(124,77,255,.25);
     }
     .nav{
@@ -76,10 +71,13 @@
       align-items:center;
       gap:14px;
     }
-    .brand{display:flex; align-items:center; gap:12px; text-decoration:none;}
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      text-decoration:none;
+    }
     .logo-img{
       height:28px; width:28px; display:block; border-radius:8px;
-      background:#232347 url('') center/cover no-repeat; /* put your logo URL */
+      background:#232347 url('') center / cover no-repeat; /* put logo here if you want */
       box-shadow:0 0 18px rgba(124,77,255,.35);
       flex-shrink:0;
     }
@@ -90,136 +88,89 @@
       white-space:nowrap;
     }
     .spacer{flex:1}
-
-    .tabs{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
-    .tab-btn, .menu-btn{
-      appearance:none; border:none; cursor:pointer;
-      color:var(--muted); background:transparent;
-      padding:10px 14px; border-radius:12px; font-weight:600; outline:none; display:inline-flex; align-items:center; gap:8px;
-      max-width:100%;
+    .nav-links{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
     }
-    .tab-btn:hover,.menu-btn:hover{color:var(--ink)}
-    .tab-btn.active{
-      color:white; background:linear-gradient(180deg, rgba(124,77,255,.35), rgba(124,77,255,.12));
-      box-shadow: inset 0 0 0 1px rgba(124,77,255,.45), var(--shadow);
+    .nav-links a{
+      text-decoration:none;
+      color:var(--muted);
+      padding:8px 14px;
+      border-radius:999px;
+      font-weight:600;
+      font-size:.95rem;
+      border:1px solid transparent;
     }
-
-    /* Dropdowns */
-    .dropdown{ position:relative; }
-    .menu{
-      position:absolute; top:100%; left:0; margin-top:8px; min-width:220px;
-      background: linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.75));
-      border:1px solid rgba(124,77,255,.4); border-radius:12px; box-shadow:var(--shadow);
-      padding:8px; display:none; backdrop-filter: blur(8px); z-index:60;
+    .nav-links a:hover{
+      color:var(--ink);
+      border-color:rgba(124,77,255,.4);
+      background:rgba(124,77,255,.12);
     }
-    .menu.show{ display:block; }
-    .menu a{
-      display:flex; align-items:center; gap:8px;
-      padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--ink);
-    }
-    .menu a:hover{ background:rgba(124,77,255,.15); }
-    @media (max-width:980px){
-      .dropdown .menu{
-        position:fixed;
-        left:16px; right:16px; top:64px;
-      }
-    }
-
-    /* Layout */
-    main{
-      max-width:1200px;
-      margin:0 auto 80px;
-      padding:0 20px;
-    }
-    .section{
-      display:none;
-      margin:22px 0 0;
-      padding:22px;
-      border-radius:var(--radius);
-      background: linear-gradient(180deg, rgba(12,12,28,.75), rgba(13,13,30,.6));
-      border: 1px solid rgba(124,77,255,.24);
-      box-shadow: var(--shadow);
-      animation: rise .35s ease-out;
-    }
-    .section.show{ display:block; }
-    @keyframes rise{
-      from{ transform:translateY(6px); opacity:0 }
-      to{ transform:translateY(0); opacity:1 }
-    }
-
-    .hero{
-      display:grid;
-      grid-template-columns:minmax(0, 4fr) minmax(280px, 1fr);
-      gap:20px;
-      align-items:flex-start;
-    }
-    @media (max-width:1100px){
-      .hero{
-        grid-template-columns:1fr;
-        gap:18px;
-      }
-      .sidebar{
-        max-width:480px;
-        width:100%;
-        margin:0 auto;
-      }
-    }
-    .sidebar{ width:100%; }
-
-    .arcane-card{
-      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
-      border:1px solid rgba(124,77,255,.25);
-      border-radius:var(--radius);
+    .nav-links a.active{
+      color:#fff;
+      border-color:rgba(124,77,255,.7);
+      background:linear-gradient(180deg, rgba(124,77,255,.6), rgba(124,77,255,.25));
       box-shadow:var(--shadow);
     }
-    .hero-card{
-      padding:22px;
-      margin-bottom:20px;
-      position:relative;
-      overflow:hidden;
+
+    main{
+      max-width:1200px;
+      margin:0 auto 72px;
+      padding:20px 20px 0;
     }
-    .sigils{
-      position:absolute; inset:-20% -10% auto auto; height:180%;
-      background:
-        radial-gradient(40% 40% at 25% 30%, rgba(0,224,255,.13), transparent 60%),
-        radial-gradient(35% 35% at 70% 60%, rgba(255,59,245,.10), transparent 60%),
-        conic-gradient(from 0deg, rgba(124,77,255,.12), rgba(124,77,255,0) 40%, rgba(0,224,255,.12) 60%, rgba(0,224,255,0));
-      filter: blur(45px) saturate(140%);
-      pointer-events:none;
-      transform: translateZ(0);
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0, 3fr) minmax(280px, 2fr);
+      gap:24px;
+      align-items:flex-start;
     }
+    @media (max-width:900px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(13,13,30,.7));
+      border-radius:var(--radius);
+      border:1px solid rgba(124,77,255,.25);
+      box-shadow:var(--shadow);
+      padding:20px;
+    }
+
     .hero-title{
       font-family:'Cinzel', serif;
       font-weight:900;
-      font-size: clamp(2rem, 3.2vw, 3.6rem);
+      font-size:clamp(2.1rem, 3.4vw, 3.6rem);
       line-height:1.05;
+      margin:0;
       letter-spacing:.8px;
       background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%);
       -webkit-background-clip:text;
       background-clip:text;
       color:transparent;
       text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
-      margin:0;
     }
     .hero-sub{
-      margin-top:10px;
+      margin-top:8px;
       color:#d9dcff;
       font-weight:600;
       letter-spacing:.4px;
-      text-shadow:0 0 12px rgba(124,77,255,.25);
     }
-
     .actions{
       display:flex;
-      gap:12px;
       flex-wrap:wrap;
+      gap:12px;
       margin-top:18px;
     }
     .btn{
       display:inline-flex;
       align-items:center;
-      gap:10px;
-      padding:12px 16px;
+      gap:8px;
+      padding:10px 16px;
       border-radius:14px;
       font-weight:700;
       letter-spacing:.2px;
@@ -228,8 +179,8 @@
       background:
         radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%),
         linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
-      box-shadow: 0 8px 30px rgba(124,77,255,.35);
       border:1px solid rgba(124,77,255,.55);
+      box-shadow:0 8px 30px rgba(124,77,255,.35);
       white-space:nowrap;
     }
     .btn:hover{
@@ -239,180 +190,62 @@
     .btn-ghost{
       color:var(--ink);
       background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-    .icon{width:18px; height:18px; display:inline-block;}
-    .mini{ color:var(--muted); font-size:.92rem; line-height:1.4; }
-
-    /* Grid helpers */
-    .grid{
-      display:grid;
-      gap:16px;
-      grid-template-columns: repeat(12, 1fr);
-    }
-    .col-12{ grid-column: span 12; }
-    .col-8{grid-column: span 8;}
-    .col-6{ grid-column: span 6; }
-    .col-4{ grid-column: span 4; }
-    @media (max-width:980px){
-      .col-8,.col-6,.col-4{grid-column:span 12}
-    }
-
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:14px;
-      padding:16px;
+      border:1px solid rgba(255,255,255,.14);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
     }
-    .h{
+    .mini{
+      font-size:.92rem;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    h2{
       font-family:'Cinzel', serif;
       font-weight:800;
       letter-spacing:.6px;
       margin:0 0 8px;
       color:#fff;
-      text-shadow: 0 0 16px rgba(124,77,255,.35);
+      text-shadow:0 0 16px rgba(124,77,255,.35);
     }
-    .p{
-      margin:0;
+    p{
+      margin:0 0 10px;
       color:#d7dcff;
+      line-height:1.6;
     }
 
-    /* Media frames */
-    .youtube-frame,.twitch-frame{
+    .youtube-frame{
       width:100%;
       aspect-ratio:16/9;
-      border:0;
       border-radius:12px;
       box-shadow:var(--shadow);
     }
 
-    /* Leaderboard styles */
-    .lb-wrap{ margin-top:14px; }
-    .lb-table{ width:100%; border-collapse: collapse; }
-    .lb-table th, .lb-table td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-    }
-    .lb-table th{
-      text-align:left;
-      color:#cfd3ff;
-      font-weight:800;
-    }
-    .lb-table tr:hover{ background:rgba(124,77,255,.08); }
-    .lb-badge{
-      display:inline-block;
-      padding:4px 8px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.05);
-      font-size:.8rem;
-    }
-
-    /* Partners grid */
-    .partner-grid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:16px;
-    }
-    @media (max-width:1100px){ .partner-grid{ grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width:700px){ .partner-grid{ grid-template-columns: 1fr; } }
-
-    .partner-card{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      border-radius:16px;
-      padding:14px;
-      background:linear-gradient(180deg, rgba(18,18,40,.85), rgba(16,16,32,.65));
-      border:1px solid rgba(124,77,255,.25);
-      box-shadow:var(--shadow);
-    }
-    .partner-header{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .partner-avatar{
-      width:48px; height:48px;
-      border-radius:12px;
-      background:#22243b;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
-      flex-shrink:0;
-    }
-    .partner-title{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-      min-width:0;
-    }
-    .partner-name{
-      font-weight:900;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-      overflow:hidden;
-    }
-    .partner-tags{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    /* Ads */
     .ad-card{
-      margin-top:14px;
-      padding:10px 12px;
+      margin-top:16px;
+      padding:14px 16px;
+      border-radius:var(--radius);
+      background: linear-gradient(180deg, rgba(12,12,28,.9), rgba(13,13,30,.8));
+      border:1px dashed rgba(255,255,255,.18);
     }
-    .ad-card:first-child{
-      margin-top:0;
-    }
-    .ad-slot{
-      display:block;
-      width:100%;
-      padding:0;
-    }
-    .ad-slot ins.adsbygoogle{
-      display:block !important;
-      width:100% !important;
-    }
-
-    .ad-sticky{
-      position:sticky;
-      top:76px;
-    }
-    @media (max-width:1100px){
-      .ad-sticky{
-        position:static;
-      }
-    }
-
-    /* Bottom live bar */
-    #live-bar{
-      position:sticky;
-      bottom:0;
-      z-index:45;
-      background:linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.85));
-      border-top:1px solid rgba(124,77,255,.35);
-      padding:10px 16px;
-      display:none;
+    .ad-card p{
+      font-size:.85rem;
+      margin-bottom:8px;
+      color:#c4c8ff;
     }
 
     footer{
       max-width:1200px;
-      margin:60px auto 40px;
+      margin:40px auto 32px;
       padding:0 20px;
       color:var(--muted);
-    }
-    footer .legal{
-      margin-top:14px;
-      font-size:.85rem;
+      font-size:.86rem;
       line-height:1.5;
-      color:#b9beff;
     }
+    footer a{color:var(--muted);}
+    footer a:hover{color:#fff;}
   </style>
 
-  <!-- AdSense loader (only once) -->
+  <!-- AdSense loader (auto ads + manual unit below content) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2900666268471871" crossorigin="anonymous"></script>
 </head>
 
@@ -421,255 +254,88 @@
   <canvas id="starfield" aria-hidden="true"></canvas>
   <div class="aurora" aria-hidden="true"></div>
 
-  <!-- Header / Tabs -->
+  <!-- Header -->
   <header>
     <nav class="nav" role="navigation" aria-label="Primary">
-      <a class="brand" href="#" data-tab="home" aria-label="Zindigon Home">
+      <a class="brand" href="/">
         <span class="logo-img" aria-hidden="true"></span>
         <span class="logo-text">Zindigon</span>
       </a>
       <div class="spacer"></div>
-
-      <div class="tabs" role="tablist" aria-label="Sections">
-        <button class="tab-btn active" data-tab="home" role="tab" aria-selected="true">Home</button>
-
-        <!-- Games dropdown -->
-        <div class="dropdown">
-          <button class="menu-btn" id="gamesBtn" aria-haspopup="true" aria-expanded="false">
-            Games
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
-          </button>
-          <div class="menu" role="menu" aria-labelledby="gamesBtn">
-            <a href="#game-troll-king" role="menuitem" data-tab="game-troll-king">Adventures of the Troll King</a>
-            <a href="#game-atherfall" role="menuitem" data-tab="game-atherfall">AetherFall</a>
-          </div>
-        </div>
-
-        <!-- Anime dropdown -->
-        <div class="dropdown">
-          <button class="menu-btn" id="animeBtn" aria-haspopup="true" aria-expanded="false">
-            Anime
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
-          </button>
-          <div class="menu" role="menu" aria-labelledby="animeBtn">
-            <a href="#anime-bz" role="menuitem" data-tab="anime-bz">Bloodline Zero</a>
-          </div>
-        </div>
-
-        <!-- Partners dropdown -->
-        <div class="dropdown">
-          <button class="menu-btn" id="partnersBtn" aria-haspopup="true" aria-expanded="false">
-            Partners
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
-          </button>
-          <div class="menu" role="menu" aria-labelledby="partnersBtn" id="partnersMenu">
-            <!-- Filled by JS -->
-          </div>
-        </div>
-
-        <button class="tab-btn" data-tab="about" role="tab">About Us</button>
-        <button class="tab-btn" data-tab="contact" role="tab">Contact Us</button>
+      <div class="nav-links">
+        <a href="/" class="active">Home</a>
+        <a href="/Games/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
       </div>
     </nav>
   </header>
 
-  <!-- HERO (Home) -->
   <main>
-    <section id="home" class="section show hero" aria-labelledby="hero-title">
-      <div>
-        <div class="hero-card arcane-card">
-          <div class="sigils"></div>
-          <h1 id="hero-title" class="hero-title">Where Fun, Magic, and Creativity Live.</h1>
-          <div class="hero-sub">From imagination to expectation</div>
+    <div class="layout">
+      <!-- Left: About + intro -->
+      <section class="card" id="about">
+        <h1 class="hero-title">From imagination to expectation.</h1>
+        <div class="hero-sub">Original games, anime, and content by a one-man studio.</div>
 
-          <div class="actions">
-            <a class="btn" href="https://youtube.com/@zindigon" target="_blank" rel="noopener">
-              <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.7 3 12 3 12 3s-6.7 0-8.7.4A4 4 0 0 0 .5 6.2 41 41 0 0 0 0 12a41 41 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.3 21 12 21 12 21s6.7 0 8.7-.4a4 4 0 0 0 2.8-2.8A41 41 0 0 0 24 12a41 41 0 0 0-.5-5.8ZM9.6 15.5V8.5L15.9 12l-6.3 3.5Z"/></svg>
-              YouTube
-            </a>
-            <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96" target="_blank" rel="noopener">
-              <svg class="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 3.1c.7 1.3 2 2.3 3.5 2.6l1.1.2v3a8 8 0 0 1-4.6-1.5v7.1a6.5 6.5 0 1 1-6.6-6.5c.4 0 .7 0 1 .1v3.4a3 3 0 0 0-1-.2 3.1 3.1 0 1 0 3.1 3.1V2h3.5Z"/></svg>
-              TikTok
-            </a>
-            <a class="btn" href="#support" data-tab="contact">✨ Support Us</a>
-          </div>
-
-          <p class="mini" style="margin-top:10px">Explore original anime projects, game worlds, and live streams—crafted by Zindigon.</p>
+        <div class="actions">
+          <a class="btn" href="https://youtube.com/@zindigon" target="_blank" rel="noopener">YouTube</a>
+          <a class="btn btn-ghost" href="https://www.tiktok.com/@zindigon96" target="_blank" rel="noopener">TikTok</a>
         </div>
 
-        <!-- Featured Video -->
-        <div class="youtube-card arcane-card" style="padding:16px; margin-bottom:14px;">
-          <h3 class="h">Featured Video</h3>
-          <div id="yt-latest-wrap" style="margin-top:8px;">
-            <iframe id="yt-latest" class="youtube-frame" title="Zindigon Latest Video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-          </div>
+        <p class="mini" style="margin-top:14px;">
+          Zindigon is an independent creative brand building worlds across anime, game development, and streaming.
+          Everything you see here is crafted by hand in spare hours—no big studio, just stubborn passion.
+        </p>
+
+        <p>
+          Right now the main focus is:
+        </p>
+        <ul class="mini">
+          <li><strong>AetherFall</strong> — a rogue-like tower defense game about mankind vs. an alien swarm.</li>
+          <li><strong>Bloodline Zero</strong> — an adult-leaning anime series about Might-enabled users and a corrupt organization that controls them.</li>
+        </ul>
+
+        <p class="mini">
+          This site will grow over time with patch notes, episode previews, dev logs, and whatever else the journey unlocks.
+        </p>
+      </section>
+
+      <!-- Right: Latest video + ad -->
+      <section aria-label="Latest video and support">
+        <div class="card">
+          <h2>Latest YouTube Video</h2>
+          <!-- Replace VIDEO_ID below with the ID of your newest upload -->
+          <iframe
+            class="youtube-frame"
+            src="https://www.youtube.com/embed/VIDEO_ID"
+            title="Zindigon Latest Video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+          <p class="mini" style="margin-top:10px;">
+            Want more? Subscribe on YouTube to catch devlogs, gameplay, and future Bloodline Zero updates.
+          </p>
         </div>
 
-        <!-- In-content ad slot -->
-        <div class="arcane-card ad-card">
-          <div class="ad-slot">
-            <ins class="adsbygoogle"
-                 data-ad-client="ca-pub-2900666268471871"
-                 data-ad-slot="9743175998"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-          </div>
-        </div>
-      </div>
-
-      <aside class="sidebar">
-        <div class="twitch-card arcane-card" id="featuredPartner" style="padding:16px;">
-          <h3 class="h">Live Now</h3>
-          <div id="featuredPlayer" style="margin-top:8px;"></div>
-          <div class="actions" style="margin-top:12px;">
-            <a class="btn btn-ghost" id="featuredLink" href="#" target="_blank" rel="noopener">Open Channel</a>
-          </div>
-          <p class="mini" id="featuredMeta" style="margin-top:8px;">Follow to catch the next stream!</p>
-        </div>
-
-        <!-- Sticky sidebar ad -->
-        <div class="arcane-card ad-card ad-sticky">
-          <div class="ad-slot">
-            <ins class="adsbygoogle"
-                 data-ad-client="ca-pub-2900666268471871"
-                 data-ad-slot="9972731543"
-                 data-ad-format="auto"
-                 data-full-width-responsive="true"></ins>
-          </div>
-        </div>
-      </aside>
-    </section>
-
-    <!-- PARTNERS -->
-    <section id="partners" class="section" aria-labelledby="partners-title">
-      <h2 id="partners-title" class="h" style="font-size:1.6rem">Partners</h2>
-      <p class="p" style="margin-bottom:14px">Creators we vibe with. If they're live, you'll see the stream preview; if not, jump into their content hub.</p>
-      <div class="partner-grid" id="partnersGrid"></div>
-      <div class="arcane-card ad-card" style="margin-top:20px;">
-        <div class="ad-slot">
+        <!-- Optional: one ad block on a content-heavy page -->
+        <div class="ad-card">
+          <p>Ads help keep the lights on while I build everything out. Thanks for the support. 🙏</p>
           <ins class="adsbygoogle"
+               style="display:block"
                data-ad-client="ca-pub-2900666268471871"
-               data-ad-slot="9509982523"
+               data-ad-slot="9743175998"
                data-ad-format="auto"
                data-full-width-responsive="true"></ins>
         </div>
-      </div>
-    </section>
-
-    <!-- ANIME: Bloodline Zero -->
-    <section id="anime-bz" class="section" aria-labelledby="anime-bz-title">
-      <h2 id="anime-bz-title" class="h" style="font-size:1.6rem">Bloodline Zero</h2>
-      <div class="grid" style="margin-top:10px;">
-        <div class="col-12 card">
-          <p class="p">A grounded, adult-leaning saga where the hidden world of Might-enabled users collides with a relentless organization. Expect relics, high-tier power ceilings, and a universe where destiny is forged in paradox.</p>
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Lore & World</h4>
-          <p class="p">Timelines, factions, and living myths—refined to avoid plot holes and reward rewatchers.</p>
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Visual & Voice</h4>
-          <p class="p">Cinematic teasers, character sheets, and behind-the-mic sessions as the world takes shape.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- GAME: Troll King -->
-    <section id="game-troll-king" class="section" aria-labelledby="gtk-title">
-      <h2 id="gtk-title" class="h" style="font-size:1.6rem">Adventures of the Troll King</h2>
-      <div class="grid" style="margin-top:10px;">
-        <div class="col-12 card">
-          <p class="p">A seasonal roguelite with a swipe-based hex map, ethical monetization, and guild-driven cooperation.</p>
-        <div class="actions" style="margin-top:10px">
-          <a class="btn" id="af-download" href="#" target="_blank" rel="noopener">Download</a>
-          <a class="btn btn-ghost" href="/aetherfall-leaderboard.html" target="_blank" rel="noopener">
-            View Full Leaderboards
-          </a>
-          <a class="btn btn-ghost" href="#home" data-tab="home">Back Home</a>
-        </div>
-
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Design Notes</h4>
-          <p class="p">Season cadence, guild levels, off-season progression, and world events.</p>
-        </div>
-        <div class="col-6 card">
-          <h4 class="h" style="font-size:1.1rem">Progress</h4>
-          <p class="p">Godot scenes, combat prototypes, map shaders, and UI polish.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- GAME: AetherFall -->
-    <section id="game-atherfall" class="section" aria-labelledby="af-title">
-      <h2 id="af-title" class="h" style="font-size:1.6rem">AetherFall</h2>
-      <div class="grid" style="margin-top:10px;">
-        <div class="col-12 card">
-          <p class="p">Rogue-like tower defense — mankind vs. aliens. Men traveled through time to recruit all walks and creations of life to hold the line against the aether swarm.</p>
-          <div class="actions" style="margin-top:10px">
-            <a class="btn" id="af-download" href="#" target="_blank" rel="noopener">Download</a>
-            <a class="btn btn-ghost" href="#home" data-tab="home">Back Home</a>
-          </div>
-        </div>
-
-        <!-- LIVE LEADERBOARD -->
-        <div class="col-12 card">
-          <h3 class="h" style="font-size:1.2rem">Leaderboards — Best Wave</h3>
-          <p class="p" style="opacity:.85">Live data from your endpoint <code>/api/leaderboard/best_wave</code>.</p>
-          <div id="af-lb" class="lb-wrap">
-            <div id="af-lb-loading" class="p" style="opacity:.75">Loading leaderboard…</div>
-            <div id="af-lb-error" class="p" style="display:none; color:#ffbdbd;">Couldn't load leaderboard. Try refreshing.</div>
-            <div id="af-lb-table"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="about" class="section" aria-labelledby="about-title">
-      <h2 id="about-title" class="h" style="font-size:1.6rem">About Us</h2>
-      <div class="card" style="margin-top:10px;">
-        <p class="p">Zindigon Enterprises is a creative company spanning anime, game development, and live content. We build worlds for explorers and tell stories for believers—where rules bend, and imagination sets the expectation.</p>
-      </div>
-    </section>
-
-    <!-- CONTACT -->
-    <section id="contact" class="section" aria-labelledby="contact-title">
-      <h2 id="contact-title" class="h" style="font-size:1.6rem">Contact Us</h2>
-      <div class="grid" style="margin-top:10px;">
-        <div class="col-6 card" id="support">
-          <h3 class="h" style="font-size:1.2rem">Support the Journey</h3>
-          <p class="p">Fuel the magic. Every contribution goes back into art, music, servers, and tools.</p>
-          <p style="margin-top:10px">
-            <a class="btn" href="https://buymeacoffee.com/" target="_blank" rel="noopener">✨ Donate / Tip</a>
-          </p>
-        </div>
-        <div class="col-6 card">
-          <h3 class="h" style="font-size:1.2rem">Reach Out</h3>
-          <p class="p">Business & collabs: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a></p>
-          <p class="p">Press & licensing: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a></p>
-          <p class="p">General: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a></p>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Bottom live bar (shows only if someone is live) -->
-  <div id="live-bar">
-    <div style="max-width:1200px; margin:0 auto; display:grid; grid-template-columns: 1fr minmax(260px, 420px); gap:12px; align-items:center;">
-      <div class="p" id="live-bar-text">A friend is live. Catch the stream!</div>
-      <div id="live-bar-player"></div>
+      </section>
     </div>
-  </div>
+  </main>
 
   <footer>
     <div>© <span id="year"></span> Zindigon — All worlds reserved.</div>
-    <div class="legal">
-      <strong>Disclaimers & Legal:</strong>
-      Zindigon is an original entertainment brand. All characters, names, and story elements related to <em>Bloodline Zero</em>, <em>Adventures of the Troll King</em>, and <em>AetherFall</em> are fictional. Any resemblance to actual persons, living or dead, is coincidental. Third-party trademarks (e.g., YouTube, Twitch) are the property of their respective owners and used for identification only. Streams, videos, and embeds are subject to each platform’s terms and availability. This site may use affiliate links; we may earn a commission on qualifying purchases at no additional cost to you. By using this site you agree not to reverse-engineer or scrape our services. Privacy and cookie usage may apply based on your region.
-    </div>
-        <div class="legal">
+    <div style="margin-top:10px;">
       AetherFall:&nbsp;
       <a href="https://zindigon.com/aetherfall-privacy" target="_blank" rel="noopener">
         Privacy Policy
@@ -677,345 +343,57 @@
     </div>
   </footer>
 
-  <!-- ======= Scripts ======= -->
+  <!-- Starfield background -->
   <script>
-    // -------------------- Simple Config --------------------
-    const SITE_PARENTS = ["zindigon.com", "www.zindigon.com", "localhost"];
-
-    // YouTube latest: fill with your UC... id to auto-embed uploads
-    const YT_CHANNEL_ID = ""; // e.g. "UCxxxxxxxxxxxxxxxx"
-
-    const ATHERFALL = {
-      download: "#",
-      lbUrl: "https://zindigon-pay.brandonjoea3.workers.dev/api/leaderboard/best_wave?limit=50&base=try"
-    };
-
-    const PARTNERS = [
-      { type:'twitch', name:'Zindigon', gamertag:'Zindigon', joined:'2025-11-01',
-        description:'Games, dev logs, and anime vibes.', twitchChannel:'zindigon',
-        avatar:'', channelUrl:'https://www.twitch.tv/zindigon', isLive:false },
-      { type:'twitch', name:'Spaz', gamertag:'SpaZFUSC', joined:'2025-11-11',
-        description:'Highlights, guides, and chill streams.', twitchChannel:'spazfusc',
-        avatar:'', channelUrl:'https://www.twitch.tv/spazfusc', isLive:false }
-    ];
-
-    // -------------------- Starfield --------------------
     (function(){
-      const c=document.getElementById('starfield'); const ctx=c.getContext('2d');
+      const c=document.getElementById('starfield');
+      const ctx=c.getContext('2d');
       let w=0,h=0,stars=[];
+
       function resize(){
         const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-        w=c.width=innerWidth*dpr; h=c.height=innerHeight*dpr;
-        c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
+        w = c.width = innerWidth * dpr;
+        h = c.height = innerHeight * dpr;
+        c.style.width = innerWidth + "px";
+        c.style.height = innerHeight + "px";
         ctx.setTransform(1,0,0,1,0,0);
         ctx.scale(dpr,dpr);
-        stars=new Array(180).fill(0).map(()=>({
-          x:Math.random()*innerWidth,
-          y:Math.random()*innerHeight,
-          r:Math.random()*1.3+.2,
-          s:Math.random()*0.6+0.2,
-          hue:200+Math.random()*80
+        stars = new Array(160).fill(0).map(() => ({
+          x: Math.random()*innerWidth,
+          y: Math.random()*innerHeight,
+          r: Math.random()*1.3 + .2,
+          s: Math.random()*0.6 + 0.2,
+          hue: 200 + Math.random()*80
         }));
       }
-      addEventListener('resize', resize, {passive:true}); resize();
-      let t=0; (function loop(){
-        t+=0.01; ctx.clearRect(0,0,innerWidth,innerHeight);
+      addEventListener('resize', resize, {passive:true});
+      resize();
+      let t=0;
+      (function loop(){
+        t += 0.01;
+        ctx.clearRect(0,0,innerWidth,innerHeight);
         for(const st of stars){
-          st.y+=st.s; if(st.y>innerHeight) st.y=-10;
+          st.y += st.s;
+          if(st.y > innerHeight) st.y = -10;
           ctx.beginPath();
-          const glow=0.45+0.45*Math.sin(t+st.x*0.001);
-          ctx.fillStyle=`hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
-          ctx.shadowBlur=12+glow*18; ctx.shadowColor=ctx.fillStyle;
-          ctx.arc(st.x,st.y,st.r,0,Math.PI*2); ctx.fill();
+          const glow = 0.45 + 0.45*Math.sin(t + st.x*0.001);
+          ctx.fillStyle = `hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
+          ctx.shadowBlur = 12+glow*18;
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+          ctx.fill();
         }
         requestAnimationFrame(loop);
       })();
     })();
 
-    // -------------------- Tabs / Router --------------------
-    const sections = document.querySelectorAll('.section');
-    function showTab(id){
-      sections.forEach(s=>s.classList.toggle('show', s.id===id));
-      document.querySelectorAll('.tab-btn').forEach(b=>{
-        b.classList.toggle('active', b.dataset.tab===id);
-        b.setAttribute('aria-selected', b.classList.contains('active')?'true':'false');
-      });
-      const el=document.getElementById(id);
-      if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
-      closeAllDropdowns();
-      if(id==='game-atherfall') loadAetherfallLeaderboard();
-    }
-    // Hook all [data-tab] triggers
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest('[data-tab]');
-      if(!btn) return;
-      const id = btn.dataset.tab;
-      if(!id) return;
-      e.preventDefault();
-      showTab(id);
-    });
+    // footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Deep link
-    (function(){
-      const urlParams=new URLSearchParams(location.search);
-      const game=urlParams.get('game');
-      const tab=urlParams.get('tab');
-      if(game==='atherfall') showTab('game-atherfall');
-      else if(game==='troll-king') showTab('game-troll-king');
-      else if(tab) showTab(tab);
-      else showTab('home');
-    })();
-
-    // -------------------- Dropdown behavior --------------------
-    const animeBtn=document.getElementById('animeBtn');
-    const gamesBtn=document.getElementById('gamesBtn');
-    const partnersBtn=document.getElementById('partnersBtn');
-    function toggleMenu(btn){
-      const m=btn.nextElementSibling;
-      const open=!m.classList.contains('show');
-      closeAllDropdowns();
-      m.classList.toggle('show', open);
-      btn.setAttribute('aria-expanded', String(open));
-    }
-    function closeAllDropdowns(){
-      document.querySelectorAll('.dropdown .menu').forEach(m=>m.classList.remove('show'));
-      document.querySelectorAll('.dropdown .menu-btn').forEach(b=>b.setAttribute('aria-expanded','false'));
-    }
-    animeBtn.addEventListener('click', (e)=>{ e.preventDefault(); toggleMenu(animeBtn); });
-    gamesBtn.addEventListener('click', (e)=>{ e.preventDefault(); toggleMenu(gamesBtn); });
-    partnersBtn.addEventListener('click', (e)=>{ e.preventDefault(); toggleMenu(partnersBtn); });
-    document.addEventListener('click', (e)=>{ if(!e.target.closest('.dropdown')) closeAllDropdowns(); });
-
-    // -------------------- Year --------------------
-    document.getElementById('year').textContent=new Date().getFullYear();
-
-    // -------------------- Helpers --------------------
-    function twitchEmbedSrc(channel){
-      const parents = SITE_PARENTS.map(p=>`parent=${encodeURIComponent(p)}`).join('&');
-      return `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&${parents}&muted=true`;
-    }
-    function esc(s){
-      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    // -------------------- Featured Partner --------------------
-    function anyLive(){ return PARTNERS.some(p=>p.isLive); }
-    function pickFeatured(){ return PARTNERS.find(p=>p.isLive) || PARTNERS[0]; }
-    function renderFeatured(){
-      const target = document.getElementById('featuredPlayer');
-      const card = document.getElementById('featuredPartner');
-      target.innerHTML = '';
-      const p = pickFeatured();
-      if(!p){ card.style.display='none'; return; }
-      card.style.display='block';
-      if(p.isLive){
-        const iframe = document.createElement('iframe');
-        iframe.className = 'twitch-frame';
-        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-        iframe.allowFullscreen = true;
-        iframe.src = twitchEmbedSrc(p.twitchChannel);
-        target.appendChild(iframe);
-      }else{
-        const msg = document.createElement('div');
-        msg.className = 'p';
-        msg.style.opacity = '.8';
-        msg.textContent = 'No one is live right now.';
-        target.appendChild(msg);
-      }
-      const link = document.getElementById('featuredLink');
-      link.href = p.channelUrl || '#';
-      document.getElementById('featuredMeta').textContent = `${p.name} — ${p.gamertag}`;
-    }
-
-    // -------------------- Partners dropdown fill --------------------
-    (function fillPartnersMenu(){
-      const m = document.getElementById('partnersMenu');
-      m.innerHTML = '';
-      PARTNERS.forEach(p=>{
-        const a = document.createElement('a');
-        a.href = '#partners';
-        a.dataset.tab = 'partners';
-        a.setAttribute('role','menuitem');
-        a.textContent = p.name + (p.isLive ? ' — LIVE' : '');
-        m.appendChild(a);
-      });
-    })();
-
-    // -------------------- Partners grid --------------------
-    function renderPartnerCard(p){
-      const card = document.createElement('div');
-      card.className = 'partner-card';
-
-      const header = document.createElement('div');
-      header.className = 'partner-header';
-
-      const avatar = document.createElement('div');
-      avatar.className = 'partner-avatar';
-      if(p.avatar){
-        avatar.style.backgroundImage = `url(${p.avatar})`;
-        avatar.style.backgroundSize='cover';
-        avatar.style.backgroundPosition='center';
-      }
-
-      const title = document.createElement('div');
-      title.className = 'partner-title';
-
-      const name = document.createElement('div');
-      name.className='partner-name';
-      name.textContent = p.name;
-
-      const metaLine = document.createElement('div');
-      metaLine.className='mini';
-      metaLine.textContent = `${p.gamertag} • Joined ${new Date(p.joined).toLocaleDateString()}`;
-
-      title.append(name, metaLine);
-      header.append(avatar, title);
-
-      const tags = document.createElement('div');
-      tags.className='partner-tags';
-      const tLive = document.createElement('span');
-      tLive.className='lb-badge';
-      tLive.textContent = p.isLive ? 'LIVE' : 'Offline';
-      tags.appendChild(tLive);
-
-      const media = document.createElement('div');
-      if(p.isLive){
-        const iframe = document.createElement('iframe');
-        iframe.className = 'twitch-frame';
-        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-        iframe.allowFullscreen = true;
-        iframe.src = twitchEmbedSrc(p.twitchChannel);
-        media.appendChild(iframe);
-      }
-
-      const desc = document.createElement('p');
-      desc.className='p';
-      desc.textContent = p.description || '';
-
-      const actions = document.createElement('div');
-      actions.className='actions';
-      const link = document.createElement('a');
-      link.className='btn btn-ghost';
-      link.href=p.channelUrl;
-      link.target='_blank';
-      link.rel='noopener';
-      link.textContent = p.isLive ? 'Watch Live' : "Visit Creator's Content";
-      actions.appendChild(link);
-
-      card.append(header, tags);
-      if(p.isLive) card.append(media);
-      card.append(desc, actions);
-
-      return card;
-    }
-    function buildPartnersSection(){
-      const grid = document.getElementById('partnersGrid');
-      grid.innerHTML = '';
-      PARTNERS.forEach(p=> grid.appendChild(renderPartnerCard(p)) );
-    }
-
-    // -------------------- Bottom Live Bar --------------------
-    function renderLiveBar(){
-      const bar = document.getElementById('live-bar');
-      const player = document.getElementById('live-bar-player');
-      const text = document.getElementById('live-bar-text');
-      player.innerHTML='';
-      if(!anyLive()){
-        bar.style.display='none';
-        return;
-      }
-      const p = PARTNERS.find(x=>x.isLive);
-      bar.style.display='block';
-      text.textContent = `${p.name} is live right now — jump in!`;
-      const iframe = document.createElement('iframe');
-      iframe.className='twitch-frame';
-      iframe.src = twitchEmbedSrc(p.twitchChannel);
-      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-      iframe.allowFullscreen = true;
-      player.appendChild(iframe);
-    }
-
-    // -------------------- YouTube latest video --------------------
-    function computeUploadsPlaylistId(channelId){
-      if(!channelId || channelId.length < 3) return '';
-      return 'UU' + channelId.substring(2); // UCxxxx -> UUxxxx
-    }
-    function embedLatestFromUploads(){
-      const iframe = document.getElementById('yt-latest');
-      const uploads = computeUploadsPlaylistId(YT_CHANNEL_ID);
-      if(uploads){
-        iframe.src = `https://www.youtube.com/embed/videoseries?list=${uploads}`;
-      }else{
-        iframe.src = 'https://www.youtube.com/embed/qTNXxz_y9-w';
-      }
-    }
-
-    // -------------------- Wire game link --------------------
-    document.getElementById('af-download').href = ATHERFALL.download;
-
-    // -------------------- AetherFall Leaderboard --------------------
-    async function loadAetherfallLeaderboard(){
-      const box = document.getElementById('af-lb-table');
-      const loading = document.getElementById('af-lb-loading');
-      const err = document.getElementById('af-lb-error');
-      loading.style.display='block'; err.style.display='none'; box.innerHTML='';
-
-      try{
-        const r = await fetch(ATHERFALL.lbUrl, { headers: { 'accept': 'application/json' }, cache:'no-store' });
-        const data = await r.json();
-        if(!r.ok || !data?.ok){ throw new Error('bad_response'); }
-        const items =
-          (Array.isArray(data?.data) && data.data) ||
-          (Array.isArray(data?.items) && data.items) ||
-          (Array.isArray(data) && data) ||
-          [];
-
-        if(!items.length){
-          box.innerHTML = `<p class="p" style="opacity:.8">No entries yet. Be the first to hold the line.</p>`;
-        }else{
-          const rows = items.map(it=>`
-            <tr>
-              <td>${it.rank ?? ''}</td>
-              <td>${esc(it.name ?? 'Unknown')}</td>
-              <td><span class="lb-badge">${esc(it.guild ?? '-')}</span></td>
-              <td style="text-align:right">${Number(it.best_wave ?? it.score ?? 0)}</td>
-            </tr>
-          `).join('');
-          box.innerHTML = `
-            <div style="overflow:auto">
-              <table class="lb-table">
-                <thead>
-                  <tr><th>Rank</th><th>Player</th><th>Guild</th><th style="text-align:right">Best Wave</th></tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </div>
-          `;
-        }
-      }catch(e){
-        err.style.display='block';
-        console.warn('Leaderboard error:', e);
-      }finally{
-        loading.style.display='none';
-      }
-    }
-
-    // -------------------- Init --------------------
-    embedLatestFromUploads();
-    buildPartnersSection();
-    renderFeatured();
-    renderLiveBar();
-
-    // -------------------- Initialize AdSense units --------------------
+    // initialize AdSense unit
     window.addEventListener('load', function(){
-      const adUnits = document.querySelectorAll('ins.adsbygoogle');
-      adUnits.forEach(function(unit){
-        try{
-          (adsbygoogle = window.adsbygoogle || []).push({});
-        }catch(e){
-          console.warn('AdSense push error:', e);
-        }
-      });
+      try{ (adsbygoogle = window.adsbygoogle || []).push({}); }
+      catch(e){ console.warn('AdSense error', e); }
     });
   </script>
 </body>
