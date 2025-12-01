@@ -1,1 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- CSP: same as main site so embeds/fetches work -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https://i.imgur.com https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://static.doubleclick.net;
+    connect-src 'self'
+      https://zindigon-pay.brandonjoea3.workers.dev
+      https://pagead2.googlesyndication.com
+      https://googleads.g.doubleclick.net
+      https://ep1.adtrafficquality.google;
+    script-src 'self' 'unsafe-inline'
+      https://pagead2.googlesyndication.com
+      https://googleads.g.doubleclick.net
+      https://static.doubleclick.net
+      https://adservice.google.com
+      https://adservice.google.com.br;
+    frame-src 'self' https://www.youtube.com https://player.twitch.tv https://googleads.g.doubleclick.net;
+  ">
 
+  <meta charset="utf-8" />
+  <title>AetherFall — Leaderboards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="AetherFall — live leaderboards for best wave runs." />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#07070d; --bg2:#0b0b16; --ink:#e6e6ff; --muted:#aab0ff;
+      --accent:#7c4dff; --accent-2:#00e0ff; --accent-3:#ff3bf5;
+      --card:#0f0f1d; --ring:rgba(124,77,255,.35); --radius:16px;
+      --shadow:0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0; padding:0; height:100%;
+      background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed;
+      color:var(--ink);
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
+      overflow-x:hidden;
+    }
+    img,iframe,video{max-width:100%; height:auto; border:0; display:block;}
+
+    #starfield{position:fixed; inset:0; z-index:-2;}
+    .aurora{
+      position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(60vw 60vh at 15% 10%, rgba(0,224,255,.08), transparent 60%),
+        radial-gradient(70vw 70vh at 85% -5%, rgba(255,59,245,.06), transparent 60%),
+        radial-gradient(80vw 80vh at 50% -15%, rgba(124,77,255,.10), transparent 60%);
+      filter: blur(30px) saturate(120%);
+    }
+
+    main{
+      max-width:900px;
+      margin:0 auto 60px;
+      padding:20px;
+    }
+    .arcane-card{
+      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(14,14,32,.65));
+      border:1px solid rgba(124,77,255,.25);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+      margin-top:20px;
+    }
+    .h{
+      font-family:'Cinzel', serif;
+      font-weight:800;
+      letter-spacing:.6px;
+      margin:0 0 8px;
+      color:#fff;
+      text-shadow: 0 0 16px rgba(124,77,255,.35);
+    }
+    .p{
+      margin:0;
+      color:#d7dcff;
+    }
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 16px;
+      border-radius:14px;
+      font-weight:700;
+      text-decoration:none;
+      color:white;
+      background:
+        radial-gradient(80% 120% at 0% 0%, rgba(0,224,255,.35), transparent 40%),
+        linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
+      box-shadow: 0 8px 30px rgba(124,77,255,.35);
+      border:1px solid rgba(124,77,255,.55);
+      white-space:nowrap;
+    }
+    .btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 12px 40px rgba(124,77,255,.45);
+    }
+    .btn-ghost{
+      color:var(--ink);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .lb-wrap{ margin-top:14px; }
+    .lb-table{ width:100%; border-collapse: collapse; }
+    .lb-table th, .lb-table td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .lb-table th{
+      text-align:left;
+      color:#cfd3ff;
+      font-weight:800;
+    }
+    .lb-table tr:hover{ background:rgba(124,77,255,.08); }
+    .lb-badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      font-size:.8rem;
+    }
+
+    footer{
+      max-width:900px;
+      margin:30px auto 30px;
+      padding:0 20px;
+      color:var(--muted);
+      font-size:.9rem;
+    }
+    footer a{ color:var(--accent-2); }
+  </style>
+
+  <!-- Optional: AdSense loader if you want ads here too -->
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2900666268471871" crossorigin="anonymous"></script>
+  -->
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <main>
+    <section class="arcane-card">
+      <h1 class="h" style="font-size:1.8rem;">AetherFall — Leaderboards</h1>
+      <p class="p">Live best-wave rankings pulled directly from the game server.</p>
+      <div class="actions">
+        <a class="btn-ghost btn" href="/" rel="noopener">⬅ Back to Zindigon.com</a>
+      </div>
+    </section>
+
+    <section class="arcane-card">
+      <h2 class="h" style="font-size:1.2rem;">Best Wave Leaderboard</h2>
+      <p class="p" style="opacity:.85">Endpoint: <code>/api/leaderboard/best_wave</code></p>
+      <div id="af-lb" class="lb-wrap" style="margin-top:10px;">
+        <div id="af-lb-loading" class="p" style="opacity:.75">Loading leaderboard…</div>
+        <div id="af-lb-error" class="p" style="display:none; color:#ffbdbd;">Couldn't load leaderboard. Try refreshing.</div>
+        <div id="af-lb-table"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>© <span id="year"></span> Zindigon — All worlds reserved.</div>
+    <div>AetherFall Privacy:&nbsp;
+      <a href="https://zindigon.com/aetherfall-privacy" target="_blank" rel="noopener">
+        View policy
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Starfield (same as main site, slightly trimmed)
+    (function(){
+      const c=document.getElementById('starfield'); const ctx=c.getContext('2d');
+      let w=0,h=0,stars=[];
+      function resize(){
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        w=c.width=innerWidth*dpr; h=c.height=innerHeight*dpr;
+        c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.scale(dpr,dpr);
+        stars=new Array(180).fill(0).map(()=>({
+          x:Math.random()*innerWidth,
+          y:Math.random()*innerHeight,
+          r:Math.random()*1.3+.2,
+          s:Math.random()*0.6+0.2,
+          hue:200+Math.random()*80
+        }));
+      }
+      addEventListener('resize', resize, {passive:true}); resize();
+      let t=0; (function loop(){
+        t+=0.01; ctx.clearRect(0,0,innerWidth,innerHeight);
+        for(const st of stars){
+          st.y+=st.s; if(st.y>innerHeight) st.y=-10;
+          ctx.beginPath();
+          const glow=0.45+0.45*Math.sin(t+st.x*0.001);
+          ctx.fillStyle=`hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
+          ctx.shadowBlur=12+glow*18; ctx.shadowColor=ctx.fillStyle;
+          ctx.arc(st.x,st.y,st.r,0,Math.PI*2); ctx.fill();
+        }
+        requestAnimationFrame(loop);
+      })();
+    })();
+
+    // Leaderboard logic (same as main page)
+    const ATHERFALL = {
+      lbUrl: "https://zindigon-pay.brandonjoea3.workers.dev/api/leaderboard/best_wave?limit=50&base=try"
+    };
+
+    function esc(s){
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function loadAetherfallLeaderboard(){
+      const box = document.getElementById('af-lb-table');
+      const loading = document.getElementById('af-lb-loading');
+      const err = document.getElementById('af-lb-error');
+      loading.style.display='block'; err.style.display='none'; box.innerHTML='';
+
+      try{
+        const r = await fetch(ATHERFALL.lbUrl, { headers: { 'accept': 'application/json' }, cache:'no-store' });
+        const data = await r.json();
+        if(!r.ok || !data?.ok){ throw new Error('bad_response'); }
+        const items =
+          (Array.isArray(data?.data) && data.data) ||
+          (Array.isArray(data?.items) && data.items) ||
+          (Array.isArray(data) && data) ||
+          [];
+
+        if(!items.length){
+          box.innerHTML = `<p class="p" style="opacity:.8">No entries yet. Be the first to hold the line.</p>`;
+        }else{
+          const rows = items.map(it=>`
+            <tr>
+              <td>${it.rank ?? ''}</td>
+              <td>${esc(it.name ?? 'Unknown')}</td>
+              <td><span class="lb-badge">${esc(it.guild ?? '-')}</span></td>
+              <td style="text-align:right">${Number(it.best_wave ?? it.score ?? 0)}</td>
+            </tr>
+          `).join('');
+          box.innerHTML = `
+            <div style="overflow:auto">
+              <table class="lb-table">
+                <thead>
+                  <tr><th>Rank</th><th>Player</th><th>Guild</th><th style="text-align:right">Best Wave</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          `;
+        }
+      }catch(e){
+        err.style.display='block';
+        console.warn('Leaderboard error:', e);
+      }finally{
+        loading.style.display='none';
+      }
+    }
+
+    loadAetherfallLeaderboard();
+  </script>
+</body>
+</html>
