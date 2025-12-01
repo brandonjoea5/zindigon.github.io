@@ -88,6 +88,7 @@
       white-space:nowrap;
     }
     .spacer{flex:1}
+
     .nav-links{
       display:flex;
       gap:12px;
@@ -95,7 +96,10 @@
       align-items:center;
       justify-content:flex-end;
     }
-    .nav-links a{
+
+    /* Base style for nav items (links + dropdown buttons) */
+    .nav-links a,
+    .nav-links button{
       text-decoration:none;
       color:var(--muted);
       padding:8px 14px;
@@ -103,8 +107,14 @@
       font-weight:600;
       font-size:.95rem;
       border:1px solid transparent;
+      background:transparent;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
     }
-    .nav-links a:hover{
+    .nav-links a:hover,
+    .nav-links button:hover{
       color:var(--ink);
       border-color:rgba(124,77,255,.4);
       background:rgba(124,77,255,.12);
@@ -114,6 +124,50 @@
       border-color:rgba(124,77,255,.7);
       background:linear-gradient(180deg, rgba(124,77,255,.6), rgba(124,77,255,.25));
       box-shadow:var(--shadow);
+    }
+
+    /* Dropdowns */
+    .dropdown{
+      position:relative;
+    }
+    .dropdown-menu{
+      position:absolute;
+      top:110%;
+      right:0;
+      min-width:190px;
+      background:linear-gradient(180deg, rgba(14,14,32,.95), rgba(14,14,32,.85));
+      border-radius:12px;
+      border:1px solid rgba(124,77,255,.4);
+      box-shadow:var(--shadow);
+      padding:6px;
+      opacity:0;
+      transform:translateY(4px);
+      pointer-events:none;
+      transition:opacity .15s ease-out, transform .15s ease-out;
+      z-index:60;
+    }
+    .dropdown:hover .dropdown-menu{
+      opacity:1;
+      transform:translateY(0);
+      pointer-events:auto;
+    }
+    .dropdown-menu a{
+      display:block;
+      padding:8px 10px;
+      border-radius:8px;
+      border:0;
+      font-size:.9rem;
+    }
+    .dropdown-menu a:hover{
+      background:rgba(124,77,255,.22);
+      color:#fff;
+    }
+
+    @media (max-width:720px){
+      .dropdown-menu{
+        right:auto;
+        left:0;
+      }
     }
 
     main{
@@ -262,12 +316,36 @@
         <span class="logo-text">Zindigon</span>
       </a>
       <div class="spacer"></div>
+
       <div class="nav-links">
         <a href="/" class="active">Home</a>
-        <a href="/Games/">Games</a>
-        <a href="/Anime/BloodlineZero/">Anime</a>
-        <a href="/partners.html">Partners</a>
-        <a href="/contact.html">Contact</a>
+
+        <!-- GAMES DROPDOWN -->
+        <div class="dropdown">
+          <button type="button">
+            Games
+            <span aria-hidden="true">▾</span>
+          </button>
+          <div class="dropdown-menu">
+            <a href="/Games/AetherFall/">AetherFall</a>
+            <a href="/Games/AOTTK/">Adventures of the Troll King</a>
+          </div>
+        </div>
+
+        <!-- ANIME DROPDOWN -->
+        <div class="dropdown">
+          <button type="button">
+            Anime
+            <span aria-hidden="true">▾</span>
+          </button>
+          <div class="dropdown-menu">
+            <a href="/Anime/BloodlineZero/">Bloodline Zero</a>
+            <!-- Future anime can be added here -->
+          </div>
+        </div>
+
+        <a href="/Partners.html">Partners</a>
+        <a href="/Contact.html">Contact</a>
       </div>
     </nav>
   </header>
@@ -364,7 +442,7 @@
           r: Math.random()*1.3 + .2,
           s: Math.random()*0.6 + 0.2,
           hue: 200 + Math.random()*80
-        }));
+        })); 
       }
       addEventListener('resize', resize, {passive:true});
       resize();
