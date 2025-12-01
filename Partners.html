@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data:;
+    script-src 'self' 'unsafe-inline';
+    connect-src 'self' https://api.twitch.tv;
+    frame-src 'self' https://player.twitch.tv https://www.youtube.com;
+  ">
+
+  <meta charset="utf-8" />
+  <title>Partners — Zindigon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Partners and friends of Zindigon — checkout Zindigon and Spaz, with live status and links." />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#07070d; --bg2:#0b0b16; --ink:#e6e6ff; --muted:#aab0ff;
+      --accent:#7c4dff; --accent-2:#00e0ff; --accent-3:#ff3bf5;
+      --card:#0f0f1d; --radius:16px;
+      --shadow:0 20px 60px rgba(0,0,0,.55), inset 0 0 30px rgba(124,77,255,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{
+      margin:0; padding:0; height:100%;
+      background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed;
+      color:var(--ink);
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
+      overflow-x:hidden;
+    }
+    img,iframe{max-width:100%; height:auto; border:0; display:block;}
+
+    /* Background layers */
+    #starfield{position:fixed; inset:0; z-index:-2;}
+    .aurora{
+      position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
+      background:
+        radial-gradient(60vw 60vh at 15% 10%, rgba(0,224,255,.08), transparent 60%),
+        radial-gradient(70vw 70vh at 85% -5%, rgba(255,59,245,.06), transparent 60%),
+        radial-gradient(80vw 80vh at 50% -15%, rgba(124,77,255,.10), transparent 60%);
+      filter: blur(30px) saturate(120%);
+    }
+
+    /* Header / nav */
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(10,10,22,.75), rgba(10,10,22,.35));
+      border-bottom: 1px solid rgba(124,77,255,.25);
+    }
+    .nav{
+      max-width:1200px;
+      margin:0 auto;
+      padding:10px 16px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      text-decoration:none;
+    }
+    .logo-img{
+      height:28px; width:28px; display:block; border-radius:8px;
+      background:#232347 url('') center / cover no-repeat;
+      box-shadow:0 0 18px rgba(124,77,255,.35);
+      flex-shrink:0;
+    }
+    .logo-text{
+      font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1;
+      color:white;
+      text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);
+      white-space:nowrap;
+    }
+    .spacer{flex:1}
+    .nav-links{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .nav-links a{
+      text-decoration:none;
+      color:var(--muted);
+      padding:8px 14px;
+      border-radius:999px;
+      font-weight:600;
+      font-size:.95rem;
+      border:1px solid transparent;
+    }
+    .nav-links a:hover{
+      color:var(--ink);
+      border-color:rgba(124,77,255,.4);
+      background:rgba(124,77,255,.12);
+    }
+    .nav-links a.active{
+      color:#fff;
+      border-color:rgba(124,77,255,.7);
+      background:linear-gradient(180deg, rgba(124,77,255,.6), rgba(124,77,255,.25));
+      box-shadow:var(--shadow);
+    }
+
+    main{
+      max-width:1200px;
+      margin:0 auto 72px;
+      padding:24px 20px 0;
+    }
+
+    .hero{
+      margin-bottom:20px;
+    }
+    .hero-title{
+      font-family:'Cinzel', serif;
+      font-weight:900;
+      font-size:clamp(2rem, 3.2vw, 3.4rem);
+      line-height:1.05;
+      margin:0;
+      letter-spacing:.8px;
+      background: linear-gradient(92deg, #fff 0%, #dfe4ff 40%, #a5b4ff 60%, #ffffff 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
+    }
+    .hero-sub{
+      margin-top:8px;
+      color:#d9dcff;
+      font-weight:600;
+      letter-spacing:.4px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);
+      gap:24px;
+      align-items:flex-start;
+    }
+    @media (max-width:900px){
+      .grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(12,12,28,.85), rgba(13,13,30,.7));
+      border-radius:var(--radius);
+      border:1px solid rgba(124,77,255,.25);
+      box-shadow:var(--shadow);
+      padding:20px;
+    }
+
+    .partner-header{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .avatar{
+      width:60px;
+      height:60px;
+      border-radius:18px;
+      background:#232347;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+      flex-shrink:0;
+      background-size:cover;
+      background-position:center;
+    }
+    .name-block{
+      min-width:0;
+    }
+    .name{
+      font-family:'Cinzel', serif;
+      font-weight:800;
+      font-size:1.2rem;
+      margin:0;
+    }
+    .tagline{
+      margin:2px 0 0;
+      color:#cdd1ff;
+      font-size:.9rem;
+    }
+
+    .badge-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:8px 0 8px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:.8rem;
+      border:1px solid rgba(255,255,255,.2);
+      background:rgba(255,255,255,.04);
+      color:#e6e6ff;
+    }
+    .badge.live{
+      border-color:rgba(255,94,94,.8);
+      background:rgba(255,94,94,.15);
+      color:#ffe5e5;
+    }
+    .badge.offline{
+      border-color:rgba(180,180,255,.7);
+      background:rgba(180,180,255,.12);
+    }
+
+    h2{
+      font-family:'Cinzel', serif;
+      font-weight:800;
+      letter-spacing:.6px;
+      margin:0 0 8px;
+      color:#fff;
+      text-shadow:0 0 16px rgba(124,77,255,.35);
+    }
+    p{
+      margin:0 0 10px;
+      color:#d7dcff;
+      line-height:1.6;
+    }
+    .mini{
+      font-size:.92rem;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    .links{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:6px;
+    }
+    .link-pill{
+      display:inline-flex;
+      align-items:center;
+      padding:5px 11px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.04);
+      font-size:.85rem;
+      text-decoration:none;
+      color:#e6e6ff;
+    }
+    .link-pill:hover{
+      background:rgba(124,77,255,.2);
+      border-color:rgba(124,77,255,.7);
+    }
+
+    .twitch-frame{
+      width:100%;
+      aspect-ratio:16/9;
+      border-radius:12px;
+      box-shadow:var(--shadow);
+      margin-top:10px;
+    }
+
+    footer{
+      max-width:1200px;
+      margin:40px auto 32px;
+      padding:0 20px;
+      color:var(--muted);
+      font-size:.86rem;
+      line-height:1.5;
+    }
+    footer a{color:var(--muted);}
+    footer a:hover{color:#fff;}
+  </style>
+</head>
+
+<body>
+  <!-- Background -->
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header>
+    <nav class="nav" role="navigation" aria-label="Primary">
+      <a class="brand" href="/">
+        <span class="logo-img" aria-hidden="true"></span>
+        <span class="logo-text">Zindigon</span>
+      </a>
+      <div class="spacer"></div>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/partners.html" class="active">Partners</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 class="hero-title">Partners & Friends</h1>
+      <p class="hero-sub">
+        Creators, streamers, and friends of the Zindigon universe. If someone here is live, you’ll see it.
+      </p>
+    </section>
+
+    <section class="grid" aria-label="Partner list">
+      <!-- Zindigon card -->
+      <article class="card" aria-labelledby="zindigon-name">
+        <div class="partner-header">
+          <div class="avatar" style="background-image:url('');"></div>
+          <div class="name-block">
+            <h2 id="zindigon-name" class="name">Zindigon</h2>
+            <p class="tagline">Games · Anime · Devlogs</p>
+          </div>
+        </div>
+
+        <div class="badge-row">
+          <span class="badge">Solo dev & writer</span>
+          <span class="badge">AetherFall</span>
+          <span class="badge">Bloodline Zero</span>
+        </div>
+
+        <p>
+          Indie game developer and creator of the <em>AetherFall</em> tower defense game and the <em>Bloodline Zero</em>
+          anime project. Expect devlogs, theory talks, and the occasional chaos stream.
+        </p>
+
+        <p class="mini">
+          Streams and uploads happen around real-life schedules, so the best way to keep up is to follow on your
+          favorite platform below.
+        </p>
+
+        <div class="links">
+          <a class="link-pill" href="https://www.twitch.tv/zindigon" target="_blank" rel="noopener">Twitch</a>
+          <a class="link-pill" href="https://youtube.com/@zindigon" target="_blank" rel="noopener">YouTube</a>
+          <a class="link-pill" href="https://www.tiktok.com/@zindigon96" target="_blank" rel="noopener">TikTok</a>
+        </div>
+      </article>
+
+      <!-- Spaz card -->
+      <article class="card" aria-labelledby="spaz-name">
+        <div class="partner-header">
+          <div class="avatar" style="background-image:url('');"></div>
+          <div class="name-block">
+            <h2 id="spaz-name" class="name">Spaz</h2>
+            <p class="tagline">Gamertag: SpaZFUSC</p>
+          </div>
+        </div>
+
+        <div class="badge-row">
+          <span id="spaz-status-badge" class="badge offline">Checking live status…</span>
+        </div>
+
+        <p id="spaz-description">
+          Spaz is a friend of the channel and regular co-op chaos dealer. When he’s live, you’ll see the stream player
+          below so you can drop in directly.
+        </p>
+
+        <!-- Stream container (filled by JS if live) -->
+        <div id="spaz-stream-container"></div>
+
+        <p class="mini" style="margin-top:10px;">
+          If the stream isn’t live right now, check out his Twitch or socials and hit follow so you don’t miss the next run.
+        </p>
+
+        <div class="links">
+          <a class="link-pill" href="https://www.twitch.tv/spazfusc" target="_blank" rel="noopener">Twitch</a>
+          <!-- Add more socials for Spaz if you have them -->
+          <!-- <a class="link-pill" href="https://youtube.com/..." target="_blank" rel="noopener">YouTube</a> -->
+          <!-- <a class="link-pill" href="https://twitter.com/..." target="_blank" rel="noopener">Twitter</a> -->
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <div>© <span id="year"></span> Zindigon — All worlds reserved.</div>
+  </footer>
+
+  <!-- Starfield background + Twitch live check -->
+  <script>
+    // ---------- Starfield ----------
+    (function(){
+      const c=document.getElementById('starfield');
+      const ctx=c.getContext('2d');
+      let w=0,h=0,stars=[];
+
+      function resize(){
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        w = c.width = innerWidth * dpr;
+        h = c.height = innerHeight * dpr;
+        c.style.width = innerWidth + "px";
+        c.style.height = innerHeight + "px";
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.scale(dpr,dpr);
+        stars = new Array(160).fill(0).map(() => ({
+          x: Math.random()*innerWidth,
+          y: Math.random()*innerHeight,
+          r: Math.random()*1.3 + .2,
+          s: Math.random()*0.6 + 0.2,
+          hue: 200 + Math.random()*80
+        }));
+      }
+      addEventListener('resize', resize, {passive:true});
+      resize();
+      let t=0;
+      (function loop(){
+        t += 0.01;
+        ctx.clearRect(0,0,innerWidth,innerHeight);
+        for(const st of stars){
+          st.y += st.s;
+          if(st.y > innerHeight) st.y = -10;
+          ctx.beginPath();
+          const glow = 0.45 + 0.45*Math.sin(t + st.x*0.001);
+          ctx.fillStyle = `hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
+          ctx.shadowBlur = 12+glow*18;
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
+          ctx.fill();
+        }
+        requestAnimationFrame(loop);
+      })();
+    })();
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ---------- Twitch live status for Spaz ----------
+    // IMPORTANT:
+    // 1. Create a Twitch application at https://dev.twitch.tv/console
+    // 2. Get your Client ID and generate an App Access Token
+    // 3. Paste them into the constants below.
+    const TWITCH_CLIENT_ID = "REPLACE_WITH_YOUR_CLIENT_ID";
+    const TWITCH_APP_TOKEN = "REPLACE_WITH_YOUR_APP_ACCESS_TOKEN"; // "Bearer xxxxx"
+
+    const SPaz_LOGIN = "spazfusc";
+
+    async function checkSpazLive() {
+      const badge = document.getElementById("spaz-status-badge");
+      const container = document.getElementById("spaz-stream-container");
+      const desc = document.getElementById("spaz-description");
+
+      if (!TWITCH_CLIENT_ID || !TWITCH_APP_TOKEN || TWITCH_CLIENT_ID.includes("REPLACE")) {
+        badge.textContent = "Status: Offline (API not configured)";
+        badge.classList.remove("live");
+        badge.classList.add("offline");
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          "https://api.twitch.tv/helix/streams?user_login=" + encodeURIComponent(SPaz_LOGIN),
+          {
+            headers: {
+              "Client-ID": TWITCH_CLIENT_ID,
+              "Authorization": "Bearer " + TWITCH_APP_TOKEN
+            }
+          }
+        );
+
+        if (!res.ok) throw new Error("Twitch API error: " + res.status);
+        const data = await res.json();
+        const live = Array.isArray(data.data) && data.data.length > 0;
+
+        if (live) {
+          const stream = data.data[0];
+          badge.textContent = "LIVE — " + (stream.game_name || "Streaming");
+          badge.classList.remove("offline");
+          badge.classList.add("live");
+
+          desc.textContent = "Spaz is live right now — jump into the stream below.";
+
+          // Build Twitch embed URL (add your allowed parent domains)
+          const parents = [
+            "zindigon.com",
+            "www.zindigon.com",
+            "zindigon.github.io"
+          ].map(p => "parent=" + encodeURIComponent(p)).join("&");
+
+          const iframe = document.createElement("iframe");
+          iframe.className = "twitch-frame";
+          iframe.src = "https://player.twitch.tv/?channel=" +
+                        encodeURIComponent(SPaz_LOGIN) +
+                        "&" + parents + "&muted=false&autoplay=true";
+          iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+          iframe.allowFullscreen = true;
+
+          container.innerHTML = "";
+          container.appendChild(iframe);
+        } else {
+          badge.textContent = "Offline";
+          badge.classList.remove("live");
+          badge.classList.add("offline");
+          desc.textContent = "Spaz is currently offline, but you can still follow his Twitch channel so you know when he goes live.";
+          container.innerHTML = "";
+        }
+      } catch (err) {
+        console.warn("Error checking Twitch:", err);
+        badge.textContent = "Status unavailable";
+        badge.classList.remove("live");
+        badge.classList.add("offline");
+      }
+    }
+
+    // Run live check after page load
+    window.addEventListener("load", checkSpazLive);
+  </script>
+</body>
+</html>
