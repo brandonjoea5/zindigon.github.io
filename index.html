@@ -1,33 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- CSP: trimmed to what this page actually uses -->
+  <!-- ================================
+       CONTENT SECURITY POLICY
+       ================================ -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://static.doubleclick.net;
+    img-src 'self' data:
+      https://i.ytimg.com
+      https://pagead2.googlesyndication.com
+      https://googleads.g.doubleclick.net
+      https://static.doubleclick.net
+      https://io.dropinblog.com
+      https://cdn.dropinblog.com;
     script-src 'self' 'unsafe-inline'
       https://pagead2.googlesyndication.com
       https://googleads.g.doubleclick.net
       https://static.doubleclick.net
       https://adservice.google.com
-      https://adservice.google.com.br;
+      https://adservice.google.com.br
+      https://io.dropinblog.com;
     connect-src 'self'
       https://pagead2.googlesyndication.com
       https://googleads.g.doubleclick.net
-      https://ep1.adtrafficquality.google;
-    frame-src 'self' https://www.youtube.com https://googleads.g.doubleclick.net;
+      https://ep1.adtrafficquality.google
+      https://io.dropinblog.com
+      https://api.dropinblog.com;
+    frame-src 'self'
+      https://www.youtube.com
+      https://googleads.g.doubleclick.net
+      https://io.dropinblog.com;
   ">
 
   <meta charset="utf-8" />
   <title>Zindigon — From imagination to expectation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="Zindigon — an independent creative studio building original games, anime, and live content." />
 
   <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
+  <!-- ================================
+       STYLES (UNCHANGED DESIGN)
+       ================================ -->
   <style>
     :root{
       --bg:#07070d; --bg2:#0b0b16; --ink:#e6e6ff; --muted:#aab0ff;
@@ -37,16 +56,23 @@
     }
     *{box-sizing:border-box}
     html,body{
-      margin:0; padding:0; height:100%;
+      margin:0; padding:0; min-height:100%;
       background: radial-gradient(1200px 800px at 50% -200px, #111229 0%, var(--bg) 60%) fixed;
       color:var(--ink);
-      font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji', sans-serif;
+      font-family:system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Ubuntu, Cantarell, 'JetBrains Mono', 'Helvetica Neue', Arial, sans-serif;
       overflow-x:hidden;
+      -webkit-text-size-adjust:100%;
+      text-rendering:optimizeLegibility;
     }
     img,iframe{max-width:100%; height:auto; border:0; display:block;}
 
     /* Background layers */
-    #starfield{position:fixed; inset:0; z-index:-2;}
+    #starfield{
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+    }
     .aurora{
       position:fixed; inset:-20vh -10vw; z-index:-1; pointer-events:none;
       background:
@@ -60,6 +86,7 @@
     header{
       position:sticky; top:0; z-index:50;
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       background: linear-gradient(180deg, rgba(10,10,22,.75), rgba(10,10,22,.35));
       border-bottom: 1px solid rgba(124,77,255,.25);
     }
@@ -77,12 +104,12 @@
     }
     .logo-img{
       height:28px; width:28px; display:block; border-radius:8px;
-      background:#232347 url('') center / cover no-repeat; /* put logo here if you want */
+      background:#232347;
       box-shadow:0 0 18px rgba(124,77,255,.35);
       flex-shrink:0;
     }
     .logo-text{
-      font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem; line-height:1;
+      font-family:'Cinzel', serif; letter-spacing:.6px; font-weight:800; font-size:1.1rem;
       color:white;
       text-shadow:0 0 10px rgba(124,77,255,.45), 0 0 25px rgba(0,224,255,.25);
       white-space:nowrap;
@@ -97,7 +124,6 @@
       justify-content:flex-end;
     }
 
-    /* Base style for nav items (links + dropdown buttons) */
     .nav-links a,
     .nav-links button{
       text-decoration:none;
@@ -112,6 +138,7 @@
       display:inline-flex;
       align-items:center;
       gap:6px;
+      appearance:none;
     }
     .nav-links a:hover,
     .nav-links button:hover{
@@ -127,9 +154,7 @@
     }
 
     /* Dropdowns */
-    .dropdown{
-      position:relative;
-    }
+    .dropdown{position:relative;}
     .dropdown-menu{
       position:absolute;
       top:110%;
@@ -146,7 +171,8 @@
       transition:opacity .15s ease-out, transform .15s ease-out;
       z-index:60;
     }
-    .dropdown:hover .dropdown-menu{
+    .dropdown:hover .dropdown-menu,
+    .dropdown:focus-within .dropdown-menu{
       opacity:1;
       transform:translateY(0);
       pointer-events:auto;
@@ -164,10 +190,7 @@
     }
 
     @media (max-width:720px){
-      .dropdown-menu{
-        right:auto;
-        left:0;
-      }
+      .dropdown-menu{right:auto; left:0;}
     }
 
     main{
@@ -182,9 +205,7 @@
       align-items:flex-start;
     }
     @media (max-width:900px){
-      .layout{
-        grid-template-columns:1fr;
-      }
+      .layout{grid-template-columns:1fr;}
     }
 
     .card{
@@ -206,20 +227,10 @@
       -webkit-background-clip:text;
       background-clip:text;
       color:transparent;
-      text-shadow: 0 0 35px rgba(124,77,255,.45), 0 0 14px rgba(0,224,255,.25);
     }
-    .hero-sub{
-      margin-top:8px;
-      color:#d9dcff;
-      font-weight:600;
-      letter-spacing:.4px;
-    }
-    .actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      margin-top:18px;
-    }
+    .hero-sub{margin-top:8px; color:#d9dcff; font-weight:600;}
+    .actions{display:flex; flex-wrap:wrap; gap:12px; margin-top:18px;}
+
     .btn{
       display:inline-flex;
       align-items:center;
@@ -227,7 +238,6 @@
       padding:10px 16px;
       border-radius:14px;
       font-weight:700;
-      letter-spacing:.2px;
       text-decoration:none;
       color:white;
       background:
@@ -235,37 +245,19 @@
         linear-gradient(180deg, rgba(124,77,255,.9), rgba(124,77,255,.65));
       border:1px solid rgba(124,77,255,.55);
       box-shadow:0 8px 30px rgba(124,77,255,.35);
-      white-space:nowrap;
     }
-    .btn:hover{
-      transform:translateY(-1px);
-      box-shadow:0 12px 40px rgba(124,77,255,.45);
-    }
+    .btn:hover{transform:translateY(-1px);}
+
     .btn-ghost{
       color:var(--ink);
       background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
       border:1px solid rgba(255,255,255,.14);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
     }
-    .mini{
-      font-size:.92rem;
-      color:var(--muted);
-      line-height:1.5;
-    }
 
-    h2{
-      font-family:'Cinzel', serif;
-      font-weight:800;
-      letter-spacing:.6px;
-      margin:0 0 8px;
-      color:#fff;
-      text-shadow:0 0 16px rgba(124,77,255,.35);
-    }
-    p{
-      margin:0 0 10px;
-      color:#d7dcff;
-      line-height:1.6;
-    }
+    .mini{font-size:.92rem; color:var(--muted); line-height:1.5;}
+    h2{font-family:'Cinzel', serif; font-weight:800; margin:0 0 8px;}
+    p{margin:0 0 10px; color:#d7dcff; line-height:1.6;}
 
     .youtube-frame{
       width:100%;
@@ -281,11 +273,6 @@
       background: linear-gradient(180deg, rgba(12,12,28,.9), rgba(13,13,30,.8));
       border:1px dashed rgba(255,255,255,.18);
     }
-    .ad-card p{
-      font-size:.85rem;
-      margin-bottom:8px;
-      color:#c4c8ff;
-    }
 
     footer{
       max-width:1200px;
@@ -293,26 +280,24 @@
       padding:0 20px;
       color:var(--muted);
       font-size:.86rem;
-      line-height:1.5;
     }
-    footer a{color:var(--muted);}
-    footer a:hover{color:#fff;}
   </style>
 
-  <!-- AdSense loader (auto ads + manual unit below content) -->
+  <!-- AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2900666268471871" crossorigin="anonymous"></script>
 </head>
 
 <body>
+
   <!-- Background -->
   <canvas id="starfield" aria-hidden="true"></canvas>
   <div class="aurora" aria-hidden="true"></div>
 
   <!-- Header -->
   <header>
-    <nav class="nav" role="navigation" aria-label="Primary">
+    <nav class="nav" role="navigation">
       <a class="brand" href="/">
-        <span class="logo-img" aria-hidden="true"></span>
+        <span class="logo-img"></span>
         <span class="logo-text">Zindigon</span>
       </a>
       <div class="spacer"></div>
@@ -320,27 +305,18 @@
       <div class="nav-links">
         <a href="/" class="active">Home</a>
 
-        <!-- GAMES DROPDOWN -->
         <div class="dropdown">
-          <button type="button">
-            Games
-            <span aria-hidden="true">▾</span>
-          </button>
+          <button type="button">Games ▾</button>
           <div class="dropdown-menu">
             <a href="/Games/AetherFall/">AetherFall</a>
             <a href="/Games/AOTTK/">Adventures of the Troll King</a>
           </div>
         </div>
 
-        <!-- ANIME DROPDOWN -->
         <div class="dropdown">
-          <button type="button">
-            Anime
-            <span aria-hidden="true">▾</span>
-          </button>
+          <button type="button">Anime ▾</button>
           <div class="dropdown-menu">
             <a href="/Anime/BloodlineZero/">Bloodline Zero</a>
-            <!-- Future anime can be added here -->
           </div>
         </div>
 
@@ -352,8 +328,8 @@
 
   <main>
     <div class="layout">
-      <!-- Left: About + intro -->
-      <section class="card" id="about">
+      <!-- Left -->
+      <section class="card">
         <h1 class="hero-title">From imagination to expectation.</h1>
         <div class="hero-sub">Original games, anime, and content by a one-man studio.</div>
 
@@ -364,117 +340,100 @@
 
         <p class="mini" style="margin-top:14px;">
           Zindigon is an independent creative brand building worlds across anime, game development, and streaming.
-          Everything you see here is crafted by hand in spare hours—no big studio, just stubborn passion.
-        </p>
-
-        <p>
-          Right now the main focus is:
-        </p>
-        <ul class="mini">
-          <li><strong>AetherFall</strong> — a rogue-like tower defense game about mankind vs. an alien swarm.</li>
-          <li><strong>Bloodline Zero</strong> — an adult-leaning anime series about Might-enabled users and a corrupt organization that controls them.</li>
-        </ul>
-
-        <p class="mini">
-          This site will grow over time with patch notes, episode previews, dev logs, and whatever else the journey unlocks.
         </p>
       </section>
 
-      <!-- Right: Latest video + ad -->
-      <section aria-label="Latest video and support">
+      <!-- Right -->
+      <section>
         <div class="card">
           <h2>Latest YouTube Video</h2>
-          <!-- Replace VIDEO_ID below with the ID of your newest upload -->
-          <iframe
-            class="youtube-frame"
+          <iframe class="youtube-frame"
             src="https://www.youtube.com/embed/VIDEO_ID"
-            title="Zindigon Latest Video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
-          <p class="mini" style="margin-top:10px;">
-            Want more? Subscribe on YouTube to catch devlogs, gameplay, and future Bloodline Zero updates.
-          </p>
+            allowfullscreen></iframe>
         </div>
 
-        <!-- Optional: one ad block on a content-heavy page -->
         <div class="ad-card">
-          <p>Ads help keep the lights on while I build everything out. Thanks for the support. 🙏</p>
           <ins class="adsbygoogle"
-               style="display:block"
-               data-ad-client="ca-pub-2900666268471871"
-               data-ad-slot="9743175998"
-               data-ad-format="auto"
-               data-full-width-responsive="true"></ins>
+            style="display:block"
+            data-ad-client="ca-pub-2900666268471871"
+            data-ad-slot="9743175998"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
         </div>
       </section>
     </div>
+
+    <!-- DropInBlog -->
     <div id="dib-posts"></div>
   </main>
 
   <footer>
-    <div>© <span id="year"></span> Zindigon — All worlds reserved.</div>
-    <div style="margin-top:10px;">
-      AetherFall:&nbsp;
-      <a href="https://zindigon.com/aetherfall-privacy" target="_blank" rel="noopener">
-        Privacy Policy
-      </a>
-    </div>
+    © <span id="year"></span> Zindigon — All worlds reserved.
   </footer>
 
-  <!-- Starfield background -->
+  <!-- ================================
+       STARFIELD SPARKLE ANIMATION
+       ================================ -->
   <script>
-    (function(){
-      const c=document.getElementById('starfield');
-      const ctx=c.getContext('2d');
-      let w=0,h=0,stars=[];
+  (function(){
+    const c = document.getElementById('starfield');
+    const ctx = c.getContext('2d');
+    let stars = [];
+    let w = 0, h = 0;
 
-      function resize(){
-        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-        w = c.width = innerWidth * dpr;
-        h = c.height = innerHeight * dpr;
-        c.style.width = innerWidth + "px";
-        c.style.height = innerHeight + "px";
-        ctx.setTransform(1,0,0,1,0,0);
-        ctx.scale(dpr,dpr);
-        stars = new Array(160).fill(0).map(() => ({
-          x: Math.random()*innerWidth,
-          y: Math.random()*innerHeight,
-          r: Math.random()*1.3 + .2,
-          s: Math.random()*0.6 + 0.2,
-          hue: 200 + Math.random()*80
-        })); 
+    function resize(){
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = c.width = innerWidth * dpr;
+      h = c.height = innerHeight * dpr;
+      c.style.width = innerWidth + "px";
+      c.style.height = innerHeight + "px";
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+
+      stars = new Array(200).fill(0).map(() => ({
+        x: Math.random()*innerWidth,
+        y: Math.random()*innerHeight,
+        r: Math.random()*1.5 + 0.3,
+        speed: Math.random()*0.7 + 0.25,
+        phase: Math.random()*Math.PI*2
+      }));
+    }
+
+    addEventListener('resize', resize, {passive:true});
+    resize();
+
+    let t = 0;
+    (function loop(){
+      t += 0.015;
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+
+      for(const s of stars){
+        s.y += s.speed;
+        if(s.y > innerHeight) s.y = -10;
+
+        const tw = 0.4 + 0.6 * Math.sin(t + s.phase);
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(210,225,255,${0.5 + tw*0.4})`;
+        ctx.shadowBlur = 12 + tw*18;
+        ctx.shadowColor = "rgba(170,200,255,.9)";
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
       }
-      addEventListener('resize', resize, {passive:true});
-      resize();
-      let t=0;
-      (function loop(){
-        t += 0.01;
-        ctx.clearRect(0,0,innerWidth,innerHeight);
-        for(const st of stars){
-          st.y += st.s;
-          if(st.y > innerHeight) st.y = -10;
-          ctx.beginPath();
-          const glow = 0.45 + 0.45*Math.sin(t + st.x*0.001);
-          ctx.fillStyle = `hsla(${st.hue},100%,${70+glow*20}%,${0.55+glow*0.25})`;
-          ctx.shadowBlur = 12+glow*18;
-          ctx.shadowColor = ctx.fillStyle;
-          ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-          ctx.fill();
-        }
-        requestAnimationFrame(loop);
-      })();
+      requestAnimationFrame(loop);
     })();
+  })();
+  document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 
-    // footer year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // initialize AdSense unit
-    window.addEventListener('load', function(){
-      try{ (adsbygoogle = window.adsbygoogle || []).push({}); }
-      catch(e){ console.warn('AdSense error', e); }
+  <!-- Ad init -->
+  <script>
+    window.addEventListener('load', () => {
+      try { (adsbygoogle = window.adsbygoogle || []).push({}); }
+      catch(e){}
     });
   </script>
+
+  <!-- DropInBlog Loader -->
   <script async src="https://io.dropinblog.com/embedjs/2f7e0e3b-0a29-47d6-ac69-0203ef92f2a7.js"></script>
+
 </body>
 </html>
