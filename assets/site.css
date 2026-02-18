@@ -28,7 +28,7 @@ body{
     radial-gradient(1200px 900px at 18% -10%, rgba(0,224,255,.14), transparent 55%),
     radial-gradient(1200px 900px at 92% 0%, rgba(255,59,245,.10), transparent 55%),
     radial-gradient(1200px 900px at 55% -15%, rgba(124,77,255,.18), transparent 60%),
-    linear-gradient(180deg, var(--bg1), var(--bg0) 65%);
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 58%, #050612 100%);
   overflow-x:hidden;
   -webkit-text-size-adjust:100%;
   text-rendering:optimizeLegibility;

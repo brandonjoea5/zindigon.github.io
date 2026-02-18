@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="description" content="Get in touch with Zindigon for business, collaborations, voice work, testing, and feedback."/>
+  <title>Contact — Zindigon</title>
+
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https://i.ytimg.com;
+    script-src 'self';
+    connect-src 'self';
+    frame-src 'self';">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/site.css"/>
+</head>
+<body>
+  <div id="fx" aria-hidden="true">
+    <canvas id="starfield"></canvas>
+    <div class="fx-aurora"></div>
+  </div>
+
+  <header>
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="/">
+        <span class="logo" aria-hidden="true"></span>
+        <span>Zindigon</span>
+      </a>
+      <div class="spacer"></div>
+
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">
+        ☰ Menu
+      </button>
+
+      <div class="navlinks" data-nav>
+        <a href="/">Home</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+    </nav>
+
+    <div class="mobilenav" id="mobileNav" data-nav>
+      <a href="/">Home</a>
+      <a href="/Games/AetherFall/">Games</a>
+      <a href="/Anime/BloodlineZero/">Anime</a>
+      <a href="/partners.html">Partners</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+  </header>
+
+  <main>
+
+<section class="hero">
+  <div class="hero-inner">
+    <span class="kicker">✉️ Contact • collabs • business</span>
+    <h1 class="h1">Let’s build something</h1>
+    <p class="sub">
+      Reach out for partnerships, web/dev work, voice acting, testing, or feedback. If it helps Zindigon ship better worlds,
+      I’m interested.
+    </p>
+    <div class="cta-row">
+      <a class="btn" href="mailto:brandonjoea3@gmail.com?subject=Zindigon%20Inquiry">Email me</a>
+      <a class="btn ghost" href="/">Home</a>
+    </div>
+  </div>
+</section>
+
+<section class="section split">
+  <article class="card glow">
+    <h2 class="h2">Send a message</h2>
+    <p class="mini">
+      This form uses your email client (no tracking, no storage). It keeps the site lightweight.
+    </p>
+
+    <form class="form" action="mailto:brandonjoea3@gmail.com" method="post" enctype="text/plain">
+      <div>
+        <label class="label" for="name">Name</label>
+        <input class="input" id="name" name="name" placeholder="Your name" required />
+      </div>
+
+      <div>
+        <label class="label" for="email">Email</label>
+        <input class="input" id="email" name="email" type="email" placeholder="you@example.com" required />
+      </div>
+
+      <div>
+        <label class="label" for="topic">Topic</label>
+        <select class="select" id="topic" name="topic">
+          <option>Partnership</option>
+          <option>Game testing</option>
+          <option>Voice work</option>
+          <option>Web / dev work</option>
+          <option>General</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="label" for="message">Message</label>
+        <textarea class="textarea" id="message" name="message" placeholder="Tell me what you're thinking…" required></textarea>
+      </div>
+
+      <button class="btn" type="submit">Send</button>
+      <div class="notice">
+        Prefer direct? Email: <a href="mailto:brandonjoea3@gmail.com">brandonjoea3@gmail.com</a>
+      </div>
+    </form>
+  </article>
+
+  <aside class="card">
+    <h2 class="h2">Good reasons to ping me</h2>
+    <div class="chips">
+      <span class="chip">Collabs</span>
+      <span class="chip">Voice acting</span>
+      <span class="chip">Music</span>
+      <span class="chip">Animation</span>
+      <span class="chip">Playtests</span>
+      <span class="chip">Web builds</span>
+    </div>
+
+    <hr class="hr"/>
+
+    <h3 class="h2" style="font-size:1.1rem;">If you’re a dev</h3>
+    <p class="mini">
+      I’m into clean systems, readable UI, and shipping. If you like building in public, we’ll get along.
+    </p>
+
+    <h3 class="h2" style="font-size:1.1rem; margin-top:14px;">If you’re a creator</h3>
+    <p class="mini">
+      If your work matches the tone (anime / gaming / sci‑fi / darker themes), I’m open to cross‑promo and collaborations.
+    </p>
+  </aside>
+</section>
+
+  </main>
+
+  <footer>
+    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+  </footer>
+
+  <script src="/assets/site.js" defer></script>
+</body>
+</html>

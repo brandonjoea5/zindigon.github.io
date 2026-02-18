@@ -2,80 +2,95 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>AetherFall — Zindigon</title>
-  <meta name="description" content="AetherFall by Zindigon — tower-defense roguelike. Leaderboards, privacy, and updates."/>
+  <meta name="description" content="AetherFall project page."/>
   <link rel="stylesheet" href="/assets/site.css"/>
 </head>
 <body>
-  <div class="bg">
-    <canvas id="starfield" aria-hidden="true"></canvas>
-    <div class="vignette" aria-hidden="true"></div>
-    <div class="grid" aria-hidden="true"></div>
+  <div id="fx" aria-hidden="true">
+    <canvas id="starfield"></canvas>
+    <div class="fx-aurora"></div>
   </div>
 
-  <header class="topbar">
-    <a class="brand" href="/index.html">
-      <span class="brandMark" aria-hidden="true"></span>
-      <span class="brandText">Zindigon</span>
-      <span class="brandTag">creative dev • games • anime</span>
-    </a>
+<header>
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="/">
+        <span class="logo" aria-hidden="true"></span>
+        <span>Zindigon</span>
+      </a>
+      <div class="spacer"></div>
 
-    <button class="navToggle" type="button" aria-label="Open navigation" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">
+        ☰ Menu
+      </button>
 
-    <nav class="nav">
-      <a href="/index.html">Home</a>
-      <a href="/Anime/BloodlineZero/">Anime</a>
-      <a class="active" href="/Games/">Games</a>
-      <a href="/Partners.html">Partners</a>
-      <a href="/Contact.html">Contact</a>
+      <div class="navlinks" data-nav>
+        <a href="/">Home</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
+      </div>
     </nav>
+
+    <div class="mobilenav" id="mobileNav" data-nav>
+      <a href="/">Home</a>
+      <a href="/Games/AetherFall/">Games</a>
+      <a href="/Anime/BloodlineZero/">Anime</a>
+      <a href="/partners.html">Partners</a>
+      <a href="/contact.html">Contact</a>
+    </div>
   </header>
 
-  <main class="page">
-    <section class="hero hero--compact">
-      <div class="heroLeft">
-        <div class="chipRow">
-          <span class="chip">AetherFall</span>
-          <span class="chip chip--ghost">tower-defense roguelike</span>
-        </div>
-        <h1 class="title">AetherFall</h1>
-        <p class="subtitle">Designed for satisfying runs and clear progression. Built with dev-level clarity.</p>
-        <div class="ctaRow">
-          <a class="btn" href="/Games/AetherFall/leaderboards.html">View leaderboards</a>
-          <a class="btn btn--ghost" href="/Games/AetherFall/privacy.html">Privacy policy</a>
-        </div>
-      </div>
-      <div class="heroRight">
-        <div class="card card--glow">
-          <div class="cardTitle">Quick info</div>
-          <div class="cardBody">
-            <ul class="bullets">
-              <li>Runs, upgrades, and scaling challenge</li>
-              <li>Leaderboards support</li>
-              <li>Mobile-friendly layout</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
+<main>
 
-    <footer class="footer">
-      <div class="footerInner">
-        <div class="footerLeft">
-          <div class="footerBrand">Zindigon</div>
-          <div class="footerMuted">AetherFall section</div>
-        </div>
-        <div class="footerRight">
-          <a href="/Games/">Games</a>
-          <a href="/Contact.html">Contact</a>
-        </div>
-      </div>
-    </footer>
-  </main>
+<section class="hero">
+  <div class="hero-inner">
+    <span class="kicker">🜂 AetherFall • tower-defense roguelike</span>
+    <h1 class="h1">AetherFall</h1>
+    <p class="sub">Designed for satisfying runs and clear progression—where builds feel powerful, readable, and earned.</p>
+    <div class="cta-row">
+      <a class="btn" href="/Games/AetherFall/leaderboards.html">View leaderboards</a>
+      <a class="btn ghost" href="/Games/">Back to Games</a>
+    </div>
+  </div>
+</section>
 
+<section class="section split">
+  <article class="card glow">
+    <h2 class="h2">What it is</h2>
+    <p class="p">AetherFall blends tight tower-defense fundamentals with roguelike decision-making: pick upgrades, discover synergies, and shape each run.</p>
+    <div class="chips">
+      <span class="chip">Keepers</span>
+      <span class="chip chip--ghost">Upgrades</span>
+      <span class="chip chip--ghost">Roguelike loops</span>
+    </div>
+  </article>
+
+  <aside class="card">
+    <h2 class="h2">Links</h2>
+    <p class="p"><a href="/Games/AetherFall/leaderboards.html">Leaderboards</a> — public rankings</p>
+    <p class="p"><a href="/Games/AetherFall/privacy.html">Privacy policy</a> — app + analytics</p>
+    <p class="p"><a href="/contact.html">Contact</a> — collabs / questions</p>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="grid">
+    <article class="card" style="grid-column: span 12;">
+      <h2 class="h2">Status</h2>
+      <p class="p">Active development. Features evolve as testing continues—performance, balance, and UX polish are always the focus.</p>
+      <p class="mini">If you’re a dev: yes, this is being built with a “tools and pipelines” mindset, not just content drops.</p>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<footer>
+    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+  </footer>
   <script src="/assets/site.js"></script>
 </body>
 </html>
