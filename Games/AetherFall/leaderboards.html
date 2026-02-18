@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="description" content="AetherFall — live leaderboards for best wave runs."/>
+  <title>AetherFall — Leaderboards</title>
+
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https://i.ytimg.com;
+    script-src 'self';
+    connect-src 'self' https://zindigon-pay.brandonjoea3.workers.dev;
+    frame-src 'self';">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/site.css"/>
+</head>
+<body>
+  <div id="fx" aria-hidden="true">
+    <canvas id="starfield"></canvas>
+    <div class="fx-aurora"></div>
+  </div>
+
+  <header>
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="/">
+        <span class="logo" aria-hidden="true"></span>
+        <span>Zindigon</span>
+      </a>
+      <div class="spacer"></div>
+
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">
+        ☰ Menu
+      </button>
+
+      <div class="navlinks" data-nav>
+        <a href="/">Home</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+    </nav>
+
+    <div class="mobilenav" id="mobileNav" data-nav>
+      <a href="/">Home</a>
+      <a href="/Games/AetherFall/">Games</a>
+      <a href="/Anime/BloodlineZero/">Anime</a>
+      <a href="/partners.html">Partners</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+  </header>
+
+  <main>
+
+<section class="hero">
+  <div class="hero-inner">
+    <span class="kicker">🏆 Live data • pulled from game server</span>
+    <h1 class="h1">AetherFall Leaderboards</h1>
+    <p class="sub">
+      Best wave runs, updated live. This is the public scoreboard — your in‑game name is whatever you chose inside AetherFall.
+    </p>
+    <div class="cta-row">
+      <a class="btn ghost" href="/Games/AetherFall/">Back to AetherFall</a>
+      <a class="btn ghost" href="/">Home</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="card glow" id="lbRoot"
+       data-endpoint="https://zindigon-pay.brandonjoea3.workers.dev/api/leaderboard/best_wave?limit=50&base=try">
+    <h2 class="h2">Best wave</h2>
+    <p class="mini">Endpoint: <code>/api/leaderboard/best_wave</code></p>
+
+    <div id="lbLoading" class="mini" style="margin-top:10px;">Loading leaderboard…</div>
+    <div id="lbError" class="notice" style="display:none; margin-top:10px;">Couldn’t load the leaderboard. Refresh and try again.</div>
+    <div id="lbTable" style="margin-top:10px;"></div>
+  </div>
+</section>
+
+  </main>
+
+  <footer>
+    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+  </footer>
+
+  <script src="/assets/site.js" defer></script>
+  <script src="/assets/leaderboards.js" defer></script>
+</body>
+</html>

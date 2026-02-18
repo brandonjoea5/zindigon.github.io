@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="description" content="Zindigon is an independent creative studio building original games, anime, and devlogs."/>
+  <title>Zindigon — From imagination to expectation</title>
+
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https://i.ytimg.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://static.doubleclick.net;
+    script-src 'self' 'unsafe-inline' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://static.doubleclick.net https://adservice.google.com https://adservice.google.com.br;
+    connect-src 'self' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://ep1.adtrafficquality.google;
+    frame-src 'self' https://www.youtube.com https://googleads.g.doubleclick.net;">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/assets/site.css"/>
+</head>
+<body>
+  <div id="fx" aria-hidden="true">
+    <canvas id="starfield"></canvas>
+    <div class="fx-aurora"></div>
+  </div>
+
+  <header>
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="/">
+        <span class="logo" aria-hidden="true"></span>
+        <span>Zindigon</span>
+      </a>
+      <div class="spacer"></div>
+
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">
+        ☰ Menu
+      </button>
+
+      <div class="navlinks" data-nav>
+        <a href="/">Home</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
+      </div>
+    </nav>
+
+    <div class="mobilenav" id="mobileNav" data-nav>
+      <a href="/">Home</a>
+      <a href="/Games/AetherFall/">Games</a>
+      <a href="/Anime/BloodlineZero/">Anime</a>
+      <a href="/partners.html">Partners</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+  </header>
+
+  <main>
+
+<section class="hero">
+  <div class="hero-inner">
+    <span class="kicker">⚡ Creative studio • devlogs • worlds in progress</span>
+    <h1 class="h1">Games, anime, and code-driven worlds.</h1>
+    <p class="sub">
+      Zindigon is an independent creative studio building original IP — shipped game systems, anime writing, and the
+      developer tooling behind it. If you like clean engineering <em>and</em> hype worlds, you’re in the right place.
+    </p>
+    <div class="cta-row">
+      <a class="btn" href="/Games/AetherFall/">Explore AetherFall</a>
+      <a class="btn ghost" href="/Anime/BloodlineZero/">Read Bloodline Zero</a>
+      <a class="btn ghost" href="/contact.html">Work with me</a>
+    </div>
+  </div>
+</section>
+
+<section class="section split">
+  <article class="card glow">
+    <h2 class="h2">Featured projects</h2>
+    <p class="p">
+      I’m building a connected universe: the game(s), the anime(s), and the dev process behind them. Each project has a
+      clear hook, a visible roadmap, and a real implementation mindset.
+    </p>
+    <hr class="hr"/>
+
+    <div class="grid">
+      <div class="card" style="grid-column: span 12;">
+        <div class="kicker">🎮 Game</div>
+        <h3 class="h2" style="font-size:1.25rem; margin-top:8px;">AetherFall</h3>
+        <p class="mini">
+          A tower-defense roguelike built for replayability — keepers, upgrades, and endless waves. Track your best runs
+          on the live leaderboard.
+        </p>
+        <div class="chips">
+          <span class="chip">Godot</span>
+          <span class="chip">Leaderboards</span>
+          <span class="chip">Mobile-first</span>
+        </div>
+        <div class="cta-row" style="margin-top:12px;">
+          <a class="btn" href="/Games/AetherFall/">Open project</a>
+          <a class="btn ghost" href="/aetherfall-leaderboards.html">Leaderboards</a>
+          <a class="btn ghost" href="/aetherfall-privacy.html">Privacy</a>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 12;">
+        <div class="kicker">🎬 Anime</div>
+        <h3 class="h2" style="font-size:1.25rem; margin-top:8px;">Bloodline Zero</h3>
+        <p class="mini">
+          Adult-leaning sci‑fi anime about bloodlines, powers, and an organization that treats humans like software.
+          Canon episodes and world bible are being built in public.
+        </p>
+        <div class="chips">
+          <span class="chip">World bible</span>
+          <span class="chip">Episode scripts</span>
+          <span class="chip">Power system</span>
+        </div>
+        <div class="cta-row" style="margin-top:12px;">
+          <a class="btn" href="/Anime/BloodlineZero/">Open project</a>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 12;">
+        <div class="kicker">🛡️ RPG</div>
+        <h3 class="h2" style="font-size:1.25rem; margin-top:8px;">Adventures of the Troll King</h3>
+        <p class="mini">
+          Strategy RPG concept in early development. When it’s time, you’ll see systems first: combat loops, progression,
+          and the stuff that makes a game last.
+        </p>
+        <div class="chips">
+          <span class="chip">Systems-first</span>
+          <span class="chip">Coming soon</span>
+        </div>
+        <div class="cta-row" style="margin-top:12px;">
+          <a class="btn ghost" href="/aottk.html">View teaser</a>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <aside class="card">
+    <h2 class="h2">What you’ll find here</h2>
+    <p class="mini">A dark aesthetic — but readable, fast, and built like a real dev’s portfolio.</p>
+
+    <div class="kv">
+      <div class="item">
+        <div class="k">Quality bar</div>
+        <div class="v">Clean UI</div>
+      </div>
+      <div class="item">
+        <div class="k">Style</div>
+        <div class="v">Dark / Neon</div>
+      </div>
+      <div class="item">
+        <div class="k">Focus</div>
+        <div class="v">Systems</div>
+      </div>
+      <div class="item">
+        <div class="k">Content</div>
+        <div class="v">Devlogs</div>
+      </div>
+    </div>
+
+    <hr class="hr"/>
+
+    <h3 class="h2" style="font-size:1.1rem;">Currently building</h3>
+    <ul class="list">
+      <li>AetherFall progression + live rankings</li>
+      <li>Bloodline Zero scripts + canon</li>
+      <li>Tooling, pipelines, and automation</li>
+    </ul>
+
+    <div class="notice" style="margin-top:12px;">
+      Blog test content has been removed on purpose — this site stays tight: projects, proof, contact.
+    </div>
+  </aside>
+</section>
+
+<section class="section">
+  <div class="card">
+    <h2 class="h2">Tech I actually ship with</h2>
+    <p class="mini">
+      I’m not trying to look “busy” — these are tools I’ve used to build real workflows, apps, and game systems.
+    </p>
+    <div class="chips">
+      <span class="chip">Godot 4.x</span>
+      <span class="chip">FlutterFlow</span>
+      <span class="chip">Zoho (CRM / Catalyst)</span>
+      <span class="chip">Node.js</span>
+      <span class="chip">Cloudflare Workers</span>
+      <span class="chip">Stripe</span>
+      <span class="chip">AdMob</span>
+      <span class="chip">GitHub Pages</span>
+    </div>
+  </div>
+</section>
+
+  </main>
+
+  <footer>
+    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+  </footer>
+
+  <script src="/assets/site.js" defer></script>
+</body>
+</html>
