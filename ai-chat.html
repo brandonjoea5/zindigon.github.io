@@ -36,7 +36,7 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:20px;
+      padding:0px;
     }
 
     .shell{
@@ -326,15 +326,48 @@
     }
 
     @media (max-width: 900px){
+      body{ padding: 0; }
       .shell{
         grid-template-columns: 1fr;
-        height: auto;
-        min-height: 86vh;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
       }
       .left{ display:none; }
-      .panel{ border-radius: 16px; }
-      .msg{ max-width: 92%; }
+      .panel{
+        border-radius: 0;
+        height: 100%;
+      }
+      .topbar{
+        padding: 12px 12px;
+      }
+      .chat{
+        padding: 12px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .msg{
+        max-width: 96%;
+      }
+      .msg p{
+        font-size: 15px;
+      }
+      .composer{
+        padding: 10px 12px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        gap: 8px;
+      }
+      .input{
+        padding: 12px 12px;
+      }
+      .send{
+        padding: 12px 14px;
+        border-radius: 14px;
+      }
+      .small{
+        display:none; /* optional - hide demo note on mobile */
+      }
     }
+
   </style>
 </head>
 <body>
