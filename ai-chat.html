@@ -1,13 +1,610 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta name="robots" content="noindex, nofollow">
-  <title>Support Chat</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>AI Support Demo</title>
+  <style>
+    :root{
+      --bg0:#070A0F;
+      --bg1:#0B1220;
+      --card:#0F172A;
+      --card2:#0B1324;
+      --text:#E5E7EB;
+      --muted:#94A3B8;
+      --line:rgba(255,255,255,.08);
+      --accent:#22C55E;
+      --accent2:#15803D;
+      --danger:#EF4444;
+      --shadow: 0 16px 50px rgba(0,0,0,.45);
+      --radius: 18px;
+      --radius2: 14px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 0%, rgba(34,197,94,.12), transparent 60%),
+        radial-gradient(900px 700px at 90% 10%, rgba(56,189,248,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .shell{
+      width:min(980px, 100%);
+      height:min(82vh, 760px);
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:14px;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .left{
+      display:flex;
+      flex-direction:column;
+    }
+
+    .brand{
+      padding:16px 16px 12px;
+      border-bottom:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(34,197,94,.10), transparent 75%);
+    }
+    .brand .kicker{
+      font-size:12px;
+      color:var(--muted);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .brand .title{
+      margin-top:6px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .logo{
+      width:34px;height:34px;border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, rgba(34,197,94,.9), rgba(34,197,94,.25) 60%, rgba(255,255,255,.06));
+      border:1px solid rgba(34,197,94,.25);
+      box-shadow: 0 10px 30px rgba(34,197,94,.12);
+    }
+    .brand h1{
+      font-size:16px;
+      margin:0;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+    .brand p{
+      margin:2px 0 0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .meta{
+      padding:14px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(15,23,42,.55);
+    }
+    .pill .label{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill .value{
+      font-size:12px;
+      font-weight:700;
+      color:var(--text);
+    }
+    .status{
+      display:flex; align-items:center; gap:8px;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 5px rgba(34,197,94,.12);
+    }
+
+    .quick{
+      margin-top:auto;
+      padding:16px;
+      border-top:1px solid var(--line);
+      background: rgba(0,0,0,.15);
+    }
+    .quick h3{
+      margin:0 0 10px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .chip{
+      border:1px solid rgba(34,197,94,.25);
+      background: rgba(34,197,94,.10);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius: 999px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+    }
+    .chip:hover{ transform: translateY(-1px); background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.35); }
+
+    .right{
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+    }
+    .topbar .leftside{
+      display:flex; align-items:center; gap:12px;
+    }
+    .avatar{
+      width:36px;height:36px;border-radius:14px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      display:grid; place-items:center;
+      font-weight:800;
+      color: rgba(255,255,255,.85);
+    }
+    .topbar .name{
+      display:flex; flex-direction:column;
+      line-height:1.15;
+    }
+    .topbar .name strong{ font-size:14px; }
+    .topbar .name span{ font-size:12px; color:var(--muted); }
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius: 12px;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .btn:hover{ background: rgba(255,255,255,.06); }
+
+    .chat{
+      flex:1;
+      overflow:auto;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      background: radial-gradient(900px 500px at 50% 0%, rgba(34,197,94,.06), transparent 60%);
+    }
+
+    .msg{
+      max-width: 78%;
+      padding:12px 12px;
+      border-radius: 16px;
+      border:1px solid var(--line);
+      background: rgba(15,23,42,.65);
+      box-shadow: 0 8px 20px rgba(0,0,0,.18);
+    }
+    .msg.user{
+      margin-left:auto;
+      background: rgba(34,197,94,.12);
+      border-color: rgba(34,197,94,.22);
+    }
+    .msg .meta{
+      padding:0;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+    .tag{
+      font-size:11px;
+      color: var(--muted);
+    }
+    .msg.user .tag{ color: rgba(229,231,235,.85); }
+    .time{
+      font-size:11px;
+      color: rgba(148,163,184,.9);
+      margin-left:auto;
+    }
+    .msg p{
+      margin:0;
+      font-size:14px;
+      line-height:1.45;
+      white-space:pre-wrap;
+    }
+
+    .typing{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color: var(--muted);
+      font-size:12px;
+      padding:10px 12px;
+      border-radius: 999px;
+      border:1px dashed rgba(255,255,255,.10);
+      width:fit-content;
+      background: rgba(15,23,42,.35);
+    }
+    .dots{
+      display:inline-flex; gap:4px;
+    }
+    .dots i{
+      width:6px;height:6px;border-radius:999px;
+      background: rgba(148,163,184,.9);
+      animation: bounce 1.1s infinite ease-in-out;
+    }
+    .dots i:nth-child(2){ animation-delay:.12s; }
+    .dots i:nth-child(3){ animation-delay:.24s; }
+    @keyframes bounce{
+      0%, 80%, 100%{ transform: translateY(0); opacity:.55; }
+      40%{ transform: translateY(-4px); opacity:1; }
+    }
+
+    .composer{
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,.20));
+    }
+    .input{
+      flex:1;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border:1px solid var(--line);
+      background: rgba(2,6,23,.35);
+      border-radius: 14px;
+      padding:10px 12px;
+    }
+    .input input{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font-size:14px;
+    }
+    .input input::placeholder{ color: rgba(148,163,184,.85); }
+
+    .send{
+      border:none;
+      background: linear-gradient(180deg, rgba(34,197,94,.95), rgba(21,128,61,.95));
+      color:#04110A;
+      font-weight:800;
+      padding:10px 14px;
+      border-radius: 14px;
+      cursor:pointer;
+      box-shadow: 0 12px 28px rgba(34,197,94,.18);
+    }
+    .send:hover{ filter: brightness(1.02); }
+    .send:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .small{
+      font-size:11px;
+      color: var(--muted);
+      padding: 10px 16px 0;
+    }
+
+    @media (max-width: 900px){
+      .shell{
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 86vh;
+      }
+      .left{ display:none; }
+      .panel{ border-radius: 16px; }
+      .msg{ max-width: 92%; }
+    }
+  </style>
 </head>
 <body>
-  <script src="https://livechat-cfholdings.connexone.co.uk/widget?connid=bd062dac-aa00-4840-ad47-33b3fb5d8548"
-          id="livechat-cfholdings"
-          data-socket-uri="https://livechat-cfholdings.connexone.co.uk">
+  <div class="shell">
+    <aside class="panel left">
+      <div class="brand">
+        <div class="kicker">Zindigon • Demo</div>
+        <div class="title">
+          <div class="logo"></div>
+          <div>
+            <h1>AI Support</h1>
+            <p>Presentation mode (no backend)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="pill">
+          <div>
+            <div class="label">Environment</div>
+            <div class="value">Staging Demo</div>
+          </div>
+          <button class="btn" id="resetBtn" type="button">Reset</button>
+        </div>
+
+        <div class="pill">
+          <div>
+            <div class="label">Availability</div>
+            <div class="value status"><span class="dot"></span> Online</div>
+          </div>
+          <div class="value" id="clock">—</div>
+        </div>
+
+        <div class="pill">
+          <div>
+            <div class="label">Typical topics</div>
+            <div class="value">Billing • Providers • ID cards</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick">
+        <h3>Quick prompts</h3>
+        <div class="chips">
+          <div class="chip" data-msg="Am I active right now?">Am I covered?</div>
+          <div class="chip" data-msg="How do I find an in-network provider?">Find a provider</div>
+          <div class="chip" data-msg="Can you explain my monthly cost?">Monthly cost</div>
+          <div class="chip" data-msg="I need a replacement ID card.">Replace ID card</div>
+          <div class="chip" data-msg="What does “On Hold” mean?">On Hold?</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel right">
+      <div class="topbar">
+        <div class="leftside">
+          <div class="avatar">AI</div>
+          <div class="name">
+            <strong>Realm Assistant</strong>
+            <span>Fast answers • Always on</span>
+          </div>
+        </div>
+        <button class="btn" id="exportBtn" type="button">Copy Transcript</button>
+      </div>
+
+      <div class="chat" id="chat"></div>
+
+      <div class="composer">
+        <div class="input">
+          <span style="color:rgba(148,163,184,.9);font-size:12px;">You</span>
+          <input id="msgInput" placeholder="Ask about coverage, billing, providers…" autocomplete="off" />
+        </div>
+        <button class="send" id="sendBtn" type="button">Send</button>
+      </div>
+      <div class="small">Demo note: responses are scripted to mimic real behavior.</div>
+    </main>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const clockEl = document.getElementById('clock');
+
+    const nowTime = () => {
+      const d = new Date();
+      return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    };
+
+    function setClock(){
+      const d = new Date();
+      clockEl.textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+    setClock(); setInterval(setClock, 1000 * 30);
+
+    const scriptReplies = [
+      {
+        match: /covered|active|am i|coverage/i,
+        reply:
+`You’re currently marked as **Active**.
+
+If you recently paid or were added to a group, it can take a short processing window for all systems to reflect the update. If you tell me the plan name, I can help confirm the details you should see on your Product Info page.`
+      },
+      {
+        match: /find|provider|network/i,
+        reply:
+`To find an in-network provider:
+1) Open **Product Info**
+2) Select your plan
+3) Tap **Find Providers**
+
+If you share your ZIP code, I can help you narrow down what to search for (primary care, dental, vision, etc.).`
+      },
+      {
+        match: /id card|replacement|new id/i,
+        reply:
+`No problem — I can help with a replacement ID card request.
+
+For the demo, the button would submit a request and show a confirmation like:
+**“Request received. Expect delivery in 7–10 business days.”**`
+      },
+      {
+        match: /cost|monthly|price|amount/i,
+        reply:
+`Your monthly cost is the recurring premium for the plan you selected.
+
+In the live system, this is pulled from the plan’s **product fees** and displayed as:
+**$X / month**.
+
+If you want, I can show how it’s calculated and what fees are included.`
+      },
+      {
+        match: /hold|on hold|lapsed/i,
+        reply:
+`“On Hold” usually means the plan is temporarily paused (often due to processing, verification, or a pending action).
+
+For your portal rules:
+- **Inactive** if a cancellation date exists
+- **On Hold** if hold flag = 1
+- Otherwise **Active**
+
+If you tell me what you’re seeing, I’ll explain what it means in plain English.`
+      }
+    ];
+
+    const fallbackReply =
+`Got it. For the demo, I’d respond with a clear summary + next steps.
+
+If you tell me:
+- the plan name
+- what you’re trying to do
+…I can suggest the exact button or screen you should use.`;
+
+    function addMessage(role, text){
+      const wrap = document.createElement('div');
+      wrap.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = role === 'user' ? 'You' : 'Assistant';
+
+      const time = document.createElement('span');
+      time.className = 'time';
+      time.textContent = nowTime();
+
+      meta.appendChild(tag);
+      meta.appendChild(time);
+
+      const p = document.createElement('p');
+      // very light markdown-ish bold
+      p.innerHTML = text
+        .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br/>');
+
+      wrap.appendChild(meta);
+      wrap.appendChild(p);
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function showTyping(){
+      const t = document.createElement('div');
+      t.className = 'typing';
+      t.id = 'typing';
+      t.innerHTML = `<span>Assistant is typing</span>
+                     <span class="dots"><i></i><i></i><i></i></span>`;
+      chat.appendChild(t);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    function hideTyping(){
+      const t = document.getElementById('typing');
+      if (t) t.remove();
+    }
+
+    function getReply(userText){
+      const hit = scriptReplies.find(s => s.match.test(userText));
+      return hit ? hit.reply : fallbackReply;
+    }
+
+    function send(){
+      const v = input.value.trim();
+      if(!v) return;
+
+      addMessage('user', v);
+      input.value = '';
+      sendBtn.disabled = true;
+
+      showTyping();
+      const reply = getReply(v);
+
+      // simulate thinking delay
+      const delay = Math.min(1200 + v.length * 15, 2400);
+      setTimeout(() => {
+        hideTyping();
+        addMessage('ai', reply);
+        sendBtn.disabled = false;
+        input.focus();
+      }, delay);
+    }
+
+    function seed(){
+      chat.innerHTML = '';
+      addMessage('ai',
+`Hi! I’m the Realm Assistant (demo).
+
+Ask me anything about:
+• Coverage status
+• Providers
+• Billing & transactions
+• Replacement ID cards`);
+    }
+
+    // events
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') send();
+    });
+
+    document.querySelectorAll('.chip').forEach(c => {
+      c.addEventListener('click', () => {
+        input.value = c.dataset.msg;
+        input.focus();
+      });
+    });
+
+    resetBtn.addEventListener('click', seed);
+
+    exportBtn.addEventListener('click', async () => {
+      const lines = [...chat.querySelectorAll('.msg')].map(m => {
+        const who = m.classList.contains('user') ? 'You' : 'Assistant';
+        const text = m.querySelector('p').innerText;
+        return `${who}: ${text}`;
+      }).join('\n\n');
+
+      try{
+        await navigator.clipboard.writeText(lines);
+        exportBtn.textContent = 'Copied!';
+        setTimeout(()=>exportBtn.textContent='Copy Transcript', 1200);
+      }catch{
+        alert(lines);
+      }
+    });
+
+    seed();
   </script>
 </body>
 </html>
