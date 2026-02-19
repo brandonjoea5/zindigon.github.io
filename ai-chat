@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="robots" content="noindex, nofollow">
+  <title>Support Chat</title>
+</head>
+<body>
+  <script src="https://livechat-cfholdings.connexone.co.uk/widget?connid=bd062dac-aa00-4840-ad47-33b3fb5d8548"
+          id="livechat-cfholdings"
+          data-socket-uri="https://livechat-cfholdings.connexone.co.uk">
+  </script>
+</body>
+</html>
