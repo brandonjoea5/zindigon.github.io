@@ -3,16 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="description" content="Get in touch with Zindigon for business, collaborations, voice work, testing, and feedback."/>
+  <meta name="description" content="Get in touch with Zindigon for web services, collaborations, testing, and feedback."/>
   <title>Contact — Zindigon</title>
-
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https://i.ytimg.com;
-    script-src 'self';
-    connect-src 'self';
-    frame-src 'self';">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,17 +34,19 @@
         <a href="/">Home</a>
         <a href="/Games/AetherFall/">Games</a>
         <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/services.html">Services</a>
         <a href="/partners.html">Partners</a>
-        <a href="/contact.html">Contact</a>
+        <a href="/contact.html" aria-current="page">Contact</a>
       </div>
     </nav>
 
     <div class="mobilenav" id="mobileNav" data-nav>
       <a href="/">Home</a>
-      <a href="/Games/AetherFall/">Games</a>
-      <a href="/Anime/BloodlineZero/">Anime</a>
-      <a href="/partners.html">Partners</a>
-      <a href="/contact.html">Contact</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/services.html">Services</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
     </div>
   </header>
 
@@ -60,15 +54,15 @@
 
 <section class="hero">
   <div class="hero-inner">
-    <span class="kicker">✉️ Contact • collabs • business</span>
+    <span class="kicker">✉️ Contact • collabs • web services</span>
     <h1 class="h1">Let’s build something</h1>
     <p class="sub">
-      Reach out for partnerships, web/dev work, voice acting, testing, or feedback. If it helps Zindigon ship better worlds,
-      I’m interested.
+      Reach out for partnerships, web/dev work, voice work, testing, or feedback.
+      If it helps Zindigon ship better worlds (or helps your business look legit online), I’m interested.
     </p>
     <div class="cta-row">
       <a class="btn" href="mailto:brandonjoea3@gmail.com?subject=Zindigon%20Inquiry">Email me</a>
-      <a class="btn ghost" href="/">Home</a>
+      <a class="btn ghost" href="/services.html">Web services</a>
     </div>
   </div>
 </section>
@@ -94,10 +88,10 @@
       <div>
         <label class="label" for="topic">Topic</label>
         <select class="select" id="topic" name="topic">
+          <option>Web / dev work</option>
           <option>Partnership</option>
           <option>Game testing</option>
           <option>Voice work</option>
-          <option>Web / dev work</option>
           <option>General</option>
         </select>
       </div>
@@ -115,24 +109,18 @@
   </article>
 
   <aside class="card">
-    <h2 class="h2">Good reasons to ping me</h2>
-    <div class="chips">
-      <span class="chip">Collabs</span>
-      <span class="chip">Voice acting</span>
-      <span class="chip">Music</span>
-      <span class="chip">Animation</span>
-      <span class="chip">Playtests</span>
-      <span class="chip">Web builds</span>
-    </div>
+    <h2 class="h2">Fastest way to get a quote</h2>
+    <p class="mini">If this is for web services, include:</p>
+    <ul class="list">
+      <li>Your business name + city</li>
+      <li>What you want the site to do (basic / scheduling / menu/inventory)</li>
+      <li>Any example sites you like</li>
+      <li>Deadline (if you have one)</li>
+    </ul>
 
     <hr class="hr"/>
 
-    <h3 class="h2" style="font-size:1.1rem;">If you’re a dev</h3>
-    <p class="mini">
-      I’m into clean systems, readable UI, and shipping. If you like building in public, we’ll get along.
-    </p>
-
-    <h3 class="h2" style="font-size:1.1rem; margin-top:14px;">If you’re a creator</h3>
+    <h3 class="h2" style="font-size:1.05rem;">Creators & collabs</h3>
     <p class="mini">
       If your work matches the tone (anime / gaming / sci‑fi / darker themes), I’m open to cross‑promo and collaborations.
     </p>
@@ -142,7 +130,7 @@
   </main>
 
   <footer>
-    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+    <div>© <span id="year"></span> Zindigon — Creative tech, original worlds.</div>
   </footer>
 
   <script src="/assets/site.js" defer></script>

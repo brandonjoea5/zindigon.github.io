@@ -6,14 +6,6 @@
   <meta name="description" content="Partners and friends of Zindigon — creators, streamers, and collaborators."/>
   <title>Partners — Zindigon</title>
 
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self';
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https://i.ytimg.com;
-    script-src 'self';
-    connect-src 'self';
-    frame-src 'self' https://player.twitch.tv https://www.youtube.com;">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -42,17 +34,19 @@
         <a href="/">Home</a>
         <a href="/Games/AetherFall/">Games</a>
         <a href="/Anime/BloodlineZero/">Anime</a>
-        <a href="/partners.html">Partners</a>
+        <a href="/services.html">Services</a>
+        <a href="/partners.html" aria-current="page">Partners</a>
         <a href="/contact.html">Contact</a>
       </div>
     </nav>
 
     <div class="mobilenav" id="mobileNav" data-nav>
       <a href="/">Home</a>
-      <a href="/Games/AetherFall/">Games</a>
-      <a href="/Anime/BloodlineZero/">Anime</a>
-      <a href="/partners.html">Partners</a>
-      <a href="/contact.html">Contact</a>
+        <a href="/Games/AetherFall/">Games</a>
+        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/services.html">Services</a>
+        <a href="/partners.html">Partners</a>
+        <a href="/contact.html">Contact</a>
     </div>
   </header>
 
@@ -60,14 +54,15 @@
 
 <section class="hero">
   <div class="hero-inner">
-    <span class="kicker">🤝 Collaborators • friends • creators</span>
+    <span class="kicker">🤝 Collaborators • creators • community</span>
     <h1 class="h1">Partners</h1>
     <p class="sub">
-      People and channels connected to the Zindigon universe. If you want to collab, this is the vibe.
+      People and channels connected to the Zindigon universe. If you want to collaborate — games, anime, content, or dev —
+      this is where we start.
     </p>
     <div class="cta-row">
       <a class="btn" href="/contact.html">Partner inquiry</a>
-      <a class="btn ghost" href="/">Home</a>
+      <a class="btn ghost" href="/services.html">Web services</a>
     </div>
   </div>
 </section>
@@ -75,16 +70,16 @@
 <section class="section">
   <div class="grid">
     <article class="card glow" style="grid-column: span 12;">
-      <div class="kicker">Zindigon</div>
-      <h2 class="h2" style="margin-top:8px;">Games • Anime • Devlogs</h2>
+      <div class="badge">Zindigon</div>
+      <h2 class="h2" style="margin-top:10px;">Games • Anime • Web</h2>
       <p class="p">
-        Indie game developer and creator of <em>AetherFall</em> and <em>Bloodline Zero</em>. Expect devlogs, theory talks,
-        and the occasional chaos stream.
+        Indie developer and creator of <em>AetherFall</em> and <em>Bloodline Zero</em> — plus the web systems to support it.
+        Expect devlogs, builds, and the occasional chaos stream.
       </p>
       <div class="chips">
         <span class="chip">Solo dev</span>
         <span class="chip">Writer</span>
-        <span class="chip">Systems</span>
+        <span class="chip">Systems-first</span>
       </div>
       <div class="cta-row" style="margin-top:12px;">
         <a class="btn ghost" href="/Games/AetherFall/">AetherFall</a>
@@ -92,11 +87,14 @@
         <a class="btn ghost" href="https://www.youtube.com" target="_blank" rel="noopener">YouTube</a>
         <a class="btn ghost" href="https://www.twitch.tv" target="_blank" rel="noopener">Twitch</a>
       </div>
+      <div class="notice" style="margin-top:14px;">
+        Replace the placeholder links with your real channels whenever you’re ready.
+      </div>
     </article>
 
     <article class="card" style="grid-column: span 12;">
-      <div class="kicker">Spaz</div>
-      <h2 class="h2" style="margin-top:8px;">Streaming • reactions • games</h2>
+      <div class="badge">Example Partner</div>
+      <h2 class="h2" style="margin-top:10px;">Streaming • reactions • games</h2>
       <p class="p">
         Friend of the universe. Streaming content, reactions, and a good time. (Swap these links to the real channels.)
       </p>
@@ -108,9 +106,8 @@
         <a class="btn ghost" href="https://www.twitch.tv" target="_blank" rel="noopener">Twitch</a>
         <a class="btn ghost" href="https://www.youtube.com" target="_blank" rel="noopener">YouTube</a>
       </div>
-
       <div class="notice" style="margin-top:14px;">
-        Want “live now” status here? We can add it back with Twitch API + a small serverless proxy (so you don’t expose tokens).
+        Want “live now” status here? We can add it with Twitch API + a small serverless proxy (so you don’t expose tokens).
       </div>
     </article>
   </div>
@@ -119,7 +116,7 @@
   </main>
 
   <footer>
-    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+    <div>© <span id="year"></span> Zindigon — Creative tech, original worlds.</div>
   </footer>
 
   <script src="/assets/site.js" defer></script>

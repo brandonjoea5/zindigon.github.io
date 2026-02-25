@@ -1,90 +1,74 @@
-/* Zindigon site JS (no dependencies)
-   - mobile nav toggle
-   - active nav marker (aria-current)
-   - subtle starfield canvas
-*/
-(function(){
-  const byId = (id)=>document.getElementById(id);
+// Zindigon Site JS — lightweight UI + starfield
+(() => {
+  const year = document.getElementById("year");
+  if (year) year.textContent = new Date().getFullYear();
 
-  // Mobile menu
-  const btn = byId('menuBtn');
-  const mobile = byId('mobileNav');
-  if(btn && mobile){
-    btn.addEventListener('click', ()=>{
-      const isOpen = mobile.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(isOpen));
+  // Mobile nav toggle
+  const btn = document.getElementById("menuBtn");
+  const mobile = document.getElementById("mobileNav");
+  if (btn && mobile) {
+    btn.addEventListener("click", () => {
+      const open = mobile.getAttribute("data-open") === "true";
+      mobile.setAttribute("data-open", String(!open));
+      btn.setAttribute("aria-expanded", String(!open));
     });
   }
 
-  // Active nav (works even if you forget to set on a page)
-  const path = (location.pathname || '/').replace(/\/+$/,'') || '/';
-  const links = document.querySelectorAll('[data-nav] a');
-  links.forEach(a=>{
-    try{
-      const href = a.getAttribute('href');
-      if(!href) return;
-      const u = new URL(href, location.origin);
-      let p = (u.pathname || '/').replace(/\/+$/,'') || '/';
-      // Make "/index.html" behave like "/"
-      if(p.endsWith('/index.html')) p = p.slice(0, -'/index.html'.length) || '/';
-      if(path === p || (p !== '/' && path.startsWith(p))){
-        a.setAttribute('aria-current','page');
-      } else {
-        a.removeAttribute('aria-current');
-      }
-    }catch(_){}
-  });
+  // Simple starfield
+  const c = document.getElementById("starfield");
+  if (!c) return;
 
-  // Footer year
-  const year = byId('year');
-  if(year) year.textContent = String(new Date().getFullYear());
+  const ctx = c.getContext("2d");
+  let w = 0, h = 0, dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
-  // Starfield
-  const c = byId('starfield');
-  if(!c) return;
-  const ctx = c.getContext('2d');
-  if(!ctx) return;
+  const starCount = 140;
+  const stars = [];
 
-  let W=0,H=0,stars=[];
-  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  function resize() {
+    w = Math.floor(window.innerWidth);
+    h = Math.floor(window.innerHeight);
+    c.width = Math.floor(w * dpr);
+    c.height = Math.floor(h * dpr);
+    c.style.width = w + "px";
+    c.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  function rand(min,max){ return Math.random()*(max-min)+min; }
-
-  function resize(){
-    W = Math.floor(window.innerWidth);
-    H = Math.floor(window.innerHeight);
-    c.width = Math.floor(W * DPR);
-    c.height = Math.floor(H * DPR);
-    c.style.width = W+'px';
-    c.style.height = H+'px';
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-
-    const count = Math.floor((W*H) / 14000);
-    stars = new Array(Math.max(90, Math.min(220, count))).fill(0).map(()=>({
-      x: rand(0,W),
-      y: rand(0,H),
-      r: rand(.4, 1.6),
-      a: rand(.15, .75),
-      s: rand(.08, .35)
-    }));
+    stars.length = 0;
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: Math.random() * 1.6 + 0.3,
+        a: Math.random() * 0.8 + 0.15,
+        v: Math.random() * 0.25 + 0.05
+      });
+    }
   }
 
-  function tick(){
-    ctx.clearRect(0,0,W,H);
-    for(const st of stars){
-      st.y += st.s;
-      if(st.y > H + 8){ st.y = -8; st.x = rand(0,W); }
-      ctx.globalAlpha = st.a;
+  function tick() {
+    ctx.clearRect(0, 0, w, h);
+    // Subtle vignette
+    const g = ctx.createRadialGradient(w*0.5, h*0.5, Math.min(w,h)*0.15, w*0.5, h*0.5, Math.max(w,h)*0.65);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.35)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+
+    for (const s of stars) {
+      s.y += s.v;
+      if (s.y > h + 10) {
+        s.y = -10;
+        s.x = Math.random() * w;
+      }
       ctx.beginPath();
-      ctx.arc(st.x, st.y, st.r, 0, Math.PI*2);
-      ctx.fillStyle = '#ffffff';
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(234,240,255,${s.a})`;
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
     requestAnimationFrame(tick);
   }
 
+  window.addEventListener("resize", resize, { passive: true });
   resize();
-  window.addEventListener('resize', resize, {passive:true});
-  requestAnimationFrame(tick);
+  tick();
 })();
