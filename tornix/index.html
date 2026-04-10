@@ -26,10 +26,28 @@
             max-width: 600px;
             margin: auto;
         }
+        .policy {
+            background-color: #1A1A1D;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            margin: 40px auto;
+            text-align: left;
+        }
+        .policy h2 {
+            color: #00C853;
+        }
+        .policy h3 {
+            color: #00C853;
+            margin-top: 24px;
+        }
+        .policy p, .policy li {
+            color: #aaaaaa;
+            line-height: 1.7;
+        }
     </style>
 </head>
 <body>
-
 <div class="card">
     <h1>Tornix</h1>
     <h3>Tournament Hosting Platform</h3>
@@ -41,6 +59,41 @@
     <a class="button" href="https://tornix.zindigon.com">
         Launch Tornix
     </a>
+</div>
+
+<div class="policy" id="privacy">
+    <h2>Privacy Policy</h2>
+    <p>Last updated: April 2026</p>
+    <p>Tornix ("we", "our", or "us") is operated by Zindigon Enterprises. This policy explains how we collect, use, and protect your information when you use the Tornix app.</p>
+
+    <h3>Information We Collect</h3>
+    <ul>
+        <li>Name and email address for account creation</li>
+        <li>Payment information processed securely through Stripe</li>
+        <li>Tournament activity including registrations, results, and bracket data</li>
+        <li>Device information for push notifications</li>
+    </ul>
+
+    <h3>How We Use Your Information</h3>
+    <ul>
+        <li>To create and manage your account</li>
+        <li>To process tournament entry fees and prize payouts via Stripe</li>
+        <li>To send notifications about your tournaments and matches</li>
+        <li>To display tournament brackets and results</li>
+    </ul>
+
+    <h3>Third Party Services</h3>
+    <ul>
+        <li><strong>Firebase</strong> — used for authentication and push notifications</li>
+        <li><strong>Stripe</strong> — used for payment processing. Your payment data is handled directly by Stripe and never stored on our servers.</li>
+        <li><strong>Supabase</strong> — used for database and backend services</li>
+    </ul>
+
+    <h3>Data Retention</h3>
+    <p>We retain your data for as long as your account is active. You may request deletion of your account and associated data by contacting us.</p>
+
+    <h3>Contact</h3>
+    <p>For privacy questions or data deletion requests, contact us at: <a href="mailto:privacy@zindigon.com" style="color:#00C853;">privacy@zindigon.com</a></p>
 </div>
 
 </body>
