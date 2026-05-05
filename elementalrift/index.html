@@ -49,7 +49,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 /* ── ARENA ── */
 #arena{flex:1;position:relative;overflow:hidden;min-height:0;}
-canvas{display:block;width:100%;height:100%;}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 #enemy-info{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;min-width:180px;}
 #enemy-name{font-family:'Cinzel',serif;font-size:14px;font-weight:700;}
 #enemy-hp-wrap{width:180px;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;margin:3px auto 0;}
@@ -85,8 +85,8 @@ canvas{display:block;width:100%;height:100%;}
 .nav-tab-icon{font-size:16px;display:block;margin-bottom:2px;}
 
 /* ── SIDE PANELS (shown via tab) ── */
-#panel-stats,#panel-skills,#panel-log{display:none;position:absolute;inset:0;background:var(--panel);z-index:10;overflow-y:auto;padding-bottom:60px;}
-#panel-stats.active,#panel-skills.active,#panel-log.active{display:block;}
+#panel-stats,#panel-skills,#panel-log{display:none;background:var(--panel);overflow-y:auto;padding-bottom:60px;}
+#panel-stats.active,#panel-skills.active,#panel-log.active{display:block;position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;}
 
 .panel-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;padding:8px 14px 5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1;}
 .stat-row{display:flex;justify-content:space-between;padding:4px 14px;font-size:13px;}
@@ -154,11 +154,12 @@ canvas{display:block;width:100%;height:100%;}
   #top-row{display:flex;flex:1;min-height:0;overflow:hidden;}
   #resource-bar,#bars-row{flex-shrink:0;width:100%;}
   #left-col{width:210px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;}
-  #center-col{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #center-col{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;}
   #right-col{width:210px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;}
   #bottom-nav{display:none;}
-  #panel-stats,#panel-skills{display:block!important;position:static;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;}
+  #panel-stats,#panel-skills{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:auto;padding-bottom:0;height:100%;}
   #panel-log{display:none!important;}
+  #arena-wrapper{flex:1;display:flex;flex-direction:column;min-height:0;}
   #attack-area{flex-shrink:0;}
   .modal{border-radius:16px;}
   .modal-overlay{align-items:center;padding:16px;}
@@ -232,11 +233,12 @@ canvas{display:block;width:100%;height:100%;}
       </div>
       <div id="boss-level-badge">BOSS LV 1</div>
 
-      <!-- Panel overlays (mobile) -->
-      <div id="panel-stats" class="hidden"></div>
-      <div id="panel-skills" class="hidden"></div>
-      <div id="panel-log" class="hidden"><div id="log-lines"></div></div>
     </div>
+
+    <!-- MOBILE PANELS (overlay the whole center-col on mobile) -->
+    <div id="panel-stats" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;"></div>
+    <div id="panel-skills" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;"></div>
+    <div id="panel-log" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;"><div id="log-lines"></div></div>
 
     <!-- ATTACK BUTTONS -->
     <div id="attack-area">
@@ -425,9 +427,15 @@ function startGame() {
   document.getElementById('game').classList.remove('hidden');
   document.getElementById('player-name-display').textContent = name;
   initUI();
-  if (!loaded) spawnEnemy();
-  else { resumeFromSave(); }
-  log(`<span class="log-sys">Welcome${loaded?' back':''}, ${name}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
+  // Wait one frame for the game div to actually render before sizing canvas
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      resizeCanvas();
+      if (!loaded) spawnEnemy();
+      else { resumeFromSave(); }
+      log(`<span class="log-sys">Welcome${loaded?' back':''}, ${name}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
+    });
+  });
 }
 
 function resumeFromSave() {
@@ -1050,7 +1058,13 @@ function animLoop(ts){
   if(particles.length>0||damageNumbers.length>0||lungeAnim||enemyShake.timer>0||enemyFlash>0||playerFlash>0){requestAnimationFrame(animLoop);}else{animLoopRunning=false;}
 }
 
-function resizeCanvas(){const a=document.getElementById('arena');canvas.width=a.clientWidth;canvas.height=a.clientHeight;drawArena();}
+function resizeCanvas(){
+  const a=document.getElementById('arena');
+  const w=a.offsetWidth||a.clientWidth||300;
+  const h=a.offsetHeight||a.clientHeight||300;
+  if(w>0&&h>0){canvas.width=w;canvas.height=h;}
+  drawArena();
+}
 
 function drawArena(){
   const W=canvas.width,H=canvas.height;
