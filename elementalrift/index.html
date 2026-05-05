@@ -408,7 +408,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
       <div class="ability-slot" id="slot-ult" onclick="activateAbility(3)" title="Ultimate">
         <div class="ab-slot-label">Ultimate</div>
         <div class="ab-empty">＋</div>
-        <div class="ab-name">Empty</div>
+        <div class="ab-name" style="color:var(--muted);font-size:8px;">Tap to assign</div>
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-3" style="width:0%"></div></div>
       </div>
     </div>
@@ -586,6 +586,13 @@ function initGState() {
   CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
   Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
+  // Auto-assign default loadout if all slots are empty (new player)
+  if(G.loadout.every(s=>s===null)) {
+    G.loadout[0] = 'phys_basic';   // Basic: Quick Strike (always available)
+    G.loadout[1] = 'fire_basic';   // Regular slot 1: Ember Strike
+    G.loadout[2] = 'water_basic';  // Regular slot 2: Tide Slash
+    G.loadout[3] = null;           // Ultimate: empty until unlocked
+  }
 }
 
 
@@ -867,6 +874,7 @@ function spawnEnemy() {
   G.combatActive = true;
   updateEnemyUI();
   log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! [${G.enemy.type==='brute'?'Brute':G.enemy.elements.join('+')}]</span>`);
+  if(G.kills===0) log(`<span class="log-sys">💡 Tap an ability button below to attack. Tap ⚡ Loadout to change abilities.</span>`);
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
   drawArena();
@@ -1388,7 +1396,7 @@ function updateLoadoutUI() {
     el.innerHTML = `
       <div class="ab-slot-label" style="color:var(--muted)">${SLOT_LABELS[i]}</div>
       <div class="ab-icon">${ab?ab.icon:'＋'}</div>
-      <div class="ab-name" style="color:${color}">${ab?ab.name:'Empty'}</div>
+      <div class="ab-name" style="color:${ab?color:'var(--muted)'};font-size:${ab?'9px':'8px'}">${ab?ab.name:'Tap to assign'}</div>
       <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-${i}" style="width:0%;background:${color}"></div></div>
     `;
   });
