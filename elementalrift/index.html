@@ -150,15 +150,16 @@ canvas{display:block;width:100%;height:100%;}
 
 /* ── DESKTOP overrides ── */
 @media(min-width:700px){
-  #game{flex-direction:row;flex-wrap:wrap;}
-  #resource-bar,#bars-row{width:100%;}
-  #left-col{width:200px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;order:1;}
-  #center-col{flex:1;display:flex;flex-direction:column;min-width:0;order:2;}
-  #right-col{width:200px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;order:3;}
+  #game{flex-direction:column;}
+  #top-row{display:flex;flex:1;min-height:0;overflow:hidden;}
+  #resource-bar,#bars-row{flex-shrink:0;width:100%;}
+  #left-col{width:210px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;}
+  #center-col{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #right-col{width:210px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;}
   #bottom-nav{display:none;}
   #panel-stats,#panel-skills{display:block!important;position:static;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;}
   #panel-log{display:none!important;}
-  #attack-area{order:99;}
+  #attack-area{flex-shrink:0;}
   .modal{border-radius:16px;}
   .modal-overlay{align-items:center;padding:16px;}
 }
@@ -185,6 +186,7 @@ canvas{display:block;width:100%;height:100%;}
 <!-- MAIN GAME -->
 <div id="game" class="hidden">
 
+  <div id="top-row">
   <!-- DESKTOP LEFT -->
   <div id="left-col">
     <div id="panel-stats"></div>
@@ -255,6 +257,7 @@ canvas{display:block;width:100%;height:100%;}
   <div id="right-col">
     <div id="panel-skills"></div>
   </div>
+  </div><!-- end top-row -->
 
   <!-- MOBILE BOTTOM NAV -->
   <div id="bottom-nav">
