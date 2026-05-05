@@ -50,6 +50,34 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 /* ── ARENA ── */
 #arena{flex:1;position:relative;overflow:hidden;min-height:0;}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
+
+/* ── COMBAT LOG OVERLAY ── */
+#combat-log-overlay{
+  position:absolute;bottom:10px;left:10px;width:170px;
+  pointer-events:none;z-index:5;
+  display:flex;flex-direction:column-reverse;gap:2px;
+}
+.clog-entry{
+  font-family:'Crimson Pro',serif;
+  font-size:12px;
+  line-height:1.3;
+  padding:2px 7px;
+  border-radius:4px;
+  background:rgba(0,0,0,0.55);
+  border-left:2px solid;
+  opacity:1;
+  transition:opacity 0.4s;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:170px;
+}
+.clog-entry.fade{opacity:0;}
+.clog-dmg-out{border-color:#e83a3a;color:#ffaaaa;}
+.clog-dmg-in{border-color:#ff6600;color:#ffcc88;}
+.clog-heal{border-color:#3acc7a;color:#88ffbb;}
+.clog-se{border-color:#ff9900;color:#ffdd88;}
+.clog-crit{border-color:#ffcc00;color:#ffee88;}
 #enemy-info{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;min-width:180px;}
 #enemy-name{font-family:'Cinzel',serif;font-size:14px;font-weight:700;}
 #enemy-hp-wrap{width:180px;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;margin:3px auto 0;}
@@ -77,6 +105,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 .btn-boss{border-color:var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);animation:bossPulse 2s ease-in-out infinite;}
 @keyframes bossPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,34,102,0);}50%{box-shadow:0 0 12px 2px rgba(255,34,102,0.3);}}
 .btn-disabled{opacity:0.35;pointer-events:none;}
+.action-btn.active-attack{box-shadow:0 0 12px 2px currentColor;opacity:1;transform:scale(1.04);}
+.action-btn.active-attack::after{content:'●';position:absolute;top:4px;right:6px;font-size:8px;opacity:0.8;}
+.action-btn{position:relative;}
 
 /* ── BOTTOM NAV ── */
 #bottom-nav{display:flex;background:#0a0c12;border-top:1px solid var(--border);flex-shrink:0;}
@@ -99,6 +130,10 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 .slot-name{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;}
 .slot-item{font-size:11px;color:var(--gold);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .slot-empty{font-size:10px;color:#2a2f45;margin-top:2px;}
+.equip-slot.tier-ancient{border-color:#ff4444;box-shadow:inset 0 0 6px rgba(255,68,68,0.25);}
+.equip-slot.tier-cosmic{border-color:#e8e8ff;box-shadow:inset 0 0 10px rgba(220,220,255,0.35),0 0 8px rgba(220,220,255,0.2);animation:cosmicPulse 3s ease-in-out infinite;}
+@keyframes cosmicPulse{0%,100%{box-shadow:inset 0 0 10px rgba(220,220,255,0.35),0 0 8px rgba(220,220,255,0.2);}50%{box-shadow:inset 0 0 16px rgba(220,220,255,0.55),0 0 14px rgba(220,220,255,0.4);}}
+.cd-text{position:absolute;bottom:3px;right:5px;font-size:9px;color:rgba(255,255,255,0.7);font-family:'Cinzel',serif;pointer-events:none;}
 
 .skill-section{padding:6px 10px;}
 .skill-element-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.1em;margin-bottom:3px;}
@@ -225,6 +260,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
     <!-- ARENA -->
     <div id="arena">
       <canvas id="canvas"></canvas>
+      <div id="combat-log-overlay"></div>
       <div id="enemy-info">
         <div id="enemy-name">—</div>
         <div id="enemy-hp-wrap"><div id="enemy-hp-fill" style="width:100%"></div></div>
@@ -246,14 +282,14 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
     <!-- ATTACK BUTTONS -->
     <div id="attack-area">
       <div class="attack-grid" id="attack-row1">
-        <button class="action-btn btn-physical" onclick="attack('physical')"><span class="btn-icon">⚔️</span>Strike</button>
-        <button class="action-btn btn-fire" onclick="attack('fire')"><span class="btn-icon">🔥</span>Fire</button>
-        <button class="action-btn btn-water" onclick="attack('water')"><span class="btn-icon">💧</span>Water</button>
+        <button class="action-btn btn-physical" id="atk-physical" onclick="toggleAutoAttack('physical')"><span class="btn-icon">⚔️</span>Strike</button>
+        <button class="action-btn btn-fire" id="atk-fire" onclick="toggleAutoAttack('fire')"><span class="btn-icon">🔥</span>Fire</button>
+        <button class="action-btn btn-water" id="atk-water" onclick="toggleAutoAttack('water')"><span class="btn-icon">💧</span>Water</button>
       </div>
       <div class="attack-grid row2" id="attack-row2">
-        <button class="action-btn btn-grass" onclick="attack('grass')"><span class="btn-icon">🌿</span>Grass</button>
-        <button class="action-btn btn-dark" onclick="attack('dark')"><span class="btn-icon">🌑</span>Dark</button>
-        <button class="action-btn btn-light" onclick="attack('light')"><span class="btn-icon">✨</span>Light</button>
+        <button class="action-btn btn-grass" id="atk-grass" onclick="toggleAutoAttack('grass')"><span class="btn-icon">🌿</span>Grass</button>
+        <button class="action-btn btn-dark" id="atk-dark" onclick="toggleAutoAttack('dark')"><span class="btn-icon">🌑</span>Dark</button>
+        <button class="action-btn btn-light" id="atk-light" onclick="toggleAutoAttack('light')"><span class="btn-icon">✨</span>Light</button>
         <button class="action-btn btn-next hidden" id="next-btn" onclick="nextWave()"><span class="btn-icon">▶</span>Next</button>
         <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()"><span class="btn-icon">💀</span>Boss</button>
       </div>
@@ -318,8 +354,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 const SLOTS = ['Head','Neck','Chest','Belt','Pants','Boots','Ring1','Ring2','Weapon'];
 const ELEMENTS = ['fire','water','grass','dark','light'];
 const ELEMENT_COLORS = {fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaaaaa'};
-const STAT_KEYS = ['attack','magicPower','atkSpeed','critChance','critDmg','armor','health','magicResist','lifeSteal','spellVamp'];
-const STAT_LABELS = {attack:'Attack',magicPower:'Magic Pwr',atkSpeed:'Atk Speed',critChance:'Crit %',critDmg:'Crit Dmg',armor:'Armor',health:'Health',magicResist:'Mag Resist',lifeSteal:'Life Steal',spellVamp:'Spell Vamp'};
+const STAT_KEYS = ['attack','magicPower','atkSpeed','critChance','critDmg','armor','health','magicResist','lifeSteal','spellVamp','cdr'];
+const STAT_LABELS = {attack:'Attack',magicPower:'Magic Pwr',atkSpeed:'Atk Speed',critChance:'Crit %',critDmg:'Crit Dmg',armor:'Armor',health:'Health',magicResist:'Mag Resist',lifeSteal:'Life Steal',spellVamp:'Spell Vamp',cdr:'CDR %'};
 const SE = {fire:['grass','dark'],grass:['water','dark'],water:['fire','light'],dark:['light'],light:['fire','water','grass']};
 const SKILL_TREE = {
   fire:    [{name:'Ember Touch',stat:'magicPower',per:3},{name:'Ignite',stat:'critChance',per:2},{name:'Inferno',stat:'magicPower',per:5}],
@@ -328,8 +364,9 @@ const SKILL_TREE = {
   dark:    [{name:'Shadow Veil',stat:'critDmg',per:15},{name:'Drain',stat:'lifeSteal',per:3},{name:'Void Burst',stat:'magicPower',per:6}],
   light:   [{name:'Radiance',stat:'magicResist',per:5},{name:'Smite',stat:'attack',per:4},{name:'Holy Nova',stat:'spellVamp',per:3}],
   physical:[{name:'Brute Force',stat:'attack',per:5},{name:'Precision',stat:'critChance',per:3},{name:'Rampage',stat:'atkSpeed',per:0.15}],
+  defense: [{name:'Iron Will',stat:'armor',per:4},{name:'Spell Ward',stat:'magicResist',per:4},{name:'Swiftcast',stat:'cdr',per:2}],
 };
-const BASE_STATS = {attack:10,magicPower:8,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0};
+const BASE_STATS = {attack:10,magicPower:8,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0};
 const ENEMY_NAMES = ['Gorgash','Vexil','Thornback','Sable Wraith','Cindermaw','Tidecaller','Luminos','Shade','Bramblehide','Voidling','Ashfang','Crystalclaw','Frostmaw','Emberclaw','Duskwalker','Nullshade'];
 const BOSS_NAMES = ['The Devourer','Void Colossus','Ashen Titan','The Undying','Chaos Incarnate'];
 
@@ -357,6 +394,8 @@ let G = {
   bossDmgDealt:0,
   bossTimerSec:60,
   bossTimerInterval:null,
+  enemyAttackInterval:null,
+  autoAttacks:{},  // element -> intervalId
   bossName:'',
 };
 Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{G.skillLevels[`${el}_${i}`]=0;}));
@@ -509,6 +548,27 @@ function spawnEnemy() {
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
   drawArena();
+  startEnemyAutoAttack();
+}
+
+function startEnemyAutoAttack() {
+  stopEnemyAutoAttack();
+  // Enemy attacks every 2-3 seconds automatically, regardless of player input
+  const interval = 2000 + Math.random() * 1000;
+  G.enemyAttackInterval = setInterval(() => {
+    if (G.combatActive && G.enemy && G.hp > 0) {
+      enemyAttack();
+    } else {
+      stopEnemyAutoAttack();
+    }
+  }, interval);
+}
+
+function stopEnemyAutoAttack() {
+  if (G.enemyAttackInterval) {
+    clearInterval(G.enemyAttackInterval);
+    G.enemyAttackInterval = null;
+  }
 }
 
 function updateEnemyUI() {
@@ -567,6 +627,7 @@ function startBossAttempt() {
   updateEnemyUI();
   log(`<span style="color:#ff2266;font-weight:600;">💀 BOSS ATTEMPT STARTED! 60 seconds!</span>`);
   startBossTimer();
+  startEnemyAutoAttack();
   drawArena();
 }
 
@@ -596,11 +657,14 @@ function onBossPhaseKill() {
   G.enemy = rollBoss(G.bossLevel);
   G.combatActive = true;
   updateEnemyUI();
+  startEnemyAutoAttack();
   drawArena();
 }
 
 function endBossAttempt() {
   clearInterval(G.bossTimerInterval);
+  stopEnemyAutoAttack();
+  stopAllAutoAttacks();
   G.inBoss = false;
   G.combatActive = false;
   G.enemy = null;
@@ -703,11 +767,102 @@ function getSEMultiplier(attackEl, enemy) {
   return mult;
 }
 
+// Base spell cooldowns in ms (physical has no cooldown — pure atkSpeed)
+const SPELL_BASE_CD = { fire:3500, water:3200, grass:4000, dark:3800, light:4200 };
+const spellCooldowns = {}; // element -> timestamp when ready
+
+function getSpellCD(element) {
+  if(element==='physical') return 0;
+  const st = getStats();
+  const cdrPct = Math.min(65, st.cdr||0); // cap at 65%
+  return Math.floor(SPELL_BASE_CD[element] * (1 - cdrPct/100));
+}
+
+function isSpellReady(element) {
+  if(element==='physical') return true;
+  const ready = spellCooldowns[element]||0;
+  return Date.now() >= ready;
+}
+
+function triggerSpellCD(element) {
+  if(element==='physical') return;
+  spellCooldowns[element] = Date.now() + getSpellCD(element);
+  updateCooldownUI(element);
+}
+
+function updateCooldownUI(element) {
+  const btn = document.getElementById('atk-'+element);
+  if(!btn || element==='physical') return;
+  const ready = spellCooldowns[element]||0;
+  const remaining = Math.max(0, ready - Date.now());
+  if(remaining <= 0) {
+    btn.style.background='';
+    btn.querySelector('.cd-text') && (btn.querySelector('.cd-text').textContent='');
+    return;
+  }
+  const total = getSpellCD(element);
+  const pct = remaining/total;
+  const elColor = {'fire':'rgba(255,77,26,0.15)','water':'rgba(26,179,255,0.15)','grass':'rgba(61,204,90,0.15)','dark':'rgba(155,77,255,0.15)','light':'rgba(255,215,0,0.15)'}[element]||'rgba(100,100,100,0.2)';
+  // Sweep overlay using background gradient
+  btn.style.background=`linear-gradient(to top, rgba(0,0,0,0.6) ${Math.floor(pct*100)}%, ${elColor} ${Math.floor(pct*100)}%)`;
+  let cdEl = btn.querySelector('.cd-text');
+  if(!cdEl){ cdEl=document.createElement('span'); cdEl.className='cd-text'; cdEl.style.cssText='position:absolute;bottom:3px;right:5px;font-size:9px;color:rgba(255,255,255,0.7);font-family:Cinzel,serif;pointer-events:none;'; btn.appendChild(cdEl); }
+  cdEl.textContent = (remaining/1000).toFixed(1)+'s';
+  setTimeout(()=>updateCooldownUI(element), 80);
+}
+
+function toggleAutoAttack(element) {
+  if (G.autoAttacks[element]) {
+    // Turn off
+    clearInterval(G.autoAttacks[element]);
+    delete G.autoAttacks[element];
+    const btn = document.getElementById('atk-'+element);
+    if (btn) btn.classList.remove('active-attack');
+  } else {
+    // Turn on — fire once immediately then on interval
+    const btn = document.getElementById('atk-'+element);
+    if (btn) btn.classList.add('active-attack');
+    attack(element);
+    const st = getStats();
+    const interval = Math.max(400, Math.floor(1000 / st.atkSpeed));
+    G.autoAttacks[element] = setInterval(() => {
+      if (!G.combatActive || !G.enemy) return;
+      if(element !== 'physical' && !isSpellReady(element)) return; // wait for CD
+      attack(element);
+    }, interval);
+  }
+}
+
+function refreshAutoAttackSpeeds() {
+  const active = Object.keys(G.autoAttacks);
+  if (active.length === 0) return;
+  active.forEach(el => {
+    clearInterval(G.autoAttacks[el]);
+    const st = getStats();
+    const interval = Math.max(400, Math.floor(1000 / st.atkSpeed));
+    G.autoAttacks[el] = setInterval(() => {
+      if (!G.combatActive || !G.enemy) return;
+      attack(el);
+    }, interval);
+  });
+}
+
+function stopAllAutoAttacks() {
+  Object.keys(G.autoAttacks).forEach(el => {
+    clearInterval(G.autoAttacks[el]);
+    const btn = document.getElementById('atk-'+el);
+    if (btn) btn.classList.remove('active-attack');
+  });
+  G.autoAttacks = {};
+}
+
 let attackLocked = false;
 function attack(element) {
   if (!G.combatActive||!G.enemy||attackLocked) return;
   attackLocked = true;
-  setTimeout(()=>{ attackLocked=false; }, G.inBoss ? 300 : 450);
+  const st = getStats();
+  setTimeout(()=>{ attackLocked=false; }, Math.max(200, Math.floor(800/st.atkSpeed)));
+  if(element !== 'physical') triggerSpellCD(element);
 
   const st = getStats();
   const isMagic = element!=='physical';
@@ -723,13 +878,22 @@ function attack(element) {
   G.enemy.hp -= dmg;
   if (G.inBoss) G.bossDmgDealt += dmg;
 
-  const stealPct = isMagic?st.spellVamp:st.lifeSteal;
-  const healAmt = Math.floor(dmg*stealPct/100);
-  if (healAmt>0) { G.hp=Math.min(G.maxHp,G.hp+healAmt); }
+  const stealPct = isMagic ? st.spellVamp : st.lifeSteal;
+  const healAmt = stealPct > 0 ? Math.max(1, Math.ceil(dmg * stealPct / 100)) : 0;
+  if (healAmt > 0) {
+    G.hp = Math.min(G.maxHp, G.hp + healAmt);
+    updateHpBar();
+    combatLog(`♥ +${healAmt} (${isMagic?'spell vamp':'lifesteal'})`, 'heal');
+  }
 
   const seText = seMult>1.0?' <span class="log-se">SUPER EFFECTIVE!</span>':(seMult<1.0?' <span style="color:#555">weak</span>':'');
   const critText = isCrit?' <span style="color:#ffaa00">CRIT!</span>':'';
   log(`Hit <span style="color:${ELEMENT_COLORS[element]}">${element}</span> → <span class="log-dmg">${dmg}</span>${seText}${critText}`);
+  // Combat overlay entry
+  if(isCrit && seMult>1.0) combatLog(`⚡ CRIT + SE! ${dmg} (${element})`, 'crit');
+  else if(isCrit)           combatLog(`⚡ CRIT ${dmg} (${element})`, 'crit');
+  else if(seMult>1.0)       combatLog(`✦ SE ${dmg} (${element})`, 'se');
+  else                      combatLog(`▶ ${dmg} (${element})`, 'dmg-out');
 
   // Animations
   const W=canvas.width,H=canvas.height;
@@ -739,7 +903,7 @@ function attack(element) {
     setTimeout(()=>{ spawnParticles(element,px,py,ex,ey); spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,dmg,isCrit,seMult>1.0,ELEMENT_COLORS[element]); if(healAmt>0)spawnHealNumber(px,py-40,healAmt); startAnimLoop(); },160);
   } else {
     spawnParticles(element,px,py,ex,ey);
-    setTimeout(()=>{ spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,dmg,isCrit,seMult>1.0,ELEMENT_COLORS[element]); if(healAmt>0)spawnHealNumber(px,py-40,healAmt); },400);
+    setTimeout(()=>{ spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,dmg,isCrit,seMult>1.0,ELEMENT_COLORS[element]); if(healAmt>0)spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt); },400);
     startAnimLoop();
   }
 
@@ -750,7 +914,7 @@ function attack(element) {
     setTimeout(onEnemyDeath, element==='physical'?300:500);
     return;
   }
-  setTimeout(enemyAttack, element==='physical'?450:600);
+  // Enemy auto-attacks on its own interval
 }
 
 function enemyAttack() {
@@ -759,6 +923,7 @@ function enemyAttack() {
   const dmg=Math.max(1,Math.floor(G.enemy.attack-st.armor*0.35+(Math.random()*4-2)));
   G.hp-=dmg;
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
+  combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
   const W=canvas.width,H=canvas.height;
   spawnEnemyAttackParticles(W*0.72,H*0.60,W*0.25,H*0.62);
   spawnDamageNumber(W*0.25+(Math.random()-.5)*15,H*0.62-35,dmg,false,false,'#ff4444');
@@ -772,10 +937,22 @@ function enemyAttack() {
 
 function onEnemyDeath() {
   G.combatActive=false;
+  stopEnemyAutoAttack();
+  stopAllAutoAttacks();
   G.kills++;
   G.gold+=G.enemy.gold;
   G.skillPoints+=G.enemy.xp;
   log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${G.enemy.xp} SP</span>`);
+  // Rare drop chance on kill (Ancient/Cosmic only from kills)
+  if(Math.random() < 0.15 + G.wave*0.005) {
+    const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
+    const dropItem = rollItem(dropSlot, G.wave, false);
+    const t = dropItem.tier||dropItem.rarity;
+    if(['Ancient','Cosmic'].includes(t.name)||Math.random()<0.4) {
+      log(`<span style="color:${t.color};font-weight:600;">⬇ ${t.name} drop: ${dropItem.name}!</span>`);
+      setTimeout(()=>showItemModal(dropItem,'vendor_buy'),600);
+    }
+  }
   G.enemy=null;
   updateEnemyUI();
   updateResourceBar();
@@ -792,12 +969,25 @@ function onEnemyDeath() {
 
 function onDeath() {
   G.combatActive=false;
+  stopEnemyAutoAttack();
+  stopAllAutoAttacks();
+  clearInterval(G.bossTimerInterval);
   log('<span class="log-dmg">💀 You have fallen... Restarting in 3s</span>');
   localStorage.removeItem('elementalRift_v3');
-  setTimeout(()=>location.reload(),3000);
+  // Show death overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+  overlay.innerHTML = `
+    <div style="font-size:60px;">💀</div>
+    <div style="font-family:Cinzel,serif;font-size:28px;font-weight:900;color:#e83a3a;">YOU HAVE FALLEN</div>
+    <div style="font-family:Cinzel,serif;font-size:14px;color:#5a6080;">Wave ${G.wave} · ${G.kills} Kills · ${G.gold} Gold</div>
+    <button onclick="location.reload()" style="margin-top:8px;font-family:Cinzel,serif;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;border:1px solid #e8b84b;background:rgba(232,184,75,0.1);color:#e8b84b;cursor:pointer;letter-spacing:0.08em;">Play Again</button>
+  `;
+  document.body.appendChild(overlay);
 }
 
 function nextWave() {
+  stopAllAutoAttacks();
   G.wave++;
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
@@ -811,21 +1001,135 @@ function nextWave() {
 // ═══════════════════════════════════════════════
 // GEAR
 // ═══════════════════════════════════════════════
-const RARITIES=[{name:'Common',color:'#aaa',weight:50,mult:1.0},{name:'Rare',color:'#4d9eff',weight:30,mult:1.6},{name:'Epic',color:'#c060ff',weight:15,mult:2.4},{name:'Legendary',color:'#e8b84b',weight:5,mult:4.0}];
-function rollRarity(){const r=Math.random()*100;let acc=0;for(const x of RARITIES){acc+=x.weight;if(r<acc)return x;}return RARITIES[0];}
-function rollItem(slot,waveMod=1){
-  const rarity=rollRarity();
-  const base=3+waveMod*1.5;const m=rarity.mult;const stats={};
-  if(slot==='Weapon'){stats.attack=Math.floor((base*2+Math.random()*base)*m);if(Math.random()<0.5)stats.magicPower=Math.floor((base+Math.random()*base)*m);if(Math.random()<0.3)stats.critChance=parseFloat((1+Math.random()*3*m).toFixed(1));if(Math.random()<0.3)stats.atkSpeed=parseFloat((0.05+Math.random()*0.2*m).toFixed(2));}
-  else{const possible=[...STAT_KEYS];const count=2+Math.floor(Math.random()*3);for(let i=0;i<count&&possible.length;i++){const idx=Math.floor(Math.random()*possible.length);const key=possible.splice(idx,1)[0];if(key==='health')stats[key]=Math.floor((10+Math.random()*20)*m);else if(['critChance','lifeSteal','spellVamp'].includes(key))stats[key]=parseFloat((0.5+Math.random()*3*m).toFixed(1));else if(key==='critDmg')stats[key]=Math.floor((10+Math.random()*30)*m);else if(key==='atkSpeed')stats[key]=parseFloat((0.02+Math.random()*0.15*m).toFixed(2));else stats[key]=Math.floor((2+Math.random()*6)*m);}}
-  const sellVal=Math.floor(Object.values(stats).reduce((a,b)=>a+b,0)*2);
-  const buyVal=Math.floor(sellVal*2.5+10);
-  return{slot,rarity,stats,sellVal,buyVal,name:rarity.name+' '+slot};
+// ── TIER SYSTEM ──
+const TIERS = [
+  { name:'Basic',   color:'#9a9a9a', weight:55,  statCount:1, statClasses:['D','C'],    glowColor:'rgba(154,154,154,0.3)' },
+  { name:'Great',   color:'#4caf50', weight:25,  statCount:2, statClasses:['D','C'],    glowColor:'rgba(76,175,80,0.4)'   },
+  { name:'Exquisite',color:'#2196f3',weight:18,  statCount:3, statClasses:['C','B'],    glowColor:'rgba(33,150,243,0.4)'  },
+  { name:'Ancient', color:'#ff4444', weight:1.5, statCount:4, statClasses:['B','A'],    glowColor:'rgba(255,68,68,0.5)'   },
+  { name:'Cosmic',  color:'#e8e8ff', weight:0.5, statCount:5, statClasses:['A','S'],    glowColor:'rgba(220,220,255,0.7)' },
+];
+
+// Stat value ranges per class
+const STAT_CLASS_RANGES = {
+  D: { attack:[2,5],   magicPower:[2,5],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   armor:[2,5],   health:[10,22],  magicResist:[2,5],   lifeSteal:[0.3,1.0], spellVamp:[0.3,1.0], cdr:[1,3]   },
+  C: { attack:[5,12],  magicPower:[5,12],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  armor:[4,10],  health:[22,52],  magicResist:[4,10],  lifeSteal:[0.8,2.0], spellVamp:[0.8,2.0], cdr:[2,6]   },
+  B: { attack:[12,26], magicPower:[12,26], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  armor:[9,20],  health:[50,105], magicResist:[9,20],  lifeSteal:[1.5,3.5], spellVamp:[1.5,3.5], cdr:[5,12]  },
+  A: { attack:[25,46], magicPower:[25,46], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], armor:[18,36], health:[100,185],magicResist:[18,36], lifeSteal:[3.0,6.0], spellVamp:[3.0,6.0], cdr:[10,20] },
+  S: { attack:[45,82], magicPower:[45,82], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], armor:[32,60], health:[180,310],magicResist:[32,60], lifeSteal:[5.0,10.0],spellVamp:[5.0,10.0],cdr:[18,35] },
+};
+
+// CDR can only roll on Exquisite+
+const CDR_ELIGIBLE_TIERS = ['Exquisite','Ancient','Cosmic'];
+
+// Stat pools per slot
+const SLOT_STAT_POOLS = {
+  Head:   ['health','armor','magicResist','cdr'],
+  Neck:   ['magicPower','critChance','spellVamp','cdr'],
+  Chest:  ['health','armor','magicResist','lifeSteal'],
+  Belt:   ['health','armor','atkSpeed','lifeSteal'],
+  Pants:  ['health','armor','magicResist','critDmg'],
+  Boots:  ['atkSpeed','armor','health','cdr'],
+  Ring1:  ['magicPower','critChance','spellVamp','cdr'],
+  Ring2:  ['attack','critChance','lifeSteal','critDmg'],
+  Weapon: ['attack','magicPower','atkSpeed','critChance','critDmg'],
+};
+
+// Item name generation
+const NAME_PREFIXES = {
+  attack:      ['Savage','Brutal','Warlord's','Slayer's','Berserker's'],
+  magicPower:  ['Arcane','Mystic','Voidweaver's','Sage's','Spellbound'],
+  critChance:  ['Precise','Keen','Assassin's','Deadly','Razor'],
+  critDmg:     ['Ruinous','Vicious','Executioner's','Catastrophic','Bloodfang'],
+  atkSpeed:    ['Swift','Rapid','Windchaser','Flickering','Haste'],
+  armor:       ['Iron','Fortress','Guardian's','Bulwark','Aegis'],
+  health:      ['Vitalis','Enduring','Titan's','Juggernaut','Undying'],
+  magicResist: ['Warded','Runic','Sage's','Nullifying','Barrier'],
+  lifeSteal:   ['Vampiric','Draining','Sanguine','Leeching','Crimson'],
+  spellVamp:   ['Siphoning','Ethereal','Devouring','Arcane','Spectral'],
+  cdr:         ['Temporal','Rushing','Hastened','Flowing','Quickened'],
+};
+const SLOT_SUFFIXES = {
+  Head:'Helm', Neck:'Amulet', Chest:'Plate', Belt:'Girdle',
+  Pants:'Greaves', Boots:'Treads', Ring1:'Band', Ring2:'Signet', Weapon:'Blade'
+};
+const COSMIC_NAMES = {
+  Weapon:['Worldender','Eternity's Edge','The Void Fang','Oblivion's Reach','Cosmosbreaker'],
+  Head:  ['Crown of Eternity','Helm of the Cosmos','Void Visor','Starborn Crest','The All-Seeing'],
+  Chest: ['Cosmic Carapace','Void Plate','Armor of Ages','The Infinite Shell','Starshroud'],
+  Neck:  ['Amulet of Eternity','Cosmic Chain','The Void Star','Constellation's Heart','Nebula Pendant'],
+  Belt:  ['Girdle of Eternity','Cosmic Wrap','Void Cinch','The Infinite Band','Starbelt'],
+  Pants: ['Greaves of Eternity','Cosmic Striders','Void Legs','The Infinite Step','Starwalkers'],
+  Boots: ['Treads of Eternity','Cosmic Boots','Void Walkers','The Infinite Path','Starstride'],
+  Ring1: ['Band of Eternity','Cosmic Ring','Void Signet','The Infinite Loop','Starcircle'],
+  Ring2: ['Signet of Eternity','Cosmic Band','Void Loop','The Infinite Seal','Starband'],
+};
+
+function rollTier(vendorCap=false) {
+  const pool = vendorCap ? TIERS.filter(t=>t.name!=='Ancient'&&t.name!=='Cosmic') : TIERS;
+  const total = pool.reduce((a,t)=>a+t.weight,0);
+  let r = Math.random()*total, acc=0;
+  for(const t of pool){ acc+=t.weight; if(r<acc) return t; }
+  return pool[0];
+}
+
+function rollStatValue(stat, cls) {
+  const range = STAT_CLASS_RANGES[cls][stat];
+  if(!range) return 0;
+  const val = range[0] + Math.random()*(range[1]-range[0]);
+  if(['atkSpeed','critChance','lifeSteal','spellVamp','cdr'].includes(stat))
+    return parseFloat(val.toFixed(1));
+  return Math.floor(val);
+}
+
+function generateItemName(slot, tier, stats) {
+  if(tier.name==='Cosmic') {
+    const cosNames = COSMIC_NAMES[slot]||['Cosmic '+slot];
+    return cosNames[Math.floor(Math.random()*cosNames.length)];
+  }
+  // Find dominant stat
+  let dominant='attack';
+  let max=0;
+  Object.entries(stats).forEach(([k,v])=>{ if(v>max){max=v;dominant=k;} });
+  const prefixes = NAME_PREFIXES[dominant]||['Mystic'];
+  const prefix = prefixes[Math.floor(Math.random()*prefixes.length)];
+  const suffix = SLOT_SUFFIXES[slot]||slot;
+  if(tier.name==='Ancient') return `${prefix} ${suffix} of the Ancients`;
+  if(tier.name==='Exquisite') return `${prefix} ${suffix}`;
+  if(tier.name==='Great') return `${prefix} ${suffix}`;
+  return suffix; // Basic just shows slot name
+}
+
+function rollItem(slot, waveMod=1, vendorCap=false) {
+  const tier = rollTier(vendorCap);
+  const statPool = [...(SLOT_STAT_POOLS[slot]||STAT_KEYS)];
+  // Filter out CDR for lower tiers
+  const canHaveCDR = CDR_ELIGIBLE_TIERS.includes(tier.name);
+  const filteredPool = canHaveCDR ? statPool : statPool.filter(s=>s!=='cdr');
+
+  const stats = {};
+  const count = tier.statCount;
+  const classes = tier.statClasses;
+
+  // Shuffle pool
+  for(let i=filteredPool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[filteredPool[i],filteredPool[j]]=[filteredPool[j],filteredPool[i]];}
+
+  for(let i=0;i<Math.min(count,filteredPool.length);i++){
+    const stat = filteredPool[i];
+    const cls = classes[Math.floor(Math.random()*classes.length)];
+    const val = rollStatValue(stat, cls);
+    if(val>0) stats[stat]=val;
+  }
+
+  const name = generateItemName(slot, tier, stats);
+  const sellVal = Math.max(5, Math.floor(Object.values(stats).reduce((a,b)=>a+b,0) * (tier.name==='Cosmic'?20:tier.name==='Ancient'?8:tier.name==='Exquisite'?3:tier.name==='Great'?1.5:1)));
+  const buyVal = Math.floor(sellVal * 2.2 + 15);
+  return { slot, tier, rarity:tier, stats, sellVal, buyVal, name };
 }
 
 function showItemModal(item,context){
   document.getElementById('modal-title').textContent=item.name;
-  document.getElementById('modal-rarity').innerHTML=`<span class="rarity-${item.rarity.name.toLowerCase()}">${item.rarity.name}</span>`;
+  const t=item.tier||item.rarity; document.getElementById('modal-rarity').innerHTML=`<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>`;
   document.getElementById('modal-slot').textContent=`Slot: ${item.slot}`;
   document.getElementById('modal-stats').innerHTML=Object.entries(item.stats).map(([k,v])=>`<div class="item-stat">${STAT_LABELS[k]||k}: <span>+${v}</span></div>`).join('');
   document.getElementById('modal-sell-val').textContent=`Sell value: ${item.sellVal} gold`;
@@ -848,6 +1152,7 @@ function equipItem(item){
   if(G.maxHp>oldMax)G.hp+=G.maxHp-oldMax;G.hp=Math.min(G.hp,G.maxHp);
   log(`<span class="log-gold">Equipped: ${item.name}</span>`);
   closeItemModal();updateEquipUI();updateStatsPanel();updateHpBar();updateResourceBar();saveGame();
+  refreshAutoAttackSpeeds();
 }
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){document.getElementById('item-modal').classList.add('hidden');}
@@ -855,15 +1160,20 @@ function closeItemModal(){document.getElementById('item-modal').classList.add('h
 // VENDOR
 let vendorStock=[];
 function openVendor(){
-  vendorStock=SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>({slot,buyVal:rollItem(slot,G.wave).buyVal,item:rollItem(slot,G.wave)}));
+  vendorStock=SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
   renderVendor();document.getElementById('vendor-modal').classList.remove('hidden');
 }
 function renderVendor(){
-  document.getElementById('vendor-items').innerHTML=vendorStock.map((v,i)=>`
-    <div class="vendor-item" onclick="buyVendorItem(${i})">
-      <div><div style="font-family:'Cinzel',serif;font-size:13px;color:var(--text);">Mystery ${v.slot}</div><div class="vendor-slot">Stats unknown</div></div>
+  document.getElementById('vendor-items').innerHTML=vendorStock.map((v,i)=>{
+    const t=v.item.tier||v.item.rarity;
+    const glow=t.name==='Exquisite'?'border-color:#2196f3;':t.name==='Ancient'?'border-color:#ff4444;box-shadow:0 0 8px rgba(255,68,68,0.4);':'';
+    return `<div class="vendor-item" style="${glow}" onclick="buyVendorItem(${i})">
+      <div>
+        <div style="font-family:'Cinzel',serif;font-size:13px;color:var(--text);">Mystery ${v.slot}</div>
+        <div class="vendor-slot" style="color:${t.color}">${t.name} quality</div>
+      </div>
       <div class="vendor-cost">${v.item.buyVal}g</div>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 function buyVendorItem(idx){
   const v=vendorStock[idx];
@@ -892,7 +1202,7 @@ function updateResourceBar(){
 
 function updateStatsPanel(){
   const s=getStats();
-  const elColors={fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaa'};
+  const elColors={fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaa',defense:'#88aacc'};
   let html=`<div class="panel-title">⚔️ ${G.playerName||'Wanderer'}</div>`;
   html+=`<div class="stat-row"><span class="stat-label">Attack</span><span class="stat-val">${Math.floor(s.attack)}</span></div>`;
   html+=`<div class="stat-row"><span class="stat-label">Magic Pwr</span><span class="stat-val">${Math.floor(s.magicPower)}</span></div>`;
@@ -921,7 +1231,7 @@ function inspectGear(slot){const item=G.equipment[slot];if(item)showItemModal(it
 function updateSkillPanel(){
   const sp=G.skillPoints;
   const elColors={fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaa'};
-  const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️'};
+  const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
   let html=`<div class="panel-title">Skill Tree</div><div class="sp-display">${sp} Skill Point${sp!==1?'s':''}</div>`;
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]}">${elEmoji[el]} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
@@ -943,12 +1253,29 @@ function upgradeSkill(el,idx){
   const sk=SKILL_TREE[el][idx];
   log(`<span style="color:#8888ff">Upgraded ${sk.name} to Lv${G.skillLevels[key]}</span>`);
   updateSkillPanel();updateStatsPanel();updateResourceBar();
+  refreshAutoAttackSpeeds();
   const st=getStats();const oldMax=G.maxHp;G.maxHp=st.maxHp;
   if(G.maxHp>oldMax)G.hp+=G.maxHp-oldMax;G.hp=Math.min(G.hp,G.maxHp);
   updateHpBar();saveGame();
 }
 
 function updateEquipUI(){updateStatsPanel();}
+
+// ── COMBAT LOG OVERLAY ──
+const MAX_CLOG = 6;
+function combatLog(text, type) {
+  const overlay = document.getElementById('combat-log-overlay');
+  if (!overlay) return;
+  const entry = document.createElement('div');
+  entry.className = `clog-entry clog-${type}`;
+  entry.textContent = text;
+  overlay.insertBefore(entry, overlay.firstChild);
+  // Keep max entries
+  while (overlay.children.length > MAX_CLOG) overlay.removeChild(overlay.lastChild);
+  // Fade out after 3.5s
+  setTimeout(() => entry.classList.add('fade'), 3500);
+  setTimeout(() => { if(entry.parentNode) entry.parentNode.removeChild(entry); }, 4000);
+}
 
 function log(msg){
   const lines=document.getElementById('log-lines');
@@ -1020,7 +1347,16 @@ function elementParticleColor(el){return{fire:'#ff6633',water:'#44ccff',grass:'#
 function elementTrailColor(el){return{fire:'#ff220080',water:'#0088ff60',grass:'#00cc3360',dark:'#6600cc60',light:'#ffcc0060',physical:'#ffffff40'}[el]||'#ffffff40';}
 
 function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){damageNumbers.push({x,y:y-10,vy:-2.2-Math.random(),text:isCrit?`${dmg}!`:`${dmg}`,life:1,decay:.022,size:isCrit?22:(isSE?18:15),color:isCrit?'#ffcc00':(isSE?'#ff9900':color),bold:isCrit||isSE});}
-function spawnHealNumber(x,y,amt){damageNumbers.push({x,y,vy:-1.5,text:`+${amt}`,life:1,decay:.02,size:14,color:'#3acc7a',bold:false});}
+function spawnHealNumber(x,y,amt){
+  damageNumbers.push({
+    x, y, vy:-2.0,
+    text:`+${amt} ♥`,
+    life:1, decay:0.018,
+    size:16, color:'#3acc7a',
+    bold:true,
+    glow:'#3acc7a'
+  });
+}
 function triggerPlayerLunge(tx,ty,sx,sy){lungeAnim={progress:0,startX:sx,startY:sy,targetX:tx,targetY:ty};}
 function triggerEnemyShake(){enemyShake={x:0,y:0,timer:12};}
 
@@ -1139,8 +1475,15 @@ function drawArena(){
     ctx.globalAlpha=Math.min(1,d.life*3);
     ctx.font=`${d.bold?'bold ':''} ${d.size}px 'Cinzel',serif`;
     ctx.textAlign='center';
+    // Glow for heal numbers
+    if(d.glow){
+      ctx.shadowColor=d.glow;
+      ctx.shadowBlur=10;
+    }
     ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillText(d.text,d.x+2,d.y+2);
     ctx.fillStyle=d.color;ctx.fillText(d.text,d.x,d.y);
+    ctx.shadowBlur=0;
+    ctx.shadowColor='transparent';
   });
   ctx.restore();
 }
