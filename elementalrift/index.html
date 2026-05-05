@@ -150,16 +150,19 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 
 /* ── DESKTOP overrides ── */
 @media(min-width:700px){
-  #game{flex-direction:column;}
-  #top-row{display:flex;flex:1;min-height:0;overflow:hidden;}
+  #game{flex-direction:column;height:100vh;height:100dvh;}
   #resource-bar,#bars-row{flex-shrink:0;width:100%;}
-  #left-col{width:210px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;}
-  #center-col{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;}
-  #right-col{width:210px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;}
-  #bottom-nav{display:none;}
-  #panel-stats,#panel-skills{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:auto;padding-bottom:0;height:100%;}
-  #panel-log{display:none!important;}
-  #arena-wrapper{flex:1;display:flex;flex-direction:column;min-height:0;}
+  #top-row{display:flex;flex:1;min-height:0;overflow:hidden;width:100%;}
+  #left-col{width:210px;min-width:210px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;display:block;}
+  #center-col{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+  #right-col{width:210px;min-width:210px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;display:block;}
+  #bottom-nav{display:none!important;}
+  /* On desktop the mobile panels inside center-col stay hidden */
+  #center-col #panel-stats,#center-col #panel-skills,#center-col #panel-log{display:none!important;}
+  /* Desktop side panels are always shown and NOT absolute */
+  #left-col #panel-stats{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;height:auto;}
+  #right-col #panel-skills{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;height:auto;}
+  #arena{flex:1;min-height:0;}
   #attack-area{flex-shrink:0;}
   .modal{border-radius:16px;}
   .modal-overlay{align-items:center;padding:16px;}
@@ -190,7 +193,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 <div id="game" class="hidden">
 
   <div id="top-row">
-  <!-- DESKTOP LEFT -->
+  <!-- DESKTOP LEFT (stats) -->
   <div id="left-col">
     <div id="panel-stats"></div>
   </div>
@@ -235,10 +238,10 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 
     </div>
 
-    <!-- MOBILE PANELS (overlay the whole center-col on mobile) -->
-    <div id="panel-stats" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;"></div>
-    <div id="panel-skills" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;"></div>
-    <div id="panel-log" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;"><div id="log-lines"></div></div>
+    <!-- MOBILE PANELS (overlay center-col on mobile only) -->
+    <div id="mobile-panel-stats" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:var(--panel);overflow-y:auto;padding-bottom:60px;"></div>
+    <div id="mobile-panel-skills" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:var(--panel);overflow-y:auto;padding-bottom:60px;"></div>
+    <div id="mobile-panel-log" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:var(--panel);overflow-y:auto;padding-bottom:60px;"><div id="log-lines"></div></div>
 
     <!-- ATTACK BUTTONS -->
     <div id="attack-area">
@@ -257,7 +260,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
     </div>
   </div>
 
-  <!-- DESKTOP RIGHT -->
+  <!-- DESKTOP RIGHT (skills) -->
   <div id="right-col">
     <div id="panel-skills"></div>
   </div>
@@ -908,8 +911,9 @@ function updateStatsPanel(){
       ${item?`<div class="slot-item" style="color:${item.rarity.color}">${item.rarity.name}</div>`:'<div class="slot-empty">—</div>'}
     </div>`;
   }).join('')+'</div>';
-  // Render into both desktop col and mobile panel
-  document.querySelectorAll('#panel-stats').forEach(el=>el.innerHTML=html);
+  // Render into desktop panel (left col) and mobile panel
+  document.querySelectorAll('#panel-stats').forEach(el=>{ el.innerHTML=html; });
+  const mp=document.getElementById('mobile-panel-stats');if(mp)mp.innerHTML=html;
 }
 
 function inspectGear(slot){const item=G.equipment[slot];if(item)showItemModal(item,'gear_inspect');}
@@ -928,7 +932,8 @@ function updateSkillPanel(){
     });
     html+='</div>';
   });
-  document.querySelectorAll('#panel-skills').forEach(el=>el.innerHTML=html);
+  document.querySelectorAll('#panel-skills').forEach(el=>{ el.innerHTML=html; });
+  const mps=document.getElementById('mobile-panel-skills');if(mps)mps.innerHTML=html;
 }
 
 function upgradeSkill(el,idx){
@@ -947,6 +952,7 @@ function updateEquipUI(){updateStatsPanel();}
 
 function log(msg){
   const lines=document.getElementById('log-lines');
+  if(!lines)return;
   const line=document.createElement('div');line.className='log-line';line.innerHTML=msg;
   lines.appendChild(line);
   while(lines.children.length>50)lines.removeChild(lines.firstChild);
@@ -960,31 +966,18 @@ function switchTab(tab){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   ['stats','skills','log'].forEach(t=>{
-    const el=document.getElementById('panel-'+t);
+    const el=document.getElementById('mobile-panel-'+t);
     if(!el)return;
-    if(t===tab){el.classList.remove('hidden');el.classList.add('active');}
-    else{el.classList.add('hidden');el.classList.remove('active');}
+    if(t===tab){el.classList.remove('hidden');}
+    else{el.classList.add('hidden');}
   });
 }
 
 function initUI(){
-  updateStatsPanel();updateSkillPanel();updateHpBar();updateResourceBar();
-  // Move panels into correct containers on mobile vs desktop
-  const isMobile=window.innerWidth<700;
-  if(isMobile){
-    const arena=document.getElementById('arena');
-    ['panel-stats','panel-skills','panel-log'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el&&el.parentElement!==arena)arena.appendChild(el);
-    });
-  } else {
-    const lc=document.getElementById('left-col');
-    const rc=document.getElementById('right-col');
-    const ps=document.querySelector('#left-col #panel-stats')||document.getElementById('panel-stats');
-    const psk=document.querySelector('#right-col #panel-skills')||document.getElementById('panel-skills');
-    if(ps&&ps.parentElement!==lc)lc.appendChild(ps);
-    if(psk&&psk.parentElement!==rc)rc.appendChild(psk);
-  }
+  updateStatsPanel();
+  updateSkillPanel();
+  updateHpBar();
+  updateResourceBar();
 }
 
 // ═══════════════════════════════════════════════
