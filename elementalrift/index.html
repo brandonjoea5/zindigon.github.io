@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.4</title>
+<title>Elemental Rift v1.5.7</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -193,6 +193,23 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .skill-btn:disabled{opacity:0.3;}
 .sp-display{font-family:'Cinzel',serif;font-size:12px;color:#8888ff;text-align:center;padding:6px;}
 
+/* ── ABILITY UPGRADE CARDS ── */
+.ab-upgrade-section{padding:6px 10px;}
+.ab-upgrade-card{background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.ab-upgrade-card.can-upgrade{border-color:rgba(232,184,75,0.3);}
+.ab-upgrade-icon{font-size:18px;flex-shrink:0;}
+.ab-upgrade-info{flex:1;min-width:0;}
+.ab-upgrade-name{font-family:'Cinzel',serif;font-size:11px;font-weight:700;}
+.ab-upgrade-desc{font-size:10px;color:var(--muted);margin-top:1px;}
+.ab-upgrade-level{font-size:10px;color:#8888ff;margin-top:2px;}
+.ab-upgrade-btn{font-family:'Cinzel',serif;font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--gold);color:var(--gold);background:rgba(232,184,75,0.08);cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.ab-upgrade-btn:disabled{opacity:0.3;cursor:not-allowed;border-color:var(--border);color:var(--muted);background:transparent;}
+.ab-class-header{display:flex;align-items:center;justify-content:space-between;padding:6px 10px 3px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.ab-class-title{font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.1em;}
+.ab-class-pts{font-size:11px;color:#8888ff;font-family:'Cinzel',serif;}
+.ab-class-hint{font-size:10px;color:var(--muted);font-style:italic;padding:4px 10px 8px;text-align:center;}
+.upgrade-divider{margin:10px 10px 6px;border:none;border-top:1px solid var(--border);}
+
 #log-lines{padding:8px 14px;font-size:13px;line-height:1.7;}
 .log-line{padding:1px 0;}
 .log-dmg{color:var(--red);} .log-heal{color:var(--green);} .log-gold{color:var(--gold);}
@@ -344,7 +361,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.4 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.7 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -544,6 +561,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   <div class="modal">
     <div class="modal-title">⚗️ Wandering Merchant</div>
     <div class="modal-subtitle">Buy to reveal stats</div>
+    <div style="text-align:center;font-family:'Cinzel',serif;font-size:14px;color:var(--gold);margin:-8px 0 12px;letter-spacing:0.05em;" id="vendor-gold-display">💰 0 gold</div>
     <div id="vendor-items"></div>
     <div class="modal-btns">
       <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;" onclick="closeVendor()">Leave Shop</button>
@@ -807,6 +825,10 @@ function onSegmentWaveComplete() {
     setTimeout(()=>{ openVendor(); }, 500);
   } else {
     document.getElementById('next-btn').classList.remove('hidden');
+    // Show boss button any time after wave 3
+    if(G.wave >= 3) {
+      document.getElementById('boss-btn').classList.remove('hidden');
+    }
   }
 }
 
@@ -1149,7 +1171,8 @@ async function showBossResults() {
 function closeBossResults() {
   document.getElementById('boss-results-modal').classList.add('hidden');
   document.getElementById('next-btn').classList.remove('hidden');
-  document.getElementById('boss-btn').classList.add('hidden');
+  // Keep boss button available for repeat attempts
+  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
   // Refresh ingame leaderboard panel if it's been viewed
   renderIngameLB();
 }
@@ -1535,7 +1558,17 @@ function updateClassXPPanel() {
   });
   html += '</div>';
 
+  // Ability Upgrades section
+  html += '<div class="panel-title" style="position:static;margin-top:6px;">⬆ Ability Upgrades</div>';
+  html += '<div style="font-size:10px;color:var(--muted);text-align:center;padding:3px 0 6px;font-style:italic;">Use abilities to earn class XP → class points → upgrade abilities</div>';
+  html += buildAbilityUpgradesHTML();
+
+  // Divider
+  html += '<hr class="upgrade-divider">';
+
   // Original skill tree below
+  html += '<div class="panel-title" style="position:static;">🔮 Passive Skills</div>';
+  html += `<div class="sp-display">${G.skillPoints} Skill Point${G.skillPoints!==1?'s':''}</div>`;
   const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${CLASS_COLORS[el]||'#88aacc'}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
@@ -1977,7 +2010,9 @@ function closeItemModal(){document.getElementById('item-modal').classList.add('h
 let vendorStock=[];
 function openVendor(){
   vendorStock=SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
-  renderVendor();document.getElementById('vendor-modal').classList.remove('hidden');
+  renderVendor();
+  document.getElementById('vendor-modal').classList.remove('hidden');
+  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
   playSound('vendor');
 }
 function renderVendor(){
@@ -1995,7 +2030,9 @@ function renderVendor(){
 function buyVendorItem(idx){
   const v=vendorStock[idx];
   if(G.gold<v.item.buyVal){log('<span style="color:#cc4444">Not enough gold!</span>');return;}
-  G.gold-=v.item.buyVal;updateResourceBar();vendorStock.splice(idx,1);renderVendor();
+  G.gold-=v.item.buyVal;updateResourceBar();
+  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  vendorStock.splice(idx,1);renderVendor();
   closeVendor();showItemModal(v.item,'vendor_buy');
 }
 function closeVendor(){
@@ -2568,6 +2605,105 @@ function applyScreenShake() {
 }
 
 
+
+// ═══════════════════════════════════════════════
+// ABILITY UPGRADE SYSTEM
+// ═══════════════════════════════════════════════
+
+function getAbilityUpgradeCost(abId) {
+  // Cost = current level (so lv1→2 costs 1, lv2→3 costs 2, etc.)
+  return Math.max(1, G.abilityLevels[abId] || 0);
+}
+
+function canUpgradeAbility(abId) {
+  const ab = ABILITIES[abId];
+  if (!ab) return false;
+  if (!isAbilityUnlocked(abId)) return false;
+  const cost = getAbilityUpgradeCost(abId);
+  return (G.classCP[ab.class] || 0) >= cost;
+}
+
+function upgradeAbility(abId) {
+  const ab = ABILITIES[abId];
+  if (!ab || !canUpgradeAbility(abId)) return;
+  const cost = getAbilityUpgradeCost(abId);
+  G.classCP[ab.class] -= cost;
+  G.abilityLevels[abId] = (G.abilityLevels[abId] || 0) + 1;
+  const newLv = G.abilityLevels[abId];
+  log(`<span style="color:${CLASS_COLORS[ab.class]}">⬆ ${ab.icon} ${ab.name} upgraded to Level ${newLv}! (+${Math.floor(ab.dmgMult * 15)}% dmg)</span>`);
+  playSound('level_up');
+  saveGame();
+  updateClassXPPanel();
+  refreshMobilePanel();
+}
+
+function upgradeAbilityAndRefresh(abId) {
+  upgradeAbility(abId);
+  // Refresh just the upgrades panel content without full rebuild
+  updateClassXPPanel();
+  if (IS_MOBILE() && currentMobileTab === 'upgrades') {
+    const content = document.getElementById('mobile-panel-content');
+    if (content) content.innerHTML = buildUpgradesPanelHTML();
+  }
+}
+
+function buildAbilityUpgradesHTML() {
+  let html = '';
+  CLASS_NAMES.forEach(cls => {
+    const cp = G.classCP[cls] || 0;
+    const lv = G.classLv[cls] || 0;
+    const color = CLASS_COLORS[cls];
+    const icon = CLASS_ICONS[cls];
+
+    html += `<div class="ab-class-header">
+      <span class="ab-class-title" style="color:${color}">${icon} ${cls.charAt(0).toUpperCase()+cls.slice(1)}</span>
+      <span class="ab-class-pts">${cp} class pt${cp!==1?'s':''}</span>
+    </div>`;
+
+    // Get abilities for this class
+    const classAbilities = Object.values(ABILITIES).filter(ab => ab.class === cls);
+    const hasAnyUnlocked = classAbilities.some(ab => isAbilityUnlocked(ab.id));
+
+    if (!hasAnyUnlocked) {
+      html += `<div class="ab-class-hint">Use ${cls} abilities in combat to earn class XP and unlock upgrades</div>`;
+    } else {
+      html += '<div class="ab-upgrade-section">';
+      classAbilities.forEach(ab => {
+        const unlocked = isAbilityUnlocked(ab.id);
+        const abLv = G.abilityLevels[ab.id] || 0;
+        const cost = getAbilityUpgradeCost(ab.id);
+        const canUp = canUpgradeAbility(ab.id);
+        const dmgBonus = abLv > 0 ? `+${Math.floor(abLv * 15)}% dmg` : 'Base';
+        const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
+
+        if (!unlocked) {
+          html += `<div class="ab-upgrade-card" style="opacity:0.4;">
+            <span class="ab-upgrade-icon">🔒</span>
+            <div class="ab-upgrade-info">
+              <div class="ab-upgrade-name" style="color:${color}">${ab.name}</div>
+              <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.unlockLv}</div>
+            </div>
+          </div>`;
+        } else {
+          html += `<div class="ab-upgrade-card ${canUp?'can-upgrade':''}">
+            <span class="ab-upgrade-icon">${ab.icon}</span>
+            <div class="ab-upgrade-info">
+              <div class="ab-upgrade-name" style="color:${color}">${ab.name} <span style="font-size:9px;color:${typeColor};border:1px solid ${typeColor};border-radius:8px;padding:1px 5px;">${ab.type}</span></div>
+              <div class="ab-upgrade-desc">${ab.desc}</div>
+              <div class="ab-upgrade-level">Lv${abLv} · ${dmgBonus} · Next upgrade: ${cost} pt${cost!==1?'s':''}</div>
+            </div>
+            <button class="ab-upgrade-btn" ${canUp?'':'disabled'} onclick="upgradeAbilityAndRefresh('${ab.id}')">
+              ${canUp?`⬆ ${cost}pt`:'⬆'}
+            </button>
+          </div>`;
+        }
+      });
+      html += '</div>';
+    }
+  });
+  return html;
+}
+
 // ═══════════════════════════════════════════════
 // MOBILE LAYOUT SYSTEM
 // ═══════════════════════════════════════════════
@@ -2710,8 +2846,14 @@ function buildUpgradesPanelHTML() {
   });
   html += '</div>';
 
-  // Skill points
-  html += `<div class="panel-title" style="position:static;margin-top:4px;">🔮 Skill Tree <span style="color:#8888ff;font-size:10px;">(${G.skillPoints} pts)</span></div>`;
+  // Ability upgrades
+  html += '<div class="panel-title" style="position:static;margin-top:4px;">⬆ Ability Upgrades</div>';
+  html += '<div style="font-size:10px;color:var(--muted);text-align:center;padding:3px 0 6px;font-style:italic;">Earn class points by using abilities in combat</div>';
+  html += buildAbilityUpgradesHTML();
+
+  // Divider + passive skills
+  html += '<hr class="upgrade-divider">';
+  html += `<div class="panel-title" style="position:static;">🔮 Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.skillPoints} pts)</span></div>`;
   const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     const color = CLASS_COLORS[el]||'#88aacc';
