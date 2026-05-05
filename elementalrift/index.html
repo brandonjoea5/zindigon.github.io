@@ -1544,7 +1544,6 @@ function attack(element) {
   setTimeout(()=>{ attackLocked=false; }, Math.max(200, Math.floor(800/st.atkSpeed)));
   if(element !== 'physical') triggerSpellCD(element);
 
-  const st = getStats();
   const isMagic = element!=='physical';
   const baseDmg = isMagic?st.magicPower:st.attack;
   const resist = isMagic?G.enemy.magicResist:G.enemy.armor;
@@ -1721,14 +1720,14 @@ const SLOT_STAT_POOLS = {
 
 // Item name generation
 const NAME_PREFIXES = {
-  attack:      ['Savage','Brutal','Warlord's','Slayer's','Berserker's'],
-  magicPower:  ['Arcane','Mystic','Voidweaver's','Sage's','Spellbound'],
-  critChance:  ['Precise','Keen','Assassin's','Deadly','Razor'],
-  critDmg:     ['Ruinous','Vicious','Executioner's','Catastrophic','Bloodfang'],
+  attack:      ['Savage','Brutal','Warlord','Slayer','Berserker'],
+  magicPower:  ['Arcane','Mystic','Voidweaver','Sage','Spellbound'],
+  critChance:  ['Precise','Keen','Assassin','Deadly','Razor'],
+  critDmg:     ['Ruinous','Vicious','Executioner','Catastrophic','Bloodfang'],
   atkSpeed:    ['Swift','Rapid','Windchaser','Flickering','Haste'],
-  armor:       ['Iron','Fortress','Guardian's','Bulwark','Aegis'],
-  health:      ['Vitalis','Enduring','Titan's','Juggernaut','Undying'],
-  magicResist: ['Warded','Runic','Sage's','Nullifying','Barrier'],
+  armor:       ['Iron','Fortress','Guardian','Bulwark','Aegis'],
+  health:      ['Vitalis','Enduring','Titan','Juggernaut','Undying'],
+  magicResist: ['Warded','Runic','Nullifying','Barrier','Mystic'],
   lifeSteal:   ['Vampiric','Draining','Sanguine','Leeching','Crimson'],
   spellVamp:   ['Siphoning','Ethereal','Devouring','Arcane','Spectral'],
   cdr:         ['Temporal','Rushing','Hastened','Flowing','Quickened'],
@@ -1738,10 +1737,10 @@ const SLOT_SUFFIXES = {
   Pants:'Greaves', Boots:'Treads', Ring1:'Band', Ring2:'Signet', Weapon:'Blade'
 };
 const COSMIC_NAMES = {
-  Weapon:['Worldender','Eternity's Edge','The Void Fang','Oblivion's Reach','Cosmosbreaker'],
+  Weapon:['Worldender','Eternity Edge','The Void Fang','Oblivion Reach','Cosmosbreaker'],
   Head:  ['Crown of Eternity','Helm of the Cosmos','Void Visor','Starborn Crest','The All-Seeing'],
   Chest: ['Cosmic Carapace','Void Plate','Armor of Ages','The Infinite Shell','Starshroud'],
-  Neck:  ['Amulet of Eternity','Cosmic Chain','The Void Star','Constellation's Heart','Nebula Pendant'],
+  Neck:  ['Amulet of Eternity','Cosmic Chain','The Void Star','Constellation Heart','Nebula Pendant'],
   Belt:  ['Girdle of Eternity','Cosmic Wrap','Void Cinch','The Infinite Band','Starbelt'],
   Pants: ['Greaves of Eternity','Cosmic Striders','Void Legs','The Infinite Step','Starwalkers'],
   Boots: ['Treads of Eternity','Cosmic Boots','Void Walkers','The Infinite Path','Starstride'],
