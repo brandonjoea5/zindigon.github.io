@@ -180,7 +180,9 @@ canvas{display:block;width:100%;height:100%;}
     <span class="el-badge" style="border-color:#ffd700;color:#ffd700;">✨ Light</span>
   </div>
   <input id="name-input" type="text" placeholder="Enter your name..." maxlength="20" autocomplete="off" spellcheck="false">
+  <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
   <button id="start-btn" onclick="startGame()">Begin Journey</button>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.0.0 · Elemental Rift</div>
 </div>
 
 <!-- MAIN GAME -->
@@ -389,6 +391,30 @@ function loadGame(name) {
 // NAME + START
 // ═══════════════════════════════════════════════
 document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
+
+// Check for existing save on load
+(function checkExistingSave() {
+  try {
+    const raw = localStorage.getItem('elementalRift_v3');
+    if (!raw) return;
+    const save = JSON.parse(raw);
+    if (save.playerName) {
+      const continueBtn = document.getElementById('continue-btn');
+      document.getElementById('continue-name').textContent = save.playerName;
+      document.getElementById('name-input').placeholder = 'Or enter a new name...';
+      continueBtn.classList.remove('hidden');
+    }
+  } catch(e) {}
+})();
+
+function continueGame() {
+  try {
+    const raw = localStorage.getItem('elementalRift_v3');
+    const save = JSON.parse(raw);
+    document.getElementById('name-input').value = save.playerName;
+    startGame();
+  } catch(e) {}
+}
 
 function startGame() {
   const name = document.getElementById('name-input').value.trim();
