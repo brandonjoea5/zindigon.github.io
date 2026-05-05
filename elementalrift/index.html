@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.0</title>
+<title>Elemental Rift v1.5.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -49,7 +49,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 /* ── ARENA ── */
 #arena{flex:1;position:relative;overflow:hidden;min-height:0;}
-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;transform-origin:center center;}
+
+/* ── MUTE BUTTON ── */
+#mute-btn{position:absolute;top:10px;right:14px;background:rgba(0,0,0,0.45);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:13px;cursor:pointer;z-index:6;color:var(--muted);font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.05em;transition:border-color 0.15s;}
+#mute-btn:hover{border-color:var(--gold);}
 
 /* ── COMBAT LOG OVERLAY ── */
 #combat-log-overlay{
@@ -295,7 +299,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.0 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.2 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -366,6 +370,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
     <div id="arena">
       <canvas id="canvas"></canvas>
       <div id="combat-log-overlay"></div>
+      <div id="mute-btn" onclick="toggleMute()">🔊 SFX</div>
       <div id="enemy-info">
         <div id="enemy-name">—</div>
         <div id="enemy-hp-wrap"><div id="enemy-hp-fill" style="width:100%"></div></div>
@@ -1000,6 +1005,8 @@ function onBossPhaseKill() {
     return;
   }
   G.bossLevel++;
+  playSound('boss_hit');
+  triggerScreenShake(12, 0.6);
   log(`<span style="color:#ff2266;">💀 Boss Phase ${G.bossLevel-1} cleared! Level ${G.bossLevel} awakens!</span>`);
   document.getElementById('boss-level-badge').textContent = `BOSS LV ${G.bossLevel}`;
   G.enemy = rollBoss(G.bossLevel);
@@ -1195,6 +1202,16 @@ function fireAbility(ab) {
   // Class XP
   earnClassXP(ab.class, ab.type==='ultimate'?15:ab.type==='regular'?6:2);
 
+  // Sound + screen shake
+  const isUlt = ab.type==='ultimate';
+  const soundKey = {'fire':'hit_fire','water':'hit_water','grass':'hit_grass','dark':'hit_dark','light':'hit_light','physical':'hit_physical'}[ab.class]||'hit_physical';
+  playSound(soundKey);
+  if(isCrit) { playSound('crit'); triggerScreenShake(6, 0.25); }
+  else if(isUlt) { playSound('ultimate'); triggerScreenShake(10, 0.5); }
+  else if(seMult>1.0) triggerScreenShake(3, 0.2);
+  else triggerScreenShake(1.5, 0.15);
+  if(healAmt>0) setTimeout(()=>playSound('heal'), 200);
+
   // Log + animations
   const seText = seMult>1.0?' <span class="log-se">SE!</span>':(seMult<1.0?' <span style="color:#555">weak</span>':'');
   const critText = isCrit?' <span style="color:#ffaa00">CRIT!</span>':'';
@@ -1304,6 +1321,7 @@ function earnClassXP(cls, amount) {
       G.classLv[cls]++;
       G.classCP[cls] = (G.classCP[cls]||0) + 1;
       log(`<span style="color:${CLASS_COLORS[cls]}">🌟 ${cls.charAt(0).toUpperCase()+cls.slice(1)} class reached Level ${G.classLv[cls]}! +1 Class Point</span>`);
+      playSound('level_up');
       updateClassXPPanel();
       // Unlock notification
       const lv = G.classLv[cls];
@@ -1589,6 +1607,12 @@ function attack(element) {
   else if(seMult>1.0)       combatLog(`✦ SE ${dmg} (${element})`, 'se');
   else                      combatLog(`▶ ${dmg} (${element})`, 'dmg-out');
 
+  // Sound
+  const sndKey = {'fire':'hit_fire','water':'hit_water','grass':'hit_grass','dark':'hit_dark','light':'hit_light','physical':'hit_physical'}[element]||'hit_physical';
+  playSound(sndKey);
+  if(isCrit){ playSound('crit'); triggerScreenShake(6,0.25); } else triggerScreenShake(2,0.15);
+  if(healAmt>0) setTimeout(()=>playSound('heal'),200);
+
   // Animations
   const W=canvas.width,H=canvas.height;
   const px=W*0.25,py=H*0.62,ex=W*0.72,ey=H*0.60;
@@ -1623,6 +1647,8 @@ function enemyAttack() {
   spawnDamageNumber(W*0.25+(Math.random()-.5)*15,H*0.62-35,dmg,false,false,'#ff4444');
   playerFlash=0.9;
   startAnimLoop();
+  playSound('take_damage');
+  triggerScreenShake(4, 0.2);
   if (G.hp<=0) { G.hp=0; onDeath(); return; }
   updateHpBar();
   updateEnemyUI();
@@ -1651,6 +1677,8 @@ function onEnemyDeath() {
     }
   }
   G.enemy=null;
+  playSound('enemy_death');
+  triggerScreenShake(5, 0.3);
   updateEnemyUI();
   updateResourceBar();
   updateClassXPPanel();
@@ -1860,6 +1888,7 @@ let vendorStock=[];
 function openVendor(){
   vendorStock=SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
   renderVendor();document.getElementById('vendor-modal').classList.remove('hidden');
+  playSound('vendor');
 }
 function renderVendor(){
   document.getElementById('vendor-items').innerHTML=vendorStock.map((v,i)=>{
@@ -2072,6 +2101,7 @@ function triggerEnemyShake(){enemyShake={x:0,y:0,timer:12};}
 function startAnimLoop(){if(animLoopRunning)return;animLoopRunning=true;lastTime=performance.now();requestAnimationFrame(animLoop);}
 function animLoop(ts){
   lastTime=ts;
+  applyScreenShake();
   if(lungeAnim){
     lungeAnim.progress+=.12;const p=lungeAnim.progress;
     if(p<.5){const t=p/.5,ease=t<.5?2*t*t:-1+(4-2*t)*t;playerOffset.x=(lungeAnim.targetX-lungeAnim.startX)*ease*.45;playerOffset.y=(lungeAnim.targetY-lungeAnim.startY)*ease*.2;}
@@ -2225,10 +2255,230 @@ function drawParticlesLayer(layer){
 
 function flashCanvas(){}
 
+
+// ═══════════════════════════════════════════════
+// SOUND ENGINE (Web Audio API — procedural, no files)
+// ═══════════════════════════════════════════════
+let audioCtx = null;
+let isMuted = false;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function toggleMute() {
+  isMuted = !isMuted;
+  const btn = document.getElementById('mute-btn');
+  if (btn) btn.textContent = isMuted ? '🔇 SFX' : '🔊 SFX';
+  if (btn) btn.style.borderColor = isMuted ? 'var(--red)' : 'var(--border)';
+}
+
+function playSound(type, options={}) {
+  if (isMuted) return;
+  try {
+    const ac = getAudioCtx();
+    const now = ac.currentTime;
+    const vol = options.vol || 0.3;
+
+    switch(type) {
+
+      case 'hit_physical': {
+        // Sharp thwack — noise burst + pitch drop
+        const buf = ac.createBuffer(1, ac.sampleRate * 0.08, ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const g = ac.createGain(); g.gain.setValueAtTime(vol*1.2, now); g.gain.exponentialRampToValueAtTime(0.001, now+0.08);
+        const f = ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=800; f.Q.value=0.8;
+        src.connect(f); f.connect(g); g.connect(ac.destination); src.start(now);
+        break;
+      }
+
+      case 'hit_fire': {
+        const osc = ac.createOscillator(); const g = ac.createGain();
+        osc.type='sawtooth'; osc.frequency.setValueAtTime(200,now); osc.frequency.exponentialRampToValueAtTime(60,now+0.25);
+        g.gain.setValueAtTime(vol,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+        const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=600;
+        osc.connect(f); f.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.25);
+        // Crackle layer
+        const buf=ac.createBuffer(1,ac.sampleRate*0.15,ac.sampleRate);
+        const d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5)*0.4;
+        const ns=ac.createBufferSource(); ns.buffer=buf;
+        const ng=ac.createGain(); ng.gain.setValueAtTime(vol*0.5,now);
+        ns.connect(ng); ng.connect(ac.destination); ns.start(now);
+        break;
+      }
+
+      case 'hit_water': {
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='sine'; osc.frequency.setValueAtTime(800,now); osc.frequency.exponentialRampToValueAtTime(300,now+0.2);
+        g.gain.setValueAtTime(vol*0.8,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.2);
+        osc.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.2);
+        // Bubble pop
+        const osc2=ac.createOscillator(); const g2=ac.createGain();
+        osc2.type='sine'; osc2.frequency.setValueAtTime(1200,now+0.05); osc2.frequency.exponentialRampToValueAtTime(400,now+0.15);
+        g2.gain.setValueAtTime(vol*0.4,now+0.05); g2.gain.exponentialRampToValueAtTime(0.001,now+0.15);
+        osc2.connect(g2); g2.connect(ac.destination); osc2.start(now+0.05); osc2.stop(now+0.15);
+        break;
+      }
+
+      case 'hit_grass': {
+        const buf=ac.createBuffer(1,ac.sampleRate*0.12,ac.sampleRate);
+        const d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2)*0.7;
+        const src=ac.createBufferSource(); src.buffer=buf;
+        const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=400; f.Q.value=2;
+        const g=ac.createGain(); g.gain.setValueAtTime(vol,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
+        src.connect(f); f.connect(g); g.connect(ac.destination); src.start(now);
+        break;
+      }
+
+      case 'hit_dark': {
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='square'; osc.frequency.setValueAtTime(80,now); osc.frequency.exponentialRampToValueAtTime(30,now+0.35);
+        g.gain.setValueAtTime(vol*0.6,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
+        const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=200;
+        osc.connect(f); f.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.35);
+        // Void whoosh
+        const buf=ac.createBuffer(1,ac.sampleRate*0.3,ac.sampleRate);
+        const d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/d.length)*0.3;
+        const ns=ac.createBufferSource(); ns.buffer=buf;
+        const nf=ac.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=150; nf.Q.value=3;
+        const ng=ac.createGain(); ng.gain.setValueAtTime(vol*0.5,now);
+        ns.connect(nf); nf.connect(ng); ng.connect(ac.destination); ns.start(now);
+        break;
+      }
+
+      case 'hit_light': {
+        [0,0.04,0.08].forEach((delay,i)=>{
+          const osc=ac.createOscillator(); const g=ac.createGain();
+          osc.type='sine'; osc.frequency.value=1200-i*200;
+          g.gain.setValueAtTime(vol*0.5,now+delay); g.gain.exponentialRampToValueAtTime(0.001,now+delay+0.2);
+          osc.connect(g); g.connect(ac.destination);
+          osc.start(now+delay); osc.stop(now+delay+0.2);
+        });
+        break;
+      }
+
+      case 'crit': {
+        // Extra punch on top of normal hit
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='sawtooth'; osc.frequency.setValueAtTime(300,now); osc.frequency.exponentialRampToValueAtTime(80,now+0.15);
+        g.gain.setValueAtTime(vol*0.8,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.15);
+        osc.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.15);
+        break;
+      }
+
+      case 'take_damage': {
+        const buf=ac.createBuffer(1,ac.sampleRate*0.1,ac.sampleRate);
+        const d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.5)*0.8;
+        const src=ac.createBufferSource(); src.buffer=buf;
+        const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=300;
+        const g=ac.createGain(); g.gain.setValueAtTime(vol*0.7,now);
+        src.connect(f); f.connect(g); g.connect(ac.destination); src.start(now);
+        break;
+      }
+
+      case 'heal': {
+        [0,0.08,0.16].forEach((delay,i)=>{
+          const osc=ac.createOscillator(); const g=ac.createGain();
+          osc.type='sine'; osc.frequency.value=440+i*220;
+          g.gain.setValueAtTime(vol*0.3,now+delay); g.gain.exponentialRampToValueAtTime(0.001,now+delay+0.15);
+          osc.connect(g); g.connect(ac.destination);
+          osc.start(now+delay); osc.stop(now+delay+0.15);
+        });
+        break;
+      }
+
+      case 'enemy_death': {
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='sine'; osc.frequency.setValueAtTime(500,now); osc.frequency.exponentialRampToValueAtTime(100,now+0.4);
+        g.gain.setValueAtTime(vol*0.5,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.4);
+        osc.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.4);
+        break;
+      }
+
+      case 'level_up': {
+        [0,0.1,0.2,0.3].forEach((delay,i)=>{
+          const osc=ac.createOscillator(); const g=ac.createGain();
+          osc.type='sine'; osc.frequency.value=440+i*110;
+          g.gain.setValueAtTime(vol*0.4,now+delay); g.gain.exponentialRampToValueAtTime(0.001,now+delay+0.18);
+          osc.connect(g); g.connect(ac.destination);
+          osc.start(now+delay); osc.stop(now+delay+0.18);
+        });
+        break;
+      }
+
+      case 'boss_hit': {
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='sawtooth'; osc.frequency.setValueAtTime(120,now); osc.frequency.exponentialRampToValueAtTime(40,now+0.4);
+        g.gain.setValueAtTime(vol*0.8,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.4);
+        const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=400;
+        osc.connect(f); f.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.4);
+        break;
+      }
+
+      case 'ultimate': {
+        // Deep rumble + high shimmer
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='sawtooth'; osc.frequency.setValueAtTime(60,now); osc.frequency.exponentialRampToValueAtTime(20,now+0.6);
+        g.gain.setValueAtTime(vol,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.6);
+        const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=300;
+        osc.connect(f); f.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.6);
+        const osc2=ac.createOscillator(); const g2=ac.createGain();
+        osc2.type='sine'; osc2.frequency.setValueAtTime(1800,now); osc2.frequency.exponentialRampToValueAtTime(600,now+0.4);
+        g2.gain.setValueAtTime(vol*0.5,now); g2.gain.exponentialRampToValueAtTime(0.001,now+0.4);
+        osc2.connect(g2); g2.connect(ac.destination);
+        osc2.start(now); osc2.stop(now+0.4);
+        break;
+      }
+
+      case 'vendor': {
+        const osc=ac.createOscillator(); const g=ac.createGain();
+        osc.type='sine'; osc.frequency.setValueAtTime(660,now); osc.frequency.setValueAtTime(880,now+0.1);
+        g.gain.setValueAtTime(vol*0.3,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+        osc.connect(g); g.connect(ac.destination);
+        osc.start(now); osc.stop(now+0.25);
+        break;
+      }
+    }
+  } catch(e) {}
+}
+
+// ── SCREEN SHAKE ──
+let shakeAmount = 0;
+let shakeDecay = 0;
+
+function triggerScreenShake(intensity=4, duration=0.3) {
+  shakeAmount = intensity;
+  shakeDecay = intensity / (duration * 60);
+}
+
+function applyScreenShake() {
+  if(shakeAmount <= 0) { canvas.style.transform=''; return; }
+  const x = (Math.random()-0.5)*shakeAmount*2;
+  const y = (Math.random()-0.5)*shakeAmount*2;
+  canvas.style.transform=`translate(${x}px,${y}px)`;
+  shakeAmount = Math.max(0, shakeAmount - shakeDecay);
+  if(shakeAmount <= 0.1) { shakeAmount=0; canvas.style.transform=''; }
+}
+
 // ═══════════════════════════════════════════════
 // IDLE LOOP
 // ═══════════════════════════════════════════════
-function idlePulse(){drawArena();requestAnimationFrame(idlePulse);}
+function idlePulse(){applyScreenShake();drawArena();requestAnimationFrame(idlePulse);}
 
 // ═══════════════════════════════════════════════
 // INIT
