@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.4.0</title>
+<title>Elemental Rift v1.5.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -295,7 +295,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.4.0 · Elemental Rift Developed by Zindigon Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.0 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -462,13 +462,13 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 </div>
 
 <!-- ABILITY PICKER MODAL -->
-<div class="modal-overlay centered hidden" id="ability-picker-modal">
+<div class="modal-overlay centered hidden" id="ability-picker-modal" onclick="if(event.target===this)closeAbilityPicker()">
   <div class="modal">
     <div class="modal-title" id="picker-title">Choose Ability</div>
     <div class="modal-subtitle" id="picker-subtitle">Select an ability for this slot</div>
     <div id="ability-picker-list"></div>
     <div class="modal-btns">
-      <button class="btn-close-m" style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:10px;border-radius:8px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;" onclick="closeAbilityPicker()">Cancel</button>
+      <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;" onclick="closeAbilityPicker()">✕ Close</button>
     </div>
   </div>
 </div>
@@ -1317,6 +1317,8 @@ function isAbilityUnlocked(abId) {
 // ── LOADOUT PICKER ──
 let pickerSlot = -1;
 function openLoadoutPicker(slotIdx) {
+  // Pause enemy attacks while picking
+  if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
   pickerSlot = slotIdx;
   const slotNames = ['Basic','Regular','Regular','Ultimate'];
   const slotTypes = ['basic','regular','regular','ultimate'];
@@ -1363,6 +1365,8 @@ function pickAbility(abId) {
 function closeAbilityPicker() {
   document.getElementById('ability-picker-modal').classList.add('hidden');
   pickerSlot = -1;
+  // Resume enemy attacks if in combat
+  if(G.combatActive && G.enemy && !G.enemyAttackInterval) startEnemyAutoAttack();
 }
 
 // ── LOADOUT UI ──
