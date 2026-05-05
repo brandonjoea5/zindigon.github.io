@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.8</title>
+<title>Elemental Rift v1.5.9</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -361,7 +361,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.8 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.9 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -1468,7 +1468,17 @@ function earnClassXP(cls, amount) {
     if(currentXP >= needed){
       G.classLv[cls]++;
       G.classCP[cls] = (G.classCP[cls]||0) + 1;
-      log(`<span style="color:${CLASS_COLORS[cls]}">🌟 ${cls.charAt(0).toUpperCase()+cls.slice(1)} class reached Level ${G.classLv[cls]}! +1 Class Point</span>`);
+      // HP + Mana boost on every class level
+      G.baseStats.health = (G.baseStats.health||200) + 10;
+      G.baseStats.mana   = (G.baseStats.mana||100)   + 5;
+      const st = getStats();
+      const oldMax = G.maxHp;
+      G.maxHp = st.maxHp;
+      G.hp += (G.maxHp - oldMax); // add the bonus HP immediately
+      G.hp = Math.min(G.hp, G.maxHp);
+      G.maxMana = st.mana||100;
+      updateHpBar(); updateManaBar();
+      log(`<span style="color:${CLASS_COLORS[cls]}">🌟 ${cls.charAt(0).toUpperCase()+cls.slice(1)} class Lv${G.classLv[cls]}! +1 Class Point · <span style="color:#3acc7a">+10 HP</span> · <span style="color:#63b3ff">+5 Mana</span></span>`);
       playSound('level_up');
       updateClassXPPanel();
       // Unlock notification
