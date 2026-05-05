@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.3.0</title>
+<title>Elemental Rift v1.4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -516,43 +516,6 @@ const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgI
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-const CLASS_NAMES = ['fire','water','grass','dark','light','physical'];
-let G = {
-  playerName: '',
-  hp:200, maxHp:200, energy:100, maxEnergy:100,
-  gold:0, skillPoints:0, kills:0, wave:1,
-  baseStats:{...BASE_STATS},
-  skillLevels:{},
-  equipment:{},
-  enemy:null,
-  combatActive:false,
-  pendingItem:null,
-  inBoss:false,
-  bossLevel:1,
-  bossDmgDealt:0,
-  bossTimerSec:60,
-  bossTimerInterval:null,
-  enemyAttackInterval:null,
-  autoAttacks:{},
-  bossName:'',
-  // Class XP system
-  classXP:  Object.fromEntries(CLASS_NAMES.map(c=>[c,0])),
-  classLv:  Object.fromEntries(CLASS_NAMES.map(c=>[c,0])),
-  classCP:  Object.fromEntries(CLASS_NAMES.map(c=>[c,0])),
-  abilityLevels: Object.fromEntries(Object.keys(ABILITIES).map(k=>[k,0])),
-  abilityCDs:    {},
-  loadout: [null, null, null, null],  // slot 0=basic,1=reg1,2=reg2,3=ult
-  autoSlots: {},  // slotIdx -> intervalId for basic auto-attack
-};
-Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{G.skillLevels[`${el}_${i}`]=0;}));
-
-
-// ═══════════════════════════════════════════════
-// ABILITY DEFINITIONS
-// ═══════════════════════════════════════════════
-// Types: 'basic' | 'regular' | 'ultimate'
-// Unlock levels: basic=0, regular1=3, regular2=6, ultimate=10
-
 const ABILITIES = {
   // ── FIRE ──
   fire_basic:   { id:'fire_basic',   class:'fire',     type:'basic',    name:'Ember Strike', icon:'🔥', cd:0,    desc:'Rapid fire hits dealing magic damage. Auto-attacks at attack speed.', dmgMult:0.8,  isMagic:true  },
@@ -590,10 +553,50 @@ const ABILITIES = {
   phys_reg2:    { id:'phys_reg2',    class:'physical', type:'regular',  name:'Whirlwind',    icon:'🌀', cd:4500, desc:'Spinning attack dealing damage twice in quick succession.', dmgMult:1.8, isMagic:false, hits:2, unlockLv:6 },
   phys_ult:     { id:'phys_ult',     class:'physical', type:'ultimate', name:'Devastate',    icon:'💥', cd:16000,desc:'Overwhelm the enemy with 7x physical damage. Ignores 50% armor.', dmgMult:7.0, isMagic:false, armorPen:0.5, unlockLv:10 },
 };
-
 const CLASS_COLORS = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', dark:'#9b4dff', light:'#ffd700', physical:'#aaaaaa' };
 const CLASS_ICONS  = { fire:'🔥', water:'💧', grass:'🌿', dark:'🌑', light:'✨', physical:'⚔️' };
 const CLASS_XP_TO_LEVEL = [0, 30, 80, 160, 280, 440, 650, 920, 1250, 1650, 2100]; // xp needed per level
+
+const CLASS_NAMES = ['fire','water','grass','dark','light','physical'];
+let G = {
+  playerName: '',
+  hp:200, maxHp:200, energy:100, maxEnergy:100,
+  gold:0, skillPoints:0, kills:0, wave:1,
+  baseStats:{...BASE_STATS},
+  skillLevels:{},
+  equipment:{},
+  enemy:null,
+  combatActive:false,
+  pendingItem:null,
+  inBoss:false,
+  bossLevel:1,
+  bossDmgDealt:0,
+  bossTimerSec:60,
+  bossTimerInterval:null,
+  enemyAttackInterval:null,
+  autoAttacks:{},
+  bossName:'',
+  classXP:{}, classLv:{}, classCP:{},
+  abilityLevels:{}, abilityCDs:{},
+  loadout: [null, null, null, null],
+  autoSlots: {},
+};
+// Init after all consts are declared
+function initGState() {
+  CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
+  Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
+  Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
+}
+
+
+// ═══════════════════════════════════════════════
+// ABILITY DEFINITIONS
+// ═══════════════════════════════════════════════
+// Types: 'basic' | 'regular' | 'ultimate'
+// Unlock levels: basic=0, regular1=3, regular2=6, ultimate=10
+
+
+
 
 // ═══════════════════════════════════════════════
 // CLASS XP STATE (added to G)
@@ -2223,6 +2226,7 @@ resizeCanvas();
 idlePulse();
 
 // Focus name input
+initGState();
 document.getElementById('name-input').focus();
 renderNameScreenLB();
 </script>
