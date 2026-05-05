@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.7</title>
+<title>Elemental Rift v1.5.8</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -361,7 +361,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.7 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.8 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -519,6 +519,26 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-3" style="width:0%"></div></div>
       </div>
     </div>
+    <!-- Heal slot row -->
+    <div style="display:grid;grid-template-columns:1fr 3fr;gap:5px;padding:0 8px 6px;background:var(--panel);">
+      <div class="ability-slot" id="slot-heal" onclick="activateHeal()" title="Heal" style="border-color:#3acc7a;min-height:44px;">
+        <div class="ab-slot-label" style="color:#3acc7a">Heal</div>
+        <div class="ab-icon">＋</div>
+        <div class="ab-name" style="color:var(--muted);font-size:8px;">Tap to assign</div>
+        <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:#3acc7a"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;justify-content:center;padding-left:4px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:9px;color:var(--muted);font-family:'Cinzel',serif;width:28px;text-align:right;">MANA</span>
+          <div style="flex:1;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;">
+            <div class="bar-fill mp" id="mana-bar-combat" style="width:100%;height:100%;"></div>
+          </div>
+          <span style="font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;" id="mana-nums-combat">100/100</span>
+        </div>
+        <div style="font-size:9px;color:var(--muted);padding-left:34px;">Basic: free · Regular: 20 · Ultimate: 50 · Heal: 30</div>
+      </div>
+    </div>
+
     <!-- Wave control buttons (hidden until needed) -->
     <div style="display:flex;gap:6px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
       <button class="action-btn btn-next hidden" id="next-btn" onclick="nextWave()" style="flex:1;"><span class="btn-icon">▶</span>Next Wave</button>
@@ -599,8 +619,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 const SLOTS = ['Head','Neck','Chest','Belt','Pants','Boots','Ring1','Ring2','Weapon'];
 const ELEMENTS = ['fire','water','grass','dark','light'];
 const ELEMENT_COLORS = {fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaaaaa'};
-const STAT_KEYS = ['attack','magicPower','atkSpeed','critChance','critDmg','armor','health','magicResist','lifeSteal','spellVamp','cdr'];
-const STAT_LABELS = {attack:'Attack',magicPower:'Magic Pwr',atkSpeed:'Atk Speed',critChance:'Crit %',critDmg:'Crit Dmg',armor:'Armor',health:'Health',magicResist:'Mag Resist',lifeSteal:'Life Steal',spellVamp:'Spell Vamp',cdr:'CDR %'};
+const STAT_KEYS = ['attack','magicPower','atkSpeed','critChance','critDmg','armor','health','magicResist','lifeSteal','spellVamp','cdr','mana','manaRegen'];
+const STAT_LABELS = {attack:'Attack',magicPower:'Magic Pwr',atkSpeed:'Atk Speed',critChance:'Crit %',critDmg:'Crit Dmg',armor:'Armor',health:'Health',magicResist:'Mag Resist',lifeSteal:'Life Steal',spellVamp:'Spell Vamp',cdr:'CDR %',mana:'Mana',manaRegen:'Mana Regen'};
 const SE = {fire:['grass','dark'],grass:['water','dark'],water:['fire','light'],dark:['light'],light:['fire','water','grass']};
 const SKILL_TREE = {
   fire:    [{name:'Ember Touch',stat:'magicPower',per:3},{name:'Ignite',stat:'critChance',per:2},{name:'Inferno',stat:'magicPower',per:5}],
@@ -611,7 +631,7 @@ const SKILL_TREE = {
   physical:[{name:'Brute Force',stat:'attack',per:5},{name:'Precision',stat:'critChance',per:3},{name:'Rampage',stat:'atkSpeed',per:0.15}],
   defense: [{name:'Iron Will',stat:'armor',per:4},{name:'Spell Ward',stat:'magicResist',per:4},{name:'Swiftcast',stat:'cdr',per:2}],
 };
-const BASE_STATS = {attack:10,magicPower:8,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0};
+const BASE_STATS = {attack:10,magicPower:8,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0,mana:100,manaRegen:5};
 const ENEMY_NAMES = ['Gorgash','Vexil','Thornback','Sable Wraith','Cindermaw','Tidecaller','Luminos','Shade','Bramblehide','Voidling','Ashfang','Crystalclaw','Frostmaw','Emberclaw','Duskwalker','Nullshade'];
 const BOSS_NAMES = ['The Devourer','Void Colossus','Ashen Titan','The Undying','Chaos Incarnate'];
 
@@ -660,6 +680,14 @@ const ABILITIES = {
   phys_reg1:    { id:'phys_reg1',    class:'physical', type:'regular',  name:'Power Slam',   icon:'🪓', cd:3000, desc:'Crushing blow — 2.5x physical damage. Bonus damage vs Brutes.', dmgMult:2.5, isMagic:false, unlockLv:3 },
   phys_reg2:    { id:'phys_reg2',    class:'physical', type:'regular',  name:'Whirlwind',    icon:'🌀', cd:4500, desc:'Spinning attack dealing damage twice in quick succession.', dmgMult:1.8, isMagic:false, hits:2, unlockLv:6 },
   phys_ult:     { id:'phys_ult',     class:'physical', type:'ultimate', name:'Devastate',    icon:'💥', cd:16000,desc:'Overwhelm the enemy with 7x physical damage. Ignores 50% armor.', dmgMult:7.0, isMagic:false, armorPen:0.5, unlockLv:10 },
+
+  // ── HEALS (one per class) ──
+  heal_physical:{ id:'heal_physical',class:'physical', type:'heal', name:'Bandage',       icon:'🩹', cd:12000, desc:'Patch yourself up. Restores 25% of max HP.', healFlat:0, healPct:25 },
+  heal_fire:    { id:'heal_fire',    class:'fire',     type:'heal', name:'Cauterize',      icon:'🔥', cd:10000, desc:'Sear your wounds. Restores 20% max HP instantly.', healFlat:0, healPct:20 },
+  heal_water:   { id:'heal_water',   class:'water',    type:'heal', name:'Tidal Mend',     icon:'💧', cd:9000,  desc:'Healing waters restore 30% of max HP.', healFlat:0, healPct:30 },
+  heal_grass:   { id:'heal_grass',   class:'grass',    type:'heal', name:'Nature Bloom',   icon:'🌿', cd:8000,  desc:'Nature energy restores 35% max HP over 3 pulses.', healFlat:0, healPct:35, hot:true },
+  heal_dark:    { id:'heal_dark',    class:'dark',     type:'heal', name:'Soul Siphon',    icon:'🌑', cd:11000, desc:'Drain life from the enemy. Deals 50% magic dmg, heals equal amount.', healFlat:0, healPct:0, siphon:true },
+  heal_light:   { id:'heal_light',   class:'light',    type:'heal', name:'Holy Mend',      icon:'✨', cd:8000,  desc:'Divine light restores 40% of max HP instantly.', healFlat:0, healPct:40 },
 };
 const CLASS_COLORS = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', dark:'#9b4dff', light:'#ffd700', physical:'#aaaaaa' };
 const CLASS_ICONS  = { fire:'🔥', water:'💧', grass:'🌿', dark:'🌑', light:'✨', physical:'⚔️' };
@@ -684,6 +712,8 @@ let G = {
   enemyAttackInterval:null,
   autoAttacks:{},
   bossName:'',
+  mana:100, maxMana:100,
+  manaRegenInterval:null,
   classXP:{}, classLv:{}, classCP:{},
   abilityLevels:{}, abilityCDs:{},
   loadout: [null, null, null, null],
@@ -842,7 +872,7 @@ function saveGame() {
       gold:G.gold, skillPoints:G.skillPoints, kills:G.kills, wave:G.wave,
       baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
-      abilityLevels:G.abilityLevels, loadout:G.loadout,
+      abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
   } catch(e){}
@@ -866,6 +896,7 @@ function loadGame(name) {
     if(save.classCP)  G.classCP  = save.classCP;
     if(save.abilityLevels) G.abilityLevels = save.abilityLevels;
     if(save.loadout)  G.loadout  = save.loadout;
+    if(save.healLoadout) healLoadout = save.healLoadout;
     return true;
   } catch(e){ return false; }
 }
@@ -1280,6 +1311,13 @@ function getAbilityDmg(ab) {
 function fireAbility(ab) {
   if(!G.combatActive || !G.enemy) return false;
   if(!isAbilityReady(ab)) return false;
+  // Mana check
+  const manaCost = MANA_COSTS[ab.type] || 0;
+  if(manaCost > 0 && G.mana < manaCost) {
+    log(`<span style="color:#4488ff">Not enough mana! (need ${manaCost})</span>`);
+    return false;
+  }
+  if(manaCost > 0) spendMana(manaCost);
 
   const st = getStats();
   const seMult = getSEMultiplier(ab.class==='physical'?'physical':ab.class, G.enemy);
@@ -1601,6 +1639,9 @@ function getSEMultiplier(attackEl, enemy) {
 }
 
 // Base spell cooldowns in ms (physical has no cooldown — pure atkSpeed)
+
+// ── MANA COSTS ──
+const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
 const SPELL_BASE_CD = { fire:3500, water:3200, grass:4000, dark:3800, light:4200 };
 const spellCooldowns = {}; // element -> timestamp when ready
 
@@ -1860,11 +1901,11 @@ const TIERS = [
 
 // Stat value ranges per class
 const STAT_CLASS_RANGES = {
-  D: { attack:[2,5],   magicPower:[2,5],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   armor:[2,5],   health:[10,22],  magicResist:[2,5],   lifeSteal:[0.3,1.0], spellVamp:[0.3,1.0], cdr:[1,3]   },
-  C: { attack:[5,12],  magicPower:[5,12],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  armor:[4,10],  health:[22,52],  magicResist:[4,10],  lifeSteal:[0.8,2.0], spellVamp:[0.8,2.0], cdr:[2,6]   },
-  B: { attack:[12,26], magicPower:[12,26], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  armor:[9,20],  health:[50,105], magicResist:[9,20],  lifeSteal:[1.5,3.5], spellVamp:[1.5,3.5], cdr:[5,12]  },
-  A: { attack:[25,46], magicPower:[25,46], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], armor:[18,36], health:[100,185],magicResist:[18,36], lifeSteal:[3.0,6.0], spellVamp:[3.0,6.0], cdr:[10,20] },
-  S: { attack:[45,82], magicPower:[45,82], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], armor:[32,60], health:[180,310],magicResist:[32,60], lifeSteal:[5.0,10.0],spellVamp:[5.0,10.0],cdr:[18,35] },
+  D: { attack:[2,5],   magicPower:[2,5],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   armor:[2,5],   health:[10,22],  magicResist:[2,5],   lifeSteal:[0.3,1.0], spellVamp:[0.3,1.0], cdr:[1,3],   mana:[8,15],    manaRegen:[0.5,1.0]  },
+  C: { attack:[5,12],  magicPower:[5,12],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  armor:[4,10],  health:[22,52],  magicResist:[4,10],  lifeSteal:[0.8,2.0], spellVamp:[0.8,2.0], cdr:[2,6],   mana:[15,30],   manaRegen:[1.0,2.0]  },
+  B: { attack:[12,26], magicPower:[12,26], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  armor:[9,20],  health:[50,105], magicResist:[9,20],  lifeSteal:[1.5,3.5], spellVamp:[1.5,3.5], cdr:[5,12],  mana:[28,55],   manaRegen:[1.8,3.5]  },
+  A: { attack:[25,46], magicPower:[25,46], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], armor:[18,36], health:[100,185],magicResist:[18,36], lifeSteal:[3.0,6.0], spellVamp:[3.0,6.0], cdr:[10,20], mana:[50,90],   manaRegen:[3.0,6.0]  },
+  S: { attack:[45,82], magicPower:[45,82], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], armor:[32,60], health:[180,310],magicResist:[32,60], lifeSteal:[5.0,10.0],spellVamp:[5.0,10.0],cdr:[18,35], mana:[80,150],  manaRegen:[5.0,10.0] },
 };
 
 // CDR can only roll on Exquisite+
@@ -1872,14 +1913,14 @@ const CDR_ELIGIBLE_TIERS = ['Exquisite','Ancient','Cosmic'];
 
 // Stat pools per slot
 const SLOT_STAT_POOLS = {
-  Head:   ['health','armor','magicResist','cdr'],
-  Neck:   ['magicPower','critChance','spellVamp','cdr'],
-  Chest:  ['health','armor','magicResist','lifeSteal'],
-  Belt:   ['health','armor','atkSpeed','lifeSteal'],
-  Pants:  ['health','armor','magicResist','critDmg'],
-  Boots:  ['atkSpeed','armor','health','cdr'],
-  Ring1:  ['magicPower','critChance','spellVamp','cdr'],
-  Ring2:  ['attack','critChance','lifeSteal','critDmg'],
+  Head:   ['health','armor','magicResist','cdr','mana'],
+  Neck:   ['magicPower','critChance','spellVamp','cdr','manaRegen'],
+  Chest:  ['health','armor','magicResist','lifeSteal','mana'],
+  Belt:   ['health','armor','atkSpeed','lifeSteal','manaRegen'],
+  Pants:  ['health','armor','magicResist','critDmg','mana'],
+  Boots:  ['atkSpeed','armor','health','cdr','manaRegen'],
+  Ring1:  ['magicPower','critChance','spellVamp','cdr','manaRegen'],
+  Ring2:  ['attack','critChance','lifeSteal','critDmg','mana'],
   Weapon: ['attack','magicPower','atkSpeed','critChance','critDmg'],
 };
 
@@ -2169,8 +2210,12 @@ function initUI(){
   updateStatsPanel();
   updateClassXPPanel();
   updateHpBar();
+  updateManaBar();
   updateResourceBar();
   updateLoadoutUI();
+  updateHealSlotUI();
+  loadHealLoadout();
+  startManaRegen();
   initMobileLayout();
 }
 
@@ -2605,6 +2650,204 @@ function applyScreenShake() {
 }
 
 
+
+
+// ═══════════════════════════════════════════════
+// MANA SYSTEM
+// ═══════════════════════════════════════════════
+function getMaxMana() {
+  const s = getStats();
+  return s.mana || 100;
+}
+
+function getManaRegen() {
+  const s = getStats();
+  return s.manaRegen || 5;
+}
+
+function startManaRegen() {
+  if (G.manaRegenInterval) clearInterval(G.manaRegenInterval);
+  G.manaRegenInterval = setInterval(() => {
+    const max = getMaxMana();
+    if (G.mana < max) {
+      G.mana = Math.min(max, G.mana + getManaRegen() / 10); // regen per 100ms
+      updateManaBar();
+    }
+  }, 100);
+}
+
+function spendMana(amount) {
+  if (G.mana < amount) return false;
+  G.mana -= amount;
+  updateManaBar();
+  return true;
+}
+
+function updateManaBar() {
+  const max = getMaxMana();
+  const pct = Math.max(0, (G.mana / max) * 100);
+  // Main bars-row mana bar
+  const mpBar = document.getElementById('mp-bar');
+  const mpNums = document.getElementById('mp-nums');
+  if (mpBar) mpBar.style.width = pct + '%';
+  if (mpNums) mpNums.textContent = `${Math.floor(G.mana)}/${max}`;
+  // Combat mana bar (in loadout area)
+  const combatBar = document.getElementById('mana-bar-combat');
+  const combatNums = document.getElementById('mana-nums-combat');
+  if (combatBar) combatBar.style.width = pct + '%';
+  if (combatNums) combatNums.textContent = `${Math.floor(G.mana)}/${max}`;
+}
+
+// ── HEAL SYSTEM ──
+let healLoadout = null; // heal ability id
+let healCD = 0;
+
+function isHealReady() {
+  if (!healLoadout) return false;
+  return Date.now() >= healCD;
+}
+
+function getHealCD(ab) {
+  const s = getStats();
+  const cdrPct = Math.min(65, s.cdr || 0);
+  return Math.floor(ab.cd * (1 - cdrPct / 100));
+}
+
+function activateHeal() {
+  if (!healLoadout) { openHealPicker(); return; }
+  const ab = ABILITIES[healLoadout];
+  if (!ab) return;
+  if (!isHealReady()) { log('<span style="color:#666">Heal not ready yet</span>'); return; }
+  if (!spendMana(MANA_COSTS.heal)) {
+    log('<span style="color:#4488ff">Not enough mana to heal!</span>');
+    return;
+  }
+
+  const st = getStats();
+  const maxHp = G.maxHp;
+  let healAmt = 0;
+
+  if (ab.siphon) {
+    // Soul Siphon — deal damage and heal equal amount
+    if (G.enemy && G.combatActive) {
+      const dmg = Math.max(1, Math.floor(st.magicPower * 0.5));
+      G.enemy.hp -= dmg;
+      healAmt = dmg;
+      updateEnemyUI();
+      if (G.enemy.hp <= 0) setTimeout(onEnemyDeath, 300);
+    }
+  } else if (ab.hot) {
+    // Heal over time — 3 pulses
+    const pulseHeal = Math.floor(maxHp * (ab.healPct / 100) / 3);
+    healAmt = pulseHeal;
+    [0, 1000, 2000].forEach(delay => {
+      setTimeout(() => {
+        G.hp = Math.min(G.maxHp, G.hp + pulseHeal);
+        updateHpBar();
+        spawnHealNumber(
+          canvas.width * 0.25 + (Math.random() - 0.5) * 20,
+          canvas.height * 0.62 - 45,
+          pulseHeal
+        );
+        startAnimLoop();
+      }, delay);
+    });
+  } else {
+    healAmt = Math.floor(maxHp * (ab.healPct / 100));
+    if (ab.healFlat) healAmt += ab.healFlat;
+    // Add ability level bonus
+    const abLv = G.abilityLevels[ab.id] || 0;
+    healAmt = Math.floor(healAmt * (1 + abLv * 0.1));
+  }
+
+  if (!ab.hot && healAmt > 0) {
+    G.hp = Math.min(G.maxHp, G.hp + healAmt);
+    updateHpBar();
+    spawnHealNumber(
+      canvas.width * 0.25 + (Math.random() - 0.5) * 20,
+      canvas.height * 0.62 - 45,
+      healAmt
+    );
+    startAnimLoop();
+  }
+
+  healCD = Date.now() + getHealCD(ab);
+  earnClassXP(ab.class, 4);
+  playSound('heal');
+  log(`<span style="color:#3acc7a">${ab.icon} ${ab.name} — restored ${ab.hot ? 'HP over time' : healAmt + ' HP'}</span>`);
+  combatLog(`♥ ${ab.name} +${healAmt}`, 'heal');
+  startHealCDBar(ab);
+  updateHealSlotUI();
+}
+
+function startHealCDBar(ab) {
+  const fill = document.getElementById('cd-fill-heal');
+  if (!fill) return;
+  const total = getHealCD(ab);
+  const start = Date.now();
+  const tick = () => {
+    const remaining = Math.max(0, total - (Date.now() - start));
+    fill.style.width = (remaining / total * 100) + '%';
+    if (remaining > 0) requestAnimationFrame(tick);
+    else fill.style.width = '0%';
+  };
+  requestAnimationFrame(tick);
+}
+
+function updateHealSlotUI() {
+  const slot = document.getElementById('slot-heal');
+  if (!slot) return;
+  const ab = healLoadout ? ABILITIES[healLoadout] : null;
+  const color = ab ? (CLASS_COLORS[ab.class] || '#3acc7a') : '#3acc7a';
+  slot.style.borderColor = color;
+  slot.innerHTML = `
+    <div class="ab-slot-label" style="color:${color}">Heal</div>
+    <div class="ab-icon">${ab ? ab.icon : '＋'}</div>
+    <div class="ab-name" style="color:${ab ? color : 'var(--muted)'};font-size:${ab ? '9px' : '8px'}">${ab ? ab.name : 'Tap to assign'}</div>
+    <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:${color}"></div></div>
+  `;
+}
+
+// ── HEAL PICKER ──
+function openHealPicker() {
+  // Reuse ability picker modal but filter to heal type
+  if (G.enemyAttackInterval) { clearInterval(G.enemyAttackInterval); G.enemyAttackInterval = null; }
+  document.getElementById('picker-title').textContent = 'Choose Heal Ability';
+  document.getElementById('picker-subtitle').textContent = 'Select a heal for the heal slot (costs 30 mana)';
+  const list = document.getElementById('ability-picker-list');
+  const heals = Object.values(ABILITIES).filter(ab => ab.type === 'heal');
+  list.innerHTML = heals.map(ab => {
+    const unlocked = isAbilityUnlocked(ab.id);
+    const equipped = healLoadout === ab.id;
+    const lv = G.abilityLevels[ab.id] || 0;
+    return `<div class="ability-pick-card ${unlocked ? '' : 'locked'}" onclick="${unlocked ? `pickHeal('${ab.id}')` : ''}">
+      <div class="apc-header">
+        <span class="apc-icon">${ab.icon}</span>
+        <span class="apc-name" style="color:${CLASS_COLORS[ab.class]}">${ab.name}</span>
+        ${equipped ? '<span style="font-size:10px;color:var(--gold);margin-left:4px;">✓ Equipped</span>' : ''}
+        <span class="apc-type" style="border-color:#3acc7a;color:#3acc7a">heal</span>
+      </div>
+      <div class="apc-desc">${ab.desc}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px;">CD: ${(ab.cd/1000).toFixed(1)}s · ${lv > 0 ? 'Lv'+lv+' · +'+Math.floor(lv*10)+'% effect' : 'Base'}</div>
+      ${!unlocked ? `<div class="apc-unlock">🔒 Requires ${ab.class} class level ${ab.unlockLv || 0}</div>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('ability-picker-modal').classList.remove('hidden');
+}
+
+function pickHeal(abId) {
+  healLoadout = abId;
+  closeAbilityPicker();
+  updateHealSlotUI();
+  saveHealLoadout();
+}
+
+function saveHealLoadout() {
+  try { localStorage.setItem('elementalRift_heal', healLoadout || ''); } catch(e) {}
+}
+function loadHealLoadout() {
+  try { healLoadout = localStorage.getItem('elementalRift_heal') || null; if(healLoadout==='')healLoadout=null; } catch(e) {}
+}
 
 // ═══════════════════════════════════════════════
 // ABILITY UPGRADE SYSTEM
