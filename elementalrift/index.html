@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift</title>
+<title>Elemental Rift v1.3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -295,7 +295,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.0.0 · Elemental Rift</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.3.0 · Elemental Rift</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -623,13 +623,16 @@ let MAP = {
 };
 
 function showMapScreen(isFirst=false) {
-  stopAllAutoAttacks();
-  stopEnemyAutoAttack();
+  if(G.autoAttacks) Object.keys(G.autoAttacks).forEach(el=>clearInterval(G.autoAttacks[el]));
+  G.autoAttacks = {};
+  if(G.autoSlots) Object.values(G.autoSlots).forEach(id=>clearInterval(id));
+  G.autoSlots = {};
+  if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
+  // Map screen is position:fixed — just show it, no need to hide #game
   document.getElementById('map-screen').classList.remove('hidden');
-  document.getElementById('game').classList.add('hidden');
   const title = document.getElementById('map-title');
-  const sub = document.getElementById('map-subtitle');
-  if(isFirst) { title.textContent='Choose Your Path'; sub.textContent='Select difficulty. Higher risk, better rewards.'; }
+  const sub   = document.getElementById('map-subtitle');
+  if(isFirst){ title.textContent='Choose Your Path'; sub.textContent='Select difficulty. Higher risk, better rewards.'; }
   else { title.textContent='Path Complete!'; sub.textContent='Choose your next challenge.'; }
 }
 
@@ -645,6 +648,7 @@ function selectDifficulty(diff) {
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
     resizeCanvas();
     renderWaveTimeline();
+    log(`<span class="log-sys">⚔️ ${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.</span>`);
     spawnNextSegmentWave();
   });});
 }
@@ -780,18 +784,18 @@ function startGame() {
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
   document.getElementById('player-name-display').textContent = name;
+  // Show game div first so canvas can size
+  document.getElementById('name-screen').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
   initUI();
   requestAnimationFrame(() => { requestAnimationFrame(() => {
     resizeCanvas();
+    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${name}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
     if (!loaded) {
-      // First time — show map screen
-      document.getElementById('game').classList.remove('hidden');
-      document.getElementById('name-screen').classList.add('hidden');
       showMapScreen(true);
     } else {
       resumeFromSave();
     }
-    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${name}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
   });});
 }
 
