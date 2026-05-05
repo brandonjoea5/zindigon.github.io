@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.2</title>
+<title>Elemental Rift v1.5.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -119,9 +119,52 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .nav-tab.active{color:var(--gold);border-top-color:var(--gold);}
 .nav-tab-icon{font-size:16px;display:block;margin-bottom:2px;}
 
-/* ── SIDE PANELS (shown via tab) ── */
+/* ── SIDE PANELS (desktop only — mobile uses own system) ── */
 #panel-stats,#panel-skills,#panel-log{display:none;background:var(--panel);overflow-y:auto;padding-bottom:60px;}
 #panel-stats.active,#panel-skills.active,#panel-log.active{display:block;position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;}
+
+/* ── MOBILE LAYOUT ── */
+@media(max-width:699px){
+  /* Hide desktop elements */
+  #top-row,#left-col,#right-col,#bottom-nav{display:none!important;}
+  #center-col{display:flex!important;flex-direction:column;flex:1;min-height:0;position:relative;}
+
+  /* Mobile top tabs */
+  #mobile-top-tabs{display:flex;background:#0a0c14;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .mob-tab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.05em;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.15s;user-select:none;}
+  .mob-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .mob-tab-icon{font-size:15px;display:block;margin-bottom:1px;}
+
+  /* Mobile content area — sits between top tabs and bottom bar */
+  #mobile-content{flex:1;min-height:0;position:relative;overflow:hidden;}
+
+  /* Arena view */
+  #mobile-arena-view{position:absolute;inset:0;display:flex;flex-direction:column;}
+  #mobile-arena-view #arena{flex:1;min-height:0;}
+
+  /* Panel views */
+  #mobile-panel-view{position:absolute;inset:0;background:var(--panel);overflow-y:auto;padding-bottom:8px;display:none;}
+  #mobile-panel-view.active{display:block;}
+
+  /* Mobile bottom — abilities always visible */
+  #mobile-bottom{flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);}
+  #loadout-area{border-top:none;}
+
+  /* Hide mobile overlay panels — replaced by new system */
+  #mobile-panel-stats,#mobile-panel-skills,#mobile-panel-log,#mobile-panel-lb{display:none!important;}
+
+  /* Enemy info wider on mobile */
+  #enemy-info{min-width:220px;}
+  #enemy-hp-wrap{width:220px;}
+
+  /* Mute btn position on mobile */
+  #mute-btn{top:8px;right:8px;}
+}
+
+/* Hide mobile elements on desktop */
+@media(min-width:700px){
+  #mobile-top-tabs,#mobile-content,#mobile-bottom{display:none!important;}
+}
 
 .panel-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.15em;color:var(--muted);text-transform:uppercase;padding:8px 14px 5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1;}
 .stat-row{display:flex;justify-content:space-between;padding:4px 14px;font-size:13px;}
@@ -299,7 +342,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.2 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.3 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -332,6 +375,44 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 
 <!-- MAIN GAME -->
 <div id="game" class="hidden">
+
+  <!-- ═══ MOBILE LAYOUT ═══ -->
+  <!-- Mobile top tabs -->
+  <div id="mobile-top-tabs">
+    <div class="mob-tab active" id="mtab-arena" onclick="mobileTab('arena')">
+      <span class="mob-tab-icon">⚔️</span>Arena
+    </div>
+    <div class="mob-tab" id="mtab-gear" onclick="mobileTab('gear')">
+      <span class="mob-tab-icon">🛡️</span>Gear
+    </div>
+    <div class="mob-tab" id="mtab-stats" onclick="mobileTab('stats')">
+      <span class="mob-tab-icon">📊</span>Stats
+    </div>
+    <div class="mob-tab" id="mtab-upgrades" onclick="mobileTab('upgrades')">
+      <span class="mob-tab-icon">✨</span>Upgrades
+    </div>
+    <div class="mob-tab" id="mtab-ranks" onclick="mobileTab('ranks')">
+      <span class="mob-tab-icon">🏆</span>Ranks
+    </div>
+  </div>
+
+  <!-- Mobile content area -->
+  <div id="mobile-content">
+    <!-- Arena view (default) -->
+    <div id="mobile-arena-view">
+      <!-- arena injected here by JS -->
+    </div>
+    <!-- Panel view (stats/gear/upgrades) -->
+    <div id="mobile-panel-view" id="mobile-panel-view">
+      <div id="mobile-panel-content"></div>
+    </div>
+  </div>
+
+  <!-- Mobile bottom — always visible -->
+  <div id="mobile-bottom">
+    <!-- loadout-area and wave-btns injected here by JS -->
+  </div>
+  <!-- ═══ END MOBILE ═══ -->
 
   <div id="top-row">
   <!-- DESKTOP LEFT (stats) -->
@@ -662,6 +743,7 @@ function selectDifficulty(diff) {
   document.getElementById('game').classList.remove('hidden');
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
     resizeCanvas();
+    initMobileLayout();
     renderWaveTimeline();
     log(`<span class="log-sys">⚔️ ${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.</span>`);
     spawnNextSegmentWave();
@@ -880,6 +962,7 @@ function spawnEnemy() {
   updateEnemyUI();
   log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! [${G.enemy.type==='brute'?'Brute':G.enemy.elements.join('+')}]</span>`);
   if(G.kills===0) log(`<span class="log-sys">💡 Tap an ability button below to attack. Tap ⚡ Loadout to change abilities.</span>`);
+  if(IS_MOBILE()) mobileTab('arena');
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
   drawArena();
@@ -1684,6 +1767,8 @@ function onEnemyDeath() {
   updateClassXPPanel();
   updateStatsPanel();
   updateLoadoutUI();
+  refreshMobilePanel();
+  syncMobileLog();
   drawArena();
   saveGame();
 
@@ -1879,6 +1964,7 @@ function equipItem(item){
   log(`<span class="log-gold">Equipped: ${item.name}</span>`);
   closeItemModal();updateEquipUI();updateStatsPanel();updateHpBar();updateResourceBar();saveGame();
   refreshAutoAttackSpeeds();
+  refreshMobilePanel();
 }
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){document.getElementById('item-modal').classList.add('hidden');}
@@ -2020,6 +2106,7 @@ function log(msg){
   lines.appendChild(line);
   while(lines.children.length>50)lines.removeChild(lines.firstChild);
   lines.scrollTop=lines.scrollHeight;
+  setTimeout(syncMobileLog, 0);
 }
 
 // ── MOBILE TABS ──
@@ -2043,6 +2130,7 @@ function initUI(){
   updateHpBar();
   updateResourceBar();
   updateLoadoutUI();
+  initMobileLayout();
 }
 
 // ═══════════════════════════════════════════════
@@ -2475,6 +2563,199 @@ function applyScreenShake() {
   if(shakeAmount <= 0.1) { shakeAmount=0; canvas.style.transform=''; }
 }
 
+
+// ═══════════════════════════════════════════════
+// MOBILE LAYOUT SYSTEM
+// ═══════════════════════════════════════════════
+const IS_MOBILE = () => window.innerWidth < 700;
+
+function initMobileLayout() {
+  if (!IS_MOBILE()) return;
+
+  // Move arena into mobile-arena-view
+  const arenaEl = document.getElementById('arena');
+  const mav = document.getElementById('mobile-arena-view');
+  if (arenaEl && mav && arenaEl.parentElement !== mav) {
+    mav.appendChild(arenaEl);
+  }
+
+  // Move loadout-area and wave-btns into mobile-bottom
+  const loadout = document.getElementById('loadout-area');
+  const waveBtns = document.getElementById('wave-btns');
+  const mbot = document.getElementById('mobile-bottom');
+  if (loadout && mbot && loadout.parentElement !== mbot) mbot.appendChild(loadout);
+  if (waveBtns && mbot && waveBtns.parentElement !== mbot) mbot.appendChild(waveBtns);
+
+  // Move resource-bar and bars-row to top of center-col (already there, just make sure)
+  resizeCanvas();
+}
+
+let currentMobileTab = 'arena';
+
+function mobileTab(tab) {
+  if (!IS_MOBILE()) return;
+  currentMobileTab = tab;
+
+  // Update tab highlights
+  document.querySelectorAll('.mob-tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.getElementById('mtab-' + tab);
+  if (activeTab) activeTab.classList.add('active');
+
+  const arenaView = document.getElementById('mobile-arena-view');
+  const panelView = document.getElementById('mobile-panel-view');
+
+  if (tab === 'arena') {
+    arenaView.style.display = 'flex';
+    panelView.classList.remove('active');
+    resizeCanvas();
+    return;
+  }
+
+  // Hide arena, show panel
+  arenaView.style.display = 'none';
+  panelView.classList.add('active');
+
+  const content = document.getElementById('mobile-panel-content');
+  if (!content) return;
+
+  if (tab === 'gear') {
+    content.innerHTML = buildGearPanelHTML();
+  } else if (tab === 'stats') {
+    content.innerHTML = buildStatsPanelHTML();
+  } else if (tab === 'upgrades') {
+    content.innerHTML = buildUpgradesPanelHTML();
+  } else if (tab === 'ranks') {
+    content.innerHTML = '<div class="panel-title" style="position:static;margin-bottom:8px;">🏆 Boss Damage Leaderboard</div><div style="padding:8px;color:var(--muted);font-size:12px;text-align:center;">Loading...</div>';
+    fetchLeaderboard().then(lb => {
+      content.innerHTML = '<div class="panel-title" style="position:static;margin-bottom:8px;">🏆 Boss Damage Leaderboard</div>' + buildLBHtml(lb, G.playerName, 20);
+    });
+  }
+}
+
+function buildGearPanelHTML() {
+  let html = '<div class="panel-title" style="position:static;">🛡️ Equipment</div>';
+  html += '<div class="equip-grid">';
+  SLOTS.forEach(slot => {
+    const item = G.equipment[slot];
+    const tierName = item ? (item.tier||item.rarity).name : '';
+    const tierClass = tierName==='Ancient'?' tier-ancient':tierName==='Cosmic'?' tier-cosmic':'';
+    const color = item ? (item.tier||item.rarity).color : 'var(--muted)';
+    html += `<div class="equip-slot ${item?'has-item':''}${tierClass}" onclick="${item?`mobileInspectGear('${slot}')`:''}" style="min-height:52px;">
+      <div class="slot-name">${slot}</div>
+      ${item
+        ? `<div class="slot-item" style="color:${color};font-size:10px;${tierName==='Cosmic'?'text-shadow:0 0 6px #e8e8ff;':''}">${item.name}</div>`
+        : '<div class="slot-empty">—</div>'}
+    </div>`;
+  });
+  html += '</div>';
+  // Combat log below gear
+  html += '<div class="panel-title" style="position:static;margin-top:8px;">📜 Combat Log</div>';
+  html += '<div style="padding:8px 14px;font-size:13px;line-height:1.7;" id="mobile-log-display"></div>';
+  return html;
+}
+
+function buildStatsPanelHTML() {
+  const s = getStats();
+  let html = `<div class="panel-title" style="position:static;">📊 ${G.playerName||'Wanderer'}</div>`;
+  const rows = [
+    ['Attack', Math.floor(s.attack)],
+    ['Magic Pwr', Math.floor(s.magicPower)],
+    ['Atk Speed', s.atkSpeed.toFixed(2)],
+    ['Crit %', s.critChance.toFixed(1)+'%'],
+    ['Crit Dmg', Math.floor(s.critDmg)+'%'],
+    ['Armor', Math.floor(s.armor)],
+    ['Mag Resist', Math.floor(s.magicResist)],
+    ['Life Steal', s.lifeSteal.toFixed(1)+'%'],
+    ['Spell Vamp', s.spellVamp.toFixed(1)+'%'],
+    ['CDR', Math.min(65,s.cdr||0).toFixed(1)+'%'],
+    ['Max HP', s.maxHp],
+  ];
+  rows.forEach(([label, val]) => {
+    html += `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-val">${val}</span></div>`;
+  });
+
+  // Wave info
+  html += `<div class="panel-title" style="position:static;margin-top:8px;">⚔️ Run</div>`;
+  html += `<div class="stat-row"><span class="stat-label">Wave</span><span class="stat-val">${G.wave}</span></div>`;
+  html += `<div class="stat-row"><span class="stat-label">Kills</span><span class="stat-val">${G.kills}</span></div>`;
+  html += `<div class="stat-row"><span class="stat-label">Gold</span><span class="stat-val">${G.gold}</span></div>`;
+  html += `<div class="stat-row"><span class="stat-label">Skill Pts</span><span class="stat-val">${G.skillPoints}</span></div>`;
+  return html;
+}
+
+function buildUpgradesPanelHTML() {
+  // Class XP bars
+  let html = '<div class="panel-title" style="position:static;">⚡ Class Levels</div>';
+  html += '<div class="class-xp-section">';
+  CLASS_NAMES.forEach(cls => {
+    const lv = G.classLv[cls]||0;
+    const cp = G.classCP[cls]||0;
+    const xpStart = CLASS_XP_TO_LEVEL[lv]||0;
+    const xpEnd = CLASS_XP_TO_LEVEL[Math.min(lv+1,CLASS_XP_TO_LEVEL.length-1)]||9999;
+    const xpCur = G.classXP[cls]||0;
+    const pct = lv >= CLASS_XP_TO_LEVEL.length-1 ? 100 : Math.floor(((xpCur-xpStart)/(xpEnd-xpStart))*100);
+    const color = CLASS_COLORS[cls];
+    html += `<div class="class-xp-row">
+      <span class="cxp-icon">${CLASS_ICONS[cls]}</span>
+      <div class="cxp-info">
+        <div class="cxp-name"><span>${cls.charAt(0).toUpperCase()+cls.slice(1)}</span><span>Lv${lv}</span></div>
+        <div class="cxp-bar-track"><div class="cxp-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>
+      ${cp>0?`<span class="cxp-pts">${cp}cp</span>`:'<span class="cxp-pts" style="opacity:0.3">0</span>'}
+    </div>`;
+  });
+  html += '</div>';
+
+  // Skill points
+  html += `<div class="panel-title" style="position:static;margin-top:4px;">🔮 Skill Tree <span style="color:#8888ff;font-size:10px;">(${G.skillPoints} pts)</span></div>`;
+  const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+  Object.entries(SKILL_TREE).forEach(([el,skills])=>{
+    const color = CLASS_COLORS[el]||'#88aacc';
+    html+=`<div class="skill-section"><div class="skill-element-title" style="color:${color}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
+    skills.forEach((sk,i)=>{
+      const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
+      html+=`<div class="skill-row">
+        <div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
+        <button class="skill-btn" ${G.skillPoints<1||lvl>=10?'disabled':''} onclick="upgradeSkillMobile('${el}',${i})">+</button>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  return html;
+}
+
+function upgradeSkillMobile(el, idx) {
+  upgradeSkill(el, idx);
+  // Refresh panel
+  const content = document.getElementById('mobile-panel-content');
+  if (content && currentMobileTab === 'upgrades') content.innerHTML = buildUpgradesPanelHTML();
+}
+
+function mobileInspectGear(slot) {
+  const item = G.equipment[slot];
+  if (item) showItemModal(item, 'gear_inspect');
+}
+
+// Refresh mobile panel when data changes
+function refreshMobilePanel() {
+  if (!IS_MOBILE() || currentMobileTab === 'arena') return;
+  const content = document.getElementById('mobile-panel-content');
+  if (!content) return;
+  if (currentMobileTab === 'gear') content.innerHTML = buildGearPanelHTML();
+  else if (currentMobileTab === 'stats') content.innerHTML = buildStatsPanelHTML();
+  else if (currentMobileTab === 'upgrades') content.innerHTML = buildUpgradesPanelHTML();
+}
+
+// Sync combat log to mobile gear panel
+function syncMobileLog() {
+  const logLines = document.getElementById('log-lines');
+  const mobileLog = document.getElementById('mobile-log-display');
+  if (logLines && mobileLog) {
+    mobileLog.innerHTML = logLines.innerHTML;
+    mobileLog.scrollTop = mobileLog.scrollHeight;
+  }
+}
+
 // ═══════════════════════════════════════════════
 // IDLE LOOP
 // ═══════════════════════════════════════════════
@@ -2483,7 +2764,7 @@ function idlePulse(){applyScreenShake();drawArena();requestAnimationFrame(idlePu
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-window.addEventListener('resize',()=>{resizeCanvas();initUI();});
+window.addEventListener('resize',()=>{resizeCanvas();initUI();initMobileLayout();});
 resizeCanvas();
 idlePulse();
 
