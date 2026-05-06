@@ -3,18 +3,357 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="description" content="Zindigon is an independent studio building games, anime, and modern websites for small businesses."/>
-  <title>Zindigon — Creative products. Real engineering.</title>
+  <meta name="description" content="Zindigon is an independent game studio building browser games, original worlds, and sharp digital experiences."/>
+  <title>Zindigon — Play the games</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/site.css"/>
+
+  <style>
+    .home-hero {
+      min-height: calc(100vh - 96px);
+      display: grid;
+      align-items: center;
+      padding: 72px 20px 48px;
+      position: relative;
+    }
+
+    .home-hero-shell {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+    }
+
+    .eyebrow-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(0, 200, 83, .5);
+      background: rgba(0, 200, 83, .1);
+      color: #d8ffe7;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: .78rem;
+      letter-spacing: .02em;
+      box-shadow: 0 0 28px rgba(0, 200, 83, .12);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00c853;
+      box-shadow: 0 0 16px rgba(0, 200, 83, .9);
+    }
+
+    .home-title {
+      font-size: clamp(3rem, 8vw, 7.5rem);
+      line-height: .88;
+      letter-spacing: -.08em;
+      margin: 0;
+      max-width: 760px;
+    }
+
+    .home-title span {
+      display: block;
+      color: rgba(255,255,255,.66);
+    }
+
+    .hero-lead {
+      max-width: 680px;
+      margin: 22px 0 0;
+      font-size: clamp(1rem, 1.7vw, 1.28rem);
+      line-height: 1.65;
+      color: rgba(255,255,255,.76);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .btn-big {
+      min-height: 48px;
+      padding: 14px 18px;
+      font-size: .92rem;
+    }
+
+    .featured-game-card {
+      border: 1px solid rgba(255,255,255,.13);
+      background:
+        radial-gradient(circle at top left, rgba(0, 200, 83, .24), transparent 34%),
+        linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.035));
+      border-radius: 30px;
+      padding: 22px;
+      min-height: 520px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 24px 90px rgba(0,0,0,.35);
+    }
+
+    .featured-game-card:before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px;
+      pointer-events: none;
+    }
+
+    .game-window {
+      position: relative;
+      z-index: 2;
+      height: 230px;
+      border-radius: 22px;
+      background:
+        linear-gradient(90deg, rgba(0,200,83,.16) 1px, transparent 1px),
+        linear-gradient(rgba(0,200,83,.12) 1px, transparent 1px),
+        radial-gradient(circle at 50% 42%, rgba(0,200,83,.45), transparent 0 18%, rgba(0,0,0,.1) 19% 100%);
+      background-size: 28px 28px, 28px 28px, 100% 100%;
+      border: 1px solid rgba(0, 200, 83, .28);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .rift-core {
+      width: 86px;
+      height: 86px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.42);
+      background: rgba(0, 200, 83, .18);
+      transform: rotate(45deg);
+      box-shadow: 0 0 38px rgba(0, 200, 83, .65), inset 0 0 28px rgba(255,255,255,.1);
+    }
+
+    .feature-label {
+      position: relative;
+      z-index: 2;
+      color: #00c853;
+      font-family: "JetBrains Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .72rem;
+      margin-bottom: 10px;
+    }
+
+    .featured-game-card h2 {
+      position: relative;
+      z-index: 2;
+      font-size: clamp(2.2rem, 4.4vw, 4.6rem);
+      line-height: .9;
+      letter-spacing: -.055em;
+      margin: 0;
+    }
+
+    .featured-game-card p {
+      position: relative;
+      z-index: 2;
+      color: rgba(255,255,255,.72);
+      line-height: 1.6;
+      margin: 16px 0 0;
+    }
+
+    .featured-game-card .cta-row {
+      position: relative;
+      z-index: 2;
+      margin-top: 20px;
+    }
+
+    .games-section {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 24px 20px 78px;
+    }
+
+    .section-heading-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .section-heading-row h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 3.1rem);
+      letter-spacing: -.04em;
+    }
+
+    .section-heading-row p {
+      max-width: 470px;
+      margin: 0;
+      color: rgba(255,255,255,.62);
+      line-height: 1.55;
+    }
+
+    .games-list {
+      display: grid;
+      grid-template-columns: 1.4fr .8fr .8fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .game-tile {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      border: 1px solid rgba(255,255,255,.11);
+      background: rgba(255,255,255,.045);
+      border-radius: 24px;
+      padding: 20px;
+      min-height: 260px;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .game-tile:hover {
+      transform: translateY(-4px);
+      border-color: rgba(0, 200, 83, .48);
+      background: rgba(0, 200, 83, .075);
+    }
+
+    .game-tile.star {
+      min-height: 330px;
+      background:
+        radial-gradient(circle at top right, rgba(0, 200, 83, .25), transparent 38%),
+        rgba(255,255,255,.06);
+      border-color: rgba(0, 200, 83, .34);
+    }
+
+    .tile-top {
+      position: relative;
+      z-index: 2;
+    }
+
+    .tile-tag {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.7);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: .72rem;
+      margin-bottom: 16px;
+    }
+
+    .game-tile.star .tile-tag {
+      color: #d8ffe7;
+      border-color: rgba(0, 200, 83, .45);
+      background: rgba(0, 200, 83, .08);
+    }
+
+    .game-tile h3 {
+      font-size: clamp(1.45rem, 2.5vw, 2.6rem);
+      line-height: .96;
+      letter-spacing: -.05em;
+      margin: 0;
+    }
+
+    .game-tile p {
+      color: rgba(255,255,255,.66);
+      line-height: 1.55;
+      margin: 14px 0 0;
+    }
+
+    .tile-bottom {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      color: rgba(255,255,255,.82);
+      font-family: "JetBrains Mono", monospace;
+      font-size: .82rem;
+    }
+
+    .tile-arrow {
+      color: #00c853;
+      font-size: 1.15rem;
+    }
+
+    .studio-strip {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 0 20px 72px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .small-panel {
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.04);
+      border-radius: 24px;
+      padding: 22px;
+    }
+
+    .small-panel h2 {
+      margin-top: 0;
+      font-size: 1.35rem;
+    }
+
+    .small-panel p {
+      color: rgba(255,255,255,.66);
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 920px) {
+      .home-hero-shell,
+      .games-list,
+      .studio-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .home-hero {
+        min-height: auto;
+        padding-top: 46px;
+      }
+
+      .section-heading-row {
+        display: block;
+      }
+
+      .section-heading-row p {
+        margin-top: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div id="fx" aria-hidden="true">
     <canvas id="starfield"></canvas>
     <div class="fx-aurora"></div>
   </div>
+
   <header>
     <nav class="nav" aria-label="Primary">
       <a class="brand" href="/">
@@ -27,171 +366,139 @@
       </button>
       <div class="navlinks" data-nav>
         <a href="/" aria-current="page">Home</a>
-        <a href="/Games/AetherFall/">Games</a>
-        <a href="/Anime/BloodlineZero/">Anime</a>
+        <a href="/elementalrift/">Elemental Rift</a>
+        <a href="/hypercell/">HyperCell</a>
+        <a href="/nexusdefense/">Nexus Defense</a>
         <a href="/services.html">Services</a>
-        <a href="/partners.html">Partners</a>
         <a href="/contact.html">Contact</a>
       </div>
     </nav>
     <div class="mobilenav" id="mobileNav" data-nav>
       <a href="/">Home</a>
-      <a href="/Games/AetherFall/">Games</a>
-      <a href="/Anime/BloodlineZero/">Anime</a>
+      <a href="/elementalrift/">Elemental Rift</a>
+      <a href="/hypercell/">HyperCell</a>
+      <a href="/nexusdefense/">Nexus Defense</a>
       <a href="/services.html">Services</a>
-      <a href="/partners.html">Partners</a>
       <a href="/contact.html">Contact</a>
     </div>
   </header>
+
   <main>
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="hero-glow" aria-hidden="true"></div>
-        <span class="kicker">⚡ Zindigon is an umbrella for worlds + work</span>
-        <h1 class="h1">Creative products.<br>Real engineering.</h1>
-        <p class="sub">
-          Zindigon is where I build original IP (games + anime) <em>and</em> ship clean, modern websites for small businesses.
-          Same mindset in both: fast, readable, and built to last.
-        </p>
-        <div class="cta-row">
-          <a class="btn" href="/services.html">Get a website</a>
-          <a class="btn ghost" href="/Games/AetherFall/">Explore AetherFall</a>
-          <a class="btn ghost" href="/Anime/BloodlineZero/">Read Bloodline Zero</a>
-        </div>
-        <div class="chips" style="margin-top:16px;">
-          <span class="chip">Dark / Neon aesthetic</span>
-          <span class="chip">Mobile-first</span>
-          <span class="chip">Static + fast</span>
-          <span class="chip">Systems mindset</span>
-        </div>
-      </div>
-    </section>
+    <section class="home-hero">
+      <div class="home-hero-shell">
+        <div class="hero-copy">
+          <div class="eyebrow-row">
+            <span class="live-pill"><span class="live-dot"></span> Elemental Rift is live</span>
+            <span class="live-pill">Browser games by Zindigon</span>
+          </div>
 
-    <!-- Elemental Rift Launch -->
-    <section class="rift-section">
-      <div class="rift-banner">
-        <span class="rift-eyebrow">🔥 New — Playtest Live</span>
-        <h2 class="rift-title">Elemental Rift</h2>
-        <p class="rift-sub">
-          The new game is live and ready to play. Jump in, break things, and tell me what works — early feedback shapes what gets built next.
-        </p>
-        <div class="rift-cta-wrap">
-          <a class="btn-rift" href="/elementalrift/">Play Elemental Rift →</a>
-          <p class="rift-feedback">
-            Feedback &amp; updates → <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>
+          <h1 class="home-title">Play the worlds <span>I am building.</span></h1>
+
+          <p class="hero-lead">
+            Zindigon is becoming a home for original browser games. Start with Elemental Rift, then check out the smaller experiments growing beside it: HyperCell and Nexus Defense.
           </p>
+
+          <div class="hero-actions">
+            <a class="btn btn-big" href="/elementalrift/">Play Elemental Rift</a>
+            <a class="btn ghost btn-big" href="#games">See all games</a>
+          </div>
         </div>
+
+        <article class="featured-game-card" aria-label="Featured game: Elemental Rift">
+          <div class="game-window" aria-hidden="true">
+            <div class="rift-core"></div>
+          </div>
+          <div class="feature-label">Featured game</div>
+          <h2>Elemental Rift</h2>
+          <p>
+            Pick your elements, build your loadout, survive waves, fight bosses, and climb the leaderboard. It is live now, playable on phone or desktop, and still getting sharper every week.
+          </p>
+          <div class="cta-row">
+            <a class="btn" href="/elementalrift/">Play now →</a>
+            <a class="btn ghost" href="mailto:banderson@zindigon.com">Send feedback</a>
+          </div>
+        </article>
       </div>
     </section>
 
-    <section class="section split">
-      <article class="card glow">
-        <h2 class="h2">Featured</h2>
-        <p class="p">
-          The studio has two lanes: <strong>original worlds</strong> (games/anime) and <strong>client work</strong> (web systems).
-          If you're here for the vibe, welcome. If you're here to hire me, you'll find a simple offer that's easy to say "yes" to.
+    <section class="games-section" id="games">
+      <div class="section-heading-row">
+        <h2>The current lineup</h2>
+        <p>
+          Three games, one studio direction: fast to open, easy to replay, and built around clean systems instead of clutter.
         </p>
-        <hr class="hr"/>
-        <div class="grid">
-          <div class="card" style="grid-column: span 12;">
-            <div class="badge">🎮 Game</div>
-            <h3 class="h2" style="font-size:1.15rem; margin-top:12px;">AetherFall</h3>
-            <p class="mini">
-              A mobile-first tower-defense roguelike built for replayability — keepers, upgrades, and endless waves.
-              This is where I prove systems.
+      </div>
+
+      <div class="games-list">
+        <a class="game-tile star" href="/elementalrift/">
+          <div class="tile-top">
+            <span class="tile-tag">Main project • live now</span>
+            <h3>Elemental Rift</h3>
+            <p>
+              The centerpiece. Elemental builds, wave survival, bosses, and leaderboard chasing. This is the one to play first.
             </p>
-            <div class="chips">
-              <span class="chip">Godot</span>
-              <span class="chip">Leaderboards</span>
-              <span class="chip">Progression</span>
-            </div>
-            <div class="cta-row" style="margin-top:14px;">
-              <a class="btn ghost" href="/Games/AetherFall/">Open project</a>
-              <a class="btn ghost" href="/aetherfall-leaderboards.html">Leaderboards</a>
-              <a class="btn ghost" href="/aetherfall-privacy.html">Privacy</a>
-            </div>
           </div>
-          <div class="card" style="grid-column: span 12;">
-            <div class="badge">🎬 Anime</div>
-            <h3 class="h2" style="font-size:1.15rem; margin-top:12px;">Bloodline Zero</h3>
-            <p class="mini">
-              Adult-leaning sci‑fi anime about bloodlines, powers, and an organization that treats humans like software.
-              Building canon episodes + world bible in public.
+          <div class="tile-bottom">
+            <span>Action survival</span>
+            <span class="tile-arrow">→</span>
+          </div>
+        </a>
+
+        <a class="game-tile" href="/hypercell/">
+          <div class="tile-top">
+            <span class="tile-tag">Cube runner</span>
+            <h3>HyperCell</h3>
+            <p>
+              A clean, quick-restart runner built around movement, timing, and staying locked in for one more attempt.
             </p>
-            <div class="chips">
-              <span class="chip">World bible</span>
-              <span class="chip">Episode scripts</span>
-              <span class="chip">Power system</span>
-            </div>
-            <div class="cta-row" style="margin-top:14px;">
-              <a class="btn ghost" href="/Anime/BloodlineZero/">Open project</a>
-            </div>
           </div>
-          <div class="card" style="grid-column: span 12;">
-            <div class="badge">🧱 Services</div>
-            <h3 class="h2" style="font-size:1.15rem; margin-top:12px;">Websites for small businesses</h3>
-            <p class="mini">
-              Fast, modern websites that look expensive — without the agency nonsense.
-              Online presence, scheduling, inventory/menus, and simple updates.
+          <div class="tile-bottom">
+            <span>Reflex game</span>
+            <span class="tile-arrow">→</span>
+          </div>
+        </a>
+
+        <a class="game-tile" href="/nexusdefense/">
+          <div class="tile-top">
+            <span class="tile-tag">Tower defense</span>
+            <h3>Nexus Defense</h3>
+            <p>
+              A defense-style showcase centered on protecting the core, building pressure, and surviving the next wave.
             </p>
-            <div class="chips">
-              <span class="chip">Design + build</span>
-              <span class="chip">Mobile-first</span>
-              <span class="chip">Stripe ready</span>
-            </div>
-            <div class="cta-row" style="margin-top:14px;">
-              <a class="btn" href="/services.html">View services</a>
-              <a class="btn ghost" href="/contact.html">Ask a question</a>
-            </div>
           </div>
+          <div class="tile-bottom">
+            <span>Strategy waves</span>
+            <span class="tile-arrow">→</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="studio-strip">
+      <article class="small-panel">
+        <h2>What Zindigon is right now</h2>
+        <p>
+          A small independent studio page for playable ideas, original IP, and creative tech. The focus is shifting toward games first, with everything else supporting that direction.
+        </p>
+      </article>
+
+      <article class="small-panel">
+        <h2>Need the other side of Zindigon?</h2>
+        <p>
+          I still build clean websites and digital systems for small businesses. If that is what brought you here, the services page is still open.
+        </p>
+        <div class="cta-row" style="margin-top:16px;">
+          <a class="btn ghost" href="/services.html">View services</a>
+          <a class="btn ghost" href="/contact.html">Contact</a>
         </div>
       </article>
-      <aside class="card">
-        <h2 class="h2">What Zindigon means</h2>
-        <p class="mini">
-          It's an umbrella. If a project grows bigger than the name, that's the point — Zindigon stays the studio behind it.
-        </p>
-        <div class="kv">
-          <div class="item"><div class="k">Lane 1</div><div class="v">Games + Anime</div></div>
-          <div class="item"><div class="k">Lane 2</div><div class="v">Web Services</div></div>
-          <div class="item"><div class="k">Focus</div><div class="v">Ship • Iterate</div></div>
-          <div class="item"><div class="k">Style</div><div class="v">Dark / Clean</div></div>
-        </div>
-        <hr class="hr"/>
-        <h3 class="h2" style="font-size:.98rem;">Quick links</h3>
-        <div class="cta-row" style="margin-top:12px;">
-          <a class="btn ghost" href="/services.html">Services</a>
-          <a class="btn ghost" href="/contact.html">Contact</a>
-          <a class="btn ghost" href="/partners.html">Partners</a>
-        </div>
-        <div class="notice" style="margin-top:16px;">
-          Want a clean website like this? I can build yours in the same style — fast, readable, and easy to maintain.
-        </div>
-      </aside>
-    </section>
-
-    <section class="section">
-      <div class="card">
-        <h2 class="h2">Tools I actually ship with</h2>
-        <p class="mini">
-          I keep the stack simple and production-minded — no bloat, no mystery platforms.
-        </p>
-        <div class="chips" style="margin-top:14px;">
-          <span class="chip">HTML/CSS/JS</span>
-          <span class="chip">Godot 4.x</span>
-          <span class="chip">Node.js</span>
-          <span class="chip">Cloudflare</span>
-          <span class="chip">Stripe</span>
-          <span class="chip">GitHub Pages</span>
-          <span class="chip">AdMob</span>
-          <span class="chip">Zoho (CRM/Catalyst)</span>
-        </div>
-      </div>
     </section>
   </main>
+
   <footer>
-    <div>© <span id="year"></span> Zindigon — Creative tech, original worlds.</div>
+    <div>© <span id="year"></span> Zindigon — Original games and creative tech.</div>
   </footer>
+
   <script src="/assets/site.js" defer></script>
 </body>
 </html>
