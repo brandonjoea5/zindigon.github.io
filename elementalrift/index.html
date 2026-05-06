@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.44</title>
+<title>Elemental Rift v1.5.45</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -414,7 +414,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.44 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.45 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1080,7 +1080,7 @@ function loadGame(name) {
 // ═══════════════════════════════════════════════
 // NAME + START
 // ═══════════════════════════════════════════════
-document.getElementById('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') startGame(); });
+// name-input removed — auth handles naming
 
 // Check for existing save on load
 (function checkExistingSave() {
@@ -1101,13 +1101,13 @@ function continueGame() {
   try {
     const raw = localStorage.getItem('elementalRift_v3');
     const save = JSON.parse(raw);
-    document.getElementById('name-input').value = save.playerName;
+    // name-input removed
     startGame();
   } catch(e) {}
 }
 
 function startGame() {
-  const name = document.getElementById('name-input').value.trim();
+  const name = (document.getElementById('name-input') ? G.playerName : '').trim();
   if (!name) { document.getElementById('name-input').style.borderColor='var(--red)'; return; }
   G.playerName = name;
   const loaded = loadGame(name);
