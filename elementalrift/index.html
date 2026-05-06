@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.42</title>
+<title>Elemental Rift v1.5.43</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -403,10 +403,6 @@ let sbProfile = null; // players row
     <span class="el-badge" style="border-color:#9b4dff;color:#9b4dff;">🌑 Dark</span>
     <span class="el-badge" style="border-color:#ffd700;color:#ffd700;">✨ Light</span>
   </div>
-  <input id="name-input" type="text" placeholder="Enter your name..." maxlength="20" autocomplete="off" spellcheck="false">
-  <div id="name-input-section">
-    <div style="font-size:11px;color:var(--muted);text-align:center;max-width:340px;line-height:1.5;">🏆 Your name shows on the leaderboard — make it unique so people know it's you</div>
-  </div>
   <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
   <button id="start-btn" onclick="startGame()">Begin Journey</button>
   <div style="width:100%;max-width:340px;margin-top:4px;">
@@ -418,7 +414,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.42 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.43 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -2784,7 +2780,6 @@ function initGame() {
       document.getElementById('name-screen').classList.remove('hidden');
       document.getElementById('game').classList.add('hidden');
       if(sbProfile) {
-        document.getElementById('name-input').value = sbProfile.username;
         document.getElementById('player-name-display').textContent = sbProfile.username;
       }
       loadNameScreenLB();
@@ -3710,12 +3705,16 @@ function authGuest() {
 }
 
 function onAuthReady() {
-  // Set player name from profile if signed in
   if(sbProfile) {
     G.playerName = sbProfile.username;
     document.getElementById('player-name-display').textContent = sbProfile.username;
+    const idEl = document.getElementById('name-screen-identity');
+    if(idEl) idEl.textContent = `Signed in as ${sbProfile.username}`;
+  } else {
+    // Guest — name already set in authGuest()
+    const idEl = document.getElementById('name-screen-identity');
+    if(idEl) idEl.textContent = `Playing as ${G.playerName}`;
   }
-  // Show name screen or load save
   initGame();
 }
 
