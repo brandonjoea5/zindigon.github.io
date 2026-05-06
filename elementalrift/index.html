@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.34</title>
+<title>Elemental Rift v1.5.37</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -406,7 +406,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.34 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.37 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -470,10 +470,18 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <div class="res-group">
       <div class="res-item"><span class="res-label">Wave</span><span class="res-val" id="wave-num">1</span></div>
       <div class="res-item"><span class="res-label">Gold</span><span class="res-val" id="gold-val">0</span></div>
-      <div class="res-item"><span class="res-label">SP</span><span class="res-val blue" id="sp-val">0</span></div>
       <div class="res-item"><span class="res-label">Kills</span><span class="res-val" id="kills-val">0</span></div>
     </div>
-    <span id="player-name-display"></span>
+    <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:160px;min-width:80px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:9px;color:#8888ff;font-family:'Cinzel',serif;letter-spacing:0.06em;">XP</span>
+        <span style="font-size:9px;color:#8888ff;font-family:'Cinzel',serif;" id="xp-bar-text">0/80</span>
+      </div>
+      <div style="height:6px;background:#1a1f2e;border-radius:3px;overflow:hidden;">
+        <div id="xp-bar-fill" style="height:100%;background:linear-gradient(90deg,#8855ff,#aa77ff);border-radius:3px;width:0%;transition:width 0.4s;"></div>
+      </div>
+    </div>
+    <span id="player-name-display" style="font-size:11px;"></span>
   </div>
   <div id="bars-row">
     <div class="bar-wrap">
@@ -1789,7 +1797,10 @@ function openLoadoutPicker(slotIdx) {
         ${manaCost>0?`<span style="color:#63b3ff">💧 ${manaCost} mana</span>`:'<span>✓ Free</span>'}
         ${lv>0?`<span style="color:#8888ff">Lv${lv}</span>`:''}
       </div>
-      ${!unlocked?`<div class="apc-unlock">🔒 Unlock by reaching ${ab.class} class level ${ab.unlockLv} (use ${ab.class} abilities in combat)</div>`:''}
+      ${!unlocked?(()=>{
+        const needed = ab.type==='basic'?1:ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3;
+        return `<div class="apc-unlock">🔒 Reach ${ab.class} class Level ${needed} to unlock (currently Lv${G.classLv[ab.class]||0})</div>`;
+      })():''}
     </div>`;
   }).join('');
 
@@ -2492,6 +2503,11 @@ function equipItem(item){
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){
   document.getElementById('item-modal').classList.add('hidden');
+  // If SP popup is pending, show it now
+  if(spPending > 0 && !spPopupOpen) {
+    setTimeout(()=>showSPPopup(), 200);
+    return;
+  }
   // Resume combat if enemy is still alive
   if(G.combatActive && G.enemy && G.enemy.hp > 0 && !G.enemyAttackInterval) {
     startEnemyAutoAttack();
@@ -3641,17 +3657,31 @@ function selectStartingClass(cls) {
 // ═══════════════════════════════════════════════
 // XP & SKILL POINT POPUP SYSTEM
 // ═══════════════════════════════════════════════
+let spPending = 0; // queued skill points waiting for popup
+let spPopupOpen = false;
+
 function awardXP(amount) {
   G.xp += amount;
   updateXPBar();
   while (G.xp >= G.xpToNext) {
     G.xp -= G.xpToNext;
-    G.xpToNext = Math.floor(G.xpToNext * 1.18); // each level needs 18% more xp
+    G.xpToNext = Math.floor(G.xpToNext * 1.18);
     G.skillPoints++;
-    // Pause combat and show popup
+    spPending++;
+  }
+  if(spPending > 0 && !spPopupOpen) {
     stopEnemyAutoAttack();
     stopAllAutoSlots();
-    setTimeout(() => showSPPopup(), 300);
+    setTimeout(() => {
+      // Don't show if item modal is open
+      const itemModal = document.getElementById('item-modal');
+      if(itemModal && !itemModal.classList.contains('hidden')) {
+        // Retry after item modal is dealt with
+        setTimeout(()=>{ if(spPending>0&&!spPopupOpen) showSPPopup(); }, 500);
+        return;
+      }
+      if(spPending > 0 && !spPopupOpen) showSPPopup();
+    }, 900); // after item drop at 600ms
   }
 }
 
@@ -3668,6 +3698,9 @@ let spStep = 1; // 1=pick class, 2=pick class investment, 3=pick stat
 let spChosenClass = null;
 
 function showSPPopup() {
+  if(spPending <= 0) return;
+  spPending--;
+  spPopupOpen = true;
   spStep = 1;
   spChosenClass = null;
   renderSPPopup();
@@ -3719,7 +3752,8 @@ function renderSPPopup() {
         </div>`;
       } else {
         // Can unlock if class level is high enough and it's next tier
-        const canUnlock = lv >= (ab.unlockLv||0);
+        const needed = ab.type==='basic'?1:ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3;
+        const canUnlock = lv >= needed;
         if (canUnlock) {
           abHTML += `<div onclick="spUnlockAbility('${ab.id}')" style="background:#0d1018;border:1px solid ${color}55;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}55'">
             <div style="display:flex;align-items:center;gap:6px;">
@@ -3928,7 +3962,7 @@ function buildAbilityUpgradesHTML() {
             <span class="ab-upgrade-icon">🔒</span>
             <div class="ab-upgrade-info">
               <div class="ab-upgrade-name" style="color:${color}">${ab.name}</div>
-              <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.unlockLv}</div>
+              <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3}</div>
             </div>
           </div>`;
         } else {
