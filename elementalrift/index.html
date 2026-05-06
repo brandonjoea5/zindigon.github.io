@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.50</title>
+<title>Elemental Rift v1.5.51</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -414,7 +414,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.50 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.51 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -2589,6 +2589,13 @@ function equipItem(item){
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){
   document.getElementById('item-modal').classList.add('hidden');
+  // Re-render vendor if it's open (so gold updates)
+  const vendorModal = document.getElementById('vendor-modal');
+  if(vendorModal && !vendorModal.classList.contains('hidden')) {
+    document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+    renderVendor();
+    return;
+  }
   // If SP popup is pending, show it now
   if(spPending > 0 && !spPopupOpen) {
     setTimeout(()=>showSPPopup(), 200);
@@ -2618,30 +2625,39 @@ function renderVendor(){
     const t=v.item.tier||v.item.rarity;
     const glow=t.name==='Exquisite'?'border-color:#2196f3;':t.name==='Ancient'?'border-color:#ff4444;box-shadow:0 0 8px rgba(255,68,68,0.4);':'';
     const canAfford = G.gold >= v.item.buyVal;
-    return `<div class="vendor-item" style="${glow};opacity:${canAfford?1:0.55}">
+    // Show top stats
+    const statEntries = Object.entries(v.item.stats||{}).slice(0,3);
+    const statsHtml = statEntries.map(([k,val])=>
+      `<span style="font-size:10px;color:#3acc7a;margin-right:6px;">+${val} ${STAT_LABELS[k]||k}</span>`
+    ).join('');
+    return `<div class="vendor-item" style="${glow}">
       <div style="flex:1;">
-        <div style="font-family:'Cinzel',serif;font-size:13px;color:var(--text);">Mystery ${v.slot}</div>
-        <div class="vendor-slot" style="color:${t.color}">${t.name} quality · ${v.item.buyVal}g</div>
+        <div style="font-family:'Cinzel',serif;font-size:13px;color:${t.color};">${v.item.name||v.slot}</div>
+        <div style="font-size:10px;color:var(--muted);margin:2px 0;">${t.name} · ${v.slot}</div>
+        <div style="margin-top:2px;">${statsHtml}</div>
       </div>
-      <button onclick="buyVendorItem(${i})" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:12px;padding:8px 14px;border-radius:8px;border:1px solid ${canAfford?'var(--gold)':'var(--border)'};color:${canAfford?'var(--gold)':'var(--muted)'};background:${canAfford?'rgba(232,184,75,0.1)':'transparent'};cursor:${canAfford?'pointer':'not-allowed'};flex-shrink:0;">
-        ${canAfford?'Buy':'Need gold'}
-      </button>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+        <div style="font-family:'Cinzel',serif;font-size:13px;color:${canAfford?'var(--gold)':'#cc4444'};">${v.item.buyVal}g</div>
+        <button onclick="buyVendorItem(${i})" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:11px;padding:6px 12px;border-radius:8px;border:1px solid ${canAfford?'var(--gold)':'var(--border)'};color:${canAfford?'var(--gold)':'var(--muted)'};background:${canAfford?'rgba(232,184,75,0.1)':'transparent'};cursor:${canAfford?'pointer':'not-allowed'};">
+          ${canAfford?'Buy':'No gold'}
+        </button>
+      </div>
     </div>`;}).join('');
 }
 function buyVendorItem(idx){
-  // Prevent buying while item modal is open
-  const itemModal = document.getElementById('item-modal');
-  if(itemModal && !itemModal.classList.contains('hidden')) return;
+  // Prevent double-buy of same index
+  if(typeof v === 'undefined') { renderVendor(); return; }
   const v=vendorStock[idx];
   if(!v){ renderVendor(); return; } // stale index
   if(G.gold<v.item.buyVal){log('<span style="color:#cc4444">Not enough gold!</span>');return;}
   G.gold-=v.item.buyVal;
   updateResourceBar();
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  const boughtItem = v.item;
   vendorStock.splice(idx,1);
-  renderVendor(); // refresh stock — don't close
+  renderVendor(); // refresh with updated gold so affordability updates
   // Show item modal on top of vendor
-  showItemModal(v.item,'vendor_buy');
+  showItemModal(boughtItem,'vendor_buy');
 }
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
