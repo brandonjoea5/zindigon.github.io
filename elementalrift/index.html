@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.20</title>
+<title>Elemental Rift v1.5.21</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -388,7 +388,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.20 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.21 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1272,19 +1272,44 @@ async function showBossResults() {
   const score = G.bossDmgDealt;
   const name = G.playerName;
 
-  // Post to leaderboard
-  let leaderboard = await fetchLeaderboard();
-  const existing = leaderboard.findIndex(e => e.name === name);
-  if (existing >= 0) {
-    if (score > leaderboard[existing].score) leaderboard[existing] = {name, score, wave:G.wave, date: new Date().toLocaleDateString()};
+  // Show modal immediately with local data — don't block on network
+  const localLB = getLocalLeaderboard();
+  const existingLocal = localLB.findIndex(e => e.name === name);
+  if (existingLocal >= 0) {
+    if (score > localLB[existingLocal].score) localLB[existingLocal] = {name, score, wave:G.wave, date: new Date().toLocaleDateString()};
   } else {
-    leaderboard.push({name, score, wave:G.wave, date: new Date().toLocaleDateString()});
+    localLB.push({name, score, wave:G.wave, date: new Date().toLocaleDateString()});
   }
-  leaderboard.sort((a,b) => b.score - a.score);
-  leaderboard = leaderboard.slice(0,20);
-  await postLeaderboard(leaderboard);
+  localLB.sort((a,b) => b.score - a.score);
+  const localRank = localLB.findIndex(e=>e.name===name)+1;
+  localStorage.setItem('elementalRift_leaderboard', JSON.stringify(localLB.slice(0,20)));
 
-  const myRank = leaderboard.findIndex(e=>e.name===name)+1;
+  // Show results right away
+  renderBossResultsModal(score, name, localLB, localRank);
+
+  // Post to JSONBin in background — update leaderboard display if it succeeds
+  try {
+    const fetchPromise = fetchLeaderboard();
+    const timeoutPromise = new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')), 5000));
+    let leaderboard = await Promise.race([fetchPromise, timeoutPromise]);
+    const existing = leaderboard.findIndex(e => e.name === name);
+    if (existing >= 0) {
+      if (score > leaderboard[existing].score) leaderboard[existing] = {name, score, wave:G.wave, date: new Date().toLocaleDateString()};
+    } else {
+      leaderboard.push({name, score, wave:G.wave, date: new Date().toLocaleDateString()});
+    }
+    leaderboard.sort((a,b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0,20);
+    await postLeaderboard(leaderboard);
+    // Update the modal with live data
+    const myRank = leaderboard.findIndex(e=>e.name===name)+1;
+    renderBossResultsModal(score, name, leaderboard, myRank);
+  } catch(e) {
+    // Network failed — local data already shown, that's fine
+  }
+}
+
+function renderBossResultsModal(score, name, leaderboard, myRank) {
   // Build milestone summary
   const claimed = G.bossRewardsClaimed;
   let milestoneHTML = '';
@@ -1314,7 +1339,7 @@ async function showBossResults() {
 
   document.getElementById('boss-result-content').innerHTML = html;
   document.getElementById('boss-results-modal').classList.remove('hidden');
-}
+}  // end renderBossResultsModal
 
 function closeBossResults() {
   document.getElementById('boss-results-modal').classList.add('hidden');
@@ -1375,9 +1400,13 @@ async function renderIngameLB() {
 async function fetchLeaderboard() {
   if (BIN_ID === 'YOUR_BIN_ID_HERE') return getLocalLeaderboard();
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 4000);
     const r = await fetch(`${JSONBIN_API}/${BIN_ID}/latest`, {
-      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':false}
+      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':false},
+      signal: controller.signal
     });
+    clearTimeout(timeout);
     if (!r.ok) return getLocalLeaderboard();
     return await r.json();
   } catch { return getLocalLeaderboard(); }
