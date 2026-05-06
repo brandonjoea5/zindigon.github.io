@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.15</title>
+<title>Elemental Rift v1.5.17</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -87,8 +87,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 #enemy-hp-wrap{width:180px;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;margin:3px auto 0;}
 #enemy-hp-fill{height:100%;background:linear-gradient(90deg,#cc2222,#ff5555);border-radius:4px;transition:width 0.25s;}
 #enemy-type-badge{font-size:10px;margin-top:2px;}
-#boss-timer-wrap{display:none;position:absolute;top:10px;right:14px;text-align:center;}
-#boss-timer{font-family:'Cinzel',serif;font-size:22px;font-weight:900;color:var(--boss);}
+#boss-timer-wrap{display:none;position:absolute;top:10px;right:14px;text-align:center;background:rgba(255,34,102,0.1);border:1px solid rgba(255,34,102,0.3);border-radius:8px;padding:6px 12px;}
+#boss-timer{font-family:'Cinzel',serif;font-size:28px;font-weight:900;color:var(--boss);line-height:1;}
 #boss-dmg-display{font-size:10px;color:var(--muted);}
 #boss-level-badge{position:absolute;top:10px;left:14px;font-family:'Cinzel',serif;font-size:11px;color:var(--boss);background:rgba(255,34,102,0.1);border:1px solid rgba(255,34,102,0.3);border-radius:6px;padding:3px 8px;display:none;}
 
@@ -387,7 +387,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.15 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.17 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -529,8 +529,10 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
         <div id="enemy-type-badge"></div>
       </div>
       <div id="boss-timer-wrap">
+        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff2266;letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin-bottom:2px;">Boss Attempt</div>
         <div id="boss-timer">60</div>
         <div id="boss-dmg-display">0 dmg</div>
+        <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:2px;">→ Leaderboard</div>
       </div>
       <div id="boss-level-badge">BOSS LV 1</div>
 
@@ -891,14 +893,15 @@ function spawnNextSegmentWave() {
 }
 
 function startBossWave() {
-  // Single boss fight (not timed) — defeat for big loot
-  G.enemy = rollBoss(1 + Math.floor(G.wave/5));
+  // Wave boss — real HP, attacks player, drops loot on kill
+  G.enemy = rollBoss(1 + Math.floor(G.wave/5), false);
   G.combatActive = true;
   G.wave++;
   updateEnemyUI();
   updateResourceBar();
-  startEnemyAutoAttack();
+  startEnemyAutoAttack(); // wave boss attacks!
   drawArena();
+  log(`<span style="color:#ff2266;font-weight:600;">💀 Boss Wave! Defeat it for bonus loot!</span>`);
 }
 
 function onSegmentWaveComplete() {
@@ -1120,11 +1123,14 @@ function updateEnemyUI() {
   const nameColor = G.inBoss ? '#ff2266' : (e.type==='brute'?'#cc8844':(ELEMENT_COLORS[e.elements[0]]||'#fff'));
   document.getElementById('enemy-name').style.color = nameColor;
   if(G.inBoss) {
-    // Show as damage dealt meter
-    const pct = Math.min(100, (G.bossDmgDealt / Math.max(1, G.bossDmgDealt + e.hp)) * 100);
+    // Show bar as progress toward next 1000-damage milestone
+    // Bar fills then resets each milestone — gives visual feedback
+    const milestone = Math.max(1000, Math.ceil(G.bossDmgDealt / 1000) * 1000 || 1000);
+    const prevMilestone = milestone - 1000;
+    const pct = Math.min(100, ((G.bossDmgDealt - prevMilestone) / 1000) * 100);
     document.getElementById('enemy-hp-fill').style.width = pct + '%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff2266,#ff6699)';
-    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2266;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} dmg dealt</span>`;
+    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2266;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
   } else {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
@@ -1137,19 +1143,28 @@ function updateEnemyUI() {
 // ═══════════════════════════════════════════════
 // BOSS MODE
 // ═══════════════════════════════════════════════
-function rollBoss(level) {
+function rollBoss(level, infinite=false) {
   const name = BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
   const power = getPlayerPower();
-  // Boss is intentionally harder than regular enemies — scales with player power + boss level
   const scale = (1 + power*0.035) * (1 + (level-1)*0.4);
   const numEl = Math.floor(Math.random()*2)+1;
   const pool=[...ELEMENTS]; const elements=[];
   for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
+  if(infinite) {
+    // Leaderboard boss — infinite HP DPS dummy, does not attack
+    return {
+      name:`${name}`, type:'boss', elements, bossLevel:level,
+      hp:999999999, maxHp:999999999,
+      attack:0, armor:Math.floor(15+level*5),
+      magicResist:Math.floor(15+level*5), gold:0, xp:0
+    };
+  }
+  // Wave boss — real HP, can be killed, attacks player
   return {
-    name:`${name} (Lv${level})`, type:'boss', elements, bossLevel:level,
-    hp:999999999, maxHp:999999999,  // infinite — boss is a DPS dummy
-    attack:0, armor:Math.floor(15+level*5),
-    magicResist:Math.floor(15+level*5), gold:0, xp:0
+    name:`${name}`, type:'boss', elements, bossLevel:level,
+    hp:Math.floor((600+level*400)*scale), maxHp:Math.floor((600+level*400)*scale),
+    attack:Math.floor((18+level*8)*scale), armor:Math.floor(15+level*5),
+    magicResist:Math.floor(15+level*5), gold:Math.floor(80+G.wave*20), xp:0
   };
 }
 
@@ -1159,7 +1174,7 @@ function startBossAttempt() {
   G.bossLevel = 1;
   G.bossDmgDealt = 0;
   G.bossName = BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
-  G.enemy = rollBoss(1);
+  G.enemy = rollBoss(1, true); // infinite HP leaderboard boss
   G.combatActive = true;
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
@@ -1466,9 +1481,12 @@ function fireAbility(ab) {
 
   if(G.enemy.hp<=0){
     if(G.inBoss){
-      // Timed boss — just reset HP, boss never truly dies during attempt
+      // Leaderboard boss — infinite HP, never dies
       G.enemy.hp = G.enemy.maxHp;
       updateEnemyUI();
+    } else if(G.enemy.type==='boss'){
+      // Wave boss — dies normally, gives loot
+      setTimeout(()=>{ onBossPhaseKill(); }, ab.isMagic?500:300);
     } else {
       setTimeout(()=>{ onEnemyDeath(); }, ab.isMagic?500:300);
     }
@@ -1909,6 +1927,10 @@ function attack(element) {
     if (G.inBoss) {
       G.enemy.hp = G.enemy.maxHp;
       updateEnemyUI();
+      return;
+    }
+    if(G.enemy.type==='boss'){
+      setTimeout(onBossPhaseKill, element==='physical'?300:500);
       return;
     }
     setTimeout(onEnemyDeath, element==='physical'?300:500);
