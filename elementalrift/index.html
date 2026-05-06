@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.39</title>
+<title>Elemental Rift v1.5.41</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -378,6 +378,16 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   .modal-overlay{align-items:center;padding:16px;}
 }
 </style>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://kryfuceztfzccsidkzog.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyeWZ1Y2V6dGZ6Y2NzaWRrem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODY1MjIsImV4cCI6MjA5MzY2MjUyMn0.c_pmdXWHLQYh1dwkCwhqpW7lpgIzK13UUq2ZW53XhAs';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let sbUser = null; // current signed-in user
+let sbProfile = null; // players row
+</script>
 </head>
 <body>
 
@@ -394,7 +404,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <span class="el-badge" style="border-color:#ffd700;color:#ffd700;">✨ Light</span>
   </div>
   <input id="name-input" type="text" placeholder="Enter your name..." maxlength="20" autocomplete="off" spellcheck="false">
-  <div style="font-size:11px;color:var(--muted);text-align:center;max-width:340px;line-height:1.5;">🏆 Your name shows on the leaderboard — make it unique so people know it's you</div>
+  <div id="name-input-section">
+    <div style="font-size:11px;color:var(--muted);text-align:center;max-width:340px;line-height:1.5;">🏆 Your name shows on the leaderboard — make it unique so people know it's you</div>
+  </div>
   <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
   <button id="start-btn" onclick="startGame()">Begin Journey</button>
   <div style="width:100%;max-width:340px;margin-top:4px;">
@@ -406,7 +418,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.39 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.41 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -462,6 +474,51 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   </div>
 </div>
 
+
+<!-- AUTH MODAL -->
+<div id="auth-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#151a28;border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:380px;">
+    <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:4px;">⚔️ Elemental Rift</div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:20px;">Sign in to save your progress and compete on the leaderboard</div>
+
+    <!-- Tabs -->
+    <div style="display:flex;background:#0d1018;border-radius:8px;padding:3px;margin-bottom:18px;">
+      <button id="tab-login" onclick="authTab('login')" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:var(--gold);color:#000;font-weight:700;">Sign In</button>
+      <button id="tab-register" onclick="authTab('register')" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);">Create Account</button>
+    </div>
+
+    <!-- Fields -->
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div id="auth-display-name-wrap" class="hidden">
+        <label style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;display:block;margin-bottom:4px;">DISPLAY NAME</label>
+        <input id="auth-display-name" type="text" maxlength="20" placeholder="Unique name shown on leaderboard" autocomplete="off" spellcheck="false"
+          style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;font-family:'Cinzel',serif;outline:none;">
+        <div id="auth-name-status" style="font-size:10px;margin-top:3px;min-height:14px;"></div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;display:block;margin-bottom:4px;">EMAIL</label>
+        <input id="auth-email" type="email" placeholder="your@email.com" autocomplete="email"
+          style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;display:block;margin-bottom:4px;">PASSWORD</label>
+        <input id="auth-password" type="password" placeholder="Min 6 characters" autocomplete="current-password"
+          style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
+      </div>
+      <div id="auth-error" style="font-size:11px;color:#e83a3a;text-align:center;min-height:16px;"></div>
+      <button id="auth-submit-btn" onclick="authSubmit()" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:13px;border-radius:10px;border:1px solid var(--gold);background:rgba(232,184,75,0.12);color:var(--gold);cursor:pointer;width:100%;">Sign In</button>
+      <button onclick="authGuest()" style="font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;width:100%;">Play as Guest (no save)</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ACCOUNT MENU -->
+<div id="account-menu" class="hidden" style="position:fixed;top:60px;right:10px;background:#151a28;border:1px solid var(--border);border-radius:10px;padding:12px;z-index:400;min-width:160px;">
+  <div id="account-menu-name" style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold);margin-bottom:8px;text-align:center;"></div>
+  <button onclick="signOut()" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid #e83a3a;color:#e83a3a;background:transparent;cursor:pointer;">Sign Out</button>
+  <button onclick="document.getElementById('account-menu').classList.add('hidden')" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;margin-top:6px;">Close</button>
+</div>
 <!-- MAIN GAME -->
 <div id="game" class="hidden">
 
@@ -481,7 +538,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
         <div id="xp-bar-fill" style="height:100%;background:linear-gradient(90deg,#8855ff,#aa77ff);border-radius:3px;width:0%;transition:width 0.4s;"></div>
       </div>
     </div>
-    <span id="player-name-display" style="font-size:11px;"></span>
+    <span id="player-name-display" style="font-size:11px;color:var(--gold);font-family:'Cinzel',serif;cursor:pointer;" onclick="showAccountMenu()" title="Account"></span>
   </div>
   <div id="bars-row">
     <div class="bar-wrap">
@@ -1348,31 +1405,23 @@ async function showBossResults() {
   // Show results right away with local data
   renderBossResultsModal(score, name, localLB, localRank);
 
-  // Post to JSONBin in background — silently update leaderboard section only
-  try {
-    const fetchPromise = fetchLeaderboard();
-    const timeoutPromise = new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')), 5000));
-    let leaderboard = await Promise.race([fetchPromise, timeoutPromise]);
-    const existing = leaderboard.findIndex(e => e.name === name);
-    if (existing >= 0) {
-      if (score > leaderboard[existing].score) leaderboard[existing] = {name, score, wave:G.wave, date: new Date().toLocaleDateString()};
-    } else {
-      leaderboard.push({name, score, wave:G.wave, date: new Date().toLocaleDateString()});
-    }
-    leaderboard.sort((a,b) => b.score - a.score);
-    leaderboard = leaderboard.slice(0,20);
-    await postLeaderboard(leaderboard);
-    // Silently update just the leaderboard section inside the already-open modal
-    const lbSection = document.getElementById('boss-lb-section');
-    if(lbSection) {
-      const myRank = leaderboard.findIndex(e=>e.name===name)+1;
-      lbSection.innerHTML = buildLBHtml(leaderboard, name, 10);
-      const rankEl = document.getElementById('boss-rank-display');
-      if(rankEl) rankEl.textContent = `Rank #${myRank}`;
-    }
-  } catch(e) {
-    // Network failed — local data stays, that's fine
+  // Post score to Supabase (upsert — keeps best score only)
+  if(sbUser && sbProfile) {
+    postSupabaseLeaderboard(score).catch(()=>{});
   }
+
+  // Fetch fresh leaderboard from Supabase and update modal
+  try {
+    const liveBoard = await fetchSupabaseLeaderboard();
+    if(liveBoard && liveBoard.length > 0) {
+      const myRank = liveBoard.findIndex(e=>e.name===name)+1;
+      const lbSection = document.getElementById('boss-lb-section');
+      if(lbSection) lbSection.innerHTML = buildLBHtml(liveBoard, name, 10);
+      const rankEl = document.getElementById('boss-rank-display');
+      if(rankEl && myRank > 0) rankEl.textContent = `Rank #${myRank}`;
+      saveLocalLeaderboard(liveBoard);
+    }
+  } catch(e) {}
 }
 
 function renderBossResultsModal(score, name, leaderboard, myRank) {
@@ -1470,17 +1519,10 @@ async function renderIngameLB() {
 }
 
 async function fetchLeaderboard() {
-  if (BIN_ID === 'YOUR_BIN_ID_HERE') return getLocalLeaderboard();
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(), 4000);
-    const r = await fetch(`${JSONBIN_API}/${BIN_ID}/latest`, {
-      headers:{'X-Master-Key':JSONBIN_KEY,'X-Bin-Meta':false},
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if (!r.ok) return getLocalLeaderboard();
-    return await r.json();
+    const data = await fetchSupabaseLeaderboard();
+    if(data && data.length > 0) return data;
+    return getLocalLeaderboard();
   } catch { return getLocalLeaderboard(); }
 }
 
@@ -2726,6 +2768,38 @@ function initUI(){
   initMobileLayout();
 }
 
+function showAccountMenu() {
+  if(!sbProfile) return;
+  const menu = document.getElementById('account-menu');
+  const nameEl = document.getElementById('account-menu-name');
+  if(nameEl) nameEl.textContent = sbProfile.username;
+  menu.classList.toggle('hidden');
+}
+
+function initGame() {
+  // Try to load cloud save first, fall back to localStorage
+  if(sbUser) {
+    cloudLoad().then(cloudData => {
+      const loaded = cloudData ? loadFromData(cloudData) : loadGame();
+      document.getElementById('name-screen').classList.remove('hidden');
+      document.getElementById('game').classList.add('hidden');
+      if(sbProfile) {
+        document.getElementById('name-input').value = sbProfile.username;
+        document.getElementById('player-name-display').textContent = sbProfile.username;
+      }
+      loadNameScreenLB();
+    }).catch(() => {
+      loadGame();
+      document.getElementById('name-screen').classList.remove('hidden');
+      loadNameScreenLB();
+    });
+  } else {
+    loadGame();
+    document.getElementById('name-screen').classList.remove('hidden');
+    loadNameScreenLB();
+  }
+}
+
 // ═══════════════════════════════════════════════
 // CANVAS + PARTICLES
 // ═══════════════════════════════════════════════
@@ -3482,6 +3556,228 @@ function loadHealLoadout() {
 
 
 
+
+
+// ═══════════════════════════════════════════════
+// SUPABASE AUTH SYSTEM
+// ═══════════════════════════════════════════════
+let authMode = 'login'; // 'login' or 'register'
+let nameCheckTimeout = null;
+
+function showAuthModal() {
+  document.getElementById('auth-modal').classList.remove('hidden');
+  authTab('login');
+}
+
+function hideAuthModal() {
+  document.getElementById('auth-modal').classList.add('hidden');
+}
+
+function authTab(mode) {
+  authMode = mode;
+  const nameWrap = document.getElementById('auth-display-name-wrap');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  const tabLogin = document.getElementById('tab-login');
+  const tabReg = document.getElementById('tab-register');
+  document.getElementById('auth-error').textContent = '';
+
+  if(mode === 'register') {
+    nameWrap.classList.remove('hidden');
+    submitBtn.textContent = 'Create Account';
+    tabLogin.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);';
+    tabReg.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:var(--gold);color:#000;font-weight:700;';
+  } else {
+    nameWrap.classList.add('hidden');
+    submitBtn.textContent = 'Sign In';
+    tabLogin.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:var(--gold);color:#000;font-weight:700;';
+    tabReg.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);';
+  }
+}
+
+// Live username availability check
+document.addEventListener('DOMContentLoaded', () => {
+  const nameInput = document.getElementById('auth-display-name');
+  if(nameInput) {
+    nameInput.addEventListener('input', () => {
+      clearTimeout(nameCheckTimeout);
+      const val = nameInput.value.trim();
+      const status = document.getElementById('auth-name-status');
+      if(val.length < 2) { status.textContent = ''; return; }
+      status.textContent = 'Checking...';
+      status.style.color = 'var(--muted)';
+      nameCheckTimeout = setTimeout(async () => {
+        const { data, error } = await sb.rpc('is_username_available', { name: val });
+        if(error) { status.textContent = ''; return; }
+        if(data) {
+          status.textContent = '✓ Available';
+          status.style.color = '#3acc7a';
+        } else {
+          status.textContent = '✗ Already taken — choose another';
+          status.style.color = '#e83a3a';
+        }
+      }, 500);
+    });
+  }
+
+  // Check if already signed in
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if(session) {
+      sbUser = session.user;
+      loadSbProfile().then(() => {
+        hideAuthModal();
+        onAuthReady();
+      });
+    } else {
+      showAuthModal();
+    }
+  });
+});
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  const btn = document.getElementById('auth-submit-btn');
+  errEl.textContent = '';
+
+  if(!email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+
+  btn.textContent = 'Please wait...';
+  btn.disabled = true;
+
+  if(authMode === 'register') {
+    const displayName = document.getElementById('auth-display-name').value.trim();
+    if(!displayName || displayName.length < 2) {
+      errEl.textContent = 'Display name must be at least 2 characters.';
+      btn.textContent = 'Create Account'; btn.disabled = false; return;
+    }
+    // Check availability one more time
+    const { data: available } = await sb.rpc('is_username_available', { name: displayName });
+    if(!available) {
+      errEl.textContent = 'That display name is already taken.';
+      btn.textContent = 'Create Account'; btn.disabled = false; return;
+    }
+    // Create account
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if(error) { errEl.textContent = error.message; btn.textContent = 'Create Account'; btn.disabled = false; return; }
+    sbUser = data.user;
+    // Insert players row
+    const { error: profileErr } = await sb.from('players').insert({ id: sbUser.id, username: displayName });
+    if(profileErr) {
+      errEl.textContent = 'Account created but profile save failed. Try signing in.';
+      btn.textContent = 'Create Account'; btn.disabled = false; return;
+    }
+    sbProfile = { id: sbUser.id, username: displayName };
+    hideAuthModal();
+    onAuthReady();
+
+  } else {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error) { errEl.textContent = error.message; btn.textContent = 'Sign In'; btn.disabled = false; return; }
+    sbUser = data.user;
+    await loadSbProfile();
+    hideAuthModal();
+    onAuthReady();
+  }
+}
+
+async function loadSbProfile() {
+  if(!sbUser) return;
+  const { data } = await sb.from('players').select('*').eq('id', sbUser.id).single();
+  sbProfile = data;
+}
+
+function authGuest() {
+  sbUser = null; sbProfile = null;
+  // Assign random guest name — no choice, prevents LB pollution
+  const guestNum = Math.floor(Math.random() * 9000) + 1000;
+  G.playerName = `Guest#${guestNum}`;
+  hideAuthModal();
+  onAuthReady();
+}
+
+function onAuthReady() {
+  // Set player name from profile if signed in
+  if(sbProfile) {
+    G.playerName = sbProfile.username;
+    document.getElementById('player-name-display').textContent = sbProfile.username;
+  }
+  // Show name screen or load save
+  initGame();
+}
+
+// ── CLOUD SAVE ──
+async function cloudSave() {
+  if(!sbUser) return; // guest — use localStorage only
+  const saveData = buildSaveObject();
+  await sb.from('player_saves').upsert({
+    player_id: sbUser.id,
+    save_data: saveData,
+    wave_reached: G.wave,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'player_id' });
+}
+
+async function cloudLoad() {
+  if(!sbUser) return null;
+  const { data } = await sb.from('player_saves')
+    .select('save_data')
+    .eq('player_id', sbUser.id)
+    .single();
+  return data ? data.save_data : null;
+}
+
+// ── COSMETICS / RELICS ──
+async function getPlayerCosmetics() {
+  if(!sbUser) return [];
+  const { data } = await sb.from('player_cosmetics')
+    .select('item_id, source, acquired_at')
+    .eq('player_id', sbUser.id);
+  return data || [];
+}
+
+async function grantCosmetic(itemId, source='boss_reward') {
+  if(!sbUser) return false;
+  const { error } = await sb.from('player_cosmetics').upsert({
+    player_id: sbUser.id,
+    item_id: itemId,
+    source
+  }, { onConflict: 'player_id,item_id' });
+  return !error;
+}
+
+// ── SUPABASE LEADERBOARD (replaces JSONBin) ──
+async function postSupabaseLeaderboard(score) {
+  if(!sbUser || !sbProfile) return;
+  await sb.from('leaderboard').upsert({
+    player_id: sbUser.id,
+    username: sbProfile.username,
+    boss_damage: score,
+    wave_reached: G.wave,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'player_id' });
+}
+
+async function fetchSupabaseLeaderboard() {
+  const { data } = await sb.from('leaderboard')
+    .select('username, boss_damage, wave_reached, updated_at')
+    .order('boss_damage', { ascending: false })
+    .limit(20);
+  return (data || []).map(r => ({
+    name: r.username,
+    score: r.boss_damage,
+    wave: r.wave_reached,
+    date: new Date(r.updated_at).toLocaleDateString()
+  }));
+}
+
+// ── SIGN OUT ──
+async function signOut() {
+  await sb.auth.signOut();
+  sbUser = null; sbProfile = null;
+  localStorage.removeItem('elementalRift_v3');
+  location.reload();
+}
 
 // ═══════════════════════════════════════════════
 // STATUS EFFECTS
