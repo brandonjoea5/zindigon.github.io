@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.14</title>
+<title>Elemental Rift v1.5.15</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -387,7 +387,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.14 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.15 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -593,6 +593,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <div style="display:flex;gap:6px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
       <button class="action-btn btn-next hidden" id="next-btn" onclick="nextWave()" style="flex:1;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()" style="flex:1;"><span class="btn-icon">💀</span>Boss Attempt</button>
+      <button class="action-btn hidden" id="potion-btn" onclick="buyPotion()" style="flex:1;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openLoadoutPicker(-1)" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
     </div>
   </div>
@@ -908,7 +909,7 @@ function onSegmentWaveComplete() {
     setTimeout(()=>{ openVendor(); }, 500);
   } else {
     document.getElementById('next-btn').classList.remove('hidden');
-    // Show boss button any time after wave 3
+    showPotionBtn();
     if(G.wave >= 3) {
       document.getElementById('boss-btn').classList.remove('hidden');
     }
@@ -1082,6 +1083,7 @@ function spawnEnemy() {
   if(IS_MOBILE()) mobileTab('arena');
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
+  hidePotionBtn();
   drawArena();
   startEnemyAutoAttack();
 }
@@ -3046,6 +3048,57 @@ function loadHealLoadout() {
 }
 
 
+
+// ── POTION SHOP ──
+function getPotionCost() {
+  // Scales with wave — early cheap, later more expensive
+  return Math.floor(15 + G.wave * 5);
+}
+
+function getPotionHeal() {
+  return Math.floor(G.maxHp * 0.35); // always 35% max HP
+}
+
+function showPotionBtn() {
+  const btn = document.getElementById('potion-btn');
+  const lbl = document.getElementById('potion-label');
+  if (!btn) return;
+  const cost = getPotionCost();
+  const heal = getPotionHeal();
+  const canAfford = G.gold >= cost;
+  btn.classList.remove('hidden');
+  btn.style.opacity = canAfford ? '1' : '0.45';
+  if (lbl) lbl.textContent = `+${heal}hp (${cost}g)`;
+}
+
+function hidePotionBtn() {
+  const btn = document.getElementById('potion-btn');
+  if (btn) btn.classList.add('hidden');
+}
+
+function buyPotion() {
+  const cost = getPotionCost();
+  if (G.gold < cost) {
+    log('<span style="color:#cc4444">Not enough gold for a potion!</span>');
+    return;
+  }
+  const heal = getPotionHeal();
+  G.gold -= cost;
+  G.hp = Math.min(G.maxHp, G.hp + heal);
+  updateHpBar();
+  updateResourceBar();
+  spawnHealNumber(
+    canvas.width * 0.25,
+    canvas.height * 0.5,
+    heal
+  );
+  startAnimLoop();
+  playSound('heal');
+  log(`<span style="color:#3acc7a">🧪 Potion used — restored ${heal} HP</span>`);
+  showPotionBtn(); // refresh cost display
+  saveGame();
+}
+
 // ═══════════════════════════════════════════════
 // CLASS SELECTION
 // ═══════════════════════════════════════════════
@@ -3080,6 +3133,7 @@ function selectStartingClass(cls) {
   G.loadout[2] = null;
   G.loadout[3] = null;
   healLoadout = 'heal_' + cls;
+  G.abilityLevels['heal_' + cls] = 1; // ensure heal is unlocked
 
   // Give class level 1 in chosen class
   G.classLv[cls] = 1;
