@@ -5,7 +5,155 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Zindigon — Games</title>
   <meta name="description" content="Game projects by Zindigon."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/site.css"/>
+  <style>
+    .lb-card {
+      border-radius: var(--radius2);
+      border: 1px solid rgba(255,34,102,.22);
+      background: linear-gradient(160deg, rgba(14,18,35,.85) 0%, rgba(10,8,20,.80) 100%);
+      box-shadow: 0 0 60px rgba(255,34,102,.07), 0 20px 56px rgba(0,0,0,.45);
+      padding: 28px 24px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .lb-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 80px; height: 80px;
+      background:
+        linear-gradient(to right, rgba(255,34,102,.45) 0%, transparent 100%) top/100% 1px no-repeat,
+        linear-gradient(to bottom, rgba(255,34,102,.45) 0%, transparent 100%) left/1px 100% no-repeat;
+      pointer-events: none;
+    }
+    .lb-card::after {
+      content: "";
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 80px; height: 80px;
+      background:
+        linear-gradient(to left, rgba(255,79,191,.30) 0%, transparent 100%) bottom/100% 1px no-repeat,
+        linear-gradient(to top, rgba(255,79,191,.30) 0%, transparent 100%) right/1px 100% no-repeat;
+      pointer-events: none;
+    }
+    .lb-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+    .lb-title {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: #ff2266;
+    }
+    .lb-subtitle {
+      font-family: var(--mono);
+      font-size: .70rem;
+      color: rgba(232,238,255,.38);
+      letter-spacing: .04em;
+      margin-top: 3px;
+    }
+    .lb-refresh {
+      font-family: var(--mono);
+      font-size: .70rem;
+      color: rgba(232,238,255,.35);
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .lb-refresh:hover { color: #ff2266; border-color: rgba(255,34,102,.35); }
+
+    .lb-table { width: 100%; border-collapse: collapse; }
+    .lb-table tr { border-bottom: 1px solid rgba(255,255,255,.05); transition: background .1s; }
+    .lb-table tr:last-child { border-bottom: none; }
+    .lb-table tr:hover { background: rgba(255,255,255,.025); }
+    .lb-table td { padding: 10px 6px; }
+    .lb-rank-cell {
+      font-family: var(--serif);
+      font-size: .85rem;
+      font-weight: 700;
+      width: 40px;
+      text-align: center;
+    }
+    .lb-name-cell { color: var(--muted); font-size: .9rem; }
+    .lb-score-cell {
+      font-family: var(--mono);
+      font-size: .82rem;
+      color: #ff2266;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .lb-wave-cell {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: rgba(232,238,255,.28);
+      text-align: right;
+      padding-left: 10px;
+      white-space: nowrap;
+    }
+    .lb-loading {
+      text-align: center;
+      padding: 36px 0;
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: rgba(232,238,255,.30);
+      letter-spacing: .08em;
+    }
+    .lb-dot { display: inline-block; animation: lb-blink 1.2s ease-in-out infinite; margin: 0 2px; }
+    .lb-dot:nth-child(2) { animation-delay: .2s; }
+    .lb-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes lb-blink { 0%,80%,100%{opacity:.15} 40%{opacity:1} }
+    .lb-empty {
+      text-align: center;
+      padding: 32px 0;
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: rgba(232,238,255,.28);
+      font-style: italic;
+    }
+    .lb-play-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      flex-wrap: wrap;
+    }
+    .lb-play-hint { font-size: .82rem; color: rgba(232,238,255,.35); }
+    .btn-boss {
+      display: inline-block;
+      font-family: var(--serif);
+      font-weight: 700;
+      font-size: .82rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #08050A;
+      background: linear-gradient(135deg, #ff2266 0%, #ff6699 100%);
+      border: none;
+      border-radius: 9px;
+      padding: 10px 24px;
+      text-decoration: none;
+      box-shadow: 0 0 22px rgba(255,34,102,.35);
+      transition: transform .15s, box-shadow .15s;
+      white-space: nowrap;
+    }
+    .btn-boss:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(255,34,102,.55); }
+  </style>
 </head>
 <body>
   <div id="fx" aria-hidden="true">
@@ -38,6 +186,7 @@
       <a href="/contact.html">Contact</a>
     </div>
   </header>
+
   <main>
     <section class="hero">
       <div class="hero-inner">
@@ -48,13 +197,13 @@
       </div>
     </section>
 
-    <!-- Elemental Rift -->
+    <!-- Elemental Rift CTA -->
     <section class="rift-section">
       <div class="rift-banner">
         <span class="rift-eyebrow">🔥 New — Playtest Live</span>
         <h2 class="rift-title">Elemental Rift</h2>
         <p class="rift-sub">
-          The newest game is live right now. Play it, break it, and send feedback — this is how it gets better.
+          Master the elements. Defeat waves of enemies. Challenge the Boss — and get your name on the board.
         </p>
         <div class="rift-cta-wrap">
           <a class="btn-rift" href="/elementalrift/">Play Elemental Rift →</a>
@@ -65,6 +214,29 @@
       </div>
     </section>
 
+    <!-- Live leaderboard -->
+    <section class="section">
+      <div class="lb-card">
+        <div class="lb-header">
+          <div>
+            <div class="lb-title">💀 Boss Damage Leaderboard</div>
+            <div class="lb-subtitle" id="lb-status">Loading scores…</div>
+          </div>
+          <button class="lb-refresh" onclick="loadLeaderboard(true)">↻ Refresh</button>
+        </div>
+        <div id="lb-body">
+          <div class="lb-loading">
+            <span class="lb-dot">●</span><span class="lb-dot">●</span><span class="lb-dot">●</span>
+          </div>
+        </div>
+        <div class="lb-play-cta">
+          <span class="lb-play-hint">Think you can crack the top 10?</span>
+          <a class="btn-boss" href="/elementalrift/">Play now →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Other games -->
     <section class="section">
       <div class="grid">
         <article class="card glow" style="grid-column: span 12;">
@@ -92,9 +264,75 @@
       </div>
     </section>
   </main>
+
   <footer>
     <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
   </footer>
+
   <script src="/assets/site.js"></script>
+  <script>
+    const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
+    const BIN_ID      = '69fa2a52856a682189ad2945';
+    const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgIG';
+    const MEDALS      = ['🥇','🥈','🥉'];
+
+    function fmt(n) { return Number(n).toLocaleString(); }
+
+    function renderLeaderboard(data) {
+      const body   = document.getElementById('lb-body');
+      const status = document.getElementById('lb-status');
+      if (!data || data.length === 0) {
+        body.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>';
+        status.textContent = 'No entries yet';
+        return;
+      }
+      const rows = data.slice(0, 20).map((e, i) => {
+        const rankColor = i === 0 ? '#e8b84b' : i === 1 ? '#aaaaaa' : i === 2 ? '#cd7f32' : 'rgba(232,238,255,.38)';
+        const medal     = MEDALS[i] || ('#' + (i + 1));
+        return `<tr>
+          <td class="lb-rank-cell" style="color:${rankColor}">${medal}</td>
+          <td class="lb-name-cell">${e.name || '—'}</td>
+          <td class="lb-score-cell">${fmt(e.score)}</td>
+          <td class="lb-wave-cell">wave&nbsp;${e.wave || '?'}</td>
+        </tr>`;
+      }).join('');
+      body.innerHTML = `<table class="lb-table">${rows}</table>`;
+      const t = new Date();
+      status.textContent = `${data.length} player${data.length !== 1 ? 's' : ''} · updated ${t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+    }
+
+    async function loadLeaderboard(manual = false) {
+      if (manual) {
+        document.getElementById('lb-body').innerHTML =
+          '<div class="lb-loading"><span class="lb-dot">●</span><span class="lb-dot">●</span><span class="lb-dot">●</span></div>';
+        document.getElementById('lb-status').textContent = 'Refreshing…';
+      }
+      try {
+        const ctrl = new AbortController();
+        const t    = setTimeout(() => ctrl.abort(), 5000);
+        const r    = await fetch(`${JSONBIN_API}/${BIN_ID}/latest`, {
+          headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
+          signal: ctrl.signal
+        });
+        clearTimeout(t);
+        if (!r.ok) throw new Error('network');
+        const data = await r.json();
+        renderLeaderboard(Array.isArray(data) ? data : []);
+      } catch {
+        // Try localStorage fallback (only works if visitor has played on same browser)
+        try {
+          const local = JSON.parse(localStorage.getItem('elementalRift_leaderboard') || '[]');
+          renderLeaderboard(local);
+          document.getElementById('lb-status').textContent = 'Cached data · play to update';
+        } catch {
+          document.getElementById('lb-body').innerHTML =
+            '<div class="lb-empty">Could not load scores — check back soon.</div>';
+          document.getElementById('lb-status').textContent = 'Unavailable';
+        }
+      }
+    }
+
+    loadLeaderboard();
+  </script>
 </body>
 </html>
