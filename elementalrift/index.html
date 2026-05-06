@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.18</title>
+<title>Elemental Rift v1.5.20</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -387,7 +387,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.18 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.20 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -761,7 +761,9 @@ let G = {
   inBoss:false,
   bossLevel:1,
   bossDmgDealt:0,
-  bossRewardsClaimed:[], // indices of BOSS_MILESTONES already claimed this attempt
+  bossRewardsClaimed:[],
+  // Run stats
+  runStats:{ totalDmg:0, bestHit:0, elementUses:{fire:0,water:0,grass:0,dark:0,light:0,physical:0}, totalGold:0, bossHits:0 }, // indices of BOSS_MILESTONES already claimed this attempt
   bossTimerSec:60,
   bossTimerInterval:null,
   enemyAttackInterval:null,
@@ -1110,6 +1112,7 @@ function stopEnemyAutoAttack() {
     clearInterval(G.enemyAttackInterval);
     G.enemyAttackInterval = null;
   }
+  stopStatusTick();
 }
 
 function updateEnemyUI() {
@@ -1135,9 +1138,10 @@ function updateEnemyUI() {
   } else {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
-    document.getElementById('enemy-type-badge').innerHTML = e.type==='brute'
+    const typeBadge = e.type==='brute'
       ? '<span style="color:#cc8844;font-size:10px;">🪨 Brute</span>'
       : e.elements.map(el=>`<span style="color:${ELEMENT_COLORS[el]};font-size:10px;">${el} </span>`).join('');
+    document.getElementById('enemy-type-badge').innerHTML = typeBadge + getStatusBadgesHTML(e);
   }
 }
 
@@ -1507,6 +1511,17 @@ function fireAbility(ab) {
   else if(seMult>1.0)     combatLog(`✦ SE ${totalDmg} ${ab.icon}`,'se');
   else                    combatLog(`▶ ${totalDmg} ${ab.icon}`,'dmg-out');
   if(healAmt>0)           combatLog(`♥ +${healAmt} ${ab.isMagic?'vamp':'steal'}`,'heal');
+
+  // Apply status effects based on ability
+  if(G.enemy && G.enemy.hp > 0) {
+    if(ab.id==='fire_reg2') applyStatusEffect(G.enemy,'burn',{dps:Math.floor(st.magicPower*0.15)});
+    if(ab.id==='water_reg1') applyStatusEffect(G.enemy,'slow');
+    if(ab.id==='grass_reg2') applyStatusEffect(G.enemy,'poison',{dps:Math.floor(st.magicPower*0.1)});
+  }
+  // Track run stats
+  G.runStats.totalDmg += totalDmg;
+  if(totalDmg > G.runStats.bestHit) G.runStats.bestHit = totalDmg;
+  G.runStats.elementUses[ab.class] = (G.runStats.elementUses[ab.class]||0) + 1;
 
   if(G.enemy.hp<=0){
     if(G.inBoss){
@@ -1924,6 +1939,9 @@ function attack(element) {
 
   G.enemy.hp -= dmg;
   if (G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
+  G.runStats.totalDmg += dmg;
+  if(dmg > G.runStats.bestHit) G.runStats.bestHit = dmg;
+  G.runStats.elementUses[element] = (G.runStats.elementUses[element]||0) + 1;
 
   const stealPct = isMagic ? st.spellVamp : st.lifeSteal;
   const healAmt = stealPct > 0 ? Math.max(1, Math.ceil(dmg * stealPct / 100)) : 0;
@@ -2005,6 +2023,7 @@ function onEnemyDeath() {
   stopAllAutoSlots();
   G.kills++;
   G.gold+=G.enemy.gold;
+  G.runStats.totalGold += G.enemy.gold;
   // XP based on enemy power vs player
   const enemyPower = G.enemy.maxHp + G.enemy.attack * 5;
   const playerPower = getPlayerPower();
@@ -2045,18 +2064,67 @@ function onDeath() {
   stopEnemyAutoAttack();
   stopAllAutoAttacks();
   stopAllAutoSlots();
+  stopStatusTick();
   clearInterval(G.bossTimerInterval);
-  log('<span class="log-dmg">💀 You have fallen... Restarting in 3s</span>');
   localStorage.removeItem('elementalRift_v3');
-  // Show death overlay
+
+  // Find most used element
+  const uses = G.runStats.elementUses;
+  const topElement = Object.entries(uses).sort((a,b)=>b[1]-a[1])[0];
+  const topElemName = topElement ? topElement[0] : 'none';
+  const topElemIcon = CLASS_ICONS[topElemName]||'⚔️';
+  const topElemColor = CLASS_COLORS[topElemName]||'#aaa';
+
+  // Build share text
+  const shareText = `⚔️ Elemental Rift
+I reached Wave ${G.wave} with ${G.kills} kills and my best hit was ${numberWithCommas(G.runStats.bestHit)} damage!
+My favorite element was ${topElemIcon} ${topElemName}.
+Think you can do better? Play free at https://zindigon.com/elementalrift/`;
+
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
   overlay.innerHTML = `
-    <div style="font-size:60px;">💀</div>
-    <div style="font-family:Cinzel,serif;font-size:28px;font-weight:900;color:#e83a3a;">YOU HAVE FALLEN</div>
-    <div style="font-family:Cinzel,serif;font-size:14px;color:#5a6080;">Wave ${G.wave} · ${G.kills} Kills · ${G.gold} Gold</div>
-    <button onclick="location.reload()" style="margin-top:8px;font-family:Cinzel,serif;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;border:1px solid #e8b84b;background:rgba(232,184,75,0.1);color:#e8b84b;cursor:pointer;letter-spacing:0.08em;">Play Again</button>
-  `;
+    <div style="background:#151a28;border:1px solid #2a2f45;border-radius:16px;padding:24px;max-width:420px;width:100%;text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;">💀</div>
+      <div style="font-family:'Cinzel',serif;font-size:24px;font-weight:900;color:#e83a3a;margin-bottom:4px;">You Have Fallen</div>
+      <div style="font-size:13px;color:#5a6080;margin-bottom:20px;">${G.playerName} · Wave ${G.wave}</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Kills</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#e8b84b;">${G.kills}</div>
+        </div>
+        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Best Hit</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#ff4d1a;">${numberWithCommas(G.runStats.bestHit)}</div>
+        </div>
+        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Favorite</div>
+          <div style="font-size:20px;">${topElemIcon}</div>
+          <div style="font-family:'Cinzel',serif;font-size:11px;color:${topElemColor};">${topElemName}</div>
+        </div>
+        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Gold Earned</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#e8b84b;">${numberWithCommas(G.runStats.totalGold)}</div>
+        </div>
+      </div>
+
+      <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;">
+        <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Element Usage</div>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+          ${Object.entries(uses).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([el,count])=>`
+            <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;background:${CLASS_COLORS[el]}18;border:1px solid ${CLASS_COLORS[el]}44;border-radius:12px;">
+              <span style="font-size:12px;">${CLASS_ICONS[el]}</span>
+              <span style="font-size:11px;color:${CLASS_COLORS[el]};">${count}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="navigator.clipboard.writeText(\`${shareText.replace(/`/g,"'")}\`).then(()=>this.textContent='✓ Copied!')" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid #8888ff;color:#8888ff;background:rgba(136,136,255,0.08);">📋 Share Run</button>
+        <button onclick="location.reload()" style="flex:1;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px;border-radius:8px;border:1px solid #e8b84b;background:rgba(232,184,75,0.1);color:#e8b84b;cursor:pointer;">Play Again</button>
+      </div>
+    </div>`;
   document.body.appendChild(overlay);
 }
 
@@ -2616,18 +2684,106 @@ function drawArena(){
       ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex-8,ey-25,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ex+8,ey-25,4,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='#ff2266';ctx.beginPath();ctx.arc(ex-8,ey-25,2.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ex+8,ey-25,2.5,0,Math.PI*2);ctx.fill();
     } else if(G.enemy.type==='brute'){
-      ctx.fillStyle='#3a2510';ctx.beginPath();ctx.arc(ex,ey-22,26,0,Math.PI*2);ctx.fill();
-      for(let i=0;i<6;i++){const a=(Math.PI*2/6)*i;ctx.fillStyle='#5a3a1a';ctx.beginPath();ctx.moveTo(ex+Math.cos(a)*26,ey-22+Math.sin(a)*26);ctx.lineTo(ex+Math.cos(a+.25)*26,ey-22+Math.sin(a+.25)*26);ctx.lineTo(ex+Math.cos(a+.125)*38,ey-22+Math.sin(a+.125)*38);ctx.closePath();ctx.fill();}
-      ctx.fillStyle='#7a5a2a';ctx.beginPath();ctx.arc(ex,ey-22,18,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#9a7a4a';ctx.beginPath();ctx.arc(ex,ey-27,8,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#ff4400';ctx.beginPath();ctx.arc(ex-6,ey-24,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ex+6,ey-24,3,0,Math.PI*2);ctx.fill();
+      // Brute — chunky rectangle with stone texture
+      ctx.fillStyle='#2a1a08';
+      ctx.beginPath();
+      const bw=42,bh=48;
+      ctx.roundRect(ex-bw/2,ey-bh,bw,bh,4);ctx.fill();
+      // Stone cracks
+      ctx.strokeStyle='#5a3a1a';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(ex-8,ey-bh+8);ctx.lineTo(ex-2,ey-bh+20);ctx.lineTo(ex+10,ey-bh+14);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ex+6,ey-bh+28);ctx.lineTo(ex-4,ey-bh+38);ctx.stroke();
+      // Face
+      ctx.fillStyle='#7a5a2a';ctx.fillRect(ex-bw/2+4,ey-bh+4,bw-8,bh-8);
+      ctx.fillStyle='#ff4400';ctx.beginPath();ctx.arc(ex-8,ey-bh+22,4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ff4400';ctx.beginPath();ctx.arc(ex+8,ey-bh+22,4,0,Math.PI*2);ctx.fill();
+      // Horns
+      ctx.fillStyle='#3a2510';
+      ctx.beginPath();ctx.moveTo(ex-14,ey-bh);ctx.lineTo(ex-18,ey-bh-14);ctx.lineTo(ex-8,ey-bh);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(ex+14,ey-bh);ctx.lineTo(ex+18,ey-bh-14);ctx.lineTo(ex+8,ey-bh);ctx.closePath();ctx.fill();
     } else {
-      ctx.fillStyle=ec+'33';ctx.beginPath();ctx.arc(ex,ey-22,26,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=ec+'77';ctx.beginPath();ctx.arc(ex,ey-22,18,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,12,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,ey-26,4,0,Math.PI*2);ctx.fill();
-      const t=Date.now()/700;
-      for(let i=0;i<3;i++){const a=t+(Math.PI*2/3)*i;ctx.fillStyle=ec;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(ex+Math.cos(a)*22,ey-22+Math.sin(a)*10,3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+      // Elemental — shape varies by element
+      const el0 = G.enemy.elements[0]||'fire';
+      const t = Date.now()/700;
+      ctx.save();
+      if(el0==='fire'){
+        // Spiky jagged star
+        ctx.fillStyle=ec+'44';
+        for(let i=0;i<8;i++){
+          const a=(Math.PI*2/8)*i+t*0.3;
+          const r=18+Math.sin(t*3+i)*4;
+          ctx.beginPath();ctx.moveTo(ex,ey-22);
+          ctx.lineTo(ex+Math.cos(a)*r,ey-22+Math.sin(a)*r);
+          ctx.lineTo(ex+Math.cos(a+0.4)*(r*0.5),ey-22+Math.sin(a+0.4)*(r*0.5));
+          ctx.closePath();ctx.fill();
+        }
+        ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,10,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffcc00';ctx.beginPath();ctx.arc(ex,ey-24,4,0,Math.PI*2);ctx.fill();
+      } else if(el0==='water'){
+        // Smooth blob with wavy edges
+        ctx.fillStyle=ec+'55';
+        ctx.beginPath();
+        for(let i=0;i<=32;i++){
+          const a=(Math.PI*2/32)*i;
+          const r=20+Math.sin(t*2+i*0.8)*5;
+          if(i===0)ctx.moveTo(ex+Math.cos(a)*r,ey-22+Math.sin(a)*r);
+          else ctx.lineTo(ex+Math.cos(a)*r,ey-22+Math.sin(a)*r);
+        }
+        ctx.closePath();ctx.fill();
+        ctx.fillStyle=ec+'99';ctx.beginPath();ctx.arc(ex,ey-22,14,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffffff88';ctx.beginPath();ctx.arc(ex-4,ey-26,4,0,Math.PI*2);ctx.fill();
+      } else if(el0==='grass'){
+        // Leafy irregular with tendrils
+        for(let i=0;i<6;i++){
+          const a=(Math.PI*2/6)*i+t*0.2;
+          ctx.fillStyle=ec+'66';
+          ctx.beginPath();
+          ctx.ellipse(ex+Math.cos(a)*18,ey-22+Math.sin(a)*12,8,14,a,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,12,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#aaffaa';ctx.beginPath();ctx.arc(ex-3,ey-25,3,0,Math.PI*2);ctx.fill();
+      } else if(el0==='dark'){
+        // Fractured shadow — jagged void shape
+        ctx.fillStyle='#000000cc';
+        for(let i=0;i<6;i++){
+          const a=(Math.PI*2/6)*i+t*0.4;
+          ctx.beginPath();
+          ctx.moveTo(ex,ey-22);
+          ctx.lineTo(ex+Math.cos(a)*(22+Math.sin(t+i)*6),ey-22+Math.sin(a)*(22+Math.sin(t+i)*6));
+          ctx.lineTo(ex+Math.cos(a+0.6)*12,ey-22+Math.sin(a+0.6)*12);
+          ctx.closePath();ctx.fillStyle=ec+(i%2===0?'cc':'88');ctx.fill();
+        }
+        ctx.fillStyle='#c080ff';ctx.beginPath();ctx.arc(ex,ey-22,8,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ex,ey-22,3,0,Math.PI*2);ctx.fill();
+      } else if(el0==='light'){
+        // Radiant star burst
+        for(let i=0;i<12;i++){
+          const a=(Math.PI*2/12)*i+t*0.5;
+          const len=14+Math.sin(t*4+i)*6;
+          ctx.strokeStyle=ec;ctx.lineWidth=2.5;ctx.globalAlpha=0.6+Math.sin(t+i)*0.3;
+          ctx.beginPath();ctx.moveTo(ex,ey-22);ctx.lineTo(ex+Math.cos(a)*len,ey-22+Math.sin(a)*len);ctx.stroke();
+        }
+        ctx.globalAlpha=1;
+        ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ex,ey-22,10,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,7,0,Math.PI*2);ctx.fill();
+      } else {
+        // Fallback circle for dual/unknown
+        ctx.fillStyle=ec+'44';ctx.beginPath();ctx.arc(ex,ey-22,24,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=ec+'88';ctx.beginPath();ctx.arc(ex,ey-22,16,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,10,0,Math.PI*2);ctx.fill();
+      }
+      // Orbiting particles for dual-element
+      if(G.enemy.elements.length>1){
+        const ec2=ELEMENT_COLORS[G.enemy.elements[1]]||ec;
+        for(let i=0;i<2;i++){const a=t*1.5+(Math.PI*i);ctx.fillStyle=ec2;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(ex+Math.cos(a)*26,ey-22+Math.sin(a)*12,4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+      }
+      // Status effect overlays
+      const se = G.enemy.statusEffects||{};
+      if(se.burn){ctx.fillStyle='rgba(255,100,0,0.25)';ctx.beginPath();ctx.arc(ex,ey-22,28,0,Math.PI*2);ctx.fill();}
+      if(se.slow){ctx.fillStyle='rgba(26,179,255,0.3)';ctx.beginPath();ctx.arc(ex,ey-22,28,0,Math.PI*2);ctx.fill();}
+      if(se.poison){ctx.fillStyle='rgba(61,204,90,0.25)';ctx.beginPath();ctx.arc(ex,ey-22,28,0,Math.PI*2);ctx.fill();}
+      ctx.restore();
     }
     if(enemyFlash>0){ctx.fillStyle=`rgba(255,255,255,${enemyFlash*.6})`;ctx.beginPath();ctx.arc(ex,ey-22,isBoss?38:26,0,Math.PI*2);ctx.fill();}
     ctx.restore();
@@ -3109,6 +3265,71 @@ function loadHealLoadout() {
 }
 
 
+
+
+// ═══════════════════════════════════════════════
+// STATUS EFFECTS
+// ═══════════════════════════════════════════════
+// G.enemy.statusEffects = { burn:{stacks,timer}, slow:{timer,pct}, poison:{stacks,timer} }
+
+function applyStatusEffect(enemy, type, options={}) {
+  if(!enemy) return;
+  if(!enemy.statusEffects) enemy.statusEffects = {};
+  const now = Date.now();
+  if(type==='burn') {
+    enemy.statusEffects.burn = { stacks:(enemy.statusEffects.burn?.stacks||0)+1, timer:now+3000, dps:options.dps||5 };
+  } else if(type==='slow') {
+    enemy.statusEffects.slow = { timer:now+3000, pct:0.3 };
+    enemy.slowMult = 0.7; // enemy attack speed reduced
+  } else if(type==='poison') {
+    enemy.statusEffects.poison = { stacks:(enemy.statusEffects.poison?.stacks||0)+1, timer:now+4000, dps:options.dps||3 };
+  }
+}
+
+function tickStatusEffects() {
+  if(!G.enemy || !G.enemy.statusEffects) return;
+  const now = Date.now();
+  const se = G.enemy.statusEffects;
+  // Burn tick
+  if(se.burn && now < se.burn.timer) {
+    const burnDmg = se.burn.dps * se.burn.stacks;
+    G.enemy.hp -= burnDmg;
+    if(G.inBoss) G.bossDmgDealt += burnDmg;
+    checkBossMilestones();
+    updateEnemyUI();
+    if(G.enemy.hp <= 0 && !G.inBoss) { onEnemyDeath(); return; }
+  } else if(se.burn && now >= se.burn.timer) { delete se.burn; }
+  // Poison tick
+  if(se.poison && now < se.poison.timer) {
+    const poisonDmg = se.poison.dps * se.poison.stacks;
+    G.enemy.hp -= poisonDmg;
+    if(G.inBoss) G.bossDmgDealt += poisonDmg;
+    updateEnemyUI();
+    if(G.enemy.hp <= 0 && !G.inBoss) { onEnemyDeath(); return; }
+  } else if(se.poison && now >= se.poison.timer) { delete se.poison; }
+  // Slow expiry
+  if(se.slow && now >= se.slow.timer) { delete se.slow; G.enemy.slowMult = 1; }
+}
+
+// Start status tick interval
+let statusTickInterval = null;
+function startStatusTick() {
+  if(statusTickInterval) clearInterval(statusTickInterval);
+  statusTickInterval = setInterval(tickStatusEffects, 500);
+}
+function stopStatusTick() {
+  if(statusTickInterval) { clearInterval(statusTickInterval); statusTickInterval = null; }
+}
+
+function getStatusBadgesHTML(enemy) {
+  if(!enemy?.statusEffects) return '';
+  const se = enemy.statusEffects;
+  let html = '';
+  if(se.burn)   html += `<span style="color:#ff4d1a;font-size:11px;">🔥x${se.burn.stacks}</span>`;
+  if(se.slow)   html += `<span style="color:#1ab3ff;font-size:11px;">❄️ Slowed</span>`;
+  if(se.poison) html += `<span style="color:#3dcc5a;font-size:11px;">☠️x${se.poison.stacks}</span>`;
+  return html ? `<div style="display:flex;gap:6px;justify-content:center;margin-top:2px;">${html}</div>` : '';
+}
 
 // ── BOSS MILESTONE REWARDS ──
 function checkBossMilestones() {
