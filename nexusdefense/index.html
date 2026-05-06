@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nexus Defense</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --neon:#00f5ff;--neon2:#ff00cc;--neon3:#aaff00;
+  --bg:#030408;--panel:#07090f;--border:#111d2e;
+  --text:#b8d8f0;--muted:#3a5a7a;--gold:#ffd700;
+  --red:#ff2244;--green:#00ff88;--orange:#ff8800;
+  --fire:#ff4400;--ice:#0088ff;--lightning:#ffcc00;
+  --void:#9933ff;--nature:#00cc44;--holy:#ffee00;
+  --shadow:#ff3366;--wind:#44ffcc;--arcane:#ff44ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;touch-action:manipulation;}
+
+/* ─── AUTH ─── */
+#auth-screen{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto;}
+#auth-box{background:#05080f;border:1px solid var(--border);border-radius:18px;padding:22px 18px;width:100%;max-width:370px;box-shadow:0 0 60px rgba(0,245,255,0.07);}
+#auth-box h1{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:var(--neon);text-align:center;margin-bottom:2px;letter-spacing:.12em;text-shadow:0 0 20px var(--neon);}
+.auth-sub{font-size:10px;color:var(--muted);text-align:center;margin-bottom:14px;font-family:'Orbitron',monospace;letter-spacing:.08em;}
+.auth-tabs{display:flex;background:#0a1020;border-radius:7px;padding:3px;margin-bottom:12px;}
+.auth-tab{flex:1;font-family:'Orbitron',monospace;font-size:9px;padding:7px;border-radius:5px;border:none;cursor:pointer;letter-spacing:.05em;transition:all .2s;}
+.auth-tab.active{background:var(--neon);color:#000;font-weight:700;}
+.auth-tab:not(.active){background:transparent;color:var(--muted);}
+.auth-field{margin-bottom:9px;}
+.auth-field label{font-size:8px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:3px;font-family:'Orbitron',monospace;}
+.auth-field input{width:100%;background:#0a1020;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:16px;color:var(--text);outline:none;transition:border-color .2s;}
+.auth-field input:focus{border-color:var(--neon);}
+.auth-submit{width:100%;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;padding:12px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--neon),#0088ff);color:#000;cursor:pointer;letter-spacing:.07em;margin-top:3px;}
+.auth-guest{width:100%;font-family:'Orbitron',monospace;font-size:9px;padding:8px;border-radius:7px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;margin-top:7px;letter-spacing:.05em;}
+#auth-error{font-size:10px;color:var(--red);text-align:center;min-height:15px;margin-bottom:3px;}
+#auth-name-status{font-size:9px;min-height:13px;margin-top:2px;}
+.lb-preview{margin-top:11px;border-top:1px solid var(--border);padding-top:11px;}
+.lb-preview-title{font-family:'Orbitron',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;text-align:center;margin-bottom:7px;}
+.lb-row{display:flex;align-items:center;gap:7px;padding:4px 7px;border-radius:5px;background:#0a1020;margin-bottom:3px;}
+.lb-rank{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;width:20px;text-align:center;}
+.lb-name{flex:1;font-size:11px;}
+.lb-score{font-family:'Orbitron',monospace;font-size:10px;color:var(--neon);}
+
+/* ─── GAME SHELL ─── */
+#game{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg);}
+
+/* ─── HUD ─── */
+#hud{display:flex;align-items:center;padding:6px 10px;background:rgba(5,8,15,0.97);border-bottom:1px solid var(--border);flex-shrink:0;gap:6px;min-height:48px;}
+.hud-block{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.hud-lbl{font-family:'Orbitron',monospace;font-size:6px;color:var(--muted);letter-spacing:.09em;margin-bottom:1px;}
+.hud-v{font-family:'Orbitron',monospace;font-size:14px;font-weight:900;line-height:1;}
+.hud-v.c-neon{color:var(--neon);text-shadow:0 0 8px var(--neon);}
+.hud-v.c-red{color:var(--red);text-shadow:0 0 8px var(--red);}
+.hud-v.c-gold{color:var(--gold);text-shadow:0 0 8px var(--gold);}
+.hud-v.c-green{color:var(--green);}
+#wave-wrap{flex:1;min-width:0;}
+.wave-lbl{font-family:'Orbitron',monospace;font-size:7px;color:var(--muted);text-align:center;margin-bottom:2px;}
+.wave-bg{background:#0a1020;border-radius:3px;height:6px;border:1px solid var(--border);overflow:hidden;}
+.wave-fill{height:100%;background:linear-gradient(90deg,var(--neon),#0088ff);border-radius:3px;transition:width .15s;}
+#hud-sep{width:1px;height:32px;background:var(--border);}
+
+/* ─── BATTLE AREA ─── */
+#battle-area{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+
+/* enemy zone */
+#enemy-zone{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at center,#07090f 0%,#030408 100%);}
+#enemy-zone::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(0,245,255,0.02) 60px),repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(0,245,255,0.02) 60px);pointer-events:none;}
+
+/* divider */
+#mid-divider{height:2px;background:linear-gradient(90deg,transparent 0%,var(--neon) 20%,rgba(0,245,255,0.4) 50%,var(--neon) 80%,transparent 100%);flex-shrink:0;position:relative;}
+#mid-divider::before{content:'⚔ FRONTLINE ⚔';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Orbitron',monospace;font-size:7px;color:var(--neon);background:var(--bg);padding:0 6px;letter-spacing:.1em;white-space:nowrap;}
+
+/* ─── PLAYER BOARD ─── */
+#player-board{flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);padding:6px 6px 4px;display:flex;flex-direction:column;gap:4px;}
+
+/* Node + 6L + 6R layout */
+#board-layout{display:flex;align-items:center;gap:4px;justify-content:center;}
+.dice-side{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:3px;flex-shrink:0;}
+.dice-cell{width:44px;height:44px;background:#050810;border:1px solid #0d1a28;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:border-color .15s,background .15s;}
+.dice-cell:hover{border-color:rgba(0,245,255,0.4);background:#0a1422;}
+.dice-cell.selected{border-color:var(--neon);background:rgba(0,245,255,0.08);box-shadow:0 0 10px rgba(0,245,255,0.25);}
+.dice-cell.merge-hint{border-color:var(--neon3);background:rgba(170,255,0,0.07);animation:hint-pulse .7s infinite alternate;}
+.dice-cell.empty-glow{border-color:rgba(0,245,255,0.15);}
+@keyframes hint-pulse{from{box-shadow:none;}to{box-shadow:0 0 8px rgba(170,255,0,0.4);}}
+
+/* ─── CORE NODE ─── */
+#core-node-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;}
+#core-node{width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,#0a1428,#0d1f3a);border:2px solid var(--neon);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;position:relative;cursor:pointer;box-shadow:0 0 16px rgba(0,245,255,0.2),inset 0 0 12px rgba(0,245,255,0.05);transition:box-shadow .2s;}
+#core-node:hover{box-shadow:0 0 24px rgba(0,245,255,0.35),inset 0 0 16px rgba(0,245,255,0.08);}
+#core-node.damaged{animation:node-hit .3s;}
+@keyframes node-hit{0%,100%{background:linear-gradient(135deg,#0a1428,#0d1f3a);}50%{background:linear-gradient(135deg,#3a0a0a,#2a0a0a);border-color:var(--red);}}
+.node-icon{font-size:22px;line-height:1;}
+.node-hp-text{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--neon);}
+.node-hp-bar-bg{width:56px;height:4px;background:#0a1020;border-radius:2px;overflow:hidden;}
+.node-hp-bar{height:100%;background:linear-gradient(90deg,var(--red),var(--orange));border-radius:2px;transition:width .3s;}
+#core-node-lbl{font-family:'Orbitron',monospace;font-size:7px;color:var(--muted);letter-spacing:.08em;text-align:center;}
+.node-level-badge{position:absolute;top:-6px;right:-6px;background:var(--gold);color:#000;font-family:'Orbitron',monospace;font-size:7px;font-weight:900;border-radius:8px;padding:1px 5px;}
+.node-aura{position:absolute;inset:-4px;border-radius:14px;border:1px solid rgba(0,245,255,0.15);animation:aura-spin 8s linear infinite;}
+@keyframes aura-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* ─── DICE VISUALS ─── */
+.die{width:88%;height:88%;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;transition:transform .1s,box-shadow .1s;position:relative;overflow:hidden;}
+.die:hover{transform:scale(1.06);}
+.die::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.08) 0%,transparent 60%);border-radius:6px;pointer-events:none;}
+.die-lv{position:absolute;bottom:1px;right:2px;font-family:'Orbitron',monospace;font-size:6px;font-weight:900;opacity:.85;}
+.die-icon{font-size:15px;line-height:1;}
+.die-name{font-size:6px;font-family:'Orbitron',monospace;letter-spacing:.04em;opacity:.8;}
+/* die types */
+.dt-fire     {background:linear-gradient(135deg,#8b1500,#cc3300);border:1.5px solid #ff5522;box-shadow:0 0 6px rgba(255,68,0,.45);}
+.dt-ice      {background:linear-gradient(135deg,#002e77,#0055bb);border:1.5px solid #33aaff;box-shadow:0 0 6px rgba(0,136,255,.45);}
+.dt-lightning{background:linear-gradient(135deg,#665500,#bbaa00);border:1.5px solid #ffdd22;box-shadow:0 0 6px rgba(255,204,0,.45);}
+.dt-void     {background:linear-gradient(135deg,#260040,#6600bb);border:1.5px solid #bb44ff;box-shadow:0 0 6px rgba(153,51,255,.45);}
+.dt-nature   {background:linear-gradient(135deg,#003318,#007733);border:1.5px solid #33ff88;box-shadow:0 0 6px rgba(0,204,68,.45);}
+.dt-holy     {background:linear-gradient(135deg,#4a4400,#999900);border:1.5px solid #ffff44;box-shadow:0 0 6px rgba(255,238,0,.45);}
+.dt-shadow   {background:linear-gradient(135deg,#1a0020,#440055);border:1.5px solid #ff3366;box-shadow:0 0 6px rgba(255,51,102,.45);}
+.dt-wind     {background:linear-gradient(135deg,#003333,#007766);border:1.5px solid #44ffcc;box-shadow:0 0 6px rgba(68,255,204,.45);}
+.dt-arcane   {background:linear-gradient(135deg,#330033,#880088);border:1.5px solid #ff44ff;box-shadow:0 0 6px rgba(255,68,255,.45);}
+.die-selected{outline:2px solid var(--neon);outline-offset:2px;transform:scale(1.08)!important;}
+
+/* Merge flash */
+@keyframes merge-flash{0%{transform:scale(1);}40%{transform:scale(1.25);}100%{transform:scale(1);}}
+.merge-anim{animation:merge-flash .35s ease;}
+
+/* ─── BOTTOM CONTROLS ─── */
+#bottom-bar{display:flex;align-items:center;gap:5px;padding:4px 6px;background:rgba(5,8,15,0.98);border-top:1px solid var(--border);flex-shrink:0;}
+#summon-btn{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;padding:9px 12px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--neon),#0066cc);color:#000;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:opacity .2s;}
+#summon-btn:disabled{opacity:.35;cursor:not-allowed;}
+#node-up-btn{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;padding:9px 10px;border-radius:8px;border:1px solid var(--gold);color:var(--gold);background:rgba(255,215,0,.07);cursor:pointer;flex-shrink:0;white-space:nowrap;transition:opacity .2s;}
+#node-up-btn:disabled{opacity:.3;cursor:not-allowed;}
+.sp-display{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.sp-lbl{font-family:'Orbitron',monospace;font-size:6px;color:var(--muted);}
+.sp-pips{display:flex;gap:2px;margin-top:2px;}
+.sp-pip{width:7px;height:7px;border-radius:2px;background:var(--border);transition:background .2s;}
+.sp-pip.on{background:var(--gold);}
+#action-hint{flex:1;font-size:10px;color:var(--muted);text-align:center;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.04em;}
+
+/* ─── ENEMIES ─── */
+.enemy{position:absolute;display:flex;flex-direction:column;align-items:center;gap:1px;z-index:5;pointer-events:none;transition:top .12s linear,left .05s;}
+.enemy-body{border-radius:7px;display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.25);position:relative;}
+.e-normal .enemy-body{width:28px;height:28px;font-size:14px;background:linear-gradient(135deg,#3a1500,#773300);}
+.e-fast   .enemy-body{width:24px;height:24px;font-size:12px;background:linear-gradient(135deg,#002a1a,#006644);}
+.e-tank   .enemy-body{width:34px;height:34px;font-size:18px;background:linear-gradient(135deg,#25001a,#660044);}
+.e-boss   .enemy-body{width:44px;height:44px;font-size:24px;background:linear-gradient(135deg,#1a0000,#660000);border-color:#ff2244;box-shadow:0 0 12px rgba(255,34,68,.5);}
+.e-hp-bg{height:3px;border-radius:2px;background:#111;overflow:hidden;}
+.e-normal .e-hp-bg{width:28px;}
+.e-fast   .e-hp-bg{width:24px;}
+.e-tank   .e-hp-bg{width:34px;}
+.e-boss   .e-hp-bg{width:44px;}
+.e-hp-fill{height:100%;border-radius:2px;transition:width .15s;}
+.e-normal .e-hp-fill{background:var(--orange);}
+.e-fast   .e-hp-fill{background:var(--green);}
+.e-tank   .e-hp-fill{background:var(--neon2);}
+.e-boss   .e-hp-fill{background:var(--red);}
+
+/* ─── PROJECTILES & FX ─── */
+.projectile{position:absolute;border-radius:50%;pointer-events:none;z-index:10;}
+.dmg-num{position:absolute;font-family:'Orbitron',monospace;font-weight:900;pointer-events:none;z-index:20;animation:dmg-up .7s forwards;}
+@keyframes dmg-up{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-36px) scale(.65);}}
+
+/* ─── OVERLAYS ─── */
+.overlay{position:fixed;inset:0;z-index:300;background:rgba(3,4,8,.94);display:none;align-items:center;justify-content:center;padding:12px;overflow-y:auto;}
+.overlay.visible{display:flex!important;}
+.ov-box{background:#05080f;border:1px solid var(--border);border-radius:18px;padding:22px 18px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;margin:auto;}
+.ov-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--neon);text-align:center;letter-spacing:.1em;text-shadow:0 0 16px var(--neon);margin-bottom:6px;}
+.ov-sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;}
+.btn-p{width:100%;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;padding:12px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--neon),#0088ff);color:#000;cursor:pointer;letter-spacing:.07em;margin-bottom:8px;min-height:42px;}
+.btn-s{width:100%;font-family:'Orbitron',monospace;font-size:10px;padding:10px;border-radius:9px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;letter-spacing:.05em;margin-bottom:7px;min-height:38px;}
+.btn-gold{border-color:var(--gold)!important;color:var(--gold)!important;}
+.btn-red{border-color:var(--red)!important;color:var(--red)!important;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px;}
+.stat-card{background:#0a1020;border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;}
+.sc-lbl{font-size:8px;color:var(--muted);letter-spacing:.09em;font-family:'Orbitron',monospace;margin-bottom:3px;}
+.sc-val{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--neon);}
+.sc-val.gold{color:var(--gold);}
+.gold-line{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:12px;padding:7px;background:#0a1020;border-radius:7px;}
+.shop-item{background:#0a1020;border:1px solid var(--border);border-radius:10px;padding:11px;margin-bottom:7px;display:flex;align-items:center;gap:9px;}
+.si-icon{font-size:22px;flex-shrink:0;}
+.si-info{flex:1;}
+.si-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;margin-bottom:2px;}
+.si-desc{font-size:10px;color:var(--muted);}
+.si-pips{display:flex;gap:3px;margin-top:3px;}
+.si-pip{width:10px;height:4px;border-radius:1px;background:var(--border);}
+.si-pip.on{background:var(--neon);}
+.si-buy{font-family:'Orbitron',monospace;font-size:9px;padding:6px 10px;border-radius:6px;border:1px solid var(--gold);color:var(--gold);background:rgba(255,215,0,.06);cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.si-buy:disabled{opacity:.3;cursor:not-allowed;border-color:var(--border);color:var(--muted);background:transparent;}
+.si-buy.maxed{border-color:var(--green);color:var(--green);cursor:default;background:transparent;}
+.lb-full-row{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;background:#0a1020;margin-bottom:3px;}
+.lb-fr{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;width:24px;text-align:center;}
+.lb-fn{flex:1;font-size:12px;}
+.lb-fs{font-family:'Orbitron',monospace;font-size:10px;color:var(--neon);}
+.lb-me{border:1px solid rgba(0,245,255,.3);background:rgba(0,245,255,.05)!important;}
+
+/* Node upgrade panel (in-game) */
+#node-info-panel{display:none;position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:#07090f;border:1px solid var(--neon);border-radius:12px;padding:12px 14px;z-index:100;min-width:260px;max-width:320px;}
+#node-info-panel h3{font-family:'Orbitron',monospace;font-size:11px;color:var(--neon);margin-bottom:8px;letter-spacing:.08em;}
+.node-stat-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;}
+.nsr-lbl{color:var(--muted);}
+.nsr-val{font-family:'Orbitron',monospace;color:var(--neon);}
+.node-up-options{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;}
+.nuo-btn{font-family:'Orbitron',monospace;font-size:8px;padding:6px;border-radius:6px;border:1px solid var(--gold);color:var(--gold);background:rgba(255,215,0,.06);cursor:pointer;text-align:center;line-height:1.4;}
+.nuo-btn:disabled{opacity:.3;cursor:not-allowed;border-color:var(--border);color:var(--muted);}
+#node-info-close{width:100%;margin-top:6px;font-family:'Orbitron',monospace;font-size:9px;padding:6px;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;}
+
+/* Toast */
+#toast{position:fixed;top:55px;left:50%;transform:translateX(-50%);z-index:900;font-family:'Orbitron',monospace;font-size:10px;padding:6px 16px;border-radius:16px;border:1px solid var(--neon);background:rgba(0,245,255,.1);color:var(--neon);pointer-events:none;opacity:0;transition:opacity .25s;letter-spacing:.07em;white-space:nowrap;}
+
+/* Account */
+#account-btn{position:fixed;top:6px;right:8px;z-index:600;font-family:'Orbitron',monospace;font-size:7px;background:rgba(0,0,0,.7);border:1px solid var(--border);border-radius:12px;padding:3px 8px;color:var(--muted);cursor:pointer;}
+#account-popup{position:fixed;top:28px;right:8px;background:#07090f;border:1px solid var(--border);border-radius:9px;padding:8px;z-index:600;min-width:130px;display:none;}
+#account-popup button{width:100%;font-family:'Orbitron',monospace;font-size:8px;padding:8px;border-radius:5px;cursor:pointer;margin-bottom:4px;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- ─── AUTH ─── -->
+<div id="auth-screen">
+  <div id="auth-box">
+    <h1>⬡ Nexus Defense</h1>
+    <div class="auth-sub">NODE · MERGE · CONQUER</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="authTab('login')">SIGN IN</button>
+      <button class="auth-tab" id="tab-reg" onclick="authTab('register')">REGISTER</button>
+    </div>
+    <div id="auth-dname-field" class="auth-field hidden">
+      <label>Display Name</label>
+      <input id="auth-dname" type="text" maxlength="20" placeholder="Unique leaderboard name" autocomplete="off" spellcheck="false">
+      <div id="auth-name-status"></div>
+    </div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input id="auth-email" type="email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <input id="auth-pw" type="password" placeholder="Min 6 characters" autocomplete="current-password">
+    </div>
+    <div id="auth-error"></div>
+    <button class="auth-submit" id="auth-submit-btn" onclick="authSubmit()">SIGN IN</button>
+    <button class="auth-guest" onclick="authGuest()">Play as Guest (no save)</button>
+    <div class="lb-preview">
+      <div class="lb-preview-title">🏆 TOP COMMANDERS</div>
+      <div id="auth-lb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── GAME ─── -->
+<div id="game">
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-block">
+      <div class="hud-lbl">HP</div>
+      <div class="hud-v c-red" id="hud-hp">20</div>
+    </div>
+    <div id="hud-sep"></div>
+    <div id="wave-wrap">
+      <div class="wave-lbl" id="wave-lbl">WAVE 1</div>
+      <div class="wave-bg"><div class="wave-fill" id="wave-fill" style="width:0%"></div></div>
+    </div>
+    <div id="hud-sep2" style="width:1px;height:32px;background:var(--border);flex-shrink:0;"></div>
+    <div class="hud-block">
+      <div class="hud-lbl">SCORE</div>
+      <div class="hud-v c-neon" id="hud-score">0</div>
+    </div>
+    <div class="hud-block" style="margin-left:4px;">
+      <div class="hud-lbl">COINS</div>
+      <div class="hud-v c-gold" id="hud-coins">0</div>
+    </div>
+  </div>
+
+  <!-- BATTLE AREA -->
+  <div id="battle-area">
+    <div id="enemy-zone"></div>
+    <div id="mid-divider"></div>
+
+    <!-- PLAYER BOARD -->
+    <div id="player-board">
+      <div id="board-layout">
+        <!-- Left 6 dice (3x2) -->
+        <div class="dice-side" id="left-side"></div>
+
+        <!-- Core Node -->
+        <div id="core-node-wrap">
+          <div id="core-node" onclick="openNodePanel()">
+            <div class="node-aura"></div>
+            <div class="node-level-badge" id="node-lv-badge">Lv1</div>
+            <div class="node-icon">⬡</div>
+            <div class="node-hp-text" id="node-hp-txt">20/20</div>
+            <div class="node-hp-bar-bg"><div class="node-hp-bar" id="node-hp-bar" style="width:100%"></div></div>
+          </div>
+          <div id="core-node-lbl">CORE NODE</div>
+        </div>
+
+        <!-- Right 6 dice (3x2) -->
+        <div class="dice-side" id="right-side"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div id="bottom-bar">
+      <button id="summon-btn" onclick="summonDie()">🎲 SUMMON</button>
+      <div class="sp-display">
+        <div class="sp-lbl">SP</div>
+        <div class="sp-pips" id="sp-pips"></div>
+      </div>
+      <div id="action-hint">Select a die to move or merge</div>
+      <button id="node-up-btn" onclick="openNodePanel()">⬡ NODE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT -->
+<div id="account-btn" onclick="toggleAcct()">⬡ ACCT</div>
+<div id="account-popup">
+  <button onclick="signOutUser()" style="border:1px solid var(--red);color:var(--red);background:transparent;">SIGN OUT</button>
+  <button onclick="toggleAcct()" style="border:1px solid var(--border);color:var(--muted);background:transparent;">CLOSE</button>
+</div>
+
+<!-- NODE PANEL -->
+<div id="node-info-panel">
+  <h3>⬡ CORE NODE</h3>
+  <div id="node-stat-rows"></div>
+  <div class="node-up-options" id="node-up-options"></div>
+  <button id="node-info-close" onclick="closeNodePanel()">CLOSE</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ─── OVERLAYS ─── -->
+<!-- MAIN MENU -->
+<div class="overlay" id="ov-menu">
+  <div class="ov-box">
+    <div class="ov-title">⬡ NEXUS DEFENSE</div>
+    <div class="ov-sub" id="menu-tagline">Upgrade your Core Node. Merge your dice. Survive.</div>
+    <button class="btn-p" onclick="openDeckBuilder()">⚔ BATTLE</button>
+    <button class="btn-s btn-gold" onclick="openShop()">🛒 UPGRADE SHOP</button>
+    <button class="btn-s" onclick="openLeaderboard()">🏆 LEADERBOARD</button>
+    <button class="btn-s btn-red" onclick="signOutUser()">⬛ SIGN OUT</button>
+    <div style="margin-top:10px;">
+      <div style="font-family:'Orbitron',monospace;font-size:8px;color:var(--muted);text-align:center;letter-spacing:.1em;margin-bottom:7px;">TOP COMMANDERS</div>
+      <div id="menu-lb-preview"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DECK BUILDER -->
+<div class="overlay" id="ov-deck">
+  <div class="ov-box">
+    <div class="ov-title">🎴 YOUR DECK</div>
+    <div class="ov-sub">Choose 5 dice types. Rarer dice drop less frequently.</div>
+    <div id="deck-selected-slots" style="display:flex;justify-content:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
+    <div id="deck-all-dice" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;"></div>
+    <button class="btn-p" id="deck-confirm" onclick="confirmDeck()">⚔ START BATTLE</button>
+    <button class="btn-s" onclick="showOverlay('ov-menu')">← BACK</button>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div class="overlay" id="ov-shop">
+  <div class="ov-box">
+    <div class="ov-title">🛒 UPGRADES</div>
+    <div class="gold-line" id="shop-gold">💰 0 COINS</div>
+    <div id="shop-items"></div>
+    <button class="btn-s" onclick="closeShop()">← BACK</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="overlay" id="ov-lb">
+  <div class="ov-box">
+    <div class="ov-title">🏆 LEADERBOARD</div>
+    <div class="ov-sub">Highest Wave Survived</div>
+    <div id="lb-content"></div>
+    <button class="btn-s" onclick="closeLB()" style="margin-top:10px;">← BACK</button>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div class="overlay" id="ov-gameover">
+  <div class="ov-box">
+    <div class="ov-title" id="go-title">💀 DEFEATED</div>
+    <div class="ov-sub" id="go-sub">Your Core Node has been destroyed.</div>
+    <div class="stat-grid" id="go-stats"></div>
+    <button class="btn-p" onclick="openDeckBuilder()">⚔ BATTLE AGAIN</button>
+    <button class="btn-s btn-gold" onclick="openShop()">🛒 SPEND COINS</button>
+    <button class="btn-s" onclick="openLeaderboard()">🏆 LEADERBOARD</button>
+    <button class="btn-s" onclick="showOverlay('ov-menu')">← MAIN MENU</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// SUPABASE (same as HyperCell)
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'https://kryfuceztfzccsidkzog.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyeWZ1Y2V6dGZ6Y2NzaWRrem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODY1MjIsImV4cCI6MjA5MzY2MjUyMn0.c_pmdXWHLQYh1dwkCwhqpW7lpgIzK13UUq2ZW53XhAs';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let sbUser = null, sbProfile = null;
+
+// ══════════════════════════════════════════════
+// DICE DEFINITIONS
+// ══════════════════════════════════════════════
+const DICE = {
+  fire:      {name:'Fire',      icon:'🔥',cls:'dt-fire',      color:'#ff4400',dmg:9, spd:1.1,range:160, special:'splash',  specialDesc:'Hits 2 enemies'},
+  ice:       {name:'Ice',       icon:'❄️', cls:'dt-ice',       color:'#0088ff',dmg:5, spd:0.9,range:170, special:'slow',    specialDesc:'Slows enemies'},
+  lightning: {name:'Lightning', icon:'⚡', cls:'dt-lightning', color:'#ffcc00',dmg:14,spd:0.5,range:150, special:'chain',   specialDesc:'Chains to 2 targets'},
+  void:      {name:'Void',      icon:'🌑',cls:'dt-void',      color:'#9933ff',dmg:7, spd:1.0,range:155, special:'drain',   specialDesc:'Heals Core Node'},
+  nature:    {name:'Nature',    icon:'🌿',cls:'dt-nature',    color:'#00cc44',dmg:4, spd:1.4,range:180, special:'regen',   specialDesc:'+HP regen to Node'},
+  holy:      {name:'Holy',      icon:'✨',cls:'dt-holy',      color:'#ffee00',dmg:11,spd:0.8,range:160, special:'smite',   specialDesc:'2x dmg to bosses'},
+  shadow:    {name:'Shadow',    icon:'🌘',cls:'dt-shadow',    color:'#ff3366',dmg:8, spd:1.3,range:145, special:'crit',    specialDesc:'20% crit chance'},
+  wind:      {name:'Wind',      icon:'🌪️',cls:'dt-wind',      color:'#44ffcc',dmg:6, spd:2.0,range:200, special:'push',    specialDesc:'Pushes enemies back'},
+  arcane:    {name:'Arcane',    icon:'🔮',cls:'dt-arcane',    color:'#ff44ff',dmg:12,spd:0.7,range:165, special:'amplify', specialDesc:'Buffs adjacent dice'},
+};
+const DICE_KEYS = Object.keys(DICE);
+
+// ══════════════════════════════════════════════
+// UPGRADES (persistent shop)
+// ══════════════════════════════════════════════
+const UPGRADES = {
+  atkPower: {name:'Attack Power',  icon:'⚔️', desc:'All dice +15% damage',      maxLevel:5,baseCost:25,costMult:1.8},
+  atkSpeed: {name:'Atk Speed',     icon:'⏩',desc:'All dice +10% attack speed', maxLevel:5,baseCost:30,costMult:1.9},
+  nodeHP:   {name:'Node Max HP',   icon:'🏰',desc:'+4 max HP per level',        maxLevel:5,baseCost:20,costMult:1.7},
+  spRegen:  {name:'SP Regen',      icon:'💎',desc:'SP regenerates 15% faster',  maxLevel:5,baseCost:35,costMult:2.0},
+  coinBonus:{name:'Coin Haul',     icon:'💰',desc:'+20% coins from enemies',    maxLevel:5,baseCost:15,costMult:1.6},
+};
+
+// ══════════════════════════════════════════════
+// PLAYER DATA
+// ══════════════════════════════════════════════
+let P = {
+  name:'',totalCoins:0,bestWave:0,
+  upgradeLevels:{atkPower:0,atkSpeed:0,nodeHP:0,spRegen:0,coinBonus:0},
+  savedDeck:['fire','ice','lightning','void','nature'],
+};
+
+function saveLocal(){try{localStorage.setItem('dicestorm_v2',JSON.stringify(P));}catch(e){}}
+function loadLocal(){
+  try{
+    const r=localStorage.getItem('dicestorm_v2');
+    if(r){const d=JSON.parse(r);P.totalCoins=d.totalCoins||0;P.bestWave=d.bestWave||0;P.upgradeLevels=d.upgradeLevels||{atkPower:0,atkSpeed:0,nodeHP:0,spRegen:0,coinBonus:0};P.savedDeck=d.savedDeck||['fire','ice','lightning','void','nature'];}
+  }catch(e){}
+}
+async function cloudSave(){
+  if(!sbUser){saveLocal();return;}
+  saveLocal();
+  try{
+    await sb.from('hypercell_saves').upsert({
+      player_id:sbUser.id,username:P.name,total_coins:P.totalCoins,best_dist:P.bestWave,
+      upgrade_levels:{...P.upgradeLevels,savedDeck:P.savedDeck},
+      updated_at:new Date().toISOString()
+    },{onConflict:'player_id'});
+  }catch(e){}
+}
+async function cloudLoad(){
+  if(!sbUser){loadLocal();return;}
+  try{
+    const{data}=await sb.from('hypercell_saves').select('*').eq('player_id',sbUser.id).single();
+    if(data){
+      P.totalCoins=data.total_coins||0;P.bestWave=data.best_dist||0;
+      const ul=data.upgrade_levels||{};
+      P.savedDeck=ul.savedDeck||['fire','ice','lightning','void','nature'];
+      delete ul.savedDeck;
+      P.upgradeLevels={atkPower:0,atkSpeed:0,nodeHP:0,spRegen:0,coinBonus:0,...ul};
+    }else loadLocal();
+  }catch(e){loadLocal();}
+}
+async function postLeaderboard(wave){
+  if(!sbUser||!sbProfile)return;
+  try{await sb.from('hypercell_lb').upsert({player_id:sbUser.id,username:sbProfile.username,best_dist:wave,updated_at:new Date().toISOString()},{onConflict:'player_id'});}catch(e){}
+}
+async function fetchLB(){
+  try{const{data}=await sb.from('hypercell_lb').select('username,best_dist').order('best_dist',{ascending:false}).limit(20);return data||[];}catch(e){return[];}
+}
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+let authMode='login',nameTO=null;
+function authTab(m){
+  authMode=m;
+  document.getElementById('auth-error').textContent='';
+  const nf=document.getElementById('auth-dname-field');
+  const btn=document.getElementById('auth-submit-btn');
+  const tl=document.getElementById('tab-login'),tr=document.getElementById('tab-reg');
+  if(m==='register'){nf.classList.remove('hidden');btn.textContent='CREATE ACCOUNT';tl.classList.remove('active');tr.classList.add('active');}
+  else{nf.classList.add('hidden');btn.textContent='SIGN IN';tl.classList.add('active');tr.classList.remove('active');}
+}
+document.getElementById('auth-dname').addEventListener('input',()=>{
+  clearTimeout(nameTO);
+  const v=document.getElementById('auth-dname').value.trim();
+  const s=document.getElementById('auth-name-status');
+  if(v.length<2){s.textContent='';return;}
+  s.textContent='Checking...';s.style.color='var(--muted)';
+  nameTO=setTimeout(async()=>{
+    const{data}=await sb.rpc('is_username_available',{name:v});
+    if(data){s.textContent='✓ Available';s.style.color='#00ff88';}
+    else{s.textContent='✗ Taken';s.style.color='var(--red)';}
+  },500);
+});
+async function authSubmit(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pw=document.getElementById('auth-pw').value;
+  const err=document.getElementById('auth-error');
+  const btn=document.getElementById('auth-submit-btn');
+  err.textContent='';
+  if(!email||!pw){err.textContent='Fill in all fields.';return;}
+  btn.disabled=true;
+  if(authMode==='register'){
+    btn.textContent='Please wait...';
+    const dn=document.getElementById('auth-dname').value.trim();
+    if(!dn||dn.length<2){err.textContent='Display name too short.';btn.textContent='CREATE ACCOUNT';btn.disabled=false;return;}
+    const{data:avail}=await sb.rpc('is_username_available',{name:dn});
+    if(!avail){err.textContent='Name taken.';btn.textContent='CREATE ACCOUNT';btn.disabled=false;return;}
+    const{data,error}=await sb.auth.signUp({email,password:pw});
+    if(error){err.textContent=error.message;btn.textContent='CREATE ACCOUNT';btn.disabled=false;return;}
+    sbUser=data.user;
+    for(let i=0;i<3;i++){await new Promise(r=>setTimeout(r,600));const{error:pe}=await sb.from('players').upsert({id:sbUser.id,username:dn},{onConflict:'id'});if(!pe)break;}
+    sbProfile={id:sbUser.id,username:dn};
+    onAuthReady();
+  }else{
+    btn.textContent='Please wait...';
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
+    if(error){err.textContent=error.message;btn.textContent='SIGN IN';btn.disabled=false;return;}
+    sbUser=data.user;await loadSbProfile();
+    if(!sbProfile){err.textContent='Profile missing.';btn.textContent='SIGN IN';btn.disabled=false;return;}
+    onAuthReady();
+  }
+}
+async function loadSbProfile(){if(!sbUser)return;const{data}=await sb.from('players').select('*').eq('id',sbUser.id).single();sbProfile=data;}
+function authGuest(){
+  sbUser=null;sbProfile=null;
+  P.name='Guest#'+Math.floor(Math.random()*9000+1000);
+  loadLocal();
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('game').style.display='flex';
+  document.getElementById('account-btn').style.display='none';
+  initGame();
+}
+async function onAuthReady(){
+  P.name=sbProfile.username;
+  await cloudLoad();
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('game').style.display='flex';
+  initGame();
+}
+async function signOutUser(){document.getElementById('account-popup').style.display='none';await sb.auth.signOut();location.reload();}
+function toggleAcct(){const m=document.getElementById('account-popup');m.style.display=m.style.display==='block'?'none':'block';}
+
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session){sbUser=session.user;loadSbProfile().then(()=>{if(sbProfile)onAuthReady();else document.getElementById('auth-screen').style.display='flex';});}
+  else document.getElementById('auth-screen').style.display='flex';
+});
+(async()=>{const lb=await fetchLB();document.getElementById('auth-lb').innerHTML=buildLBPreview(lb);})();
+
+function buildLBPreview(lb){
+  if(!lb||!lb.length)return'<div style="text-align:center;color:var(--muted);font-size:11px;font-style:italic;">No records yet!</div>';
+  const m=['🥇','🥈','🥉'];
+  return lb.slice(0,5).map((r,i)=>`<div class="lb-row"><span class="lb-rank" style="color:${i===0?'#ffd700':i===1?'#aaa':i===2?'#cd7f32':'#3a5a7a'}">${m[i]||'#'+(i+1)}</span><span class="lb-name">${r.username||'???'}</span><span class="lb-score">Wave ${r.best_dist||0}</span></div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════════
+// Board: LEFT side = indices 0-5, RIGHT side = indices 6-11
+// Each slot: {type, level} or null
+let GS = {};
+
+function getBaseHP(){ return 20 + (P.upgradeLevels.nodeHP||0)*4; }
+function atkMult(){   return 1 + (P.upgradeLevels.atkPower||0)*0.15; }
+function speedMult(){ return 1 + (P.upgradeLevels.atkSpeed||0)*0.10; }
+function coinMult(){  return 1 + (P.upgradeLevels.coinBonus||0)*0.20; }
+function spRegenMult(){return 1 - (P.upgradeLevels.spRegen||0)*0.12; }
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function initGame(){
+  buildBoard();
+  buildSPPips();
+  showMainMenu();
+}
+
+// ── BOARD BUILD ──
+function buildBoard(){
+  const left = document.getElementById('left-side');
+  const right = document.getElementById('right-side');
+  left.innerHTML=''; right.innerHTML='';
+  for(let i=0;i<6;i++){
+    const cl = document.createElement('div');
+    cl.className='dice-cell'; cl.id=`slot-L${i}`;
+    cl.onclick=()=>onSlotClick('L',i);
+    left.appendChild(cl);
+    const cr = document.createElement('div');
+    cr.className='dice-cell'; cr.id=`slot-R${i}`;
+    cr.onclick=()=>onSlotClick('R',i);
+    right.appendChild(cr);
+  }
+}
+
+function buildSPPips(){
+  const c=document.getElementById('sp-pips');
+  c.innerHTML='';
+  for(let i=0;i<10;i++){const p=document.createElement('div');p.className='sp-pip';p.id=`sp-pip-${i}`;c.appendChild(p);}
+}
+
+// ══════════════════════════════════════════════
+// DECK BUILDER
+// ══════════════════════════════════════════════
+let deckBuilding = [];
+
+function openDeckBuilder(){
+  deckBuilding = [...P.savedDeck];
+  renderDeckBuilder();
+  showOverlay('ov-deck');
+}
+
+function renderDeckBuilder(){
+  // Selected slots
+  const sel = document.getElementById('deck-selected-slots');
+  sel.innerHTML='';
+  for(let i=0;i<5;i++){
+    const t = deckBuilding[i];
+    const d = document.createElement('div');
+    d.style.cssText=`width:52px;height:52px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:${t?'pointer':'default'};border:1px solid ${t?'var(--neon)':'var(--border)'};background:${t?'#0a1422':'#070a12'};`;
+    d.innerHTML = t ? `<span style="font-size:18px">${DICE[t].icon}</span><span style="font-family:'Orbitron',monospace;font-size:6px;color:var(--neon)">${DICE[t].name}</span>` : `<span style="color:var(--muted);font-size:18px">+</span>`;
+    if(t) d.onclick=()=>{deckBuilding.splice(i,1);renderDeckBuilder();};
+    sel.appendChild(d);
+  }
+  // All dice
+  const all = document.getElementById('deck-all-dice');
+  all.innerHTML='';
+  DICE_KEYS.forEach(k=>{
+    const cfg=DICE[k]; const inDeck=deckBuilding.includes(k);
+    const d=document.createElement('div');
+    d.style.cssText=`background:${inDeck?'rgba(0,245,255,0.06)':'#070a12'};border:1px solid ${inDeck?'var(--neon)':'var(--border)'};border-radius:9px;padding:9px;cursor:pointer;display:flex;gap:7px;align-items:center;opacity:${inDeck?'0.5':'1'};transition:all .15s;`;
+    d.innerHTML=`<span style="font-size:20px">${cfg.icon}</span><div><div style="font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:${cfg.color}">${cfg.name}</div><div style="font-size:9px;color:var(--muted);margin-top:1px">${cfg.specialDesc}</div></div>`;
+    if(!inDeck) d.onclick=()=>{if(deckBuilding.length<5){deckBuilding.push(k);renderDeckBuilder();}};
+    all.appendChild(d);
+  });
+  document.getElementById('deck-confirm').disabled = deckBuilding.length<5;
+}
+
+function confirmDeck(){
+  if(deckBuilding.length<5){toast('Select 5 dice!');return;}
+  P.savedDeck=[...deckBuilding];
+  cloudSave();
+  hideAllOverlays();
+  startGame();
+}
+
+function cancelDeckBuild(){ showOverlay('ov-menu'); }
+
+// ══════════════════════════════════════════════
+// GAME START
+// ══════════════════════════════════════════════
+function startGame(){
+  hideAllOverlays();
+  closeNodePanel();
+  const maxHP = getBaseHP();
+  GS = {
+    running:true, dead:false,
+    hp:maxHP, maxHP,
+    wave:1, score:0, coins:0,
+    sp:3, maxSP:10, spTimer:0, spRegenRate:3.0,
+    waveTimer:0, waveDuration:0,
+    spawnTimer:0, spawnInterval:0,
+    spawned:0, totalToSpawn:0,
+    waveComplete:false,
+    enemies:[],
+    board: Array(12).fill(null), // 0-5 = Left, 6-11 = Right
+    dice:[],  // {side:'L'|'R', idx:0-5, type, level, atkTimer, cooldown}
+    selected:null, // {side,idx}
+    eid:0,
+    animId:null, lastFrame:null,
+    // Core Node upgrades (in-game, reset each run)
+    nodeLevel:1,
+    nodeUpgrades:{dmgBoost:0, regenRate:0, shield:0, sp_boost:0},
+    nodeRegenTimer:0,
+    nodeShieldTimer:0,
+  };
+  clearBoardVisuals();
+  clearEnemies();
+  updateHUD();
+  updateSPPips();
+  updateNodeVisual();
+  startWave(1);
+  GS.animId = requestAnimationFrame(loop);
+}
+
+function clearBoardVisuals(){
+  for(let i=0;i<6;i++){
+    const sl=document.getElementById(`slot-L${i}`);
+    const sr=document.getElementById(`slot-R${i}`);
+    if(sl){sl.innerHTML='';sl.className='dice-cell';}
+    if(sr){sr.innerHTML='';sr.className='dice-cell';}
+  }
+}
+
+function clearEnemies(){
+  document.getElementById('enemy-zone').innerHTML='';
+}
+
+// ══════════════════════════════════════════════
+// WAVE SYSTEM
+// ══════════════════════════════════════════════
+function startWave(w){
+  GS.wave=w;
+  GS.waveTimer=0;
+  GS.waveDuration = 20 + w*6;
+  GS.totalToSpawn = 4 + w*3;
+  GS.spawned=0;
+  GS.spawnInterval = Math.max(500, 2500-w*110);
+  GS.spawnTimer=0;
+  GS.waveComplete=false;
+  document.getElementById('wave-lbl').textContent=`WAVE ${w}`;
+  toast(`⚔ WAVE ${w}${w%5===0?' — BOSS WAVE!':''}`);
+}
+
+function getEnemyConfig(wave){
+  const r=Math.random();
+  if(wave>=5&&r<0.07)  return{type:'boss', hp:80+wave*20, spd:18, icon:'💀', reward:25, slow_immunity:true};
+  if(wave>=3&&r<0.2)   return{type:'tank', hp:50+wave*12, spd:12, icon:'🛡️', reward:10};
+  if(wave>=2&&r<0.28)  return{type:'fast', hp:20+wave*4,  spd:45, icon:'💨', reward:5};
+                       return{type:'normal',hp:28+wave*7, spd:22, icon:'👾', reward:4};
+}
+
+function spawnEnemy(wave){
+  const cfg=getEnemyConfig(wave);
+  const zone=document.getElementById('enemy-zone');
+  const zw=zone.clientWidth, zh=zone.clientHeight;
+  // Random X lane (5 lanes)
+  const lanes=5, lw=zw/lanes;
+  const laneIdx=Math.floor(Math.random()*lanes);
+  const x=laneIdx*lw + lw*0.15 + Math.random()*lw*0.7;
+
+  const el=document.createElement('div');
+  el.className=`enemy e-${cfg.type}`;
+  const hpBar=`<div class="e-hp-bg"><div class="e-hp-fill" id="ehp-fill-${GS.eid}" style="width:100%"></div></div>`;
+  el.innerHTML=`<div class="enemy-body">${cfg.icon}</div>${hpBar}`;
+  el.style.cssText=`left:${x}px;top:-50px;`;
+  zone.appendChild(el);
+
+  GS.enemies.push({id:GS.eid++,type:cfg.type,x,y:-50,hp:cfg.hp,maxHP:cfg.hp,spd:cfg.spd,reward:cfg.reward,slow:0,slow_immunity:!!cfg.slow_immunity,el,zh});
+}
+
+// ══════════════════════════════════════════════
+// MAIN GAME LOOP
+// ══════════════════════════════════════════════
+function loop(ts){
+  if(!GS.running)return;
+  const dt=GS.lastFrame?Math.min((ts-GS.lastFrame)/1000,0.08):0.016;
+  GS.lastFrame=ts;
+
+  // SP regen
+  GS.spTimer+=dt;
+  const regenT=GS.spRegenRate*spRegenMult();
+  if(GS.spTimer>=regenT&&GS.sp<GS.maxSP){GS.sp=Math.min(GS.maxSP,GS.sp+1);GS.spTimer=0;}
+
+  // Wave progress
+  GS.waveTimer+=dt;
+  const prog=Math.min(1,GS.spawned/Math.max(1,GS.totalToSpawn));
+  document.getElementById('wave-fill').style.width=(prog*100)+'%';
+
+  // Spawn enemies
+  GS.spawnTimer+=dt*1000;
+  if(GS.spawned<GS.totalToSpawn&&GS.spawnTimer>=GS.spawnInterval){
+    spawnEnemy(GS.wave);
+    GS.spawned++;
+    GS.spawnTimer=0;
+  }
+
+  // Move enemies
+  moveEnemies(dt);
+
+  // Dice attack
+  diceAttack(dt);
+
+  // Core Node regen (nature dice passive or node upgrade)
+  if(GS.nodeUpgrades.regenRate>0||hasNodeBuff('nature')){
+    GS.nodeRegenTimer+=dt;
+    const regenInterval=5/(1+GS.nodeUpgrades.regenRate*0.5);
+    if(GS.nodeRegenTimer>=regenInterval&&GS.hp<GS.maxHP){
+      GS.hp=Math.min(GS.maxHP,GS.hp+1);
+      GS.nodeRegenTimer=0;
+      updateNodeVisual();
+    }
+  }
+
+  // Check wave clear
+  if(GS.spawned>=GS.totalToSpawn&&GS.enemies.length===0&&!GS.waveComplete){
+    GS.waveComplete=true;
+    GS.sp=Math.min(GS.maxSP,GS.sp+3);
+    toast(`✅ WAVE ${GS.wave} CLEARED! +3 SP`);
+    GS.score+=GS.wave*10;
+    updateHUD(); updateSPPips();
+    setTimeout(()=>{
+      if(!GS.running)return;
+      startWave(GS.wave+1);
+    },2200);
+  }
+
+  updateHUD();
+  updateSPPips();
+
+  GS.animId=requestAnimationFrame(loop);
+}
+
+function moveEnemies(dt){
+  const zone=document.getElementById('enemy-zone');
+  const zh=zone.clientHeight;
+  GS.enemies=GS.enemies.filter(e=>{
+    if(e.slow>0)e.slow=Math.max(0,e.slow-dt);
+    const speedFactor=e.slow>0?0.4:1;
+    e.y+=e.spd*speedFactor*dt;
+    e.el.style.top=e.y+'px';
+    // Reached bottom = hit node
+    if(e.y>zh-10){
+      dealDamageToNode(e.type==='boss'?4:e.type==='tank'?2:1);
+      zone.removeChild(e.el);
+      return false;
+    }
+    return true;
+  });
+}
+
+function dealDamageToNode(dmg){
+  // Check shield
+  if(GS.nodeUpgrades.shield>0&&GS.nodeShieldTimer<=0){
+    GS.nodeShieldTimer=5;
+    showDmgNum(document.getElementById('core-node'),0,'BLOCKED!','#00f5ff');
+    return;
+  }
+  GS.nodeShieldTimer=Math.max(0,GS.nodeShieldTimer-1);
+  GS.hp=Math.max(0,GS.hp-dmg);
+  document.getElementById('core-node').classList.add('damaged');
+  setTimeout(()=>document.getElementById('core-node').classList.remove('damaged'),300);
+  updateNodeVisual();
+  if(GS.hp<=0)onDeath();
+}
+
+// ── DICE ATTACK ──
+function diceAttack(dt){
+  if(!GS.running)return;
+  const zone=document.getElementById('enemy-zone');
+  const zw=zone.clientWidth,zh=zone.clientHeight;
+
+  GS.dice.forEach(d=>{
+    d.atkTimer+=dt;
+    const cfg=DICE[d.type];
+    const speedBonus=speedMult()*(1+GS.nodeUpgrades.dmgBoost*0.1);
+    const cooldown=(1/cfg.spd)/speedBonus;
+    if(d.atkTimer<cooldown)return;
+    d.atkTimer=0;
+
+    // Find closest enemy in range
+    const slotEl=document.getElementById(`slot-${d.side}${d.idx}`);
+    if(!slotEl)return;
+    const sr=slotEl.getBoundingClientRect();
+    const zr=zone.getBoundingClientRect();
+    // Die center in zone coords
+    const dx=sr.left+sr.width/2-zr.left;
+    const dy=sr.top+sr.height/2-zr.top;
+
+    const range=cfg.range*(d.side==='L'?1.0:1.0);
+    // Get enemies sorted by distance to bottom (most dangerous first)
+    const targets=GS.enemies
+      .map(e=>({e,dist:Math.hypot(e.x-dx,e.y-dy)}))
+      .filter(t=>t.dist<range)
+      .sort((a,b)=>b.e.y-a.e.y); // closest to node first
+
+    if(!targets.length)return;
+    const primary=targets[0].e;
+    const baseDmg=cfg.dmg*(1+d.level*0.3)*atkMult()*(1+GS.nodeUpgrades.dmgBoost*0.15);
+
+    // Shoot projectile
+    fireProjectile(dx,dy,primary,cfg.color,zone);
+
+    // Apply damage with special
+    applyDieHit(d,primary,baseDmg,targets,zone);
+  });
+}
+
+function applyDieHit(d,target,dmg,targets,zone){
+  const cfg=DICE[d.type];
+  let finalDmg=dmg;
+
+  if(cfg.special==='smite'&&target.type==='boss') finalDmg*=2;
+  if(cfg.special==='crit'&&Math.random()<0.2) finalDmg*=2;
+  if(cfg.special==='amplify'){
+    // Boost adjacent dice (tracked as GS node buff, simplified)
+    GS.nodeUpgrades._arcaneBuff=3; // seconds
+  }
+
+  hitEnemy(target,finalDmg,zone);
+  showDmgNum(target.el,Math.round(finalDmg),cfg.color);
+
+  if(cfg.special==='splash'&&targets.length>1){
+    const splash=targets.slice(1,3);
+    splash.forEach(t=>{hitEnemy(t.e,finalDmg*0.5,zone);});
+  }
+  if(cfg.special==='chain'&&targets.length>1){
+    targets.slice(1,3).forEach(t=>{
+      setTimeout(()=>{
+        if(!GS.running)return;
+        hitEnemy(t.e,dmg*0.7,zone);
+        showDmgNum(t.e.el,Math.round(dmg*0.7),cfg.color);
+      },120);
+    });
+  }
+  if(cfg.special==='slow'&&!target.slow_immunity) target.slow=2.5;
+  if(cfg.special==='push') target.y=Math.max(-30,target.y-18);
+  if(cfg.special==='drain'){
+    GS.hp=Math.min(GS.maxHP,GS.hp+1);
+    updateNodeVisual();
+  }
+  if(cfg.special==='regen'){
+    GS.hp=Math.min(GS.maxHP,GS.hp+0.15);
+    updateNodeVisual();
+  }
+}
+
+function hitEnemy(e,dmg,zone){
+  e.hp-=dmg;
+  const pct=Math.max(0,e.hp/e.maxHP)*100;
+  const fill=document.getElementById(`ehp-fill-${e.id}`);
+  if(fill)fill.style.width=pct+'%';
+  if(e.hp<=0){
+    // Kill
+    const coins=Math.round(e.reward*coinMult());
+    GS.coins+=coins;GS.score+=e.reward*5;
+    P.totalCoins+=coins;
+    try{zone.removeChild(e.el);}catch(err){}
+    GS.enemies=GS.enemies.filter(x=>x.id!==e.id);
+    cloudSave();
+  }
+}
+
+function fireProjectile(sx,sy,target,color,zone){
+  const proj=document.createElement('div');
+  proj.className='projectile';
+  proj.style.cssText=`left:${sx}px;top:${sy}px;width:6px;height:6px;background:${color};box-shadow:0 0 5px ${color};`;
+  zone.appendChild(proj);
+  const tx=target.x+14,ty=target.y+14;
+  const dur=Math.max(120,Math.hypot(tx-sx,ty-sy)/0.8);
+  proj.animate([{left:sx+'px',top:sy+'px',opacity:1},{left:tx+'px',top:ty+'px',opacity:0}],{duration:dur,easing:'linear'}).onfinish=()=>{try{zone.removeChild(proj);}catch(e){}};
+}
+
+function showDmgNum(el,val,color){
+  if(!el)return;
+  const r=el.getBoundingClientRect();
+  const d=document.createElement('div');
+  d.className='dmg-num';
+  d.style.cssText=`left:${r.left+r.width/2}px;top:${r.top}px;color:${color};font-size:${val>20?'13px':'10px'};`;
+  d.textContent=val===0?'BLOCKED!':'+'+val;
+  document.body.appendChild(d);
+  setTimeout(()=>{try{document.body.removeChild(d);}catch(e){}},750);
+}
+
+function hasNodeBuff(type){return GS.dice.some(d=>d.type===type);}
+
+// ══════════════════════════════════════════════
+// SLOT INTERACTION
+// ══════════════════════════════════════════════
+function onSlotClick(side,idx){
+  if(!GS.running)return;
+  const slotKey=side+idx;
+  const existing=GS.board[side==='L'?idx:idx+6];
+
+  if(GS.selected){
+    const {side:ss,idx:si}=GS.selected;
+    if(ss===side&&si===idx){
+      // Deselect
+      clearSelection(); return;
+    }
+    const fromSlot=GS.board[ss==='L'?si:si+6];
+    const toSlot=GS.board[side==='L'?idx:idx+6];
+    // Merge?
+    if(fromSlot&&toSlot&&fromSlot.type===toSlot.type&&fromSlot.level===toSlot.level&&fromSlot.level<7){
+      mergeDice(ss,si,side,idx); return;
+    }
+    // Swap/move?
+    if(fromSlot){
+      swapDice(ss,si,side,idx); return;
+    }
+    clearSelection(); return;
+  }
+
+  // Select
+  if(existing){
+    GS.selected={side,idx};
+    document.getElementById(`slot-${side}${idx}`).classList.add('selected');
+    // Show merge hints
+    showMergeHints(side,idx,existing.type,existing.level);
+    setHint(`${DICE[existing.type].name} Lv${existing.level} — Tap another to move/merge`);
+  }
+}
+
+function showMergeHints(side,idx,type,level){
+  for(let i=0;i<6;i++){
+    ['L','R'].forEach(s=>{
+      const b=GS.board[s==='L'?i:i+6];
+      if(b&&b.type===type&&b.level===level&&!(s===side&&i===idx)&&level<7){
+        document.getElementById(`slot-${s}${i}`).classList.add('merge-hint');
+      }
+    });
+  }
+}
+
+function clearSelection(){
+  GS.selected=null;
+  document.querySelectorAll('.dice-cell').forEach(c=>c.classList.remove('selected','merge-hint'));
+  setHint('Select a die to move or merge');
+}
+
+function mergeDice(ss,si,ts,ti){
+  const fromIdx=ss==='L'?si:si+6;
+  const toIdx=ts==='L'?ti:ti+6;
+  const fromDie=GS.board[fromIdx];
+  const newLevel=fromDie.level+1;
+  // Remove from dice array
+  GS.dice=GS.dice.filter(d=>!(d.side===ss&&d.idx===si)&&!(d.side===ts&&d.idx===ti));
+  GS.board[fromIdx]=null;
+  GS.board[toIdx]={type:fromDie.type,level:newLevel};
+  renderSlot(ss,si,null);
+  renderSlot(ts,ti,GS.board[toIdx]);
+  // Add merged die to dice array
+  const cfg=DICE[fromDie.type];
+  GS.dice.push({side:ts,idx:ti,type:fromDie.type,level:newLevel,atkTimer:0});
+  // Merge flash
+  const el=document.getElementById(`slot-${ts}${ti}`);
+  const die=el.querySelector('.die');
+  if(die){die.classList.add('merge-anim');setTimeout(()=>die.classList.remove('merge-anim'),400);}
+  clearSelection();
+  toast(`✨ Merged! ${DICE[fromDie.type].name} → Lv${newLevel}`);
+  GS.sp=Math.min(GS.maxSP,GS.sp+1);
+  updateSPPips();
+}
+
+function swapDice(ss,si,ts,ti){
+  const fi=ss==='L'?si:si+6, ti2=ts==='L'?ti:ti+6;
+  const tmp=GS.board[fi];
+  GS.board[fi]=GS.board[ti2];
+  GS.board[ti2]=tmp;
+  // Update dice array
+  GS.dice.forEach(d=>{
+    if(d.side===ss&&d.idx===si){d.side=ts;d.idx=ti;}
+    else if(d.side===ts&&d.idx===ti){d.side=ss;d.idx=si;}
+  });
+  renderSlot(ss,si,GS.board[fi]);
+  renderSlot(ts,ti,GS.board[ti2]);
+  clearSelection();
+}
+
+function renderSlot(side,idx,data){
+  const el=document.getElementById(`slot-${side}${idx}`);
+  if(!el)return;
+  el.innerHTML='';
+  el.className='dice-cell';
+  if(!data){el.classList.add('empty-glow');return;}
+  const cfg=DICE[data.type];
+  const die=document.createElement('div');
+  die.className=`die ${cfg.cls}`;
+  die.innerHTML=`<div class="die-icon">${cfg.icon}</div><div class="die-name">${cfg.name}</div><div class="die-lv" style="color:${cfg.color}">L${data.level}</div>`;
+  el.appendChild(die);
+}
+
+// ══════════════════════════════════════════════
+// SUMMON
+// ══════════════════════════════════════════════
+function summonDie(){
+  if(!GS.running)return;
+  if(GS.sp<1){toast('Not enough SP!');return;}
+  // Find an empty slot (prefer left, then right)
+  let placed=false;
+  for(let side of['L','R']){
+    for(let i=0;i<6;i++){
+      const bIdx=side==='L'?i:i+6;
+      if(!GS.board[bIdx]){
+        const type=P.savedDeck[Math.floor(Math.random()*P.savedDeck.length)];
+        GS.board[bIdx]={type,level:1};
+        GS.dice.push({side,idx:i,type,level:1,atkTimer:Math.random()*0.5});
+        renderSlot(side,i,GS.board[bIdx]);
+        GS.sp--;
+        updateSPPips();
+        placed=true;
+        break;
+      }
+    }
+    if(placed)break;
+  }
+  if(!placed) toast('Board is full! Merge dice to make space.');
+}
+
+// ══════════════════════════════════════════════
+// CORE NODE PANEL
+// ══════════════════════════════════════════════
+// Node upgrades cost SP. Available during a run.
+const NODE_UP_COSTS = [
+  {key:'dmgBoost',  label:'Damage Boost',  icon:'⚔️', desc:'+15% dmg per level', maxLv:4, cost:3},
+  {key:'regenRate', label:'HP Regen',       icon:'❤️', desc:'Node auto-heals',    maxLv:3, cost:3},
+  {key:'shield',    label:'Shield',         icon:'🛡️', desc:'Block 1 hit',         maxLv:3, cost:4},
+  {key:'sp_boost',  label:'SP+',            icon:'💎', desc:'+1 max SP',           maxLv:2, cost:4},
+];
+
+function openNodePanel(){
+  if(!GS.running)return;
+  const panel=document.getElementById('node-info-panel');
+  panel.style.display='block';
+
+  // Stats
+  const rows=document.getElementById('node-stat-rows');
+  rows.innerHTML=`
+    <div class="node-stat-row"><span class="nsr-lbl">HP</span><span class="nsr-val">${GS.hp}/${GS.maxHP}</span></div>
+    <div class="node-stat-row"><span class="nsr-lbl">Node Level</span><span class="nsr-val">${GS.nodeLevel}</span></div>
+    <div class="node-stat-row"><span class="nsr-lbl">Dmg Boost</span><span class="nsr-val">+${GS.nodeUpgrades.dmgBoost*15}%</span></div>
+    <div class="node-stat-row"><span class="nsr-lbl">SP Available</span><span class="nsr-val" style="color:var(--gold)">${GS.sp} / ${GS.maxSP}</span></div>
+  `;
+
+  // Upgrade buttons
+  const opts=document.getElementById('node-up-options');
+  opts.innerHTML='';
+  NODE_UP_COSTS.forEach(u=>{
+    const curLv=GS.nodeUpgrades[u.key]||0;
+    const maxed=curLv>=u.maxLv;
+    const canAfford=GS.sp>=u.cost;
+    const btn=document.createElement('button');
+    btn.className='nuo-btn';
+    btn.disabled=maxed||!canAfford;
+    btn.innerHTML=`${u.icon} ${u.label}<br><span style="color:var(--muted)">${maxed?'MAXED':(canAfford?u.cost+' SP':'Need '+u.cost+' SP')}</span>`;
+    if(!maxed&&canAfford) btn.onclick=()=>{upgradeNode(u.key,u.cost);openNodePanel();};
+    opts.appendChild(btn);
+  });
+}
+
+function upgradeNode(key,cost){
+  if(GS.sp<cost)return;
+  GS.sp-=cost;
+  GS.nodeUpgrades[key]=(GS.nodeUpgrades[key]||0)+1;
+  GS.nodeLevel++;
+  if(key==='sp_boost') GS.maxSP=Math.min(15,GS.maxSP+1);
+  updateNodeVisual();
+  updateSPPips();
+  toast(`⬡ Node upgraded: ${key}`);
+}
+
+function closeNodePanel(){
+  document.getElementById('node-info-panel').style.display='none';
+}
+
+function updateNodeVisual(){
+  if(!GS.running&&!GS.dead)return;
+  const hp=Math.max(0,GS.hp);
+  const pct=hp/GS.maxHP*100;
+  document.getElementById('node-hp-txt').textContent=`${Math.ceil(hp)}/${GS.maxHP}`;
+  document.getElementById('node-hp-bar').style.width=pct+'%';
+  document.getElementById('node-hp-bar').style.background=pct>50?'linear-gradient(90deg,#00ff88,#00cc44)':pct>25?'linear-gradient(90deg,#ff8800,#ff6600)':'linear-gradient(90deg,#ff2244,#ff0022)';
+  document.getElementById('node-lv-badge').textContent=`Lv${GS.nodeLevel}`;
+}
+
+// ══════════════════════════════════════════════
+// DEATH
+// ══════════════════════════════════════════════
+function onDeath(){
+  if(GS.dead)return;
+  GS.dead=true;GS.running=false;
+  cancelAnimationFrame(GS.animId);
+  const newBest=GS.wave>P.bestWave;
+  if(newBest)P.bestWave=GS.wave;
+  P.totalCoins+=GS.coins;
+  cloudSave();
+  if(newBest)postLeaderboard(GS.wave);
+  setTimeout(()=>{
+    const go=document.getElementById('ov-gameover');
+    document.getElementById('go-title').textContent=newBest?'🏆 NEW RECORD!':'💀 DEFEATED';
+    document.getElementById('go-title').style.color=newBest?'var(--gold)':'var(--red)';
+    document.getElementById('go-title').style.textShadow=newBest?'0 0 20px var(--gold)':'0 0 20px var(--red)';
+    document.getElementById('go-sub').textContent=newBest?`New best: Wave ${GS.wave}!`:'Your Core Node has been destroyed.';
+    document.getElementById('go-stats').innerHTML=`
+      <div class="stat-card"><div class="sc-lbl">WAVE</div><div class="sc-val">${GS.wave}</div></div>
+      <div class="stat-card"><div class="sc-lbl">SCORE</div><div class="sc-val">${GS.score}</div></div>
+      <div class="stat-card"><div class="sc-lbl">COINS</div><div class="sc-val gold">${GS.coins}</div></div>
+      <div class="stat-card"><div class="sc-lbl">BEST WAVE</div><div class="sc-val">${P.bestWave}</div></div>
+    `;
+    showOverlay('ov-gameover');
+  },800);
+}
+
+// ══════════════════════════════════════════════
+// HUD
+// ══════════════════════════════════════════════
+function updateHUD(){
+  document.getElementById('hud-hp').textContent=Math.max(0,Math.ceil(GS.hp));
+  document.getElementById('hud-score').textContent=GS.score;
+  document.getElementById('hud-coins').textContent=GS.coins;
+}
+
+function updateSPPips(){
+  for(let i=0;i<10;i++){
+    const pip=document.getElementById(`sp-pip-${i}`);
+    if(pip)pip.className='sp-pip'+(i<GS.sp?' on':'');
+  }
+  document.getElementById('summon-btn').disabled=GS.sp<1;
+}
+
+function setHint(t){document.getElementById('action-hint').textContent=t;}
+
+// ══════════════════════════════════════════════
+// SHOP
+// ══════════════════════════════════════════════
+function openShop(){
+  document.getElementById('shop-gold').textContent='💰 '+P.totalCoins+' COINS';
+  const c=document.getElementById('shop-items');
+  c.innerHTML=Object.entries(UPGRADES).map(([k,cfg])=>{
+    const lv=P.upgradeLevels[k]||0;
+    const maxed=lv>=cfg.maxLevel;
+    const cost=maxed?0:Math.round(cfg.baseCost*Math.pow(cfg.costMult,lv));
+    const canAfford=P.totalCoins>=cost;
+    const pips=Array.from({length:cfg.maxLevel},(_,i)=>`<div class="si-pip${i<lv?' on':''}"></div>`).join('');
+    return `<div class="shop-item">
+      <span class="si-icon">${cfg.icon}</span>
+      <div class="si-info">
+        <div class="si-name">${cfg.name}${lv>0?' Lv'+lv:''}</div>
+        <div class="si-desc">${cfg.desc}</div>
+        <div class="si-pips">${pips}</div>
+      </div>
+      ${maxed?`<button class="si-buy maxed" disabled>MAX</button>`:`<button class="si-buy" ${canAfford?'':'disabled'} onclick="buyUpgrade('${k}')">${cost}🪙</button>`}
+    </div>`;
+  }).join('');
+  showOverlay('ov-shop');
+}
+
+function buyUpgrade(k){
+  const cfg=UPGRADES[k];
+  const lv=P.upgradeLevels[k]||0;
+  if(lv>=cfg.maxLevel)return;
+  const cost=Math.round(cfg.baseCost*Math.pow(cfg.costMult,lv));
+  if(P.totalCoins<cost)return;
+  P.totalCoins-=cost;
+  P.upgradeLevels[k]=(P.upgradeLevels[k]||0)+1;
+  cloudSave();
+  openShop();
+}
+
+function closeShop(){
+  hideAllOverlays();
+  if(GS.dead) showOverlay('ov-gameover');
+  else showMainMenu();
+}
+
+// ══════════════════════════════════════════════
+// LEADERBOARD
+// ══════════════════════════════════════════════
+async function openLeaderboard(){
+  showOverlay('ov-lb');
+  const lb=await fetchLB();
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('lb-content').innerHTML=!lb.length
+    ?'<div style="text-align:center;color:var(--muted);padding:16px;font-style:italic;">No records yet!</div>'
+    :lb.map((r,i)=>{
+      const me=(r.username||'')===P.name;
+      return`<div class="lb-full-row${me?' lb-me':''}">
+        <span class="lb-fr" style="color:${i===0?'#ffd700':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'}">${medals[i]||'#'+(i+1)}</span>
+        <span class="lb-fn" style="${me?'color:var(--neon);font-weight:600;':''}">${r.username||'???'}</span>
+        <span class="lb-fs">Wave ${r.best_dist||0}</span>
+      </div>`;
+    }).join('');
+}
+
+function closeLB(){
+  hideAllOverlays();
+  if(GS.dead) showOverlay('ov-gameover');
+  else showMainMenu();
+}
+
+// ══════════════════════════════════════════════
+// OVERLAY HELPERS
+// ══════════════════════════════════════════════
+function showOverlay(id){
+  hideAllOverlays();
+  document.getElementById(id).classList.add('visible');
+}
+function hideAllOverlays(){
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('visible'));
+}
+function showMainMenu(){
+  document.getElementById('menu-tagline').textContent=P.name?`Welcome, ${P.name} · Best: Wave ${P.bestWave}`:'Upgrade your Core Node. Merge your dice. Survive.';
+  renderMenuLBPreview();
+  showOverlay('ov-menu');
+}
+async function renderMenuLBPreview(){
+  const lb=await fetchLB();
+  document.getElementById('menu-lb-preview').innerHTML=buildLBPreview(lb);
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTO=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(toastTO);
+  toastTO=setTimeout(()=>t.style.opacity='0',2000);
+}
+</script>
+</body>
+</html>
