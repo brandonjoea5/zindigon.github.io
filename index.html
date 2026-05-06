@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.53</title>
+<title>Elemental Rift v1.5.54</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -414,7 +414,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.53 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.54 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -2589,6 +2589,17 @@ function equipItem(item){
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){
   document.getElementById('item-modal').classList.add('hidden');
+  // Remove queue hint
+  const queueHint = document.getElementById('item-queue-hint');
+  if(queueHint) queueHint.remove();
+
+  // Show next queued item if any
+  if(itemModalQueue.length > 0) {
+    const nextItem = itemModalQueue.shift();
+    setTimeout(() => showItemModal(nextItem, 'vendor_buy'), 150);
+    return;
+  }
+
   // Re-render vendor if it's open (so gold updates)
   const vendorModal = document.getElementById('vendor-modal');
   if(vendorModal && !vendorModal.classList.contains('hidden')) {
@@ -2644,6 +2655,9 @@ function renderVendor(){
       </div>
     </div>`;}).join('');
 }
+// Queue for purchased items waiting to be shown
+let itemModalQueue = [];
+
 function buyVendorItem(idx){
   const v = vendorStock[idx];
   if(!v){ renderVendor(); return; }
@@ -2658,10 +2672,27 @@ function buyVendorItem(idx){
   const boughtItem = v.item;
   vendorStock.splice(idx, 1);
   renderVendor();
-  showItemModal(boughtItem, 'vendor_buy');
+  // Queue the item — show immediately if no modal open, otherwise queue it
+  const itemModal = document.getElementById('item-modal');
+  if(itemModal.classList.contains('hidden')) {
+    showItemModal(boughtItem, 'vendor_buy');
+  } else {
+    itemModalQueue.push(boughtItem);
+    // Update the queue count hint in the modal
+    const queueHint = document.getElementById('item-queue-hint');
+    if(queueHint) queueHint.textContent = `${itemModalQueue.length} more item${itemModalQueue.length>1?'s':''} to review`;
+    else {
+      const hint = document.createElement('div');
+      hint.id = 'item-queue-hint';
+      hint.style.cssText = 'text-align:center;font-size:11px;color:#e8b84b;margin-top:6px;font-family:Cinzel,serif;';
+      hint.textContent = `${itemModalQueue.length} more item${itemModalQueue.length>1?'s':''} to review`;
+      document.querySelector('#item-modal .modal').appendChild(hint);
+    }
+  }
 }
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
+  itemModalQueue = []; // clear any unreviewed items
   if(MAP.segmentComplete){
     MAP.segmentComplete=false;
     showMapScreen(false);
