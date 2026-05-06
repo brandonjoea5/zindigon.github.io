@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.27</title>
+<title>Elemental Rift v1.5.28</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -406,7 +406,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.27 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.28 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -831,13 +831,12 @@ function initGState() {
   CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
   Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
-  // Ensure starting class basics are at level 1
+  // Ensure starting class abilities are usable
   if(G.startingClass) {
-    const basicId = G.startingClass === 'physical' ? 'phys_basic' : G.startingClass + '_basic';
-    const reg1Id  = G.startingClass === 'physical' ? 'phys_reg1'  : G.startingClass + '_reg1';
-    if(!G.abilityLevels[basicId]) G.abilityLevels[basicId] = 1;
-    if(!G.abilityLevels[reg1Id])  G.abilityLevels[reg1Id]  = 1;
     if(!healLoadout) healLoadout = 'heal_' + G.startingClass;
+    // Make sure loadout has attack slot filled
+    const basicId = G.startingClass === 'physical' ? 'phys_basic' : G.startingClass + '_basic';
+    if(!G.loadout[0]) G.loadout[0] = basicId;
   }
 }
 
@@ -1108,13 +1107,13 @@ function rollEnemy(wave) {
   // Scale by BOTH wave AND player power
   const power = getPlayerPower();
   const waveScale = 1 + (wave-1)*0.22;
-  const powerScale = 1 + power * 0.018;
+  const powerScale = 1 + Math.min(power, 150) * 0.012; // cap power influence
   const scale = waveScale * powerScale;
 
   if (isBrute) {
     return {name,type:'brute',elements:[],
       hp:Math.floor((55+wave*18)*scale), maxHp:Math.floor((55+wave*18)*scale),
-      attack:Math.floor((7+wave*1.8)*scale), armor:Math.floor(10+wave*1.2),
+      attack:Math.floor((5+wave*1.2)*scale), armor:Math.floor(10+wave*1.2),
       magicResist:Math.floor(10+wave*1.2), gold:Math.floor(8+wave*3), xp:1+Math.floor(wave/2)};
   } else {
     const pool=[...ELEMENTS];
@@ -1123,7 +1122,7 @@ function rollEnemy(wave) {
     for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
     return {name,type:'elemental',elements,
       hp:Math.floor((40+wave*13)*scale), maxHp:Math.floor((40+wave*13)*scale),
-      attack:Math.floor((5+wave*1.4)*scale), armor:Math.floor(2+wave*0.8),
+      attack:Math.floor((4+wave*1.0)*scale), armor:Math.floor(2+wave*0.8),
       magicResist:Math.floor(2+wave*0.8), gold:Math.floor(6+wave*2), xp:1+Math.floor(wave/3)};
   }
 }
@@ -1337,10 +1336,10 @@ async function showBossResults() {
   const localRank = localLB.findIndex(e=>e.name===name)+1;
   localStorage.setItem('elementalRift_leaderboard', JSON.stringify(localLB.slice(0,20)));
 
-  // Show results right away
+  // Show results right away with local data
   renderBossResultsModal(score, name, localLB, localRank);
 
-  // Post to JSONBin in background — update leaderboard display if it succeeds
+  // Post to JSONBin in background — silently update leaderboard section only
   try {
     const fetchPromise = fetchLeaderboard();
     const timeoutPromise = new Promise((_,reject) => setTimeout(()=>reject(new Error('timeout')), 5000));
@@ -1354,11 +1353,16 @@ async function showBossResults() {
     leaderboard.sort((a,b) => b.score - a.score);
     leaderboard = leaderboard.slice(0,20);
     await postLeaderboard(leaderboard);
-    // Update the modal with live data
-    const myRank = leaderboard.findIndex(e=>e.name===name)+1;
-    renderBossResultsModal(score, name, leaderboard, myRank);
+    // Silently update just the leaderboard section inside the already-open modal
+    const lbSection = document.getElementById('boss-lb-section');
+    if(lbSection) {
+      const myRank = leaderboard.findIndex(e=>e.name===name)+1;
+      lbSection.innerHTML = buildLBHtml(leaderboard, name, 10);
+      const rankEl = document.getElementById('boss-rank-display');
+      if(rankEl) rankEl.textContent = `Rank #${myRank}`;
+    }
   } catch(e) {
-    // Network failed — local data already shown, that's fine
+    // Network failed — local data stays, that's fine
   }
 }
 
@@ -1385,10 +1389,10 @@ function renderBossResultsModal(score, name, leaderboard, myRank) {
   let html = `
     <div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:6px;">Total Damage Dealt</div>
     <div class="boss-result-score">${numberWithCommas(score)}</div>
-    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;">Rank #${myRank}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;" id="boss-rank-display">Rank #${myRank}</div>
     ${milestoneHTML}
     <div class="panel-title" style="position:static;margin-bottom:8px;">🏆 Leaderboard</div>
-  ` + buildLBHtml(leaderboard, name, 10);
+  <div id="boss-lb-section">` + buildLBHtml(leaderboard, name, 10) + `</div>`;
 
   document.getElementById('boss-result-content').innerHTML = html;
   document.getElementById('boss-results-modal').classList.remove('hidden');
@@ -1700,13 +1704,18 @@ function earnClassXP(cls, amount) {
 function isAbilityUnlocked(abId) {
   const ab = ABILITIES[abId];
   if(!ab) return false;
-  // Basic of starting class always unlocked
-  if(ab.type === 'basic' && ab.class === G.startingClass) return true;
-  // Skill 1 of starting class unlocked from start
-  if(ab.type === 'regular' && ab.class === G.startingClass && abId.endsWith('_reg1')) return (G.classLv[ab.class]||0) >= 1;
+  const classLv = G.classLv[ab.class]||0;
   // Heals: unlocked if class level >= 1
-  if(ab.type === 'heal') return (G.classLv[ab.class]||0) >= 1;
-  // Others: must have been explicitly unlocked via SP popup (abilityLevels > 0)
+  if(ab.type === 'heal') return classLv >= 1;
+  // Basic: unlocked if class level >= 1 (any class you've invested in)
+  if(ab.type === 'basic') return classLv >= 1;
+  // reg1 (Skill 1): unlocked at class level 3 for ANY class
+  if(ab.type === 'regular' && abId.endsWith('_reg1')) return classLv >= 3;
+  // reg2 (Skill 2): unlocked at class level 5
+  if(ab.type === 'regular' && abId.endsWith('_reg2')) return classLv >= 5;
+  // ultimate: unlocked at class level 8
+  if(ab.type === 'ultimate') return classLv >= 8;
+  // Fallback: check explicit unlock via abilityLevels
   return (G.abilityLevels[abId]||0) > 0;
 }
 
@@ -1729,7 +1738,7 @@ function openLoadoutPicker(slotIdx) {
   const abilities = Object.values(ABILITIES).filter(ab => {
     if(targetType && ab.type !== targetType) return false;
     if(ab.type === 'heal') return false; // heals use separate picker
-    return isAbilityUnlocked(ab.id) && (G.abilityLevels[ab.id]||0) > 0;
+    return isAbilityUnlocked(ab.id);
   });
 
   list.innerHTML = abilities.map(ab => {
@@ -2082,7 +2091,8 @@ function attack(element) {
 function enemyAttack() {
   if (!G.enemy||!G.combatActive) return;
   const st=getStats();
-  const dmg=Math.max(1,Math.floor(G.enemy.attack*(1-st.armor*0.008)+(Math.random()*4-2)));
+  const rawDmg = G.enemy.attack * (1 - Math.min(0.75, st.armor * 0.006));
+  const dmg = Math.max(1, Math.floor(rawDmg + (Math.random()*3-1.5)));
   G.hp-=dmg;
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
   combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
