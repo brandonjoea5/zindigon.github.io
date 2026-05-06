@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.46</title>
+<title>Elemental Rift v1.5.47</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -414,7 +414,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.46 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.47 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1091,7 +1091,7 @@ function loadGame(name) {
     if (save.playerName) {
       const continueBtn = document.getElementById('continue-btn');
       document.getElementById('continue-name').textContent = save.playerName;
-      document.getElementById('name-input').placeholder = 'Or enter a new name...';
+      // name-input removed
       continueBtn.classList.remove('hidden');
     }
   } catch(e) {}
@@ -1107,8 +1107,8 @@ function continueGame() {
 }
 
 function startGame() {
-  const name = (document.getElementById('name-input') ? G.playerName : '').trim();
-  if (!name) { document.getElementById('name-input').style.borderColor='var(--red)'; return; }
+  // name comes from auth — already set in G.playerName
+  if(!G.playerName){ const n=Math.floor(Math.random()*9000)+1000; G.playerName=`Guest#${n}`; }
   G.playerName = name;
   const loaded = loadGame(name);
   document.getElementById('name-screen').classList.add('hidden');
@@ -4710,7 +4710,7 @@ idlePulse();
 
 // Focus name input
 initGState();
-document.getElementById('name-input').focus();
+  // name-input focus removed
 renderNameScreenLB();
 </script>
 </body>
