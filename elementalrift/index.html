@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.32</title>
+<title>Elemental Rift v1.5.34</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -406,7 +406,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.32 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.34 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -414,6 +414,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   <div style="font-size:36px;">⚡</div>
   <h2 style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--gold);letter-spacing:0.08em;">Choose Your Path</h2>
   <p style="font-size:13px;color:var(--muted);text-align:center;max-width:320px;">Your starting class determines your first abilities. You can mix and match later.</p>
+  <div style="font-size:11px;color:var(--muted);text-align:center;max-width:400px;background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 14px;line-height:1.8;">
+    ⚔️ <span style="color:#ff4d1a">Fire</span> > <span style="color:#3dcc5a">Grass</span> > <span style="color:#1ab3ff">Water</span> > Fire &nbsp;·&nbsp;
+    <span style="color:#9b4dff">Dark</span> ↔ <span style="color:#ffd700">Light</span> &nbsp;·&nbsp;
+    Physical > Brutes
+  </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:480px;" id="class-cards"></div>
 </div>
 
@@ -719,7 +724,7 @@ const ELEMENTS = ['fire','water','grass','dark','light'];
 const ELEMENT_COLORS = {fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaaaaa'};
 const STAT_KEYS = ['attack','magicPower','atkSpeed','critChance','critDmg','armor','health','magicResist','lifeSteal','spellVamp','cdr','mana','manaRegen'];
 const STAT_LABELS = {attack:'Attack',magicPower:'Magic Pwr',atkSpeed:'Atk Speed',critChance:'Crit %',critDmg:'Crit Dmg',armor:'Armor',health:'Health',magicResist:'Mag Resist',lifeSteal:'Life Steal',spellVamp:'Spell Vamp',cdr:'CDR %',mana:'Mana',manaRegen:'Mana Regen'};
-const SE = {fire:['grass','dark'],grass:['water','dark'],water:['fire','light'],dark:['light'],light:['fire','water','grass']};
+const SE = {fire:['grass'],grass:['water'],water:['fire'],dark:['light'],light:['dark']};
 const SKILL_TREE = {
   fire:    [{name:'Ember Touch',stat:'magicPower',per:3},{name:'Ignite',stat:'critChance',per:2},{name:'Inferno',stat:'magicPower',per:5}],
   water:   [{name:'Tide Pull',stat:'magicPower',per:3},{name:'Frost Bite',stat:'atkSpeed',per:0.1},{name:'Tsunami',stat:'spellVamp',per:2}],
@@ -1639,28 +1644,42 @@ function activateAbility(slotIdx) {
   const ab = ABILITIES[abId];
   if(!ab) return;
 
-  if(ab.type==='basic'){
-    // Toggle auto-attack for basic
-    if(G.autoSlots[slotIdx]){
+  // ALL slots toggle — tap to activate auto, tap again to deactivate
+  if(G.autoSlots[slotIdx]){
+    // Turn OFF
+    clearInterval(G.autoSlots[slotIdx]);
+    delete G.autoSlots[slotIdx];
+    updateLoadoutUI();
+    return;
+  }
+
+  // Turn ON — fire immediately if ready, then loop
+  if(isAbilityReady(ab)) {
+    fireAbility(ab);
+    if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+  }
+
+  const st = getStats();
+  const checkInterval = ab.type === 'basic'
+    ? Math.max(300, Math.floor(1000 / st.atkSpeed))
+    : 250; // check every 250ms for skill/ult — fires as soon as CD is done
+
+  G.autoSlots[slotIdx] = setInterval(() => {
+    if(!G.combatActive || !G.enemy){
       clearInterval(G.autoSlots[slotIdx]);
       delete G.autoSlots[slotIdx];
       updateLoadoutUI();
-    } else {
-      fireAbility(ab);
-      const st=getStats();
-      const interval=Math.max(300,Math.floor(1000/st.atkSpeed));
-      G.autoSlots[slotIdx]=setInterval(()=>{
-        if(!G.combatActive||!G.enemy){ clearInterval(G.autoSlots[slotIdx]); delete G.autoSlots[slotIdx]; updateLoadoutUI(); return; }
-        fireAbility(ab);
-      },interval);
-      updateLoadoutUI();
+      return;
     }
-  } else {
-    // Regular/ultimate — fire once if ready
-    if(!isAbilityReady(ab)){ log(`<span style="color:#666">${ab.name} not ready yet</span>`); return; }
+    if(!isAbilityReady(ab)) return; // still on CD — wait
+    // Check mana
+    const manaCost = MANA_COSTS[ab.type]||0;
+    if(manaCost > 0 && G.mana < manaCost) return; // wait for mana
     fireAbility(ab);
-    startCDBarAnimation(slotIdx, ab);
-  }
+    if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+  }, checkInterval);
+
+  updateLoadoutUI();
 }
 
 function startCDBarAnimation(slotIdx, ab) {
@@ -1683,6 +1702,8 @@ function startCDBarAnimation(slotIdx, ab) {
 function stopAllAutoSlots() {
   Object.values(G.autoSlots).forEach(id=>clearInterval(id));
   G.autoSlots = {};
+  updateLoadoutUI();
+  updateHealSlotUI();
 }
 
 // ── CLASS XP ──
@@ -1804,13 +1825,22 @@ function updateLoadoutUI() {
     const color = ab ? (CLASS_COLORS[ab.class]||'#aaa') : 'var(--muted)';
     el.style.borderColor = ab ? color : 'var(--border)';
     el.style.color = color;
-    if(isAutoOn){ el.classList.add('active-ability'); el.style.boxShadow=`0 0 10px 1px ${color}`; }
-    else { el.classList.remove('active-ability'); el.style.boxShadow=''; }
+    if(isAutoOn){
+      el.classList.add('active-ability');
+      el.style.boxShadow=`0 0 10px 1px ${color}`;
+      el.style.background=`${color}18`;
+    } else {
+      el.classList.remove('active-ability');
+      el.style.boxShadow='';
+      el.style.background='';
+    }
     const unlocked = isSlotUnlocked(i);
     const lockMsg = ['','','Lv5 class','Lv8 class'][i]||'';
     el.style.opacity = unlocked ? '1' : '0.4';
     const manaCost = ab ? (MANA_COSTS[ab.type]||0) : 0;
+    const elemDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
     el.innerHTML = unlocked ? `
+      ${elemDot}
       <div class="ab-slot-label" style="color:var(--muted)">${SLOT_LABELS[i]}</div>
       <div class="ab-icon">${ab?ab.icon:'＋'}</div>
       <div class="ab-name" style="color:${ab?color:'var(--muted)'};font-size:${ab?'9px':'8px'}">${ab?ab.name:'Tap to assign'}</div>
@@ -1883,15 +1913,12 @@ function updateClassXPPanel() {
 // COMBAT
 // ═══════════════════════════════════════════════
 function getSEMultiplier(attackEl, enemy) {
-  if (attackEl==='physical') return enemy.type==='brute'?1.5:0.75;
-  if (enemy.type==='brute') return 0.5;
-  if (enemy.type==='boss') {
-    let mult=0.9;
-    (SE[attackEl]||[]).forEach(el=>{if(enemy.elements.includes(el))mult+=0.4;});
-    return mult;
-  }
-  let mult=1.0;
-  (SE[attackEl]||[]).forEach(el=>{if(enemy.elements.includes(el))mult+=0.5;});
+  if (attackEl==='physical') return enemy.type==='brute' ? 1.6 : 0.8;
+  if (enemy.type==='brute') return 0.6; // elements weak vs brute
+  let mult = 1.0;
+  (SE[attackEl]||[]).forEach(el => {
+    if(enemy.elements.includes(el)) mult += 0.6; // SE = 1.6x
+  });
   return mult;
 }
 
@@ -3251,11 +3278,31 @@ function activateHeal() {
     log('<span style="color:#666">Can only heal during combat</span>');
     return;
   }
-  if (!isHealReady()) { log('<span style="color:#666">Heal not ready yet</span>'); return; }
-  if (!spendMana(MANA_COSTS.heal)) {
-    log('<span style="color:#4488ff">Not enough mana to heal!</span>');
+  // Toggle heal auto — fires when ready and HP < 80%
+  if(G.autoSlots['heal']){
+    clearInterval(G.autoSlots['heal']);
+    delete G.autoSlots['heal'];
+    updateHealSlotUI();
     return;
   }
+  // Try to fire immediately
+  if(isHealReady() && G.mana >= MANA_COSTS.heal) {
+    doHeal(ab);
+  }
+  // Set up auto — fires when HP < 80%, CD ready, mana available
+  G.autoSlots['heal'] = setInterval(()=>{
+    if(!G.combatActive||!G.enemy){ clearInterval(G.autoSlots['heal']); delete G.autoSlots['heal']; updateHealSlotUI(); return; }
+    if(!isHealReady()) return;
+    if(G.mana < MANA_COSTS.heal) return;
+    if(G.hp >= G.maxHp * 0.8) return; // only heal when below 80% hp
+    doHeal(ab);
+  }, 300);
+  updateHealSlotUI();
+  return; // early return — doHeal handles the actual heal
+}
+
+function doHeal(ab) {
+  if (!spendMana(MANA_COSTS.heal)) return;
 
   const st = getStats();
   const maxHp = G.maxHp;
@@ -3310,8 +3357,8 @@ function activateHeal() {
   playSound('heal');
   log(`<span style="color:#3acc7a">${ab.icon} ${ab.name} — restored ${ab.hot ? 'HP over time' : healAmt + ' HP'}</span>`);
   combatLog(`♥ ${ab.name} +${healAmt}`, 'heal');
-  updateHealSlotUI(); // rebuild HTML first
-  startHealCDBar(ab); // then animate the bar that now exists
+  updateHealSlotUI();
+  startHealCDBar(ab);
 }
 
 function startHealCDBar(ab) {
@@ -3335,8 +3382,13 @@ function updateHealSlotUI() {
   const color = ab ? (CLASS_COLORS[ab.class] || '#3acc7a') : '#3acc7a';
   // Dim heal slot between waves
   slot.style.opacity = (G.combatActive && G.enemy) ? '1' : '0.45';
+  const isHealAuto = !!G.autoSlots['heal'];
+  if(isHealAuto){ slot.classList.add('active-ability'); slot.style.boxShadow=`0 0 10px 1px ${color}`; slot.style.background=`${color}18`; }
+  else { slot.classList.remove('active-ability'); slot.style.boxShadow=''; slot.style.background=''; }
   slot.style.borderColor = color;
+  const healDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
   slot.innerHTML = `
+    ${healDot}
     <div class="ab-slot-label" style="color:${color}">Heal</div>
     <div class="ab-icon">${ab ? ab.icon : '＋'}</div>
     <div class="ab-name" style="color:${ab ? color : 'var(--muted)'};font-size:${ab ? '9px' : '8px'}">${ab ? ab.name : 'Tap to assign'}</div>
@@ -3912,14 +3964,14 @@ const TUT_STEPS = [
   {
     slotId: 'slot-basic',
     title: '⚔️ Attack Slot',
-    desc: 'This is your basic attack. Tap it to toggle AUTO-ATTACK on — it will keep hitting automatically until you tap again.',
+    desc: 'Tap any ability to toggle AUTO on — it fires automatically. Tap again to stop. Skills fire as soon as their cooldown ends.',
     hint: '👆 Tap the Attack button now',
     waitForTap: 'slot-basic',
   },
   {
     slotId: 'slot-reg1',
     title: '⚡ Skill 1',
-    desc: 'This is your first skill — it has a cooldown. Tap it manually when the cooldown bar is empty to fire it.',
+    desc: 'Tap to toggle auto — it will fire automatically every time the cooldown resets. Tap again to turn off.',
     hint: '👆 Tap Skill 1 to try it',
     waitForTap: 'slot-reg1',
   },
