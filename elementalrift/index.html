@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.37</title>
+<title>Elemental Rift v1.5.39</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -406,7 +406,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.37 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.39 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -630,7 +630,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <button class="action-btn btn-next hidden" id="next-btn" onclick="nextWave()" style="flex:1;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()" style="flex:1;"><span class="btn-icon">💀</span>Boss Attempt</button>
       <button class="action-btn hidden" id="potion-btn" onclick="buyPotion()" style="flex:1;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
-      <button class="action-btn" id="loadout-btn" onclick="openLoadoutPicker(-1)" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
+      <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
     </div>
   </div>
 
@@ -1648,7 +1648,7 @@ function activateAbility(slotIdx) {
     return;
   }
   const abId = G.loadout[slotIdx];
-  if(!abId){ openLoadoutPicker(slotIdx); return; }
+  if(!abId){ openSlotSelector(); return; }
   const ab = ABILITIES[abId];
   if(!ab) return;
 
@@ -1752,6 +1752,37 @@ function isAbilityUnlocked(abId) {
 
 // ── LOADOUT PICKER ──
 let pickerSlot = -1;
+
+function openSlotSelector() {
+  // Pause enemy while in loadout
+  if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
+  pickerSlot = -1;
+  document.getElementById('picker-title').textContent = '⚡ Change Loadout';
+  document.getElementById('picker-subtitle').textContent = 'Which slot do you want to change?';
+  const list = document.getElementById('ability-picker-list');
+  const slotLabels = ['Attack','Skill 1','Skill 2','Ultimate'];
+  const slotTypes  = ['basic','regular','regular','ultimate'];
+  list.innerHTML = slotLabels.map((label, i) => {
+    const abId = G.loadout[i];
+    const ab = abId ? ABILITIES[abId] : null;
+    const unlocked = isSlotUnlocked(i);
+    const color = ab ? (CLASS_COLORS[ab.class]||'#aaa') : 'var(--muted)';
+    const lockMsg = ['','','Level 5 any class','Level 8 any class'][i]||'';
+    return `<div class="ability-pick-card ${unlocked?'':'locked'}" onclick="${unlocked?`openLoadoutPicker(${i})`:''}">
+      <div class="apc-header">
+        ${ab?`<span class="apc-icon">${ab.icon}</span>`:'<span class="apc-icon" style="color:var(--muted)">＋</span>'}
+        <div style="flex:1">
+          <span class="apc-name" style="color:${color}">${label}</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:6px;">${ab?ab.name:'Empty'}</span>
+        </div>
+        ${unlocked?'<span style="font-size:10px;color:#8888ff;">Change →</span>':`<span style="font-size:10px;color:var(--muted);">🔒 ${lockMsg}</span>`}
+      </div>
+      ${ab?`<div class="apc-desc" style="font-size:11px;">${ab.desc}</div>`:''}
+    </div>`;
+  }).join('');
+  document.getElementById('ability-picker-modal').classList.remove('hidden');
+}
+
 function openLoadoutPicker(slotIdx) {
   // Pause enemy attacks while picking
   if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
@@ -1760,20 +1791,18 @@ function openLoadoutPicker(slotIdx) {
   const slotTypes = ['basic','regular','regular','ultimate'];
   const targetType = slotIdx>=0 ? slotTypes[slotIdx] : null;
 
-  document.getElementById('picker-title').textContent = slotIdx>=0 ? `Choose ${slotNames[slotIdx]} Ability` : 'Manage Loadout';
-  document.getElementById('picker-subtitle').textContent = slotIdx>=0
-    ? `Select an ability for slot ${slotIdx+1}`
-    : 'Tap a slot to change its ability';
+  document.getElementById('picker-title').textContent = `Choose ${slotNames[slotIdx]} Ability`;
+  document.getElementById('picker-subtitle').innerHTML = `<button onclick="openSlotSelector()" style="font-family:'Cinzel',serif;font-size:10px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:6px;cursor:pointer;margin-bottom:6px;">← Back</button><br>Select an ability for the ${slotNames[slotIdx]} slot`;
 
   const list = document.getElementById('ability-picker-list');
   const abilities = Object.values(ABILITIES).filter(ab => {
-    if(targetType && ab.type !== targetType) return false;
     if(ab.type === 'heal') return false; // heals use separate picker
-    return isAbilityUnlocked(ab.id);
+    if(targetType && ab.type !== targetType) return false;
+    return isAbilityUnlocked(ab.id); // show all unlocked, regardless of abilityLevels
   });
 
   list.innerHTML = abilities.map(ab => {
-    const unlocked = isAbilityUnlocked(ab);
+    const unlocked = isAbilityUnlocked(ab.id);
     const lv = G.abilityLevels[ab.id]||0;
     const cp = G.classCP[ab.class]||0;
     const equipped = G.loadout.includes(ab.id);
@@ -1797,10 +1826,7 @@ function openLoadoutPicker(slotIdx) {
         ${manaCost>0?`<span style="color:#63b3ff">💧 ${manaCost} mana</span>`:'<span>✓ Free</span>'}
         ${lv>0?`<span style="color:#8888ff">Lv${lv}</span>`:''}
       </div>
-      ${!unlocked?(()=>{
-        const needed = ab.type==='basic'?1:ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3;
-        return `<div class="apc-unlock">🔒 Reach ${ab.class} class Level ${needed} to unlock (currently Lv${G.classLv[ab.class]||0})</div>`;
-      })():''}
+
     </div>`;
   }).join('');
 
