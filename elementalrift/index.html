@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.47</title>
+<title>Elemental Rift v1.5.50</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -414,7 +414,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.47 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.50 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -524,6 +524,7 @@ let sbProfile = null; // players row
       <div class="res-item"><span class="res-label">Wave</span><span class="res-val" id="wave-num">1</span></div>
       <div class="res-item"><span class="res-label">Gold</span><span class="res-val" id="gold-val">0</span></div>
       <div class="res-item"><span class="res-label">Kills</span><span class="res-val" id="kills-val">0</span></div>
+      <div class="res-item"><span class="res-label" style="color:#8888ff">🔮</span><span class="res-val blue" id="passive-pts-val">0</span></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:160px;min-width:80px;">
       <div style="display:flex;justify-content:space-between;">
@@ -862,7 +863,7 @@ let G = {
   playerName: '',
   hp:200, maxHp:200, energy:100, maxEnergy:100,
   gold:0, kills:0, wave:1,
-  xp:0, xpToNext:80, skillPoints:0,
+  xp:0, xpToNext:80, skillPoints:0, passivePoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
@@ -1042,7 +1043,7 @@ function saveGame() {
     const save = {
       playerName:G.playerName, hp:G.hp, maxHp:G.maxHp,
       gold:G.gold, kills:G.kills, wave:G.wave,
-      xp:G.xp, xpToNext:G.xpToNext, skillPoints:G.skillPoints,
+      xp:G.xp, xpToNext:G.xpToNext, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
       startingClass:G.startingClass,
       baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
@@ -1061,7 +1062,7 @@ function loadGame(name) {
     G.playerName = save.playerName;
     G.hp = save.hp; G.maxHp = save.maxHp;
     G.gold = save.gold;
-    G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.skillPoints = save.skillPoints||0;
+    G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
     if(save.startingClass) G.startingClass = save.startingClass;
     G.kills = save.kills; G.wave = save.wave;
     G.baseStats = save.baseStats;
@@ -1341,7 +1342,7 @@ function onBossPhaseKill() {
     // Boss wave (map system) — single kill = segment complete
     G.kills++;
     G.gold += Math.floor(50 + G.wave*15);
-    G.skillPoints += 3 + Math.floor(G.wave/2);
+    G.passivePoints += 2 + Math.floor(G.wave/3);
     log(`<span class="log-gold">💀 Boss slain! 💰 +${Math.floor(50+G.wave*15)}g  ✨ +${3+Math.floor(G.wave/2)} SP</span>`);
     // Big loot drop
     const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
@@ -1934,7 +1935,7 @@ function updateLoadoutUI() {
 function updateClassXPPanel() {
   // Render into both desktop right col and mobile skills panel
   let html = '<div class="panel-title">Skill Tree</div>';
-  html += `<div class="sp-display">${G.skillPoints} Skill Points</div>`;
+  html += `<div class="sp-display">${G.passivePoints} Passive Points</div>`;
 
   // Class XP bars
   html += '<div class="panel-title" style="position:static;margin-top:4px;">Class Levels</div>';
@@ -1968,14 +1969,14 @@ function updateClassXPPanel() {
 
   // Original skill tree below
   html += '<div class="panel-title" style="position:static;">🔮 Passive Skills</div>';
-  html += `<div class="sp-display">${G.skillPoints} Skill Point${G.skillPoints!==1?'s':''}</div>`;
+  html += `<div class="sp-display">${G.passivePoints} Passive Point${G.passivePoints!==1?'s':''}</div>`;
   const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${CLASS_COLORS[el]||'#88aacc'}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
     skills.forEach((sk,i)=>{
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
       html+=`<div class="skill-row"><div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
-        <button class="skill-btn" ${G.skillPoints<1||lvl>=10?'disabled':''} onclick="upgradeSkill('${el}',${i})">+</button></div>`;
+        <button class="skill-btn" ${G.passivePoints<1||lvl>=10?'disabled':''} onclick="upgradeSkill('${el}',${i})">+</button></div>`;
     });
     html+='</div>';
   });
@@ -2229,6 +2230,15 @@ function onEnemyDeath() {
   const ratio = Math.min(2.0, enemyPower / playerPower); // cap ratio so overleveled enemies don't give insane xp
   const xpGain = Math.max(3, Math.floor(15 + ratio * 20));
   awardXP(xpGain);
+  // Award passive skill point every 5 kills
+  if(G.kills % 5 === 0) {
+    G.passivePoints++;
+    updateClassXPPanel();
+    updateResourceBar();
+    log(`<span style="color:#8888ff">🔮 Passive Skill Point earned! (${G.passivePoints} available)</span>`);
+    // Show tutorial on first passive point
+    if(G.passivePoints === 1) setTimeout(showPassivePointTutorial, 600);
+  }
   log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${xpGain} XP</span>`);
 
   // Loot drop on kill
@@ -2421,12 +2431,14 @@ function rollTier(vendorCap=false) {
 }
 
 function rollStatValue(stat, cls) {
-  const range = STAT_CLASS_RANGES[cls][stat];
-  if(!range) return 0;
-  const val = range[0] + Math.random()*(range[1]-range[0]);
-  if(['atkSpeed','critChance','lifeSteal','spellVamp','cdr'].includes(stat))
+  const range = STAT_CLASS_RANGES[cls] && STAT_CLASS_RANGES[cls][stat];
+  if(!range || range[0] === range[1] && range[0] === 0) return 0;
+  const min = range[0], max = range[1];
+  if(min === max) return min;
+  const val = min + Math.random()*(max-min);
+  if(['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(stat))
     return parseFloat(val.toFixed(1));
-  return Math.floor(val);
+  return Math.max(1, Math.floor(val)); // guarantee at least 1 for integer stats
 }
 
 function generateItemName(slot, tier, stats) {
@@ -2461,13 +2473,23 @@ function rollItem(slot, waveMod=1, vendorCap=false) {
   // Shuffle pool
   for(let i=filteredPool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[filteredPool[i],filteredPool[j]]=[filteredPool[j],filteredPool[i]];}
 
+  let attempts = 0;
   for(let i=0;i<Math.min(count,filteredPool.length);i++){
     const stat = filteredPool[i];
     const cls = classes[Math.floor(Math.random()*classes.length)];
-    const val = rollStatValue(stat, cls);
+    let val = rollStatValue(stat, cls);
+    // Retry once if 0 — pick a different stat class
+    if(val === 0) val = rollStatValue(stat, classes[0]);
     if(val>0) stats[stat]=val;
   }
 
+  // Guarantee at least one stat
+  if(Object.keys(stats).length === 0) {
+    const fallbackStat = filteredPool[0] || 'attack';
+    const fallbackCls = classes[0];
+    const fallbackVal = rollStatValue(fallbackStat, fallbackCls) || 1;
+    stats[fallbackStat] = fallbackVal;
+  }
   const name = generateItemName(slot, tier, stats);
   const sellVal = Math.max(5, Math.floor(Object.values(stats).reduce((a,b)=>a+b,0) * (tier.name==='Cosmic'?20:tier.name==='Ancient'?8:tier.name==='Exquisite'?3:tier.name==='Great'?1.5:1)));
   const buyVal = Math.floor(sellVal * 2.2 + 15);
@@ -2607,7 +2629,11 @@ function renderVendor(){
     </div>`;}).join('');
 }
 function buyVendorItem(idx){
+  // Prevent buying while item modal is open
+  const itemModal = document.getElementById('item-modal');
+  if(itemModal && !itemModal.classList.contains('hidden')) return;
   const v=vendorStock[idx];
+  if(!v){ renderVendor(); return; } // stale index
   if(G.gold<v.item.buyVal){log('<span style="color:#cc4444">Not enough gold!</span>');return;}
   G.gold-=v.item.buyVal;
   updateResourceBar();
@@ -2646,6 +2672,8 @@ function updateResourceBar(){
   document.getElementById('gold-val').textContent=G.gold;
   document.getElementById('kills-val').textContent=G.kills;
   document.getElementById('wave-num').textContent=G.wave;
+  const ppEl = document.getElementById('passive-pts-val');
+  if(ppEl) ppEl.textContent = G.passivePoints||0;
   updateXPBar();
 }
 
@@ -2696,8 +2724,8 @@ function updateSkillPanel(){
 }
 
 function upgradeSkill(el,idx){
-  if(G.skillPoints<1)return;
-  G.skillPoints--;
+  if(G.passivePoints<1)return;
+  G.passivePoints--;
   const key=`${el}_${idx}`;G.skillLevels[key]=(G.skillLevels[key]||0)+1;
   const sk=SKILL_TREE[el][idx];
   log(`<span style="color:#8888ff">Upgraded ${sk.name} to Lv${G.skillLevels[key]}</span>`);
@@ -4496,6 +4524,74 @@ function resetTutorial() {
   localStorage.removeItem(TUT_KEY);
 }
 
+
+// ═══════════════════════════════════════════════
+// PASSIVE POINT TUTORIAL
+// ═══════════════════════════════════════════════
+const PASSIVE_TUT_KEY = 'er_passive_tutorial_done';
+
+function showPassivePointTutorial() {
+  if(localStorage.getItem(PASSIVE_TUT_KEY)) return;
+
+  // Find the right target — upgrades tab on mobile, right panel on desktop
+  const isMob = IS_MOBILE();
+  const targetId = isMob ? 'mtab-upgrades' : 'panel-skills';
+
+  const target = document.getElementById(targetId);
+  if(!target) return;
+
+  const rect = target.getBoundingClientRect();
+  if(rect.width === 0) return;
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'passive-tut-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:400;pointer-events:all;';
+  overlay.innerHTML = `
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.78);" onclick="dismissPassiveTutorial()"></div>
+    <div id="passive-tut-spotlight" style="
+      position:absolute;
+      left:${rect.left - 6}px;top:${rect.top - 6}px;
+      width:${rect.width + 12}px;height:${rect.height + 12}px;
+      border-radius:10px;
+      box-shadow:0 0 0 9999px rgba(0,0,0,0.78);
+      border:2px solid #8888ff;
+      pointer-events:none;
+    "></div>
+    <div style="
+      position:absolute;
+      left:${Math.max(8, Math.min(window.innerWidth - 260, rect.left + rect.width/2 - 120))}px;
+      top:${rect.bottom + 50}px;
+      width:240px;
+      background:#151a28;border:1px solid #8888ff;border-radius:14px;padding:16px;
+    ">
+      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#8888ff;margin-bottom:8px;">🔮 Passive Points</div>
+      <p style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:10px;">
+        You earned a <strong style="color:#8888ff">Passive Skill Point</strong>! These are different from level-up points.<br><br>
+        Spend them here to permanently boost stats like Attack, Crit, CDR and more. They carry over between waves.
+      </p>
+      <div style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:10px;">👆 Tap ${isMob ? 'Upgrades' : 'the Skills panel'} to spend your points</div>
+      <button onclick="dismissPassiveTutorial()" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:8px;border:1px solid #8888ff;color:#8888ff;background:rgba(136,136,255,0.1);cursor:pointer;">Got it</button>
+    </div>
+    <!-- Arrow pointing up at target -->
+    <svg style="position:absolute;left:${rect.left + rect.width/2 - 15}px;top:${rect.bottom + 10}px;pointer-events:none;" width="30" height="40" viewBox="0 0 30 40">
+      <path d="M15,35 Q15,10 15,5" stroke="#8888ff" stroke-width="3" fill="none" marker-end="url(#ph)"/>
+      <defs><marker id="ph" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#8888ff"/>
+      </marker></defs>
+    </svg>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function dismissPassiveTutorial() {
+  const overlay = document.getElementById('passive-tut-overlay');
+  if(overlay) overlay.remove();
+  localStorage.setItem(PASSIVE_TUT_KEY, '1');
+  // On mobile, auto-switch to upgrades tab
+  if(IS_MOBILE()) mobileTab('upgrades');
+}
+
 // ═══════════════════════════════════════════════
 // MOBILE LAYOUT SYSTEM
 // ═══════════════════════════════════════════════
@@ -4613,7 +4709,7 @@ function buildStatsPanelHTML() {
   html += `<div class="stat-row"><span class="stat-label">Wave</span><span class="stat-val">${G.wave}</span></div>`;
   html += `<div class="stat-row"><span class="stat-label">Kills</span><span class="stat-val">${G.kills}</span></div>`;
   html += `<div class="stat-row"><span class="stat-label">Gold</span><span class="stat-val">${G.gold}</span></div>`;
-  html += `<div class="stat-row"><span class="stat-label">Skill Pts</span><span class="stat-val">${G.skillPoints}</span></div>`;
+  html += `<div class="stat-row"><span class="stat-label">Passive Pts</span><span class="stat-val" style="color:#8888ff">${G.passivePoints}</span></div>`;
   return html;
 }
 
@@ -4647,7 +4743,7 @@ function buildUpgradesPanelHTML() {
 
   // Divider + passive skills
   html += '<hr class="upgrade-divider">';
-  html += `<div class="panel-title" style="position:static;">🔮 Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.skillPoints} pts)</span></div>`;
+  html += `<div class="panel-title" style="position:static;">🔮 Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.passivePoints} pts)</span></div>`;
   const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     const color = CLASS_COLORS[el]||'#88aacc';
@@ -4656,7 +4752,7 @@ function buildUpgradesPanelHTML() {
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
       html+=`<div class="skill-row">
         <div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
-        <button class="skill-btn" ${G.skillPoints<1||lvl>=10?'disabled':''} onclick="upgradeSkillMobile('${el}',${i})">+</button>
+        <button class="skill-btn" ${G.passivePoints<1||lvl>=10?'disabled':''} onclick="upgradeSkillMobile('${el}',${i})">+</button>
       </div>`;
     });
     html+='</div>';
