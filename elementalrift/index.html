@@ -2645,19 +2645,29 @@ function renderVendor(){
     </div>`;}).join('');
 }
 function buyVendorItem(idx){
-  // Prevent double-buy of same index
-  if(typeof v === 'undefined') { renderVendor(); return; }
-  const v=vendorStock[idx];
-  if(!v){ renderVendor(); return; } // stale index
-  if(G.gold<v.item.buyVal){log('<span style="color:#cc4444">Not enough gold!</span>');return;}
-  G.gold-=v.item.buyVal;
+  const v = vendorStock[idx];
+
+  // stale index or already bought
+  if(!v){
+    renderVendor();
+    return;
+  }
+
+  if(G.gold < v.item.buyVal){
+    log('<span style="color:#cc4444">Not enough gold!</span>');
+    renderVendor();
+    return;
+  }
+
+  G.gold -= v.item.buyVal;
   updateResourceBar();
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+
   const boughtItem = v.item;
-  vendorStock.splice(idx,1);
-  renderVendor(); // refresh with updated gold so affordability updates
-  // Show item modal on top of vendor
-  showItemModal(boughtItem,'vendor_buy');
+  vendorStock.splice(idx, 1);
+
+  renderVendor();
+  showItemModal(boughtItem, 'vendor_buy');
 }
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
