@@ -180,6 +180,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 }
 
 .hidden{display:none!important;}
+
+/* ensure menu-overlay shows as flex when not hidden */
+.menu-overlay:not(.hidden){display:flex!important;}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -285,7 +288,7 @@ let sbUser = null, sbProfile = null;
   <div id="countdown"><div id="countdown-num"></div></div>
 
   <!-- MAIN MENU -->
-  <div class="menu-overlay" id="main-menu">
+  <div class="menu-overlay hidden" id="main-menu">
     <div class="menu-box">
       <div class="menu-title">⬡ HYPERCELL</div>
       <div class="menu-sub" id="menu-player-name">Dodge walls. Collect coins.</div>
@@ -628,10 +631,10 @@ function buildScene() {
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x03040a, 25, 80);
 
-  // Camera
-  camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 150);
-  camera.position.set(0, 4.5, 8);
-  camera.lookAt(0, 0, -10);
+  // Camera — lower and closer so the cube is visible in portrait
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 150);
+  camera.position.set(0, 3.5, 7);
+  camera.lookAt(0, 0.5, 0);
 
   // Lighting
   const ambient = new THREE.AmbientLight(0x223344, 0.8);
@@ -1228,7 +1231,7 @@ function moveRight() {
 // ══════════════════════════════════════════════
 function showMainMenu() {
   hideAllMenus();
-  document.getElementById('main-menu').style.display='flex';
+  document.getElementById('main-menu').classList.remove('hidden');
   document.getElementById('menu-player-name').textContent = P.name ? `Welcome, ${P.name} · Best: ${P.bestDist}m` : 'Dodge walls. Collect coins.';
   renderMenuLBPreview();
 
@@ -1251,8 +1254,7 @@ async function renderMenuLBPreview() {
 
 function hideAllMenus() {
   ['main-menu','shop-menu','lb-menu','gameover-menu'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){ el.style.display='none'; el.classList.add('hidden'); }
+    document.getElementById(id).classList.add('hidden');
   });
 }
 
@@ -1279,19 +1281,31 @@ function restartGame() {
 
 function openShop() {
   hideAllMenus();
-  document.getElementById('shop-menu').style.display='flex';
   document.getElementById('shop-menu').classList.remove('hidden');
   renderShop();
 }
 
 function closeShop() {
-  document.getElementById('shop-menu').style.display='none';
   document.getElementById('shop-menu').classList.add('hidden');
-  if(SESSION.dead) {
-    showGameOver(SESSION.dist, SESSION.sessionCoins, false);
-  } else {
-    showMainMenu();
-  }
+  if(SESSION.dead) showGameOver(SESSION.dist, SESSION.sessionCoins, false);
+  else showMainMenu();
+}
+
+async function openLeaderboard() {
+  hideAllMenus();
+  document.getElementById('lb-menu').classList.remove('hidden');
+  const lb=await fetchLeaderboard();
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('lb-content').innerHTML = lb.length===0
+    ? '<div style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No records yet. Be the first!</div>'
+    : lb.map((r,i)=>{
+        const isMe=(r.username||r.name)===P.name;
+        return `<div class="lb-full-row${isMe?' lb-highlight':''}">
+          <span class="lb-full-rank" style="color:${i===0?'#ffd700':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'}">${medals[i]||'#'+(i+1)}</span>
+          <span class="lb-full-name" style="${isMe?'color:var(--neon);font-weight:600;':''}">${r.username||r.name}</span>
+          <span class="lb-full-score">${Math.round(r.best_dist||r.score||0)}m</span>
+        </div>`;
+      }).join('');
 }
 
 function renderShop() {
@@ -1331,46 +1345,6 @@ function buyUpgrade(key) {
   P.upgradeLevels[key]=(P.upgradeLevels[key]||0)+1;
   cloudSave();
   renderShop();
-}
-
-async function openLeaderboard() {
-  hideAllMenus();
-  document.getElementById('lb-menu').style.display='flex';
-  document.getElementById('lb-menu').classList.remove('hidden');
-  const lb=await fetchLeaderboard();
-  const medals=['🥇','🥈','🥉'];
-  document.getElementById('lb-content').innerHTML = lb.length===0
-    ? '<div style="text-align:center;color:var(--muted);padding:20px;font-style:italic;">No records yet. Be the first!</div>'
-    : lb.map((r,i)=>{
-        const isMe=(r.username||r.name)===P.name;
-        return `<div class="lb-full-row${isMe?' lb-highlight':''}">
-          <span class="lb-full-rank" style="color:${i===0?'#ffd700':i===1?'#aaa':i===2?'#cd7f32':'var(--muted)'}">${medals[i]||'#'+(i+1)}</span>
-          <span class="lb-full-name" style="${isMe?'color:var(--neon);font-weight:600;':''}">${r.username||r.name}</span>
-          <span class="lb-full-score">${Math.round(r.best_dist||r.score||0)}m</span>
-        </div>`;
-      }).join('');
-}
-
-function closeLB() {
-  document.getElementById('lb-menu').style.display='none';
-  document.getElementById('lb-menu').classList.add('hidden');
-  if(SESSION.dead) showGameOver(SESSION.dist, SESSION.sessionCoins, false);
-  else showMainMenu();
-}
-
-function showGameOver(dist, coins, newBest) {
-  SESSION.dead=true;
-  hideAllMenus();
-  const goMenu=document.getElementById('gameover-menu');
-  goMenu.style.display='flex'; goMenu.classList.remove('hidden');
-
-  document.getElementById('go-sub').textContent = newBest ? '🏆 NEW PERSONAL BEST!' : 'Better luck next time';
-  document.getElementById('go-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-card-label">Distance</div><div class="stat-card-val">${dist}m</div></div>
-    <div class="stat-card"><div class="stat-card-label">Coins</div><div class="stat-card-val gold">${coins}</div></div>
-    <div class="stat-card"><div class="stat-card-label">Best</div><div class="stat-card-val">${P.bestDist}m</div></div>
-    <div class="stat-card"><div class="stat-card-label">Total Coins</div><div class="stat-card-val gold">${P.totalCoins}</div></div>
-  `;
 }
 
 gameRunning = true;
