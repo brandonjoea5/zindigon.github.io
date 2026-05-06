@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.11</title>
+<title>Elemental Rift v1.5.13</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -219,12 +219,29 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:0;}
 .modal-overlay.centered{align-items:center;padding:16px;}
 .modal{background:#151a28;border:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;}
-.modal-overlay.centered .modal{border-radius:16px;max-width:420px;}
+.modal-overlay.centered .modal{border-radius:16px;max-width:500px;}
 .modal-title{font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--gold);margin-bottom:12px;text-align:center;}
 .modal-subtitle{font-size:13px;color:var(--muted);text-align:center;margin-bottom:14px;}
 .item-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;margin:10px 0;}
 .item-stat{font-size:13px;}
 .item-stat span{color:var(--green);font-weight:600;}
+
+/* ── GEAR COMPARISON ── */
+.compare-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
+.compare-col{background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:10px;}
+.compare-col.new-item{border-color:rgba(232,184,75,0.3);}
+.compare-col-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.compare-col.new-item .compare-col-title{color:var(--gold);}
+.compare-stat-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.03);}
+.compare-stat-label{color:var(--muted);font-size:11px;}
+.compare-stat-val{font-weight:600;}
+.compare-stat-val.positive{color:#3acc7a;}
+.compare-stat-val.negative{color:#e83a3a;}
+.compare-stat-val.neutral{color:var(--text);}
+.compare-delta{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;}
+.delta-up{color:#3acc7a;background:rgba(58,204,122,0.12);}
+.delta-down{color:#e83a3a;background:rgba(232,58,58,0.12);}
+.compare-empty{color:var(--muted);font-style:italic;font-size:12px;text-align:center;padding:8px 0;}
 .modal-btns{display:flex;gap:8px;margin-top:16px;}
 .modal-btns button{flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;}
 .btn-equip{border-color:var(--green);color:var(--green);}
@@ -370,7 +387,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.11 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.13 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -649,7 +666,7 @@ const SKILL_TREE = {
   physical:[{name:'Brute Force',stat:'attack',per:5},{name:'Precision',stat:'critChance',per:3},{name:'Rampage',stat:'atkSpeed',per:0.15}],
   defense: [{name:'Iron Will',stat:'armor',per:4},{name:'Spell Ward',stat:'magicResist',per:4},{name:'Swiftcast',stat:'cdr',per:2}],
 };
-const BASE_STATS = {attack:10,magicPower:8,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0,mana:100,manaRegen:5};
+const BASE_STATS = {attack:18,magicPower:15,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0,mana:100,manaRegen:5};
 const ENEMY_NAMES = ['Gorgash','Vexil','Thornback','Sable Wraith','Cindermaw','Tidecaller','Luminos','Shade','Bramblehide','Voidling','Ashfang','Crystalclaw','Frostmaw','Emberclaw','Duskwalker','Nullshade'];
 const BOSS_NAMES = ['The Devourer','Void Colossus','Ashen Titan','The Undying','Chaos Incarnate'];
 
@@ -1359,7 +1376,7 @@ function fireAbility(ab) {
 
   let totalDmg = 0;
   for(let h=0;h<hits;h++){
-    const dmg = Math.max(1, Math.floor(getAbilityDmg(ab) * seMult * critMult - resist*(1-armorPen)*0.4));
+    const dmg = Math.max(1, Math.floor(getAbilityDmg(ab) * seMult * critMult - resist*(1-armorPen)*0.15));
     G.enemy.hp -= dmg;
     totalDmg += dmg;
     if(G.inBoss) G.bossDmgDealt += dmg;
@@ -1799,7 +1816,7 @@ function attack(element) {
   const critMult = isCrit?st.critDmg/100:1.0;
   let skillBonus=0;
   if (isMagic) (SKILL_TREE[element]||[]).forEach((sk,i)=>{skillBonus+=(G.skillLevels[`${element}_${i}`]||0)*0.5;});
-  let dmg = Math.max(1,Math.floor((baseDmg+skillBonus)*seMult*critMult-resist*0.4));
+  let dmg = Math.max(1,Math.floor((baseDmg+skillBonus)*seMult*critMult-resist*0.15));
 
   G.enemy.hp -= dmg;
   if (G.inBoss) G.bossDmgDealt += dmg;
@@ -1856,7 +1873,7 @@ function attack(element) {
 function enemyAttack() {
   if (!G.enemy||!G.combatActive) return;
   const st=getStats();
-  const dmg=Math.max(1,Math.floor(G.enemy.attack-st.armor*0.35+(Math.random()*4-2)));
+  const dmg=Math.max(1,Math.floor(G.enemy.attack*(1-st.armor*0.008)+(Math.random()*4-2)));
   G.hp-=dmg;
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
   combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
@@ -2073,19 +2090,76 @@ function rollItem(slot, waveMod=1, vendorCap=false) {
   return { slot, tier, rarity:tier, stats, sellVal, buyVal, name };
 }
 
-function showItemModal(item,context){
-  document.getElementById('modal-title').textContent=item.name;
-  const t=item.tier||item.rarity; document.getElementById('modal-rarity').innerHTML=`<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>`;
-  document.getElementById('modal-slot').textContent=`Slot: ${item.slot}`;
-  document.getElementById('modal-stats').innerHTML=Object.entries(item.stats).map(([k,v])=>`<div class="item-stat">${STAT_LABELS[k]||k}: <span>+${v}</span></div>`).join('');
-  document.getElementById('modal-sell-val').textContent=`Sell value: ${item.sellVal} gold`;
-  const btns=document.getElementById('modal-btns');btns.innerHTML='';
-  if(context==='vendor_buy'||context==='equip_choose'){
-    const eq=document.createElement('button');eq.className='btn-equip';eq.textContent='Equip';eq.onclick=()=>equipItem(item);btns.appendChild(eq);
-    const sl=document.createElement('button');sl.className='btn-sell';sl.textContent=`Sell (${item.sellVal}g)`;sl.onclick=()=>sellItem(item);btns.appendChild(sl);
+function buildComparisonHTML(newItem) {
+  const slot = newItem.slot;
+  const equipped = G.equipment[slot] || null;
+  const allStats = new Set([...Object.keys(newItem.stats), ...(equipped ? Object.keys(equipped.stats) : [])]);
+
+  // New item column
+  const t = newItem.tier || newItem.rarity;
+  let newCol = `<div class="compare-col new-item">
+    <div class="compare-col-title" style="color:${t.color}">${t.name} (New)</div>`;
+  allStats.forEach(k => {
+    const val = newItem.stats[k] || 0;
+    const oldVal = equipped ? (equipped.stats[k] || 0) : 0;
+    const delta = val - oldVal;
+    let deltaHtml = '';
+    if (delta > 0) deltaHtml = `<span class="compare-delta delta-up">+${delta}</span>`;
+    else if (delta < 0) deltaHtml = `<span class="compare-delta delta-down">${delta}</span>`;
+    newCol += `<div class="compare-stat-row">
+      <span class="compare-stat-label">${STAT_LABELS[k]||k}</span>
+      <span style="display:flex;align-items:center;">
+        <span class="compare-stat-val ${delta>0?'positive':delta<0?'negative':'neutral'}">${val>0?'+'+val:val}</span>
+        ${deltaHtml}
+      </span>
+    </div>`;
+  });
+  newCol += '</div>';
+
+  // Equipped column
+  let eqCol = `<div class="compare-col">
+    <div class="compare-col-title">Currently Equipped</div>`;
+  if (!equipped) {
+    eqCol += '<div class="compare-empty">Nothing equipped</div>';
   } else {
-    const sl=document.createElement('button');sl.className='btn-sell';sl.textContent=`Sell (${item.sellVal}g)`;sl.onclick=()=>{sellItem(item,item.slot);closeItemModal();};btns.appendChild(sl);
-    const cl=document.createElement('button');cl.className='btn-close-m';cl.textContent='Close';cl.onclick=closeItemModal;btns.appendChild(cl);
+    const et = equipped.tier || equipped.rarity;
+    eqCol += `<div style="font-size:10px;color:${et.color};margin-bottom:6px;font-family:'Cinzel',serif;">${et.name}</div>`;
+    allStats.forEach(k => {
+      const val = equipped.stats[k] || 0;
+      eqCol += `<div class="compare-stat-row">
+        <span class="compare-stat-label">${STAT_LABELS[k]||k}</span>
+        <span class="compare-stat-val neutral">${val>0?'+'+val:val||'—'}</span>
+      </div>`;
+    });
+  }
+  eqCol += '</div>';
+
+  return `<div class="compare-wrap">${newCol}${eqCol}</div>`;
+}
+
+function showItemModal(item, context){
+  document.getElementById('modal-title').textContent = item.name;
+  const t = item.tier||item.rarity;
+  document.getElementById('modal-rarity').innerHTML = `<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>`;
+  document.getElementById('modal-slot').textContent = `Slot: ${item.slot}`;
+
+  // Show comparison for new items, plain stats for inspect
+  if (context === 'vendor_buy' || context === 'equip_choose') {
+    document.getElementById('modal-stats').innerHTML = buildComparisonHTML(item);
+  } else {
+    document.getElementById('modal-stats').innerHTML = Object.entries(item.stats).map(([k,v]) =>
+      `<div class="item-stat">${STAT_LABELS[k]||k}: <span>+${v}</span></div>`
+    ).join('');
+  }
+
+  document.getElementById('modal-sell-val').textContent = `Sell value: ${item.sellVal} gold`;
+  const btns = document.getElementById('modal-btns'); btns.innerHTML = '';
+  if (context === 'vendor_buy' || context === 'equip_choose') {
+    const eq = document.createElement('button'); eq.className='btn-equip'; eq.textContent='Equip'; eq.onclick=()=>equipItem(item); btns.appendChild(eq);
+    const sl = document.createElement('button'); sl.className='btn-sell'; sl.textContent=`Sell (${item.sellVal}g)`; sl.onclick=()=>sellItem(item); btns.appendChild(sl);
+  } else {
+    const sl = document.createElement('button'); sl.className='btn-sell'; sl.textContent=`Sell (${item.sellVal}g)`; sl.onclick=()=>{sellItem(item,item.slot);closeItemModal();}; btns.appendChild(sl);
+    const cl = document.createElement('button'); cl.className='btn-close-m'; cl.textContent='Close'; cl.onclick=closeItemModal; btns.appendChild(cl);
   }
   document.getElementById('item-modal').classList.remove('hidden');
 }
