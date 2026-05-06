@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.41</title>
+<title>Elemental Rift v1.5.42</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -418,7 +418,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.41 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.42 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -3661,11 +3661,20 @@ async function authSubmit() {
     const { data, error } = await sb.auth.signUp({ email, password });
     if(error) { errEl.textContent = error.message; btn.textContent = 'Create Account'; btn.disabled = false; return; }
     sbUser = data.user;
-    // Insert players row
-    const { error: profileErr } = await sb.from('players').insert({ id: sbUser.id, username: displayName });
+    // Upsert players row — retry once if it fails (timing issue with new session)
+    let profileErr = null;
+    for(let attempt = 0; attempt < 3; attempt++) {
+      if(attempt > 0) await new Promise(r => setTimeout(r, 800));
+      const { error } = await sb.from('players').upsert(
+        { id: sbUser.id, username: displayName },
+        { onConflict: 'id' }
+      );
+      profileErr = error;
+      if(!error) break;
+    }
     if(profileErr) {
-      errEl.textContent = 'Account created but profile save failed. Try signing in.';
-      btn.textContent = 'Create Account'; btn.disabled = false; return;
+      // Still failed — store name locally and continue anyway
+      console.error('Profile save failed:', profileErr.message);
     }
     sbProfile = { id: sbUser.id, username: displayName };
     hideAuthModal();
@@ -3676,6 +3685,10 @@ async function authSubmit() {
     if(error) { errEl.textContent = error.message; btn.textContent = 'Sign In'; btn.disabled = false; return; }
     sbUser = data.user;
     await loadSbProfile();
+    if(!sbProfile) {
+      errEl.textContent = 'Account found but profile missing. Please create a new account.';
+      btn.textContent = 'Sign In'; btn.disabled = false; return;
+    }
     hideAuthModal();
     onAuthReady();
   }
