@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.22</title>
+<title>Elemental Rift v1.5.23</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -403,7 +403,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.22 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.23 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -588,7 +588,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       </div>
     </div>
     <!-- Heal slot row -->
-    <div style="display:grid;grid-template-columns:1fr 3fr;gap:5px;padding:0 8px 6px;background:var(--panel);">
+    <div id="heal-row" style="display:grid;grid-template-columns:1fr 3fr;gap:5px;padding:0 8px 6px;background:var(--panel);">
       <div class="ability-slot" id="slot-heal" onclick="activateHeal()" title="Heal" style="border-color:#3acc7a;min-height:44px;">
         <div class="ab-slot-label" style="color:#3acc7a">Heal</div>
         <div class="ab-icon">＋</div>
@@ -677,6 +677,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <h4 id="tut-title">Tutorial</h4>
     <p id="tut-desc">Description</p>
     <div class="tut-tap-hint" id="tut-hint">👆 Tap the highlighted button</div>
+    <div style="text-align:right;margin-top:8px;">
+      <button onclick="endTutorial()" style="font-family:'Cinzel',serif;font-size:10px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Skip Tutorial</button>
+    </div>
   </div>
   <svg class="tut-arrow-svg" id="tut-arrow" width="60" height="80" viewBox="0 0 60 80">
     <defs>
@@ -3958,6 +3961,14 @@ function showTutStep(step) {
     path.setAttribute('d','M30,0 Q30,50 30,65');
   }
 
+  // Check if element is visible on screen — if not, skip this step
+  if(rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0) {
+    tutStep++;
+    if(tutStep < TUT_STEPS.length) showTutStep(tutStep);
+    else endTutorial();
+    return;
+  }
+
   // Content
   document.getElementById('tut-title').textContent = s.title;
   document.getElementById('tut-desc').textContent  = s.desc;
@@ -4027,11 +4038,13 @@ function initMobileLayout() {
     mav.appendChild(arenaEl);
   }
 
-  // Move loadout-area and wave-btns into mobile-bottom
+  // Move loadout-area, heal-row and wave-btns into mobile-bottom
   const loadout = document.getElementById('loadout-area');
+  const healRow = document.getElementById('heal-row');
   const waveBtns = document.getElementById('wave-btns');
   const mbot = document.getElementById('mobile-bottom');
   if (loadout && mbot && loadout.parentElement !== mbot) mbot.appendChild(loadout);
+  if (healRow && mbot && healRow.parentElement !== mbot) mbot.appendChild(healRow);
   if (waveBtns && mbot && waveBtns.parentElement !== mbot) mbot.appendChild(waveBtns);
 
   // Move resource-bar and bars-row to top of center-col (already there, just make sure)
