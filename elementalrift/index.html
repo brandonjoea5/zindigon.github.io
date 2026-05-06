@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.28</title>
+<title>Elemental Rift v1.5.32</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -406,7 +406,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.28 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.32 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -477,9 +477,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <span class="bar-nums" id="hp-nums">200/200</span>
     </div>
     <div class="bar-wrap">
-      <span class="bar-label">Energy</span>
+      <span class="bar-label" style="color:#63b3ff;">Mana</span>
       <div class="bar-track"><div class="bar-fill mp" id="mp-bar" style="width:100%"></div></div>
-      <span class="bar-nums" id="mp-nums">100/100</span>
+      <span class="bar-nums" style="color:#63b3ff;" id="mp-nums">100/100</span>
     </div>
   </div>
 
@@ -541,13 +541,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 
       <!-- Heal + Mana overlay — bottom right of arena -->
       <div style="position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;z-index:6;">
-        <!-- Mana bar -->
-        <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.55);border-radius:6px;padding:3px 8px;">
-          <span style="font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;">MANA</span>
-          <div style="width:80px;height:5px;background:#1a1f2e;border-radius:3px;overflow:hidden;">
-            <div class="bar-fill mp" id="mana-bar-combat" style="width:100%;height:100%;"></div>
-          </div>
-          <span style="font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;min-width:36px;text-align:right;" id="mana-nums-combat">100/100</span>
+        <!-- Mana cost hint -->
+        <div style="background:rgba(0,0,0,0.55);border-radius:6px;padding:3px 8px;font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;">
+          Mana Cost: 30
         </div>
         <!-- Heal button -->
         <div class="ability-slot" id="slot-heal" onclick="activateHeal()" style="border-color:#3acc7a;width:70px;min-height:56px;background:rgba(13,16,24,0.85);">
@@ -800,7 +796,7 @@ let G = {
   playerName: '',
   hp:200, maxHp:200, energy:100, maxEnergy:100,
   gold:0, kills:0, wave:1,
-  xp:0, xpToNext:100, skillPoints:0,
+  xp:0, xpToNext:80, skillPoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
@@ -1400,12 +1396,18 @@ function renderBossResultsModal(score, name, leaderboard, myRank) {
 
 function closeBossResults() {
   document.getElementById('boss-results-modal').classList.add('hidden');
-  // Go back to regular game — spawn next enemy
-  log('<span class="log-sys">Boss attempt complete. Back to the fight!</span>');
-  G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3)); // refill 30% HP after boss
+  log('<span class="log-sys">Boss attempt complete. Choose your next action.</span>');
+  G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3));
   updateHpBar();
   renderIngameLB();
-  spawnNextSegmentWave();
+  // Show next wave button — let player initiate, don't auto-spawn
+  document.getElementById('next-btn').classList.remove('hidden');
+  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
+  showPotionBtn();
+  G.combatActive = false;
+  G.enemy = null;
+  updateEnemyUI();
+  drawArena();
 }
 
 // ── LEADERBOARD (JSONBin) ──
@@ -1807,10 +1809,12 @@ function updateLoadoutUI() {
     const unlocked = isSlotUnlocked(i);
     const lockMsg = ['','','Lv5 class','Lv8 class'][i]||'';
     el.style.opacity = unlocked ? '1' : '0.4';
+    const manaCost = ab ? (MANA_COSTS[ab.type]||0) : 0;
     el.innerHTML = unlocked ? `
       <div class="ab-slot-label" style="color:var(--muted)">${SLOT_LABELS[i]}</div>
       <div class="ab-icon">${ab?ab.icon:'＋'}</div>
       <div class="ab-name" style="color:${ab?color:'var(--muted)'};font-size:${ab?'9px':'8px'}">${ab?ab.name:'Tap to assign'}</div>
+      ${manaCost>0?`<div style="font-size:7px;color:#63b3ff;font-family:'Cinzel',serif;">${manaCost} mana</div>`:''}
       <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-${i}" style="width:0%;background:${color}"></div></div>
     ` : `
       <div class="ab-slot-label" style="color:var(--muted)">${SLOT_LABELS[i]}</div>
@@ -2117,10 +2121,11 @@ function onEnemyDeath() {
   G.kills++;
   G.gold+=G.enemy.gold;
   G.runStats.totalGold += G.enemy.gold;
-  // XP based on enemy power vs player
-  const enemyPower = G.enemy.maxHp + G.enemy.attack * 5;
-  const playerPower = getPlayerPower();
-  const xpGain = Math.max(5, Math.floor(enemyPower / Math.max(1, playerPower * 0.1) * 10));
+  // XP based on enemy difficulty — roughly 4-5 kills per level early, scaling up
+  const enemyPower = G.enemy.maxHp * 0.1 + G.enemy.attack * 3;
+  const playerPower = Math.max(1, getPlayerPower());
+  const ratio = Math.min(2.0, enemyPower / playerPower); // cap ratio so overleveled enemies don't give insane xp
+  const xpGain = Math.max(3, Math.floor(15 + ratio * 20));
   awardXP(xpGain);
   log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${xpGain} XP</span>`);
 
@@ -2139,6 +2144,7 @@ function onEnemyDeath() {
   playSound('enemy_death');
   triggerScreenShake(5, 0.3);
   updateEnemyUI();
+  updateHealSlotUI();
   updateResourceBar();
   updateClassXPPanel();
   updateStatsPanel();
@@ -2414,6 +2420,11 @@ function buildComparisonHTML(newItem) {
 }
 
 function showItemModal(item, context){
+  // Pause combat while viewing item
+  if(G.combatActive && G.enemy) {
+    stopEnemyAutoAttack();
+    stopAllAutoSlots();
+  }
   document.getElementById('modal-title').textContent = item.name;
   const t = item.tier||item.rarity;
   document.getElementById('modal-rarity').innerHTML = `<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>`;
@@ -2452,7 +2463,13 @@ function equipItem(item){
   refreshMobilePanel();
 }
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
-function closeItemModal(){document.getElementById('item-modal').classList.add('hidden');}
+function closeItemModal(){
+  document.getElementById('item-modal').classList.add('hidden');
+  // Resume combat if enemy is still alive
+  if(G.combatActive && G.enemy && G.enemy.hp > 0 && !G.enemyAttackInterval) {
+    startEnemyAutoAttack();
+  }
+}
 
 // VENDOR
 let vendorStock=[];
@@ -2471,21 +2488,27 @@ function renderVendor(){
   document.getElementById('vendor-items').innerHTML=vendorStock.map((v,i)=>{
     const t=v.item.tier||v.item.rarity;
     const glow=t.name==='Exquisite'?'border-color:#2196f3;':t.name==='Ancient'?'border-color:#ff4444;box-shadow:0 0 8px rgba(255,68,68,0.4);':'';
-    return `<div class="vendor-item" style="${glow}" onclick="buyVendorItem(${i})">
-      <div>
+    const canAfford = G.gold >= v.item.buyVal;
+    return `<div class="vendor-item" style="${glow};opacity:${canAfford?1:0.55}">
+      <div style="flex:1;">
         <div style="font-family:'Cinzel',serif;font-size:13px;color:var(--text);">Mystery ${v.slot}</div>
-        <div class="vendor-slot" style="color:${t.color}">${t.name} quality</div>
+        <div class="vendor-slot" style="color:${t.color}">${t.name} quality · ${v.item.buyVal}g</div>
       </div>
-      <div class="vendor-cost">${v.item.buyVal}g</div>
+      <button onclick="buyVendorItem(${i})" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:12px;padding:8px 14px;border-radius:8px;border:1px solid ${canAfford?'var(--gold)':'var(--border)'};color:${canAfford?'var(--gold)':'var(--muted)'};background:${canAfford?'rgba(232,184,75,0.1)':'transparent'};cursor:${canAfford?'pointer':'not-allowed'};flex-shrink:0;">
+        ${canAfford?'Buy':'Need gold'}
+      </button>
     </div>`;}).join('');
 }
 function buyVendorItem(idx){
   const v=vendorStock[idx];
   if(G.gold<v.item.buyVal){log('<span style="color:#cc4444">Not enough gold!</span>');return;}
-  G.gold-=v.item.buyVal;updateResourceBar();
+  G.gold-=v.item.buyVal;
+  updateResourceBar();
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
-  vendorStock.splice(idx,1);renderVendor();
-  closeVendor();showItemModal(v.item,'vendor_buy');
+  vendorStock.splice(idx,1);
+  renderVendor(); // refresh stock — don't close
+  // Show item modal on top of vendor
+  showItemModal(v.item,'vendor_buy');
 }
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
@@ -3177,9 +3200,10 @@ function getManaRegen() {
 function startManaRegen() {
   if (G.manaRegenInterval) clearInterval(G.manaRegenInterval);
   G.manaRegenInterval = setInterval(() => {
+    if (!G.combatActive || !G.enemy) return; // only regen during active combat
     const max = getMaxMana();
     if (G.mana < max) {
-      G.mana = Math.min(max, G.mana + getManaRegen() / 10); // regen per 100ms
+      G.mana = Math.min(max, G.mana + getManaRegen() / 10);
       updateManaBar();
     }
   }, 100);
@@ -3195,11 +3219,13 @@ function spendMana(amount) {
 function updateManaBar() {
   const max = getMaxMana();
   const pct = Math.max(0, (G.mana / max) * 100);
-  // Combat mana bar (in loadout area)
-  const combatBar = document.getElementById('mana-bar-combat');
-  const combatNums = document.getElementById('mana-nums-combat');
-  if (combatBar) combatBar.style.width = pct + '%';
-  if (combatNums) combatNums.textContent = `${Math.floor(G.mana)}/${max}`;
+  // Top bars-row mana bar
+  const mpBar = document.getElementById('mp-bar');
+  const mpNums = document.getElementById('mp-nums');
+  if(mpBar) mpBar.style.width = pct + '%';
+  if(mpNums) mpNums.textContent = `${Math.floor(G.mana)}/${max}`;
+  // Combat mana bar (floating near heal slot)
+
 }
 
 // ── HEAL SYSTEM ──
@@ -3221,6 +3247,10 @@ function activateHeal() {
   if (!healLoadout) { openHealPicker(); return; }
   const ab = ABILITIES[healLoadout];
   if (!ab) return;
+  if (!G.combatActive || !G.enemy) {
+    log('<span style="color:#666">Can only heal during combat</span>');
+    return;
+  }
   if (!isHealReady()) { log('<span style="color:#666">Heal not ready yet</span>'); return; }
   if (!spendMana(MANA_COSTS.heal)) {
     log('<span style="color:#4488ff">Not enough mana to heal!</span>');
@@ -3280,8 +3310,8 @@ function activateHeal() {
   playSound('heal');
   log(`<span style="color:#3acc7a">${ab.icon} ${ab.name} — restored ${ab.hot ? 'HP over time' : healAmt + ' HP'}</span>`);
   combatLog(`♥ ${ab.name} +${healAmt}`, 'heal');
-  startHealCDBar(ab);
-  updateHealSlotUI();
+  updateHealSlotUI(); // rebuild HTML first
+  startHealCDBar(ab); // then animate the bar that now exists
 }
 
 function startHealCDBar(ab) {
@@ -3303,11 +3333,14 @@ function updateHealSlotUI() {
   if (!slot) return;
   const ab = healLoadout ? ABILITIES[healLoadout] : null;
   const color = ab ? (CLASS_COLORS[ab.class] || '#3acc7a') : '#3acc7a';
+  // Dim heal slot between waves
+  slot.style.opacity = (G.combatActive && G.enemy) ? '1' : '0.45';
   slot.style.borderColor = color;
   slot.innerHTML = `
     <div class="ab-slot-label" style="color:${color}">Heal</div>
     <div class="ab-icon">${ab ? ab.icon : '＋'}</div>
     <div class="ab-name" style="color:${ab ? color : 'var(--muted)'};font-size:${ab ? '9px' : '8px'}">${ab ? ab.name : 'Tap to assign'}</div>
+    <div style="font-size:7px;color:#63b3ff;font-family:'Cinzel',serif;">30 mana</div>
     <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:${color}"></div></div>
   `;
 }
@@ -3561,7 +3594,7 @@ function awardXP(amount) {
   updateXPBar();
   while (G.xp >= G.xpToNext) {
     G.xp -= G.xpToNext;
-    G.xpToNext = Math.floor(G.xpToNext * 1.15); // each level needs 15% more xp
+    G.xpToNext = Math.floor(G.xpToNext * 1.18); // each level needs 18% more xp
     G.skillPoints++;
     // Pause combat and show popup
     stopEnemyAutoAttack();
