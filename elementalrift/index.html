@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.23</title>
+<title>Elemental Rift v1.5.24</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -402,8 +402,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <div id="name-screen-lb" style="display:flex;flex-direction:column;gap:4px;min-height:60px;">
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
+    <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--muted);">
+      More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
+    </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.23 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.24 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -698,6 +701,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <div id="boss-result-content"></div>
     <div class="modal-btns">
       <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);" onclick="closeBossResults()">Continue</button>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted);">
+      Full leaderboard &amp; more at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
 </div>
@@ -2192,6 +2198,9 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
       <div style="display:flex;gap:8px;">
         <button onclick="navigator.clipboard.writeText(\`${shareText.replace(/`/g,"'")}\`).then(()=>this.textContent='✓ Copied!')" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid #8888ff;color:#8888ff;background:rgba(136,136,255,0.08);">📋 Share Run</button>
         <button onclick="location.reload()" style="flex:1;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px;border-radius:8px;border:1px solid #e8b84b;background:rgba(232,184,75,0.1);color:#e8b84b;cursor:pointer;">Play Again</button>
+      </div>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:#5a6080;">
+        Check out more from <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">Zindigon Enterprises</a>
       </div>
     </div>`;
   document.body.appendChild(overlay);
