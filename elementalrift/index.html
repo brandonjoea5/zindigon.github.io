@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.25</title>
+<title>Elemental Rift v1.5.27</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -406,7 +406,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.25 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.27 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -450,6 +450,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     </div>
   </div>
   <div style="font-size:12px;color:var(--muted);text-align:center;max-width:320px;">Final wave of each path has a chance to spawn a Boss with bonus rewards</div>
+  <div id="map-boss-section" class="hidden" style="margin-top:4px;text-align:center;">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">— or —</div>
+    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:10px;border:1px solid var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);cursor:pointer;animation:bossPulse 2s ease-in-out infinite;">💀 Boss Attempt — 60 Second Damage Race</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compete for the leaderboard · Earn milestone rewards</div>
+  </div>
 </div>
 
 <!-- MAIN GAME -->
@@ -533,6 +538,25 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <canvas id="canvas"></canvas>
       <div id="combat-log-overlay"></div>
       <div id="mute-btn" onclick="toggleMute()">🔊 SFX</div>
+
+      <!-- Heal + Mana overlay — bottom right of arena -->
+      <div style="position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;z-index:6;">
+        <!-- Mana bar -->
+        <div style="display:flex;align-items:center;gap:5px;background:rgba(0,0,0,0.55);border-radius:6px;padding:3px 8px;">
+          <span style="font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;">MANA</span>
+          <div style="width:80px;height:5px;background:#1a1f2e;border-radius:3px;overflow:hidden;">
+            <div class="bar-fill mp" id="mana-bar-combat" style="width:100%;height:100%;"></div>
+          </div>
+          <span style="font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;min-width:36px;text-align:right;" id="mana-nums-combat">100/100</span>
+        </div>
+        <!-- Heal button -->
+        <div class="ability-slot" id="slot-heal" onclick="activateHeal()" style="border-color:#3acc7a;width:70px;min-height:56px;background:rgba(13,16,24,0.85);">
+          <div class="ab-slot-label" style="color:#3acc7a;">Heal</div>
+          <div class="ab-icon">＋</div>
+          <div class="ab-name" style="color:var(--muted);font-size:7px;">Assign</div>
+          <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:#3acc7a"></div></div>
+        </div>
+      </div>
       <div id="combat-tooltip" onclick="dismissTooltip()" class="hidden">
         <h3>⚔️ How to Play</h3>
         <div class="tip-row"><span class="tip-icon">👆</span><div class="tip-text"><strong>Tap Attack</strong> to toggle auto-attack. Tap again to stop.</div></div>
@@ -590,25 +614,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-3" style="width:0%"></div></div>
       </div>
     </div>
-    <!-- Heal slot row -->
-    <div id="heal-row" style="display:grid;grid-template-columns:1fr 3fr;gap:5px;padding:0 8px 6px;background:var(--panel);">
-      <div class="ability-slot" id="slot-heal" onclick="activateHeal()" title="Heal" style="border-color:#3acc7a;min-height:44px;">
-        <div class="ab-slot-label" style="color:#3acc7a">Heal</div>
-        <div class="ab-icon">＋</div>
-        <div class="ab-name" style="color:var(--muted);font-size:8px;">Tap to assign</div>
-        <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:#3acc7a"></div></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:3px;justify-content:center;padding-left:4px;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:9px;color:var(--muted);font-family:'Cinzel',serif;width:28px;text-align:right;">MANA</span>
-          <div style="flex:1;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;">
-            <div class="bar-fill mp" id="mana-bar-combat" style="width:100%;height:100%;"></div>
-          </div>
-          <span style="font-size:9px;color:#63b3ff;font-family:'Cinzel',serif;" id="mana-nums-combat">100/100</span>
-        </div>
-        <div style="font-size:9px;color:var(--muted);padding-left:34px;">Basic: free · Regular: 20 · Ultimate: 50 · Heal: 30</div>
-      </div>
-    </div>
+
 
     <!-- Wave control buttons (hidden until needed) -->
     <div style="display:flex;gap:6px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
@@ -878,12 +884,14 @@ function showMapScreen(isFirst=false) {
   if(G.autoSlots) Object.values(G.autoSlots).forEach(id=>clearInterval(id));
   G.autoSlots = {};
   if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
-  // Map screen is position:fixed — just show it, no need to hide #game
   document.getElementById('map-screen').classList.remove('hidden');
   const title = document.getElementById('map-title');
   const sub   = document.getElementById('map-subtitle');
   if(isFirst){ title.textContent='Choose Your Path'; sub.textContent='Select difficulty. Higher risk, better rewards.'; }
   else { title.textContent='Path Complete!'; sub.textContent='Choose your next challenge.'; }
+  // Show boss attempt option if wave >= 3
+  const bossSection = document.getElementById('map-boss-section');
+  if(bossSection) bossSection.classList.toggle('hidden', G.wave < 3);
 }
 
 function selectDifficulty(diff) {
@@ -2492,8 +2500,6 @@ function closeVendor(){
 function updateHpBar(){
   document.getElementById('hp-bar').style.width=Math.max(0,(G.hp/G.maxHp)*100)+'%';
   document.getElementById('hp-nums').textContent=`${Math.max(0,Math.floor(G.hp))}/${G.maxHp}`;
-  document.getElementById('mp-bar').style.width='100%';
-  document.getElementById('mp-nums').textContent='100/100';
 }
 
 function updateResourceBar(){
@@ -3179,11 +3185,6 @@ function spendMana(amount) {
 function updateManaBar() {
   const max = getMaxMana();
   const pct = Math.max(0, (G.mana / max) * 100);
-  // Main bars-row mana bar
-  const mpBar = document.getElementById('mp-bar');
-  const mpNums = document.getElementById('mp-nums');
-  if (mpBar) mpBar.style.width = pct + '%';
-  if (mpNums) mpNums.textContent = `${Math.floor(G.mana)}/${max}`;
   // Combat mana bar (in loadout area)
   const combatBar = document.getElementById('mana-bar-combat');
   const combatNums = document.getElementById('mana-nums-combat');
@@ -4049,11 +4050,11 @@ function initMobileLayout() {
 
   // Move loadout-area, heal-row and wave-btns into mobile-bottom
   const loadout = document.getElementById('loadout-area');
-  const healRow = document.getElementById('heal-row');
+  const healRow = null; // heal is now floating on arena
   const waveBtns = document.getElementById('wave-btns');
   const mbot = document.getElementById('mobile-bottom');
   if (loadout && mbot && loadout.parentElement !== mbot) mbot.appendChild(loadout);
-  if (healRow && mbot && healRow.parentElement !== mbot) mbot.appendChild(healRow);
+  // healRow is floating — no move needed
   if (waveBtns && mbot && waveBtns.parentElement !== mbot) mbot.appendChild(waveBtns);
 
   // Move resource-bar and bars-row to top of center-col (already there, just make sure)
