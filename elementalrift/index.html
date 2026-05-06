@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.21</title>
+<title>Elemental Rift v1.5.22</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -331,6 +331,21 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 
 .hidden{display:none!important;}
 
+/* ── ABILITY TUTORIAL ── */
+#ability-tutorial{position:fixed;inset:0;z-index:300;pointer-events:none;}
+#ability-tutorial.active{pointer-events:all;}
+.tut-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.75);}
+.tut-spotlight{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.75);border:2px solid var(--gold);transition:all 0.4s cubic-bezier(0.4,0,0.2,1);pointer-events:none;}
+.tut-bubble{position:absolute;background:#151a28;border:1px solid var(--gold);border-radius:14px;padding:14px 18px;max-width:240px;pointer-events:all;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);}
+.tut-bubble h4{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.tut-bubble p{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:10px;}
+.tut-arrow-svg{position:absolute;pointer-events:none;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);}
+.tut-tap-hint{font-family:'Cinzel',serif;font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.08em;}
+@keyframes tutBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.tut-bounce{animation:tutBounce 1s ease-in-out infinite;}
+@keyframes tutPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.tut-pulse{animation:tutPulse 1s ease-in-out infinite;}
+
 /* ── FIRST TIME TOOLTIP ── */
 #combat-tooltip{position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;cursor:pointer;}
 #combat-tooltip h3{font-family:'Cinzel',serif;font-size:18px;color:var(--gold);text-align:center;}
@@ -388,7 +403,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.21 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.22 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -653,6 +668,24 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;" onclick="closeAbilityPicker()">✕ Close</button>
     </div>
   </div>
+</div>
+
+<!-- ABILITY TUTORIAL OVERLAY -->
+<div id="ability-tutorial" class="hidden">
+  <div class="tut-spotlight" id="tut-spotlight"></div>
+  <div class="tut-bubble" id="tut-bubble">
+    <h4 id="tut-title">Tutorial</h4>
+    <p id="tut-desc">Description</p>
+    <div class="tut-tap-hint" id="tut-hint">👆 Tap the highlighted button</div>
+  </div>
+  <svg class="tut-arrow-svg" id="tut-arrow" width="60" height="80" viewBox="0 0 60 80">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#e8b84b"/>
+      </marker>
+    </defs>
+    <path id="tut-arrow-path" d="M30,0 Q30,50 30,65" stroke="#e8b84b" stroke-width="3" fill="none" marker-end="url(#arrowhead)" class="tut-bounce"/>
+  </svg>
 </div>
 
 <!-- BOSS RESULTS -->
@@ -1084,8 +1117,11 @@ function spawnEnemy() {
   updateEnemyUI();
   log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! [${G.enemy.type==='brute'?'Brute':G.enemy.elements.join('+')}]</span>`);
   if(G.kills===0){
+    // Dismiss old tooltip system if shown
     const tooltip = document.getElementById('combat-tooltip');
-    if(tooltip && !localStorage.getItem('er_tooltip_seen')) tooltip.classList.remove('hidden');
+    if(tooltip) tooltip.classList.add('hidden');
+    // Start sequential ability tutorial
+    setTimeout(startAbilityTutorial, 800);
   }
   if(IS_MOBILE()) mobileTab('arena');
   document.getElementById('next-btn').classList.add('hidden');
@@ -3805,6 +3841,175 @@ function buildAbilityUpgradesHTML() {
     }
   });
   return html;
+}
+
+
+// ═══════════════════════════════════════════════
+// ABILITY TUTORIAL — Sequential guided tour
+// ═══════════════════════════════════════════════
+const TUT_KEY = 'er_ability_tutorial_done';
+let tutStep = 0;
+let tutActive = false;
+let tutOriginalActivate = null;
+
+const TUT_STEPS = [
+  {
+    slotId: 'slot-basic',
+    title: '⚔️ Attack Slot',
+    desc: 'This is your basic attack. Tap it to toggle AUTO-ATTACK on — it will keep hitting automatically until you tap again.',
+    hint: '👆 Tap the Attack button now',
+    waitForTap: 'slot-basic',
+  },
+  {
+    slotId: 'slot-reg1',
+    title: '⚡ Skill 1',
+    desc: 'This is your first skill — it has a cooldown. Tap it manually when the cooldown bar is empty to fire it.',
+    hint: '👆 Tap Skill 1 to try it',
+    waitForTap: 'slot-reg1',
+  },
+  {
+    slotId: 'slot-heal',
+    title: '💚 Heal Slot',
+    desc: 'This is your heal. Tap it when your HP is low — it costs 30 mana and has a cooldown.',
+    hint: '👆 Tap the Heal button',
+    waitForTap: 'slot-heal',
+  },
+  {
+    slotId: 'loadout-btn',
+    title: '🔮 Loadout',
+    desc: 'Tap Loadout anytime to swap your abilities as you unlock new ones.',
+    hint: '👆 Tap Loadout to finish the tutorial',
+    waitForTap: 'loadout-btn',
+  },
+];
+
+function shouldShowTutorial() {
+  return !localStorage.getItem(TUT_KEY);
+}
+
+function startAbilityTutorial() {
+  if(!shouldShowTutorial()) return;
+  if(tutActive) return;
+  tutActive = true;
+  tutStep = 0;
+  document.getElementById('ability-tutorial').classList.remove('hidden');
+  document.getElementById('ability-tutorial').classList.add('active');
+  showTutStep(0);
+}
+
+function showTutStep(step) {
+  const s = TUT_STEPS[step];
+  if(!s) { endTutorial(); return; }
+
+  const el = document.getElementById(s.slotId);
+  if(!el) { endTutorial(); return; }
+
+  // Get element position
+  const rect = el.getBoundingClientRect();
+  const pad = 8;
+
+  // Spotlight
+  const spotlight = document.getElementById('tut-spotlight');
+  spotlight.style.left   = (rect.left - pad) + 'px';
+  spotlight.style.top    = (rect.top - pad) + 'px';
+  spotlight.style.width  = (rect.width + pad*2) + 'px';
+  spotlight.style.height = (rect.height + pad*2) + 'px';
+
+  // Bubble — position above or below depending on space
+  const bubble = document.getElementById('tut-bubble');
+  const bubbleW = 240;
+  const bubbleH = 130;
+  const spaceAbove = rect.top - pad;
+  const spaceBelow = window.innerHeight - rect.bottom - pad;
+
+  let bubbleTop, arrowTop, arrowFlip;
+  if(spaceAbove > bubbleH + 40) {
+    // Above
+    bubbleTop = rect.top - pad - bubbleH - 50;
+    arrowTop = rect.top - pad - 55;
+    arrowFlip = false;
+  } else {
+    // Below
+    bubbleTop = rect.bottom + pad + 50;
+    arrowTop = rect.bottom + pad + 8;
+    arrowFlip = true;
+  }
+
+  const bubbleLeft = Math.max(8, Math.min(window.innerWidth - bubbleW - 8,
+    rect.left + rect.width/2 - bubbleW/2));
+
+  bubble.style.left = bubbleLeft + 'px';
+  bubble.style.top  = bubbleTop + 'px';
+  bubble.style.width = bubbleW + 'px';
+
+  // Arrow
+  const arrow = document.getElementById('tut-arrow');
+  const arrowLeft = rect.left + rect.width/2 - 30;
+  arrow.style.left = arrowLeft + 'px';
+  arrow.style.top  = arrowTop + 'px';
+
+  // Flip arrow if pointing down
+  const path = document.getElementById('tut-arrow-path');
+  if(arrowFlip) {
+    arrow.style.transform = 'scaleY(1)';
+    path.setAttribute('d','M30,0 Q30,50 30,65');
+  } else {
+    arrow.style.transform = 'scaleY(-1)';
+    path.setAttribute('d','M30,0 Q30,50 30,65');
+  }
+
+  // Content
+  document.getElementById('tut-title').textContent = s.title;
+  document.getElementById('tut-desc').textContent  = s.desc;
+  document.getElementById('tut-hint').textContent  = s.hint;
+
+  // Pulse the target element
+  el.style.animation = 'tutPulse 1s ease-in-out infinite';
+  el.style.boxShadow = '0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4)';
+  el.style.zIndex = '301';
+
+  // Intercept tap on target
+  const handler = (e) => {
+    e.stopPropagation();
+    // Clean up this step
+    el.style.animation = '';
+    el.style.boxShadow = '';
+    el.style.zIndex = '';
+    el.removeEventListener('click', handler);
+    el.removeEventListener('touchend', handler);
+    // Fire the real action
+    if(s.slotId === 'slot-basic') activateAbility(0);
+    else if(s.slotId === 'slot-reg1') activateAbility(1);
+    else if(s.slotId === 'slot-heal') activateHeal();
+    else if(s.slotId === 'loadout-btn') { /* just advance */ }
+    // Next step
+    tutStep++;
+    if(tutStep < TUT_STEPS.length) {
+      setTimeout(()=>showTutStep(tutStep), 400);
+    } else {
+      endTutorial();
+    }
+  };
+
+  el.addEventListener('click', handler);
+  el.addEventListener('touchend', handler);
+}
+
+function endTutorial() {
+  tutActive = false;
+  document.getElementById('ability-tutorial').classList.add('hidden');
+  document.getElementById('ability-tutorial').classList.remove('active');
+  localStorage.setItem(TUT_KEY, '1');
+  // Clean up any remaining highlights
+  TUT_STEPS.forEach(s => {
+    const el = document.getElementById(s.slotId);
+    if(el){ el.style.animation=''; el.style.boxShadow=''; el.style.zIndex=''; }
+  });
+  log(`<span class="log-sys">Tutorial complete! Now go fight.</span>`);
+}
+
+function resetTutorial() {
+  localStorage.removeItem(TUT_KEY);
 }
 
 // ═══════════════════════════════════════════════
