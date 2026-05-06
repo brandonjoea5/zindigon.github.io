@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.9</title>
+<title>Elemental Rift v1.5.11</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -314,6 +314,15 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 
 .hidden{display:none!important;}
 
+/* ── FIRST TIME TOOLTIP ── */
+#combat-tooltip{position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;cursor:pointer;}
+#combat-tooltip h3{font-family:'Cinzel',serif;font-size:18px;color:var(--gold);text-align:center;}
+.tip-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.05);border-radius:10px;padding:10px 16px;width:100%;max-width:320px;}
+.tip-icon{font-size:24px;flex-shrink:0;}
+.tip-text{font-size:13px;color:var(--text);line-height:1.4;}
+.tip-text strong{color:var(--gold);}
+#combat-tooltip .dismiss{font-family:'Cinzel',serif;font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:0.08em;}
+
 /* ── DESKTOP overrides ── */
 @media(min-width:700px){
   #map-screen{padding:40px;}
@@ -361,7 +370,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.9 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.11 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -473,6 +482,15 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <canvas id="canvas"></canvas>
       <div id="combat-log-overlay"></div>
       <div id="mute-btn" onclick="toggleMute()">🔊 SFX</div>
+      <div id="combat-tooltip" onclick="dismissTooltip()" class="hidden">
+        <h3>⚔️ How to Play</h3>
+        <div class="tip-row"><span class="tip-icon">👆</span><div class="tip-text"><strong>Tap Attack</strong> to toggle auto-attack. Tap again to stop.</div></div>
+        <div class="tip-row"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Skill 1 &amp; 2</strong> are manual abilities with cooldowns. Tap when ready.</div></div>
+        <div class="tip-row"><span class="tip-icon">💥</span><div class="tip-text"><strong>Ultimate</strong> is your most powerful ability. Unlocks at class level 10.</div></div>
+        <div class="tip-row"><span class="tip-icon">💚</span><div class="tip-text"><strong>Heal</strong> restores HP and costs 30 mana. Use it when low.</div></div>
+        <div class="tip-row"><span class="tip-icon">🔮</span><div class="tip-text"><strong>Loadout button</strong> lets you swap any ability.</div></div>
+        <div class="dismiss">Tap anywhere to start</div>
+      </div>
       <div id="enemy-info">
         <div id="enemy-name">—</div>
         <div id="enemy-hp-wrap"><div id="enemy-hp-fill" style="width:100%"></div></div>
@@ -495,19 +513,19 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
     <!-- ABILITY LOADOUT -->
     <div id="loadout-area">
       <div class="ability-slot" id="slot-basic" onclick="activateAbility(0)" title="Basic Attack">
-        <div class="ab-slot-label">Basic</div>
+        <div class="ab-slot-label">Attack</div>
         <div class="ab-empty">＋</div>
         <div class="ab-name">Empty</div>
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-0" style="width:0%"></div></div>
       </div>
-      <div class="ability-slot" id="slot-reg1" onclick="activateAbility(1)" title="Regular 1">
-        <div class="ab-slot-label">Regular</div>
+      <div class="ability-slot" id="slot-reg1" onclick="activateAbility(1)" title="Skill 1">
+        <div class="ab-slot-label">Skill 1</div>
         <div class="ab-empty">＋</div>
         <div class="ab-name">Empty</div>
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-1" style="width:0%"></div></div>
       </div>
-      <div class="ability-slot" id="slot-reg2" onclick="activateAbility(2)" title="Regular 2">
-        <div class="ab-slot-label">Regular</div>
+      <div class="ability-slot" id="slot-reg2" onclick="activateAbility(2)" title="Skill 2">
+        <div class="ab-slot-label">Skill 2</div>
         <div class="ab-empty">＋</div>
         <div class="ab-name">Empty</div>
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-2" style="width:0%"></div></div>
@@ -726,11 +744,13 @@ function initGState() {
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
   // Auto-assign default loadout if all slots are empty (new player)
   if(G.loadout.every(s=>s===null)) {
-    G.loadout[0] = 'phys_basic';   // Basic: Quick Strike (always available)
-    G.loadout[1] = 'fire_basic';   // Regular slot 1: Ember Strike
-    G.loadout[2] = 'water_basic';  // Regular slot 2: Tide Slash
-    G.loadout[3] = null;           // Ultimate: empty until unlocked
+    G.loadout[0] = 'phys_basic';   // Attack: Quick Strike
+    G.loadout[1] = 'fire_basic';   // Skill 1: Ember Strike
+    G.loadout[2] = 'water_basic';  // Skill 2: Tide Slash
+    G.loadout[3] = 'dark_basic';   // Ultimate: Shadow Strike (until real ult unlocked)
   }
+  // Default heal
+  if(!healLoadout) healLoadout = 'heal_physical';
 }
 
 
@@ -1018,7 +1038,10 @@ function spawnEnemy() {
   G.combatActive = true;
   updateEnemyUI();
   log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! [${G.enemy.type==='brute'?'Brute':G.enemy.elements.join('+')}]</span>`);
-  if(G.kills===0) log(`<span class="log-sys">💡 Tap an ability button below to attack. Tap ⚡ Loadout to change abilities.</span>`);
+  if(G.kills===0){
+    const tooltip = document.getElementById('combat-tooltip');
+    if(tooltip && !localStorage.getItem('er_tooltip_seen')) tooltip.classList.remove('hidden');
+  }
   if(IS_MOBILE()) mobileTab('arena');
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
@@ -1057,10 +1080,15 @@ function updateEnemyUI() {
   document.getElementById('enemy-name').textContent = e.name;
   const nameColor = G.inBoss ? '#ff2266' : (e.type==='brute'?'#cc8844':(ELEMENT_COLORS[e.elements[0]]||'#fff'));
   document.getElementById('enemy-name').style.color = nameColor;
-  document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
-  if (G.inBoss) {
-    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2266;font-size:10px;">👑 BOSS LEVEL ${G.bossLevel}</span>`;
+  if(G.inBoss) {
+    // Show as damage dealt meter
+    const pct = Math.min(100, (G.bossDmgDealt / Math.max(1, G.bossDmgDealt + e.hp)) * 100);
+    document.getElementById('enemy-hp-fill').style.width = pct + '%';
+    document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff2266,#ff6699)';
+    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2266;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} dmg dealt</span>`;
   } else {
+    document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
+    document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
     document.getElementById('enemy-type-badge').innerHTML = e.type==='brute'
       ? '<span style="color:#cc8844;font-size:10px;">🪨 Brute</span>'
       : e.elements.map(el=>`<span style="color:${ELEMENT_COLORS[el]};font-size:10px;">${el} </span>`).join('');
@@ -1080,8 +1108,8 @@ function rollBoss(level) {
   for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
   return {
     name:`${name} (Lv${level})`, type:'boss', elements, bossLevel:level,
-    hp:Math.floor((400+level*300)*scale), maxHp:Math.floor((400+level*300)*scale),
-    attack:Math.floor((20+level*10)*scale), armor:Math.floor(15+level*5),
+    hp:999999999, maxHp:999999999,  // infinite — boss is a DPS dummy
+    attack:0, armor:Math.floor(15+level*5),
     magicResist:Math.floor(15+level*5), gold:0, xp:0
   };
 }
@@ -1100,9 +1128,9 @@ function startBossAttempt() {
   document.getElementById('boss-level-badge').style.display = 'block';
   document.getElementById('boss-level-badge').textContent = 'BOSS LV 1';
   updateEnemyUI();
-  log(`<span style="color:#ff2266;font-weight:600;">💀 BOSS ATTEMPT STARTED! 60 seconds!</span>`);
+  log(`<span style="color:#ff2266;font-weight:600;">💀 BOSS ATTEMPT STARTED! Deal as much damage as you can in 60 seconds!</span>`);
   startBossTimer();
-  startEnemyAutoAttack();
+  // Boss does NOT attack — pure DPS race
   drawArena();
 }
 
@@ -1120,7 +1148,7 @@ function startBossTimer() {
 function updateBossTimerUI() {
   document.getElementById('boss-timer').textContent = G.bossTimerSec;
   document.getElementById('boss-timer').style.color = G.bossTimerSec <= 10 ? '#ff2266' : (G.bossTimerSec <= 20 ? '#ff8800' : '#ff2266');
-  document.getElementById('boss-dmg-display').textContent = numberWithCommas(G.bossDmgDealt) + ' dmg';
+  document.getElementById('boss-dmg-display').textContent = '⚔️ ' + numberWithCommas(G.bossDmgDealt) + ' dmg';
 }
 
 function numberWithCommas(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,','); }
@@ -1166,6 +1194,7 @@ function endBossAttempt() {
   G.enemy = null;
   document.getElementById('boss-timer-wrap').style.display='none';
   document.getElementById('boss-level-badge').style.display='none';
+  G.enemy = null;
   updateEnemyUI();
   drawArena();
   showBossResults();
@@ -1201,11 +1230,12 @@ async function showBossResults() {
 
 function closeBossResults() {
   document.getElementById('boss-results-modal').classList.add('hidden');
-  document.getElementById('next-btn').classList.remove('hidden');
-  // Keep boss button available for repeat attempts
-  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
-  // Refresh ingame leaderboard panel if it's been viewed
+  // Go back to regular game — spawn next enemy
+  log('<span class="log-sys">Boss attempt complete. Back to the fight!</span>');
+  G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3)); // refill 30% HP after boss
+  updateHpBar();
   renderIngameLB();
+  spawnNextSegmentWave();
 }
 
 // ── LEADERBOARD (JSONBin) ──
@@ -1396,10 +1426,13 @@ function fireAbility(ab) {
   if(healAmt>0)           combatLog(`♥ +${healAmt} ${ab.isMagic?'vamp':'steal'}`,'heal');
 
   if(G.enemy.hp<=0){
-    setTimeout(()=>{
-      if(G.inBoss) onBossPhaseKill();
-      else onEnemyDeath();
-    }, ab.isMagic?500:300);
+    if(G.inBoss){
+      // Timed boss — just reset HP, boss never truly dies during attempt
+      G.enemy.hp = G.enemy.maxHp;
+      updateEnemyUI();
+    } else {
+      setTimeout(()=>{ onEnemyDeath(); }, ab.isMagic?500:300);
+    }
     return true;
   }
   return true;
@@ -1504,7 +1537,7 @@ function openLoadoutPicker(slotIdx) {
   // Pause enemy attacks while picking
   if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
   pickerSlot = slotIdx;
-  const slotNames = ['Basic','Regular','Regular','Ultimate'];
+  const slotNames = ['Attack','Skill 1','Skill 2','Ultimate'];
   const slotTypes = ['basic','regular','regular','ultimate'];
   const targetType = slotIdx>=0 ? slotTypes[slotIdx] : null;
 
@@ -1522,16 +1555,26 @@ function openLoadoutPicker(slotIdx) {
     const cp = G.classCP[ab.class]||0;
     const equipped = G.loadout.includes(ab.id);
     const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
+    const slotLabel = {basic:'Attack slot',regular:'Skill slot',ultimate:'Ultimate slot'}[ab.type]||ab.type;
+    const cdText = ab.cd > 0 ? `${(ab.cd/1000).toFixed(1)}s cooldown` : 'Auto-attack (no cooldown)';
+    const manaCost = MANA_COSTS[ab.type]||0;
     return `<div class="ability-pick-card ${unlocked?'':'locked'}" onclick="${unlocked?`pickAbility('${ab.id}')`:''}">
       <div class="apc-header">
         <span class="apc-icon">${ab.icon}</span>
-        <span class="apc-name" style="color:${CLASS_COLORS[ab.class]}">${ab.name}</span>
-        ${equipped?'<span style="font-size:10px;color:var(--gold);margin-left:4px;">✓ Equipped</span>':''}
-        <span class="apc-type" style="border-color:${typeColor};color:${typeColor}">${ab.type}</span>
+        <div style="flex:1">
+          <span class="apc-name" style="color:${CLASS_COLORS[ab.class]}">${ab.name}</span>
+          <span style="font-size:9px;color:var(--muted);margin-left:6px;">${CLASS_ICONS[ab.class]} ${ab.class}</span>
+        </div>
+        ${equipped?'<span style="font-size:10px;color:var(--gold);">✓ On</span>':''}
+        <span class="apc-type" style="border-color:${typeColor};color:${typeColor};margin-left:4px;">${slotLabel}</span>
       </div>
       <div class="apc-desc">${ab.desc}</div>
-      ${lv>0?`<div style="font-size:10px;color:#8888ff;margin-top:3px;">Level ${lv} · ${cp} class pts available</div>`:''}
-      ${!unlocked?`<div class="apc-unlock">🔒 Requires ${ab.class} class level ${ab.unlockLv}</div>`:''}
+      <div style="display:flex;gap:10px;margin-top:4px;font-size:10px;color:var(--muted);">
+        <span>⏱ ${cdText}</span>
+        ${manaCost>0?`<span style="color:#63b3ff">💧 ${manaCost} mana</span>`:'<span>✓ Free</span>'}
+        ${lv>0?`<span style="color:#8888ff">Lv${lv}</span>`:''}
+      </div>
+      ${!unlocked?`<div class="apc-unlock">🔒 Unlock by reaching ${ab.class} class level ${ab.unlockLv} (use ${ab.class} abilities in combat)</div>`:''}
     </div>`;
   }).join('');
 
@@ -1555,7 +1598,7 @@ function closeAbilityPicker() {
 
 // ── LOADOUT UI ──
 const SLOT_IDS = ['slot-basic','slot-reg1','slot-reg2','slot-ult'];
-const SLOT_LABELS = ['Basic','Regular','Regular','Ultimate'];
+const SLOT_LABELS = ['Attack','Skill 1','Skill 2','Ultimate'];
 
 function updateLoadoutUI() {
   SLOT_IDS.forEach((sid,i)=>{
@@ -1799,7 +1842,11 @@ function attack(element) {
   if (G.inBoss) updateBossTimerUI();
 
   if (G.enemy.hp<=0) {
-    if (G.inBoss) { setTimeout(onBossPhaseKill, element==='physical'?350:500); return; }
+    if (G.inBoss) {
+      G.enemy.hp = G.enemy.maxHp;
+      updateEnemyUI();
+      return;
+    }
     setTimeout(onEnemyDeath, element==='physical'?300:500);
     return;
   }
@@ -2060,6 +2107,10 @@ function closeItemModal(){document.getElementById('item-modal').classList.add('h
 // VENDOR
 let vendorStock=[];
 function openVendor(){
+  // Pause combat while shopping
+  stopEnemyAutoAttack();
+  stopAllAutoSlots();
+  G.combatActive = false;
   vendorStock=SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
   renderVendor();
   document.getElementById('vendor-modal').classList.remove('hidden');
@@ -2092,8 +2143,14 @@ function closeVendor(){
     MAP.segmentComplete=false;
     showMapScreen(false);
   } else {
-    document.getElementById('next-btn').classList.remove('hidden');
-    if(G.wave>=3) document.getElementById('boss-btn').classList.remove('hidden');
+    // Resume combat if there's still an active enemy
+    if(G.enemy && G.enemy.hp > 0){
+      G.combatActive = true;
+      startEnemyAutoAttack();
+    } else {
+      document.getElementById('next-btn').classList.remove('hidden');
+      if(G.wave>=3) document.getElementById('boss-btn').classList.remove('hidden');
+    }
   }
 }
 
@@ -2450,6 +2507,12 @@ function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
+}
+
+function dismissTooltip() {
+  const t = document.getElementById('combat-tooltip');
+  if(t) t.classList.add('hidden');
+  localStorage.setItem('er_tooltip_seen','1');
 }
 
 function toggleMute() {
