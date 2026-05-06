@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.13</title>
+<title>Elemental Rift v1.5.14</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -387,7 +387,22 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.13 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.14 · Elemental Rift Developed by Zindgion Enterprises™</div>
+</div>
+
+<!-- CLASS SELECTION SCREEN -->
+<div id="class-screen" class="hidden" style="position:fixed;inset:0;background:var(--bg);z-index:160;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;">
+  <div style="font-size:36px;">⚡</div>
+  <h2 style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--gold);letter-spacing:0.08em;">Choose Your Path</h2>
+  <p style="font-size:13px;color:var(--muted);text-align:center;max-width:320px;">Your starting class determines your first abilities. You can mix and match later.</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:480px;" id="class-cards"></div>
+</div>
+
+<!-- SKILL POINT POPUP -->
+<div id="sp-popup" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:180;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#151a28;border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div id="sp-popup-content"></div>
+  </div>
 </div>
 
 <!-- MAP SCREEN -->
@@ -666,7 +681,7 @@ const SKILL_TREE = {
   physical:[{name:'Brute Force',stat:'attack',per:5},{name:'Precision',stat:'critChance',per:3},{name:'Rampage',stat:'atkSpeed',per:0.15}],
   defense: [{name:'Iron Will',stat:'armor',per:4},{name:'Spell Ward',stat:'magicResist',per:4},{name:'Swiftcast',stat:'cdr',per:2}],
 };
-const BASE_STATS = {attack:18,magicPower:15,atkSpeed:1.0,critChance:5,critDmg:150,armor:5,health:200,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0,mana:100,manaRegen:5};
+const BASE_STATS = {attack:15,magicPower:12,atkSpeed:1.0,critChance:0,critDmg:150,armor:5,health:180,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0,mana:100,manaRegen:3};
 const ENEMY_NAMES = ['Gorgash','Vexil','Thornback','Sable Wraith','Cindermaw','Tidecaller','Luminos','Shade','Bramblehide','Voidling','Ashfang','Crystalclaw','Frostmaw','Emberclaw','Duskwalker','Nullshade'];
 const BOSS_NAMES = ['The Devourer','Void Colossus','Ashen Titan','The Undying','Chaos Incarnate'];
 
@@ -732,7 +747,8 @@ const CLASS_NAMES = ['fire','water','grass','dark','light','physical'];
 let G = {
   playerName: '',
   hp:200, maxHp:200, energy:100, maxEnergy:100,
-  gold:0, skillPoints:0, kills:0, wave:1,
+  gold:0, kills:0, wave:1,
+  xp:0, xpToNext:100, skillPoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
@@ -749,6 +765,7 @@ let G = {
   bossName:'',
   mana:100, maxMana:100,
   manaRegenInterval:null,
+  startingClass: null,
   classXP:{}, classLv:{}, classCP:{},
   abilityLevels:{}, abilityCDs:{},
   loadout: [null, null, null, null],
@@ -759,15 +776,14 @@ function initGState() {
   CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
   Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
-  // Auto-assign default loadout if all slots are empty (new player)
-  if(G.loadout.every(s=>s===null)) {
-    G.loadout[0] = 'phys_basic';   // Attack: Quick Strike
-    G.loadout[1] = 'fire_basic';   // Skill 1: Ember Strike
-    G.loadout[2] = 'water_basic';  // Skill 2: Tide Slash
-    G.loadout[3] = 'dark_basic';   // Ultimate: Shadow Strike (until real ult unlocked)
+  // Ensure starting class basics are at level 1
+  if(G.startingClass) {
+    const basicId = G.startingClass === 'physical' ? 'phys_basic' : G.startingClass + '_basic';
+    const reg1Id  = G.startingClass === 'physical' ? 'phys_reg1'  : G.startingClass + '_reg1';
+    if(!G.abilityLevels[basicId]) G.abilityLevels[basicId] = 1;
+    if(!G.abilityLevels[reg1Id])  G.abilityLevels[reg1Id]  = 1;
+    if(!healLoadout) healLoadout = 'heal_' + G.startingClass;
   }
-  // Default heal
-  if(!healLoadout) healLoadout = 'heal_physical';
 }
 
 
@@ -906,7 +922,9 @@ function saveGame() {
   try {
     const save = {
       playerName:G.playerName, hp:G.hp, maxHp:G.maxHp,
-      gold:G.gold, skillPoints:G.skillPoints, kills:G.kills, wave:G.wave,
+      gold:G.gold, kills:G.kills, wave:G.wave,
+      xp:G.xp, xpToNext:G.xpToNext, skillPoints:G.skillPoints,
+      startingClass:G.startingClass,
       baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
       abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
@@ -923,7 +941,9 @@ function loadGame(name) {
     if (save.playerName !== name) return false; // different player
     G.playerName = save.playerName;
     G.hp = save.hp; G.maxHp = save.maxHp;
-    G.gold = save.gold; G.skillPoints = save.skillPoints;
+    G.gold = save.gold;
+    G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.skillPoints = save.skillPoints||0;
+    if(save.startingClass) G.startingClass = save.startingClass;
     G.kills = save.kills; G.wave = save.wave;
     G.baseStats = save.baseStats;
     G.skillLevels = save.skillLevels;
@@ -983,7 +1003,7 @@ function startGame() {
     resizeCanvas();
     log(`<span class="log-sys">Welcome${loaded?' back':''}, ${name}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
     if (!loaded) {
-      showMapScreen(true);
+      showClassSelection();
     } else {
       resumeFromSave();
     }
@@ -1456,6 +1476,11 @@ function fireAbility(ab) {
 }
 
 function activateAbility(slotIdx) {
+  if(!isSlotUnlocked(slotIdx)){
+    const msgs = ['','','Skill 2 unlocks when any class reaches Level 5','Ultimate unlocks when any class reaches Level 8'];
+    log(`<span style="color:var(--muted)">${msgs[slotIdx]||'Locked'}</span>`);
+    return;
+  }
   const abId = G.loadout[slotIdx];
   if(!abId){ openLoadoutPicker(slotIdx); return; }
   const ab = ABILITIES[abId];
@@ -1518,24 +1543,8 @@ function earnClassXP(cls, amount) {
     if(currentXP >= needed){
       G.classLv[cls]++;
       G.classCP[cls] = (G.classCP[cls]||0) + 1;
-      // HP + Mana boost on every class level
-      G.baseStats.health = (G.baseStats.health||200) + 10;
-      G.baseStats.mana   = (G.baseStats.mana||100)   + 5;
-      const st = getStats();
-      const oldMax = G.maxHp;
-      G.maxHp = st.maxHp;
-      G.hp += (G.maxHp - oldMax); // add the bonus HP immediately
-      G.hp = Math.min(G.hp, G.maxHp);
-      G.maxMana = st.mana||100;
-      updateHpBar(); updateManaBar();
-      log(`<span style="color:${CLASS_COLORS[cls]}">🌟 ${cls.charAt(0).toUpperCase()+cls.slice(1)} class Lv${G.classLv[cls]}! +1 Class Point · <span style="color:#3acc7a">+10 HP</span> · <span style="color:#63b3ff">+5 Mana</span></span>`);
-      playSound('level_up');
+      log(`<span style="color:${CLASS_COLORS[cls]}">🌟 ${cls.charAt(0).toUpperCase()+cls.slice(1)} class reached Level ${G.classLv[cls]}!</span>`);
       updateClassXPPanel();
-      // Unlock notification
-      const lv = G.classLv[cls];
-      if(lv===3)  log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Regular 1 unlocked!</span>`);
-      if(lv===6)  log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Regular 2 unlocked!</span>`);
-      if(lv===10) log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Ultimate unlocked!</span>`);
     } else break;
   }
   updateClassXPPanel();
@@ -1544,8 +1553,14 @@ function earnClassXP(cls, amount) {
 function isAbilityUnlocked(abId) {
   const ab = ABILITIES[abId];
   if(!ab) return false;
-  const unlockLv = ab.unlockLv||0;
-  return (G.classLv[ab.class]||0) >= unlockLv;
+  // Basic of starting class always unlocked
+  if(ab.type === 'basic' && ab.class === G.startingClass) return true;
+  // Skill 1 of starting class unlocked from start
+  if(ab.type === 'regular' && ab.class === G.startingClass && abId.endsWith('_reg1')) return (G.classLv[ab.class]||0) >= 1;
+  // Heals: unlocked if class level >= 1
+  if(ab.type === 'heal') return (G.classLv[ab.class]||0) >= 1;
+  // Others: must have been explicitly unlocked via SP popup (abilityLevels > 0)
+  return (G.abilityLevels[abId]||0) > 0;
 }
 
 // ── LOADOUT PICKER ──
@@ -1564,7 +1579,11 @@ function openLoadoutPicker(slotIdx) {
     : 'Tap a slot to change its ability';
 
   const list = document.getElementById('ability-picker-list');
-  const abilities = Object.values(ABILITIES).filter(ab => targetType ? ab.type===targetType : true);
+  const abilities = Object.values(ABILITIES).filter(ab => {
+    if(targetType && ab.type !== targetType) return false;
+    if(ab.type === 'heal') return false; // heals use separate picker
+    return isAbilityUnlocked(ab.id) && (G.abilityLevels[ab.id]||0) > 0;
+  });
 
   list.innerHTML = abilities.map(ab => {
     const unlocked = isAbilityUnlocked(ab);
@@ -1629,11 +1648,19 @@ function updateLoadoutUI() {
     el.style.color = color;
     if(isAutoOn){ el.classList.add('active-ability'); el.style.boxShadow=`0 0 10px 1px ${color}`; }
     else { el.classList.remove('active-ability'); el.style.boxShadow=''; }
-    el.innerHTML = `
+    const unlocked = isSlotUnlocked(i);
+    const lockMsg = ['','','Lv5 class','Lv8 class'][i]||'';
+    el.style.opacity = unlocked ? '1' : '0.4';
+    el.innerHTML = unlocked ? `
       <div class="ab-slot-label" style="color:var(--muted)">${SLOT_LABELS[i]}</div>
       <div class="ab-icon">${ab?ab.icon:'＋'}</div>
       <div class="ab-name" style="color:${ab?color:'var(--muted)'};font-size:${ab?'9px':'8px'}">${ab?ab.name:'Tap to assign'}</div>
       <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-${i}" style="width:0%;background:${color}"></div></div>
+    ` : `
+      <div class="ab-slot-label" style="color:var(--muted)">${SLOT_LABELS[i]}</div>
+      <div class="ab-icon">🔒</div>
+      <div class="ab-name" style="color:var(--muted);font-size:8px;">${lockMsg}</div>
+      <div class="ab-cd-bar"></div>
     `;
   });
 }
@@ -1710,6 +1737,24 @@ function getSEMultiplier(attackEl, enemy) {
 
 // Base spell cooldowns in ms (physical has no cooldown — pure atkSpeed)
 
+
+// ── XP & SKILL POINT SYSTEM ──
+const XP_PER_LEVEL = 100; // XP needed per skill point
+const STAT_BOOST_OPTIONS = [
+  { key:'attack',      label:'Attack',       amount:5,    icon:'⚔️',  display:'+5' },
+  { key:'magicPower',  label:'Magic Power',  amount:5,    icon:'🔮',  display:'+5' },
+  { key:'health',      label:'Health',       amount:15,   icon:'❤️',  display:'+15' },
+  { key:'armor',       label:'Armor',        amount:3,    icon:'🛡️',  display:'+3' },
+  { key:'magicResist', label:'Mag Resist',   amount:3,    icon:'✨',  display:'+3' },
+  { key:'atkSpeed',    label:'Atk Speed',    amount:0.05, icon:'⚡',  display:'+0.05' },
+  { key:'critChance',  label:'Crit Chance',  amount:1,    icon:'🎯',  display:'+1%' },
+  { key:'critDmg',     label:'Crit Damage',  amount:10,   icon:'💥',  display:'+10%' },
+  { key:'lifeSteal',   label:'Life Steal',   amount:0.5,  icon:'🩸',  display:'+0.5%' },
+  { key:'spellVamp',   label:'Spell Vamp',   amount:0.5,  icon:'💫',  display:'+0.5%' },
+  { key:'cdr',         label:'CDR',          amount:2,    icon:'⏱️',  display:'+2%' },
+  { key:'mana',        label:'Mana',         amount:10,   icon:'💧',  display:'+10' },
+  { key:'manaRegen',   label:'Mana Regen',   amount:1,    icon:'💦',  display:'+1/s' },
+];
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
 const SPELL_BASE_CD = { fire:3500, water:3200, grass:4000, dark:3800, light:4200 };
@@ -1897,8 +1942,12 @@ function onEnemyDeath() {
   stopAllAutoSlots();
   G.kills++;
   G.gold+=G.enemy.gold;
-  G.skillPoints+=G.enemy.xp;
-  log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${G.enemy.xp} SP</span>`);
+  // XP based on enemy power vs player
+  const enemyPower = G.enemy.maxHp + G.enemy.attack * 5;
+  const playerPower = getPlayerPower();
+  const xpGain = Math.max(5, Math.floor(enemyPower / Math.max(1, playerPower * 0.1) * 10));
+  awardXP(xpGain);
+  log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${xpGain} XP</span>`);
 
   // Loot drop on kill
   const dropChance = {easy:0.12,medium:0.18,hard:0.28}[MAP.difficulty||'easy']||0.15;
@@ -2240,9 +2289,9 @@ function updateHpBar(){
 
 function updateResourceBar(){
   document.getElementById('gold-val').textContent=G.gold;
-  document.getElementById('sp-val').textContent=G.skillPoints;
   document.getElementById('kills-val').textContent=G.kills;
   document.getElementById('wave-num').textContent=G.wave;
+  updateXPBar();
 }
 
 function updateStatsPanel(){
@@ -2994,6 +3043,267 @@ function saveHealLoadout() {
 }
 function loadHealLoadout() {
   try { healLoadout = localStorage.getItem('elementalRift_heal') || null; if(healLoadout==='')healLoadout=null; } catch(e) {}
+}
+
+
+// ═══════════════════════════════════════════════
+// CLASS SELECTION
+// ═══════════════════════════════════════════════
+function showClassSelection() {
+  const cards = document.getElementById('class-cards');
+  cards.innerHTML = CLASS_NAMES.map(cls => {
+    const color = CLASS_COLORS[cls];
+    const icon = CLASS_ICONS[cls];
+    const basicAb = ABILITIES[cls === 'physical' ? 'phys_basic' : cls + '_basic'];
+    const skill1Ab = ABILITIES[cls === 'physical' ? 'phys_reg1' : cls + '_reg1'];
+    return `<div onclick="selectStartingClass('${cls}')" style="background:#0d1018;border:1px solid ${color}33;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='#0d1018'">
+      <div style="font-size:28px;margin-bottom:6px;">${icon}</div>
+      <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:${color};margin-bottom:6px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.4;">
+        <div style="color:var(--text);">⚔️ ${basicAb?basicAb.name:'Basic'}</div>
+        <div style="color:var(--text);">⚡ ${skill1Ab?skill1Ab.name:'Skill 1'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('class-screen').classList.remove('hidden');
+}
+
+function selectStartingClass(cls) {
+  G.startingClass = cls;
+  document.getElementById('class-screen').classList.add('hidden');
+
+  // Set starting loadout
+  const basicId = cls === 'physical' ? 'phys_basic' : cls + '_basic';
+  const skill1Id = cls === 'physical' ? 'phys_reg1' : cls + '_reg1';
+  G.loadout[0] = basicId;
+  G.loadout[1] = skill1Id;
+  G.loadout[2] = null;
+  G.loadout[3] = null;
+  healLoadout = 'heal_' + cls;
+
+  // Give class level 1 in chosen class
+  G.classLv[cls] = 1;
+  G.classXP[cls] = 0;
+
+  updateLoadoutUI();
+  updateHealSlotUI();
+  saveGame();
+  showMapScreen(true);
+}
+
+// ═══════════════════════════════════════════════
+// XP & SKILL POINT POPUP SYSTEM
+// ═══════════════════════════════════════════════
+function awardXP(amount) {
+  G.xp += amount;
+  updateXPBar();
+  while (G.xp >= G.xpToNext) {
+    G.xp -= G.xpToNext;
+    G.xpToNext = Math.floor(G.xpToNext * 1.15); // each level needs 15% more xp
+    G.skillPoints++;
+    // Pause combat and show popup
+    stopEnemyAutoAttack();
+    stopAllAutoSlots();
+    setTimeout(() => showSPPopup(), 300);
+  }
+}
+
+function updateXPBar() {
+  const pct = Math.min(100, (G.xp / G.xpToNext) * 100);
+  const bar = document.getElementById('xp-bar-fill');
+  const txt = document.getElementById('xp-bar-text');
+  if (bar) bar.style.width = pct + '%';
+  if (txt) txt.textContent = `${G.xp}/${G.xpToNext} XP`;
+}
+
+// sp popup state
+let spStep = 1; // 1=pick class, 2=pick class investment, 3=pick stat
+let spChosenClass = null;
+
+function showSPPopup() {
+  spStep = 1;
+  spChosenClass = null;
+  renderSPPopup();
+  document.getElementById('sp-popup').classList.remove('hidden');
+}
+
+function renderSPPopup() {
+  const el = document.getElementById('sp-popup-content');
+  if (spStep === 1) {
+    el.innerHTML = `
+      <div style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">⬆ Level Up!</div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;">Choose a class to invest in</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${CLASS_NAMES.map(cls => {
+          const lv = G.classLv[cls]||0;
+          const color = CLASS_COLORS[cls];
+          return `<div onclick="spPickClass('${cls}')" style="background:#0d1018;border:1px solid ${color}44;border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:background 0.15s;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='#0d1018'">
+            <div style="font-size:20px;">${CLASS_ICONS[cls]}</div>
+            <div style="font-family:'Cinzel',serif;font-size:10px;color:${color};margin-top:4px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
+            <div style="font-size:10px;color:var(--muted);">Lv ${lv}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else if (spStep === 2) {
+    const cls = spChosenClass;
+    const color = CLASS_COLORS[cls];
+    const lv = G.classLv[cls]||0;
+    const classAbilities = Object.values(ABILITIES).filter(ab => ab.class === cls && ab.type !== 'heal');
+    const unlockedAbs = classAbilities.filter(ab => isAbilityUnlocked(ab.id));
+
+    let abHTML = '';
+    classAbilities.forEach(ab => {
+      const unlocked = isAbilityUnlocked(ab.id);
+      const abLv = G.abilityLevels[ab.id]||0;
+      const cost = Math.max(1, abLv);
+      const cp = G.classCP[cls]||0;
+      const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
+
+      if (unlocked) {
+        abHTML += `<div onclick="spUpgradeAbility('${ab.id}')" style="background:#0d1018;border:1px solid ${color}33;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}33'">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:16px;">${ab.icon}</span>
+            <div style="flex:1;">
+              <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">${ab.name} <span style="color:${typeColor};font-size:9px;border:1px solid ${typeColor};border-radius:6px;padding:1px 4px;">${ab.type}</span></div>
+              <div style="font-size:10px;color:var(--muted);">Lv${abLv} · ${Math.floor(ab.dmgMult*(1+abLv*0.15)*100)}% dmg</div>
+            </div>
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--gold);">⬆ Upgrade</div>
+          </div>
+        </div>`;
+      } else {
+        // Can unlock if class level is high enough and it's next tier
+        const canUnlock = lv >= (ab.unlockLv||0);
+        if (canUnlock) {
+          abHTML += `<div onclick="spUnlockAbility('${ab.id}')" style="background:#0d1018;border:1px solid ${color}55;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}55'">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:16px;">${ab.icon}</span>
+              <div style="flex:1;">
+                <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">🔓 Unlock ${ab.name}</div>
+                <div style="font-size:10px;color:var(--muted);">${ab.desc}</div>
+              </div>
+              <div style="font-family:'Cinzel',serif;font-size:10px;color:#3acc7a;">NEW</div>
+            </div>
+          </div>`;
+        }
+      }
+    });
+
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <button onclick="spStep=1;renderSPPopup()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:12px;">← Back</button>
+        <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:${color};">${CLASS_ICONS[cls]} ${cls.charAt(0).toUpperCase()+cls.slice(1)} — Level ${lv}</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Choose what to improve:</div>
+      ${abHTML || `<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px;">No abilities to upgrade yet. Level up more first.</div>`}
+    `;
+  } else if (spStep === 3) {
+    el.innerHTML = `
+      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">Also boost a base stat</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Choose one permanent upgrade</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+        ${STAT_BOOST_OPTIONS.map(opt => `
+          <div onclick="spBoostStat('${opt.key}')" style="background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+            <span style="font-size:16px;">${opt.icon}</span>
+            <div>
+              <div style="font-size:11px;color:var(--text);">${opt.label}</div>
+              <div style="font-family:'Cinzel',serif;font-size:12px;color:#3acc7a;">${opt.display}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+}
+
+function spPickClass(cls) {
+  spChosenClass = cls;
+  // Level up that class
+  G.classLv[cls] = (G.classLv[cls]||0) + 1;
+  const lv = G.classLv[cls];
+  // HP + mana boost
+  G.baseStats.health = (G.baseStats.health||180) + 10;
+  G.baseStats.mana = (G.baseStats.mana||100) + 5;
+  const st = getStats();
+  const oldMax = G.maxHp;
+  G.maxHp = st.maxHp;
+  G.hp += (G.maxHp - oldMax);
+  G.hp = Math.min(G.hp, G.maxHp);
+  G.maxMana = st.mana||100;
+  updateHpBar(); updateManaBar();
+  // Unlock Skill 2 at class lv 5, Ult at 8
+  if(lv === 5) log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Skill 2 slot unlocked!</span>`);
+  if(lv === 8) log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Ultimate slot unlocked!</span>`);
+  spStep = 2;
+  renderSPPopup();
+}
+
+function spUpgradeAbility(abId) {
+  const ab = ABILITIES[abId];
+  if (!ab) return;
+  G.abilityLevels[abId] = (G.abilityLevels[abId]||0) + 1;
+  log(`<span style="color:${CLASS_COLORS[ab.class]}">⬆ ${ab.icon} ${ab.name} → Lv${G.abilityLevels[abId]}</span>`);
+  playSound('level_up');
+  spStep = 3;
+  renderSPPopup();
+}
+
+function spUnlockAbility(abId) {
+  const ab = ABILITIES[abId];
+  if (!ab) return;
+  G.abilityLevels[abId] = 1;
+  log(`<span style="color:${CLASS_COLORS[ab.class]}">🔓 Unlocked ${ab.icon} ${ab.name}!</span>`);
+  playSound('level_up');
+  // Auto-slot if applicable
+  const ab_type = ab.type;
+  if (ab_type === 'regular') {
+    if (!G.loadout[1]) G.loadout[1] = abId;
+    else if (!G.loadout[2]) G.loadout[2] = abId;
+  } else if (ab_type === 'ultimate' && !G.loadout[3]) {
+    G.loadout[3] = abId;
+  }
+  updateLoadoutUI();
+  spStep = 3;
+  renderSPPopup();
+}
+
+function spBoostStat(key) {
+  const opt = STAT_BOOST_OPTIONS.find(o => o.key === key);
+  if (!opt) return;
+  G.baseStats[key] = (G.baseStats[key]||0) + opt.amount;
+  // Recalc hp/mana if health/mana changed
+  const st = getStats();
+  if (key === 'health') {
+    const oldMax = G.maxHp; G.maxHp = st.maxHp;
+    G.hp += (G.maxHp - oldMax); G.hp = Math.min(G.hp, G.maxHp);
+    updateHpBar();
+  }
+  if (key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
+  log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
+  G.skillPoints--;
+  closeSPPopup();
+  updateStatsPanel();
+  updateClassXPPanel();
+  saveGame();
+  // Resume combat
+  if (G.combatActive && G.enemy) startEnemyAutoAttack();
+}
+
+function closeSPPopup() {
+  document.getElementById('sp-popup').classList.add('hidden');
+  spStep = 1; spChosenClass = null;
+}
+
+// ── SLOT UNLOCK HELPERS ──
+function isSlotUnlocked(slotIdx) {
+  if (slotIdx === 0) return true; // Attack always unlocked
+  if (slotIdx === 1) return G.startingClass !== null; // Skill 1 after class chosen
+  if (slotIdx === 2) {
+    // Skill 2: any class at level 5
+    return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 5);
+  }
+  if (slotIdx === 3) {
+    // Ultimate: any class at level 8
+    return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 8);
+  }
+  return false;
 }
 
 // ═══════════════════════════════════════════════
