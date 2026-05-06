@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.17</title>
+<title>Elemental Rift v1.5.18</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -387,7 +387,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.17 · Elemental Rift Developed by Zindgion Enterprises™</div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.18 · Elemental Rift Developed by Zindgion Enterprises™</div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -761,6 +761,7 @@ let G = {
   inBoss:false,
   bossLevel:1,
   bossDmgDealt:0,
+  bossRewardsClaimed:[], // indices of BOSS_MILESTONES already claimed this attempt
   bossTimerSec:60,
   bossTimerInterval:null,
   enemyAttackInterval:null,
@@ -1173,6 +1174,7 @@ function startBossAttempt() {
   G.inBoss = true;
   G.bossLevel = 1;
   G.bossDmgDealt = 0;
+  G.bossRewardsClaimed = [];
   G.bossName = BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
   G.enemy = rollBoss(1, true); // infinite HP leaderboard boss
   G.combatActive = true;
@@ -1203,6 +1205,13 @@ function updateBossTimerUI() {
   document.getElementById('boss-timer').textContent = G.bossTimerSec;
   document.getElementById('boss-timer').style.color = G.bossTimerSec <= 10 ? '#ff2266' : (G.bossTimerSec <= 20 ? '#ff8800' : '#ff2266');
   document.getElementById('boss-dmg-display').textContent = '⚔️ ' + numberWithCommas(G.bossDmgDealt) + ' dmg';
+  // Show next milestone
+  const nextM = BOSS_MILESTONES.find(m => !G.bossRewardsClaimed.includes(BOSS_MILESTONES.indexOf(m)));
+  const timerWrap = document.getElementById('boss-timer-wrap');
+  let nextEl = document.getElementById('boss-next-milestone');
+  if(!nextEl){ nextEl=document.createElement('div'); nextEl.id='boss-next-milestone'; nextEl.style.cssText='font-size:9px;color:var(--muted);text-align:center;margin-top:2px;'; timerWrap.appendChild(nextEl); }
+  if(nextM) nextEl.textContent = `Next: ${nextM.icon}${nextM.label} (+${nextM.gold}g)`;
+  else nextEl.textContent = '⚡ All milestones reached!';
 }
 
 function numberWithCommas(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,','); }
@@ -1271,10 +1280,30 @@ async function showBossResults() {
   await postLeaderboard(leaderboard);
 
   const myRank = leaderboard.findIndex(e=>e.name===name)+1;
+  // Build milestone summary
+  const claimed = G.bossRewardsClaimed;
+  let milestoneHTML = '';
+  if(claimed.length > 0) {
+    const totalGold = claimed.reduce((a,i)=>a+BOSS_MILESTONES[i].gold,0);
+    const totalXP = claimed.reduce((a,i)=>a+BOSS_MILESTONES[i].xp,0);
+    milestoneHTML = `
+      <div style="margin-bottom:14px;">
+        <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--muted);text-align:center;letter-spacing:0.1em;margin-bottom:8px;text-transform:uppercase;">Milestones Reached</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px;">
+          ${BOSS_MILESTONES.map((m,i)=>`
+            <div style="padding:4px 10px;border-radius:20px;border:1px solid ${claimed.includes(i)?'var(--gold)':'var(--border)'};background:${claimed.includes(i)?'rgba(232,184,75,0.1)':'transparent'};font-size:12px;color:${claimed.includes(i)?'var(--gold)':'var(--muted)'};">
+              ${m.icon} ${m.label}
+            </div>`).join('')}
+        </div>
+        <div style="text-align:center;font-size:13px;color:#3acc7a;">Rewards: +${numberWithCommas(totalGold)} gold &nbsp;·&nbsp; +${totalXP} XP</div>
+      </div>`;
+  }
+
   let html = `
     <div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:6px;">Total Damage Dealt</div>
     <div class="boss-result-score">${numberWithCommas(score)}</div>
-    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px;">Reached Boss Level ${G.bossLevel} · Rank #${myRank}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;">Rank #${myRank}</div>
+    ${milestoneHTML}
     <div class="panel-title" style="position:static;margin-bottom:8px;">🏆 Leaderboard</div>
   ` + buildLBHtml(leaderboard, name, 10);
 
@@ -1416,7 +1445,7 @@ function fireAbility(ab) {
     const dmg = Math.max(1, Math.floor(getAbilityDmg(ab) * seMult * critMult - resist*(1-armorPen)*0.15));
     G.enemy.hp -= dmg;
     totalDmg += dmg;
-    if(G.inBoss) G.bossDmgDealt += dmg;
+    if(G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
   }
 
   // Healing
@@ -1775,6 +1804,16 @@ const STAT_BOOST_OPTIONS = [
   { key:'mana',        label:'Mana',         amount:10,   icon:'💧',  display:'+10' },
   { key:'manaRegen',   label:'Mana Regen',   amount:1,    icon:'💦',  display:'+1/s' },
 ];
+// ── BOSS DAMAGE MILESTONES ──
+const BOSS_MILESTONES = [
+  { dmg:1000,    gold:50,    xp:50,   icon:'🥉', label:'1K' },
+  { dmg:5000,    gold:200,   xp:150,  icon:'🥈', label:'5K' },
+  { dmg:15000,   gold:600,   xp:300,  icon:'🥇', label:'15K' },
+  { dmg:50000,   gold:1500,  xp:500,  icon:'💎', label:'50K' },
+  { dmg:150000,  gold:4000,  xp:1000, icon:'👑', label:'150K' },
+  { dmg:500000,  gold:10000, xp:2000, icon:'⚡', label:'500K' },
+];
+
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
 const SPELL_BASE_CD = { fire:3500, water:3200, grass:4000, dark:3800, light:4200 };
@@ -1884,7 +1923,7 @@ function attack(element) {
   let dmg = Math.max(1,Math.floor((baseDmg+skillBonus)*seMult*critMult-resist*0.15));
 
   G.enemy.hp -= dmg;
-  if (G.inBoss) G.bossDmgDealt += dmg;
+  if (G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
 
   const stealPct = isMagic ? st.spellVamp : st.lifeSteal;
   const healAmt = stealPct > 0 ? Math.max(1, Math.ceil(dmg * stealPct / 100)) : 0;
@@ -3070,6 +3109,43 @@ function loadHealLoadout() {
 }
 
 
+
+// ── BOSS MILESTONE REWARDS ──
+function checkBossMilestones() {
+  if(!G.inBoss) return;
+  BOSS_MILESTONES.forEach((m, idx) => {
+    if(G.bossRewardsClaimed.includes(idx)) return;
+    if(G.bossDmgDealt >= m.dmg) {
+      G.bossRewardsClaimed.push(idx);
+      G.gold += m.gold;
+      awardXP(m.xp);
+      updateResourceBar();
+      // Flash reward notification on arena
+      showMilestoneNotification(m);
+      log(`<span style="color:var(--gold)">${m.icon} Milestone ${m.label}! +${m.gold}g +${m.xp}xp</span>`);
+      playSound('level_up');
+    }
+  });
+}
+
+let milestoneNotifTimeout = null;
+function showMilestoneNotification(m) {
+  let notif = document.getElementById('milestone-notif');
+  if(!notif) {
+    notif = document.createElement('div');
+    notif.id = 'milestone-notif';
+    notif.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);border:2px solid var(--gold);border-radius:12px;padding:14px 24px;text-align:center;z-index:15;pointer-events:none;transition:opacity 0.4s;';
+    document.getElementById('arena').appendChild(notif);
+  }
+  notif.style.opacity = '1';
+  notif.innerHTML = `
+    <div style="font-size:28px;margin-bottom:4px;">${m.icon}</div>
+    <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);">Milestone: ${m.label} Damage!</div>
+    <div style="font-size:12px;color:#3acc7a;margin-top:4px;">+${m.gold} gold &nbsp;·&nbsp; +${m.xp} XP</div>
+  `;
+  if(milestoneNotifTimeout) clearTimeout(milestoneNotifTimeout);
+  milestoneNotifTimeout = setTimeout(() => { notif.style.opacity='0'; }, 2500);
+}
 
 // ── POTION SHOP ──
 function getPotionCost() {
