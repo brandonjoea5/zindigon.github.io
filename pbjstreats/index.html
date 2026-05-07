@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PB&J's Treats — Cake Pops, Pretzels & Strawberries</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Nunito:wght@400;600;700;800;900&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  :root {
+    --cream: #FFF4E6;
+    --cream-deep: #FCE7C8;
+    --pink: #FF6B9D;
+    --pink-deep: #E63E7C;
+    --yellow: #FFC93C;
+    --purple: #7B68EE;
+    --purple-deep: #5B47C9;
+    --mint: #6FD4B6;
+    --ink: #2B1B3A;
+    --ink-soft: #5C4474;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 600;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .display { font-family: 'Caprasimo', Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+  .script { font-family: 'Caveat', cursive; font-weight: 700; }
+
+  /* Sprinkle background */
+  .sprinkles {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(circle at 12% 18%, var(--pink) 2px, transparent 3px),
+      radial-gradient(circle at 84% 12%, var(--yellow) 2.5px, transparent 3.5px),
+      radial-gradient(circle at 22% 78%, var(--purple) 2px, transparent 3px),
+      radial-gradient(circle at 70% 64%, var(--mint) 2px, transparent 3px),
+      radial-gradient(circle at 48% 32%, var(--pink-deep) 1.5px, transparent 2.5px);
+    background-size: 380px 380px, 420px 420px, 460px 460px, 500px 500px, 350px 350px;
+    opacity: .35;
+  }
+
+  #root { position: relative; z-index: 1; }
+
+  /* Wobble animation for cake pops */
+  @keyframes wobble {
+    0%, 100% { transform: rotate(var(--r, 0deg)) translateY(0); }
+    50% { transform: rotate(calc(var(--r, 0deg) + 3deg)) translateY(-6px); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+    50% { transform: translateY(-10px) rotate(calc(var(--r, 0deg) - 2deg)); }
+  }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+  @keyframes pop-in {
+    from { transform: scale(0.6) rotate(-20deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  /* ========= Mobile responsive ========= */
+  @media (max-width: 760px) {
+    .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+    .order-steps { grid-template-columns: 1fr !important; }
+    .call-panel {
+      grid-template-columns: 1fr !important;
+      padding: 32px 24px !important;
+    }
+    .call-panel-right { display: none !important; }
+    .footer-inner { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .footer-cols { grid-template-columns: 1fr 1fr !important; }
+    .menu-grid { gap: 60px !important; }
+  }
+
+  @media (max-width: 480px) {
+    .gallery-grid { grid-template-columns: 1fr 1fr !important; }
+    .footer-cols { grid-template-columns: 1fr !important; }
+    .hero-notes { font-size: 12px !important; gap: 8px !important; }
+    .hero-cta-row { flex-direction: column !important; align-items: stretch !important; }
+    .hero-cta-row > a { justify-content: center !important; }
+    .hero-floats { display: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="sprinkles"></div>
+  <div id="root"></div>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="components/CakePop.jsx"></script>
+  <script type="text/babel" src="components/Strawberry.jsx"></script>
+  <script type="text/babel" src="components/Pretzel.jsx"></script>
+  <script type="text/babel" src="components/Hero.jsx"></script>
+  <script type="text/babel" src="components/Menu.jsx"></script>
+  <script type="text/babel" src="components/Gallery.jsx"></script>
+  <script type="text/babel" src="components/OrderInfo.jsx"></script>
+  <script type="text/babel" src="components/Footer.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
