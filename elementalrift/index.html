@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.15</title>
+<title>Elemental Rift v1.6.16</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2382,12 +2382,12 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
-  // Award orbs based on wave reached
+  // Award orbs based on wave reached — death screen handles the reload
   if(sbUser) {
     const orbsEarned = Math.max(1, Math.floor(G.wave * 1.5));
     trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
-    saveTrinity().catch(()=>{});
-    console.log('Orbs earned:', orbsEarned, 'Total:', trinityData.orbs);
+    // Fire but don't block — death screen stays up while this saves
+    saveTrinity().catch(e => console.warn('Orb save failed:', e));
   }
 
   // Find most used element
@@ -4125,12 +4125,14 @@ function executeHonorableDeath(orbsEarned) {
    'elementalRift_heal'].forEach(k => localStorage.removeItem(k));
 
   if(sbUser) {
-    // Award orbs and clear cloud save — WAIT for both before reloading
     trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
-    Promise.all([
-      orbsEarned > 0 ? saveTrinity() : Promise.resolve(),
+    const ops = [
       sb.from('player_saves').delete().eq('player_id', sbUser.id)
-    ]).finally(() => location.reload());
+    ];
+    if(orbsEarned > 0) ops.push(saveTrinity());
+    // Wait up to 5 seconds then reload regardless
+    const timeout = new Promise(r => setTimeout(r, 5000));
+    Promise.race([Promise.all(ops), timeout]).finally(() => location.reload());
   } else {
     location.reload();
   }
@@ -4166,7 +4168,7 @@ async function loadTrinity() {
 
 async function saveTrinity() {
   if(!sbUser) return;
-  await sb.from('player_trinity').upsert({
+  const payload = {
     player_id: sbUser.id,
     orbs: trinityData.orbs||0,
     trinity_level: trinityData.trinity_level||0,
@@ -4174,7 +4176,15 @@ async function saveTrinity() {
     slot2: trinityData.slot2||null,
     slot3: trinityData.slot3||null,
     updated_at: new Date().toISOString()
-  }, { onConflict: 'player_id' });
+  };
+  // Try update first, then insert if no row exists
+  const { data: existing } = await sb.from('player_trinity')
+    .select('player_id').eq('player_id', sbUser.id).single();
+  if(existing) {
+    await sb.from('player_trinity').update(payload).eq('player_id', sbUser.id);
+  } else {
+    await sb.from('player_trinity').insert(payload);
+  }
 }
 
 // ═══════════════════════════════════════════════
