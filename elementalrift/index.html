@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.19</title>
+<title>Elemental Rift v1.6.21</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1033,6 +1033,7 @@ function renderWaveTimeline() {
 
 function spawnNextSegmentWave() {
   MAP.currentSegWave++;
+  G.wave = MAP.currentSegWave; // single source of truth
   MAP.isBossWave = MAP.currentSegWave === MAP.totalWaves;
   renderWaveTimeline();
 
@@ -1173,7 +1174,17 @@ function startGame() {
 function resumeFromSave() {
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
   updateResourceBar();
-  spawnEnemy();
+  // If we have a segment in progress use segment system, else spawn directly
+  if(MAP.difficulty && MAP.totalWaves > 0) {
+    spawnNextSegmentWave();
+  } else {
+    // No map context — just spawn a solo enemy
+    G.enemy = rollEnemy(G.wave);
+    G.combatActive = true;
+    updateEnemyUI();
+    startEnemyAutoAttack();
+    drawArena();
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1231,7 +1242,14 @@ function rollEnemy(wave) {
 }
 
 function spawnEnemy() {
-  G.enemy = rollEnemy(G.wave);
+  if(G.enemy && G.enemy.hp > 0) {
+    console.warn('Spawn blocked: enemy still active');
+    return;
+  }
+  stopEnemyAutoAttack();
+  G.enemy = null;
+  G.combatActive = false;
+  G.enemy = rollEnemy(MAP.currentSegWave || G.wave);
   G.combatActive = true;
   updateEnemyUI();
   log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! [${G.enemy.type==='brute'?'Brute':G.enemy.elements.join('+')}]</span>`);
@@ -4188,18 +4206,20 @@ async function loadTrinity() {
 
 async function saveTrinity() {
   if(!sbUser) return;
+  // Always reload current orbs from DB first to avoid overwriting
+  const { data: existing } = await sb.from('player_trinity')
+    .select('orbs, trinity_level').eq('player_id', sbUser.id).single();
+
   const payload = {
     player_id: sbUser.id,
-    orbs: trinityData.orbs||0,
+    orbs: trinityData.orbs||0, // trinityData already has the correct total (loaded + earned)
     trinity_level: trinityData.trinity_level||0,
     slot1: trinityData.slot1||null,
     slot2: trinityData.slot2||null,
     slot3: trinityData.slot3||null,
     updated_at: new Date().toISOString()
   };
-  // Try update first, then insert if no row exists
-  const { data: existing } = await sb.from('player_trinity')
-    .select('player_id').eq('player_id', sbUser.id).single();
+
   if(existing) {
     await sb.from('player_trinity').update(payload).eq('player_id', sbUser.id);
   } else {
@@ -4980,7 +5000,8 @@ async function openTrinityShop() {
     alert('Sign in to access the Trinity Force shop.');
     return;
   }
-  await loadTrinity();
+  // Only reload from DB if trinityData hasn't been loaded this session
+  // (loadTrinity already runs in onAuthReady — reloading here would overwrite pending orbs)
   trinityShopStock = [];
   const tiers = ['Basic','Basic','Great','Great','Exquisite','Exquisite'];
   const lv = trinityData.trinity_level||0;
