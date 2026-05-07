@@ -4485,6 +4485,27 @@ function showSPPopup() {
 
 function renderSPPopup() {
   const el = document.getElementById('sp-popup-content');
+  if (spPhase === 'passive') {
+    const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+    let ph = '<div style="font-family:Cinzel,serif;font-size:14px;font-weight:700;color:#8888ff;text-align:center;margin-bottom:4px;">🔮 Passive Skill Point</div>';
+    ph += '<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Permanently boost a passive stat</div>';
+    Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
+      const color = CLASS_COLORS[elKey]||'#88aacc';
+      ph += '<div class="skill-section">';
+      ph += '<div class="skill-element-title" style="color:'+color+'">'+(elEmoji[elKey]||'⚡')+' '+elKey.charAt(0).toUpperCase()+elKey.slice(1)+'</div>';
+      skills.forEach((sk, i) => {
+        const key = elKey+'_'+i;
+        const lvl = G.skillLevels[key]||0;
+        ph += '<div class="skill-row" onclick="spSpendPassive(&quot;'+elKey+'&quot;,'+i+')" style="cursor:pointer;border-radius:6px;padding:4px;" onmouseover="this.style.background=&quot;#ffffff10&quot;" onmouseout="this.style.background=&quot;transparent&quot;">';
+        ph += '<div><div class="skill-name">'+sk.name+'</div>';
+        ph += '<div class="skill-pts">Lv'+lvl+' · +'+(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)+' '+(STAT_LABELS[sk.stat]||sk.stat)+' after</div></div>';
+        ph += '<button class="skill-btn" style="pointer-events:none;">+</button></div>';
+      });
+      ph += '</div>';
+    });
+    el.innerHTML = ph;
+    return;
+  }
   if (spStep === 1) {
     el.innerHTML = `
       <div style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">⬆ Level Up!</div>
@@ -4567,25 +4588,6 @@ function renderSPPopup() {
             </div>
           </div>`).join('')}
       </div>`;
-  } else if (spPhase === 'passive') {
-    const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
-    let ph = '<div style="font-family:Cinzel,serif;font-size:14px;font-weight:700;color:#8888ff;text-align:center;margin-bottom:4px;">🔮 Passive Skill Point</div>';
-    ph += '<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Permanently boost a passive stat</div>';
-    Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
-      const color = CLASS_COLORS[elKey]||'#88aacc';
-      ph += '<div class="skill-section">';
-      ph += '<div class="skill-element-title" style="color:'+color+'">'+(elEmoji[elKey]||'⚡')+' '+elKey.charAt(0).toUpperCase()+elKey.slice(1)+'</div>';
-      skills.forEach((sk, i) => {
-        const key = elKey+'_'+i;
-        const lvl = G.skillLevels[key]||0;
-        ph += '<div class="skill-row" onclick="spSpendPassive(&quot;'+elKey+'&quot;,'+i+')" style="cursor:pointer;border-radius:6px;padding:4px;" onmouseover="this.style.background=&quot;#ffffff10&quot;" onmouseout="this.style.background=&quot;transparent&quot;">';
-        ph += '<div><div class="skill-name">'+sk.name+'</div>';
-        ph += '<div class="skill-pts">Lv'+lvl+' · +'+(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)+' '+(STAT_LABELS[sk.stat]||sk.stat)+' after</div></div>';
-        ph += '<button class="skill-btn" style="pointer-events:none;">+</button></div>';
-      });
-      ph += '</div>';
-    });
-    el.innerHTML = ph;
   }
 }
 
@@ -4593,7 +4595,6 @@ function spPickClass(cls) {
   spChosenClass = cls;
   spPending = Math.max(0, spPending - 1);
   G.skillPoints = Math.max(0, G.skillPoints - 1);
-  // Level up that class
   G.classLv[cls] = (G.classLv[cls]||0) + 1;
   const lv = G.classLv[cls];
   // HP + mana boost
