@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.12</title>
+<title>Elemental Rift v1.6.15</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -417,7 +417,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.55 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.6.15 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -608,7 +608,7 @@ let sbProfile = null; // players row
       <!-- arena injected here by JS -->
     </div>
     <!-- Panel view (stats/gear/upgrades) -->
-    <div id="mobile-panel-view" id="mobile-panel-view">
+    <div id="mobile-panel-view">
       <div id="mobile-panel-content"></div>
     </div>
   </div>
@@ -650,7 +650,7 @@ let sbProfile = null; // players row
           <div class="ab-slot-label" style="color:#3acc7a;">Heal</div>
           <div class="ab-icon">＋</div>
           <div class="ab-name" style="color:var(--muted);font-size:7px;">Assign</div>
-          <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:#3acc7a"></div></div>
+          <div class="ab-cd-bar"><div class="ab-cd-fill" style="width:0%;background:#3acc7a"></div></div>
         </div>
       </div>
       <div id="combat-tooltip" onclick="dismissTooltip()" class="hidden">
@@ -2757,18 +2757,25 @@ function vendorEquipItem() {
   }
   // Equip new item
   G.equipment[item.slot] = item;
+  // Recalculate maxHP/maxMana in case item has health/mana stats
+  const st = getStats();
+  const oldMax = G.maxHp;
+  G.maxHp = st.maxHp;
+  if(G.maxHp > oldMax) G.hp += G.maxHp - oldMax;
+  G.hp = Math.min(G.hp, G.maxHp);
+  G.maxMana = st.mana||100;
   updateEquipUI();
   updateStatsPanel();
   updateHpBar();
+  updateManaBar();
   updateResourceBar();
   refreshAutoAttackSpeeds && refreshAutoAttackSpeeds();
   saveGame();
   log(`<span style="color:#3acc7a">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equipped.sellVal+'g':''}</span>`);
   modal.remove();
-  // Back to vendor — re-render and refresh gold
+  G.buyingVendorItem = false;
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
   renderVendor();
-  // Show next queued item if any
   if(itemModalQueue.length > 0) {
     const next = itemModalQueue.shift();
     setTimeout(()=>showVendorItemDecision(next), 150);
@@ -2783,6 +2790,7 @@ function vendorSellNew() {
   updateResourceBar();
   log(`<span style="color:#e8b84b">💰 Sold ${item.name} for ${item.sellVal}g</span>`);
   modal.remove();
+  G.buyingVendorItem = false;
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
   renderVendor();
   if(itemModalQueue.length > 0) {
@@ -2871,11 +2879,14 @@ function renderVendor(){
 let itemModalQueue = [];
 
 function buyVendorItem(idx){
+  if(G.buyingVendorItem) return; // prevent double-tap race condition
+  G.buyingVendorItem = true;
   const v = vendorStock[idx];
-  if(!v){ renderVendor(); return; }
+  if(!v){ G.buyingVendorItem = false; renderVendor(); return; }
   if(G.gold < v.item.buyVal){
     log('<span style="color:#cc4444">Not enough gold!</span>');
     renderVendor();
+    G.buyingVendorItem = false;
     return;
   }
   G.gold -= v.item.buyVal;
@@ -2904,7 +2915,8 @@ function buyVendorItem(idx){
 }
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
-  itemModalQueue = []; // clear any unreviewed items
+  itemModalQueue = [];
+  G.buyingVendorItem = false; // always release lock on close
   if(MAP.segmentComplete){
     MAP.segmentComplete=false;
     showMapScreen(false);
