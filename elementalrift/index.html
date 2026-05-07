@@ -664,7 +664,10 @@ let sbProfile = null; // players row
       </div>
       <div id="enemy-info">
         <div id="enemy-name">—</div>
-        <div id="enemy-hp-wrap"><div id="enemy-hp-fill" style="width:100%"></div></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin:3px auto 0;width:180px;">
+          <div id="enemy-hp-wrap" style="margin:0;flex:1;"><div id="enemy-hp-fill" style="width:100%"></div></div>
+          <div id="enemy-hp-nums" style="font-family:'Cinzel',serif;font-size:9px;color:#cc6666;white-space:nowrap;min-width:48px;text-align:left;"></div>
+        </div>
         <div id="enemy-type-badge"></div>
       </div>
       <div id="boss-timer-wrap">
@@ -898,7 +901,7 @@ let G = {
   playerName: '',
   hp:200, maxHp:200, energy:100, maxEnergy:100,
   gold:0, kills:0, wave:1,
-  xp:0, xpToNext:80, playerLevel:1, skillPoints:0, passivePoints:0,
+  xp:0, xpToNext:40, playerLevel:1, skillPoints:0, passivePoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
@@ -1101,7 +1104,7 @@ function loadGame(name) {
     G.playerName = save.playerName;
     G.hp = save.hp; G.maxHp = save.maxHp;
     G.gold = save.gold;
-    G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
+    G.xp = save.xp||0; G.xpToNext = save.xpToNext||40; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
     spPending = save.spPending||0; passivePending = save.passivePending||0;
     if(save.startingClass) G.startingClass = save.startingClass;
     G.kills = save.kills; G.wave = save.wave;
@@ -1300,27 +1303,29 @@ function stopEnemyAutoAttack() {
 
 function updateEnemyUI() {
   const e = G.enemy;
+  const hpNums = document.getElementById('enemy-hp-nums');
   if (!e) {
     document.getElementById('enemy-name').textContent='—';
     document.getElementById('enemy-hp-fill').style.width='0%';
     document.getElementById('enemy-type-badge').innerHTML='';
+    if(hpNums) hpNums.textContent='';
     return;
   }
   document.getElementById('enemy-name').textContent = e.name;
   const nameColor = G.inBoss ? '#ff2266' : (e.type==='brute'?'#cc8844':(ELEMENT_COLORS[e.elements[0]]||'#fff'));
   document.getElementById('enemy-name').style.color = nameColor;
   if(G.inBoss) {
-    // Show bar as progress toward next 1000-damage milestone
-    // Bar fills then resets each milestone — gives visual feedback
     const milestone = Math.max(1000, Math.ceil(G.bossDmgDealt / 1000) * 1000 || 1000);
     const prevMilestone = milestone - 1000;
     const pct = Math.min(100, ((G.bossDmgDealt - prevMilestone) / 1000) * 100);
     document.getElementById('enemy-hp-fill').style.width = pct + '%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff2266,#ff6699)';
+    if(hpNums) hpNums.textContent = '';
     document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2266;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
   } else {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
+    if(hpNums) hpNums.textContent = `${Math.max(0,Math.floor(e.hp))}/${e.maxHp}`;
     const typeBadge = e.type==='brute'
       ? '<span style="color:#cc8844;font-size:10px;">🪨 Brute</span>'
       : e.elements.map(el=>`<span style="color:${ELEMENT_COLORS[el]};font-size:10px;">${el} </span>`).join('');
@@ -2358,10 +2363,10 @@ function onEnemyDeath() {
   G.kills++;
   G.gold+=G.enemy.gold;
   G.runStats.totalGold += G.enemy.gold;
-  // XP scales with enemy HP relative to current threshold
-  const rawXP = Math.max(8, Math.floor(G.enemy.maxHp * 0.07 + G.enemy.attack * 1.0));
-  const scaledXP = Math.floor(rawXP * (G.xpToNext / 80));
-  const xpGain = Math.max(5, Math.min(scaledXP, Math.floor(G.xpToNext * 0.35)));
+  // XP based on wave — guaranteed to feel meaningful early on
+  // Wave 1 gives ~15 XP (level in ~3 kills), scales up with wave
+  const baseXP = 10 + (MAP.currentSegWave || G.wave) * 5;
+  const xpGain = Math.floor(baseXP * (G.enemy.type === 'brute' ? 1.3 : 1.0));
   awardXP(xpGain);
   // Award passive skill point every 5 kills
   if(G.kills % 5 === 0) {
