@@ -2,196 +2,197 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="description" content="Zindigon is an independent studio building games, anime, and modern websites for small businesses."/>
-  <title>Zindigon — Creative products. Real engineering.</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/site.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Zindigon — Independent studio. Games, worlds, and the web.</title>
+  <meta name="description" content="Zindigon is an independent studio building games, original worlds, and modern websites."/>
+  <link rel="stylesheet" href="assets/site.css"/>
 </head>
 <body>
-  <div id="fx" aria-hidden="true">
-    <canvas id="starfield"></canvas>
-    <div class="fx-aurora"></div>
-  </div>
-  <header>
-    <nav class="nav" aria-label="Primary">
-      <a class="brand" href="/">
-        <span class="logo" aria-hidden="true"></span>
-        <span>Zindigon</span>
-      </a>
-      <div class="spacer"></div>
-      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">
-        ☰ Menu
-      </button>
-      <div class="navlinks" data-nav>
-        <a href="/" aria-current="page">Home</a>
-        <a href="/Games/AetherFall/">Games</a>
-        <a href="/Anime/BloodlineZero/">Anime</a>
-        <a href="/services.html">Services</a>
-        <a href="/partners.html">Partners</a>
-        <a href="/contact.html">Contact</a>
-      </div>
-    </nav>
-    <div class="mobilenav" id="mobileNav" data-nav>
-      <a href="/">Home</a>
-      <a href="/Games/AetherFall/">Games</a>
-      <a href="/Anime/BloodlineZero/">Anime</a>
-      <a href="/services.html">Services</a>
-      <a href="/partners.html">Partners</a>
+
+<div id="fx" aria-hidden="true">
+  <div class="fx-grid"></div>
+  <div class="fx-glow"></div>
+  <div class="fx-grain"></div>
+</div>
+
+<header class="site-header">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg>
+      </span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="/" aria-current="page">Home</a>
+      <a href="/projects.html">Projects</a>
+      <a href="/work.html">Work</a>
       <a href="/contact.html">Contact</a>
     </div>
-  </header>
-  <main>
-    <section class="hero">
-      <div class="hero-inner">
-        <div class="hero-glow" aria-hidden="true"></div>
-        <span class="kicker">⚡ Zindigon is an umbrella for worlds + work</span>
-        <h1 class="h1">Creative products.<br>Real engineering.</h1>
-        <p class="sub">
-          Zindigon is where I build original IP (games + anime) <em>and</em> ship clean, modern websites for small businesses.
-          Same mindset in both: fast, readable, and built to last.
-        </p>
-        <div class="cta-row">
-          <a class="btn" href="/services.html">Get a website</a>
-          <a class="btn ghost" href="/Games/AetherFall/">Explore AetherFall</a>
-          <a class="btn ghost" href="/Anime/BloodlineZero/">Read Bloodline Zero</a>
-        </div>
-        <div class="chips" style="margin-top:16px;">
-          <span class="chip">Dark / Neon aesthetic</span>
-          <span class="chip">Mobile-first</span>
-          <span class="chip">Static + fast</span>
-          <span class="chip">Systems mindset</span>
-        </div>
-      </div>
-    </section>
+    <span class="nav-clock" id="navClock">—</span>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">Menu</button>
+  </nav>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="/">Home</a>
+    <a href="/projects.html">Projects</a>
+    <a href="/work.html">Work</a>
+    <a href="/contact.html">Contact</a>
+  </div>
+</header>
 
-    <!-- Elemental Rift Launch -->
-    <section class="rift-section">
-      <div class="rift-banner">
-        <span class="rift-eyebrow">🔥 New — Playtest Live</span>
-        <h2 class="rift-title">Elemental Rift</h2>
-        <p class="rift-sub">
-          The new game is live and ready to play. Jump in, break things, and tell me what works — early feedback shapes what gets built next.
-        </p>
-        <div class="rift-cta-wrap">
-          <a class="btn-rift" href="/elementalrift/">Play Elemental Rift →</a>
-          <p class="rift-feedback">
-            Feedback &amp; updates → <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>
-          </p>
-        </div>
-      </div>
-    </section>
+<main>
+  <section class="hero" data-screen-label="01 Home Hero">
+    <span class="eyebrow"><span class="dot"></span> Independent studio · est. 2024</span>
+    <h1 class="display">Games, worlds,<br/><em>and the web.</em></h1>
+    <p class="lede">Zindigon ships original games and the systems behind them — built by one developer with a habit of finishing things. Right now, that means <em>Elemental Rift</em>.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="/elementalrift/">Play Elemental Rift <span class="arrow">→</span></a>
+      <a class="btn btn-secondary" href="/projects.html">All projects</a>
+    </div>
+    <div class="hero-meta">
+      <div class="item">Status<strong id="lastUpdate">—</strong></div>
+      <div class="item">Games shipped<strong>5 live</strong></div>
+      <div class="item">Active project<strong>Elemental Rift</strong></div>
+      <div class="item">Available for<strong>Web work</strong></div>
+    </div>
+  </section>
 
-    <section class="section split">
-      <article class="card glow">
-        <h2 class="h2">Featured</h2>
-        <p class="p">
-          The studio has two lanes: <strong>original worlds</strong> (games/anime) and <strong>client work</strong> (web systems).
-          If you're here for the vibe, welcome. If you're here to hire me, you'll find a simple offer that's easy to say "yes" to.
-        </p>
-        <hr class="hr"/>
-        <div class="grid">
-          <div class="card" style="grid-column: span 12;">
-            <div class="badge">🎮 Game</div>
-            <h3 class="h2" style="font-size:1.15rem; margin-top:12px;">AetherFall</h3>
-            <p class="mini">
-              A mobile-first tower-defense roguelike built for replayability — keepers, upgrades, and endless waves.
-              This is where I prove systems.
-            </p>
-            <div class="chips">
-              <span class="chip">Godot</span>
-              <span class="chip">Leaderboards</span>
-              <span class="chip">Progression</span>
-            </div>
-            <div class="cta-row" style="margin-top:14px;">
-              <a class="btn ghost" href="/Games/AetherFall/">Open project</a>
-              <a class="btn ghost" href="/aetherfall-leaderboards.html">Leaderboards</a>
-              <a class="btn ghost" href="/aetherfall-privacy.html">Privacy</a>
-            </div>
+  <section data-screen-label="02 Featured">
+    <div class="section-head">
+      <span class="label">— Featured</span>
+      <h2>Elemental Rift</h2>
+      <span class="meta">Live playtest · open</span>
+    </div>
+    <div class="featured">
+      <div class="featured-grid">
+        <div class="featured-body">
+          <span class="featured-eyebrow">Now playing</span>
+          <h2>Master the elements.<br/>Climb the rift.</h2>
+          <p>A tower-defense roguelike where elements stack, classes evolve, and bosses adapt. Built around tight loops, real progression, and runs that actually feel different.</p>
+          <div class="featured-stats">
+            <div class="stat"><div class="k">Updates</div><div class="v">70+</div></div>
+            <div class="stat"><div class="k">Saves</div><div class="v">Cloud</div></div>
+            <div class="stat"><div class="k">Cost</div><div class="v">Free</div></div>
           </div>
-          <div class="card" style="grid-column: span 12;">
-            <div class="badge">🎬 Anime</div>
-            <h3 class="h2" style="font-size:1.15rem; margin-top:12px;">Bloodline Zero</h3>
-            <p class="mini">
-              Adult-leaning sci‑fi anime about bloodlines, powers, and an organization that treats humans like software.
-              Building canon episodes + world bible in public.
-            </p>
-            <div class="chips">
-              <span class="chip">World bible</span>
-              <span class="chip">Episode scripts</span>
-              <span class="chip">Power system</span>
-            </div>
-            <div class="cta-row" style="margin-top:14px;">
-              <a class="btn ghost" href="/Anime/BloodlineZero/">Open project</a>
-            </div>
-          </div>
-          <div class="card" style="grid-column: span 12;">
-            <div class="badge">🧱 Services</div>
-            <h3 class="h2" style="font-size:1.15rem; margin-top:12px;">Websites for small businesses</h3>
-            <p class="mini">
-              Fast, modern websites that look expensive — without the agency nonsense.
-              Online presence, scheduling, inventory/menus, and simple updates.
-            </p>
-            <div class="chips">
-              <span class="chip">Design + build</span>
-              <span class="chip">Mobile-first</span>
-              <span class="chip">Stripe ready</span>
-            </div>
-            <div class="cta-row" style="margin-top:14px;">
-              <a class="btn" href="/services.html">View services</a>
-              <a class="btn ghost" href="/contact.html">Ask a question</a>
-            </div>
+          <div class="featured-cta row">
+            <a class="btn btn-primary" href="/elementalrift/">Play now <span class="arrow">→</span></a>
+            <a class="btn btn-ghost" href="/elementalrift/version-history/">Version history</a>
           </div>
         </div>
-      </article>
-      <aside class="card">
-        <h2 class="h2">What Zindigon means</h2>
-        <p class="mini">
-          It's an umbrella. If a project grows bigger than the name, that's the point — Zindigon stays the studio behind it.
-        </p>
-        <div class="kv">
-          <div class="item"><div class="k">Lane 1</div><div class="v">Games + Anime</div></div>
-          <div class="item"><div class="k">Lane 2</div><div class="v">Web Services</div></div>
-          <div class="item"><div class="k">Focus</div><div class="v">Ship • Iterate</div></div>
-          <div class="item"><div class="k">Style</div><div class="v">Dark / Clean</div></div>
-        </div>
-        <hr class="hr"/>
-        <h3 class="h2" style="font-size:.98rem;">Quick links</h3>
-        <div class="cta-row" style="margin-top:12px;">
-          <a class="btn ghost" href="/services.html">Services</a>
-          <a class="btn ghost" href="/contact.html">Contact</a>
-          <a class="btn ghost" href="/partners.html">Partners</a>
-        </div>
-        <div class="notice" style="margin-top:16px;">
-          Want a clean website like this? I can build yours in the same style — fast, readable, and easy to maintain.
-        </div>
-      </aside>
-    </section>
-
-    <section class="section">
-      <div class="card">
-        <h2 class="h2">Tools I actually ship with</h2>
-        <p class="mini">
-          I keep the stack simple and production-minded — no bloat, no mystery platforms.
-        </p>
-        <div class="chips" style="margin-top:14px;">
-          <span class="chip">HTML/CSS/JS</span>
-          <span class="chip">Godot 4.x</span>
-          <span class="chip">Node.js</span>
-          <span class="chip">Cloudflare</span>
-          <span class="chip">Stripe</span>
-          <span class="chip">GitHub Pages</span>
-          <span class="chip">AdMob</span>
-          <span class="chip">Zoho (CRM/Catalyst)</span>
-        </div>
+        <aside class="featured-side">
+          <div class="versions-head">
+            <span class="t">Recent updates</span>
+            <span class="live">Live</span>
+          </div>
+          <ul class="versions" id="versions-list"></ul>
+        </aside>
       </div>
-    </section>
-  </main>
-  <footer>
-    <div>© <span id="year"></span> Zindigon — Creative tech, original worlds.</div>
-  </footer>
-  <script src="/assets/site.js" defer></script>
+    </div>
+  </section>
+
+  <section data-screen-label="03 Leaderboard">
+    <div class="section-head">
+      <span class="label">— Live</span>
+      <h2>Boss damage leaderboard</h2>
+      <span class="meta" id="lb-meta">loading…</span>
+    </div>
+    <div class="lb">
+      <div class="lb-head">
+        <span class="t">Top runs · all classes</span>
+        <button class="lb-refresh" id="lb-refresh">↻ Refresh</button>
+      </div>
+      <div id="lb-body" data-limit="10">
+        <div class="lb-loading">Loading scores<span class="dots"><i></i><i></i><i></i></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="04 Projects">
+    <div class="section-head">
+      <span class="label">— Catalog</span>
+      <h2>Other projects</h2>
+      <a class="link-arrow" href="/projects.html">View all →</a>
+    </div>
+    <div class="projects">
+      <a class="project" href="/Games/AetherFall/">
+        <span class="num">02</span>
+        <span class="tag">Game · Tower defense</span>
+        <h3>AetherFall</h3>
+        <p>Mobile-first roguelike with keepers, upgrades, and endless waves. Where the systems get proven.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/hypercell/">
+        <span class="num">03</span>
+        <span class="tag">Game · Arcade runner</span>
+        <h3>HyperCell</h3>
+        <p>Fast-paced cube runner. Speed, precision, momentum, reaction. Designed to be replayed in 90 seconds.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/nexusdefense/">
+        <span class="num">04</span>
+        <span class="tag">Game · Strategy</span>
+        <h3>Nexus Defense</h3>
+        <p>Build defenses, survive escalating waves, and experiment with evolving strategy systems.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/tornix/">
+        <span class="num">05</span>
+        <span class="tag">Game · Action</span>
+        <h3>Tornix</h3>
+        <p>Compact action prototype. Tight controls, escalating chaos, and a focus on moment-to-moment feel.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project wide" href="/Anime/BloodlineZero/">
+        <span class="num">06</span>
+        <span class="tag">Anime · World building</span>
+        <h3>Bloodline Zero</h3>
+        <p>Adult-leaning sci-fi about bloodlines, powers, and an organization that treats humans like software. Episodes and world bible built in public.</p>
+        <div class="foot"><span class="status">In development</span><span class="arrow-icon">→</span></div>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+      <p style="font-size:13px; max-width:36ch;">Independent studio. Games, worlds, and the web — built to last.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Studio</h4>
+      <ul>
+        <li><a href="/projects.html">Projects</a></li>
+        <li><a href="/work.html">Work with me</a></li>
+        <li><a href="/contact.html">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Games</h4>
+      <ul>
+        <li><a href="/elementalrift/">Elemental Rift</a></li>
+        <li><a href="/Games/AetherFall/">AetherFall</a></li>
+        <li><a href="/hypercell/">HyperCell</a></li>
+        <li><a href="/nexusdefense/">Nexus Defense</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Reach</h4>
+      <ul>
+        <li><a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></li>
+        <li><a href="/contact.html">Contact form</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© <span data-year></span> Zindigon</span>
+    <span>Independent · solo dev · built in public</span>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
 </body>
 </html>

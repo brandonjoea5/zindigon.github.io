@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Projects — Zindigon</title>
+  <meta name="description" content="Games and original worlds by Zindigon."/>
+  <link rel="stylesheet" href="assets/site.css"/>
+</head>
+<body>
+
+<div id="fx" aria-hidden="true">
+  <div class="fx-grid"></div>
+  <div class="fx-glow"></div>
+  <div class="fx-grain"></div>
+</div>
+
+<header class="site-header">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/projects.html" aria-current="page">Projects</a>
+      <a href="/work.html">Work</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+    <span class="nav-clock" id="navClock">—</span>
+    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+  </nav>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="/">Home</a><a href="/projects.html">Projects</a><a href="/work.html">Work</a><a href="/contact.html">Contact</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" data-screen-label="01 Projects Hero">
+    <span class="eyebrow"><span class="dot"></span> Projects · 5 live · 1 in development</span>
+    <h1 class="display">Original games<br/><em>and worlds.</em></h1>
+    <p class="lede">Each project is an excuse to push a system harder. Some are tight arcade loops, some are long-running roguelikes, one is an anime universe.</p>
+  </section>
+
+  <section data-screen-label="02 Featured Game">
+    <div class="section-head">
+      <span class="label">— 01 / Featured</span>
+      <h2>Elemental Rift</h2>
+      <span class="meta" id="lastUpdate">—</span>
+    </div>
+    <div class="featured">
+      <div class="featured-grid">
+        <div class="featured-body">
+          <span class="featured-eyebrow">Live playtest</span>
+          <h2>The flagship.</h2>
+          <p>Tower-defense roguelike. Stack elements, evolve classes, fight bosses that adapt to your build. Cloud saves, segmented leaderboards, and a constant patch cadence.</p>
+          <div class="featured-stats">
+            <div class="stat"><div class="k">Engine</div><div class="v">Web</div></div>
+            <div class="stat"><div class="k">Updates</div><div class="v">70+</div></div>
+            <div class="stat"><div class="k">Saves</div><div class="v">Cloud</div></div>
+          </div>
+          <div class="featured-cta row">
+            <a class="btn btn-primary" href="/elementalrift/">Play <span class="arrow">→</span></a>
+            <a class="btn btn-ghost" href="/elementalrift/version-history/">Version history</a>
+          </div>
+        </div>
+        <aside class="featured-side">
+          <div class="versions-head"><span class="t">Recent updates</span><span class="live">Live</span></div>
+          <ul class="versions" id="versions-list"></ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="03 Catalog">
+    <div class="section-head">
+      <span class="label">— Catalog</span>
+      <h2>All games</h2>
+      <span class="meta">04 titles</span>
+    </div>
+    <div class="projects">
+      <a class="project" href="/Games/AetherFall/">
+        <span class="num">02</span>
+        <span class="tag">Tower defense · Roguelike</span>
+        <h3>AetherFall</h3>
+        <p>Mobile-first roguelike with keepers, upgrades, and endless waves. The systems lab where everything else gets stress-tested.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/hypercell/">
+        <span class="num">03</span>
+        <span class="tag">Arcade · Runner</span>
+        <h3>HyperCell</h3>
+        <p>Fast-paced cube runner. Speed, precision, momentum. 90-second loops you can't stop replaying.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/nexusdefense/">
+        <span class="num">04</span>
+        <span class="tag">Strategy · Defense</span>
+        <h3>Nexus Defense</h3>
+        <p>Build defenses, survive pressure, evolve a build. A study in escalation.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/tornix/">
+        <span class="num">05</span>
+        <span class="tag">Action · Prototype</span>
+        <h3>Tornix</h3>
+        <p>Compact action prototype. Tight controls, escalating chaos, moment-to-moment feel.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section data-screen-label="04 Worlds">
+    <div class="section-head">
+      <span class="label">— Worlds</span>
+      <h2>Original IP</h2>
+      <span class="meta">Building in public</span>
+    </div>
+    <div class="projects">
+      <a class="project wide" href="/Anime/BloodlineZero/">
+        <span class="num">06</span>
+        <span class="tag">Anime · World building</span>
+        <h3>Bloodline Zero</h3>
+        <p>Adult-leaning sci-fi about bloodlines, powers, and an organization that treats humans like software. Canon episodes, world bible, and the power system are all being written in the open.</p>
+        <div class="foot"><span class="status">In development</span><span class="arrow-icon">→</span></div>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+      <p style="font-size:13px; max-width:36ch;">Independent studio. Games, worlds, and the web.</p>
+    </div>
+    <div class="footer-col"><h4>Studio</h4><ul>
+      <li><a href="/projects.html">Projects</a></li><li><a href="/work.html">Work with me</a></li><li><a href="/contact.html">Contact</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Games</h4><ul>
+      <li><a href="/elementalrift/">Elemental Rift</a></li><li><a href="/Games/AetherFall/">AetherFall</a></li>
+      <li><a href="/hypercell/">HyperCell</a></li><li><a href="/nexusdefense/">Nexus Defense</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Reach</h4><ul>
+      <li><a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></li><li><a href="/contact.html">Contact form</a></li>
+    </ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span>© <span data-year></span> Zindigon</span>
+    <span>Independent · solo dev · built in public</span>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>

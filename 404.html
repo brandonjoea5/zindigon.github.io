@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lost — Zindigon</title>
+  <link rel="stylesheet" href="assets/site.css"/>
+</head>
+<body>
+
+<div id="fx" aria-hidden="true">
+  <div class="fx-grid"></div><div class="fx-glow"></div><div class="fx-grain"></div>
+</div>
+
+<header class="site-header">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a><a href="/projects.html">Projects</a>
+      <a href="/work.html">Work</a><a href="/contact.html">Contact</a>
+    </div>
+    <span class="nav-clock" id="navClock">—</span>
+    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+  </nav>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="/">Home</a><a href="/projects.html">Projects</a><a href="/work.html">Work</a><a href="/contact.html">Contact</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding-top:80px;">
+    <span class="eyebrow"><span class="dot"></span> Error · 404</span>
+    <h1 class="display">This page<br/><em>doesn't exist.</em></h1>
+    <p class="lede">Either it was moved, retired, or never built. Either way — the studio is still here. Try one of these instead.</p>
+    <div class="row" style="margin-top:32px;">
+      <a class="btn btn-primary" href="/">Home <span class="arrow">→</span></a>
+      <a class="btn btn-ghost" href="/projects.html">Projects</a>
+      <a class="btn btn-ghost" href="/elementalrift/">Elemental Rift</a>
+    </div>
+    <div class="hero-meta">
+      <div class="item">Path<strong id="badPath">/?</strong></div>
+      <div class="item">Status<strong>404 — not found</strong></div>
+      <div class="item">Suggestion<strong>Try the home page</strong></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+    </div>
+    <div class="footer-col"><h4>Studio</h4><ul>
+      <li><a href="/projects.html">Projects</a></li><li><a href="/work.html">Work</a></li><li><a href="/contact.html">Contact</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Games</h4><ul>
+      <li><a href="/elementalrift/">Elemental Rift</a></li><li><a href="/Games/AetherFall/">AetherFall</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Reach</h4><ul>
+      <li><a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></li>
+    </ul></div>
+  </div>
+  <div class="footer-bottom"><span>© <span data-year></span> Zindigon</span><span>Lost? Try home.</span></div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+<script>
+  document.getElementById('badPath').textContent = location.pathname || '/?';
+</script>
+</body>
+</html>
