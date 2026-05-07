@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.21</title>
+<title>Elemental Rift v1.6.22</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -417,7 +417,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.6.15 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.6.22 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1151,18 +1151,17 @@ function continueGame() {
 function startGame() {
   // name comes from auth — already set in G.playerName
   if(!G.playerName){ const n=Math.floor(Math.random()*9000)+1000; G.playerName=`Guest#${n}`; }
-  G.playerName = name;
-  const loaded = loadGame(name);
+  const loaded = loadGame(G.playerName);
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
-  document.getElementById('player-name-display').textContent = name;
+  document.getElementById('player-name-display').textContent = G.playerName;
   // Show game div first so canvas can size
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
   initUI();
   requestAnimationFrame(() => { requestAnimationFrame(() => {
     resizeCanvas();
-    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${name}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
+    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${G.playerName}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
     if (!loaded) {
       showClassSelection();
     } else {
@@ -1178,12 +1177,7 @@ function resumeFromSave() {
   if(MAP.difficulty && MAP.totalWaves > 0) {
     spawnNextSegmentWave();
   } else {
-    // No map context — just spawn a solo enemy
-    G.enemy = rollEnemy(G.wave);
-    G.combatActive = true;
-    updateEnemyUI();
-    startEnemyAutoAttack();
-    drawArena();
+    showMapScreen(false);
   }
 }
 
@@ -2498,9 +2492,7 @@ function nextWave() {
   document.getElementById('boss-btn').classList.add('hidden');
   G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.1));
   updateHpBar();
-  G.wave++;
   updateResourceBar();
-  log(`<span class="log-sys">— Wave ${G.wave} begins —</span>`);
   spawnNextSegmentWave();
 }
 
