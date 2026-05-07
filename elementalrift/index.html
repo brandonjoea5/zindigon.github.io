@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.16</title>
+<title>Elemental Rift v1.6.18</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -448,19 +448,19 @@ let sbProfile = null; // players row
   <div class="difficulty-cards">
     <div class="diff-card easy" onclick="selectDifficulty('easy')">
       <div class="diff-title">Easy</div>
-      <div class="diff-waves">1–5 Waves</div>
+      <div class="diff-waves">3 Waves</div>
       <div class="diff-loot" style="color:#3acc7a;">Basic–Great loot</div>
       <div style="font-size:20px;margin-top:6px;">🌿</div>
     </div>
     <div class="diff-card medium" onclick="selectDifficulty('medium')">
       <div class="diff-title">Medium</div>
-      <div class="diff-waves">5–12 Waves</div>
+      <div class="diff-waves">7 Waves</div>
       <div class="diff-loot" style="color:#e8b84b;">Great–Exquisite loot</div>
       <div style="font-size:20px;margin-top:6px;">⚔️</div>
     </div>
     <div class="diff-card hard" onclick="selectDifficulty('hard')">
       <div class="diff-title">Hard</div>
-      <div class="diff-waves">10–20 Waves</div>
+      <div class="diff-waves">15 Waves</div>
       <div class="diff-loot" style="color:#ff4d1a;">Exquisite–Ancient loot</div>
       <div style="font-size:20px;margin-top:6px;">💀</div>
     </div>
@@ -1049,7 +1049,6 @@ function startBossWave() {
   // Wave boss — real HP, attacks player, drops loot on kill
   G.enemy = rollBoss(1 + Math.floor(G.wave/5), false);
   G.combatActive = true;
-  G.wave++;
   updateEnemyUI();
   updateResourceBar();
   startEnemyAutoAttack(); // wave boss attacks!
@@ -1065,6 +1064,7 @@ function onSegmentWaveComplete() {
     setTimeout(()=>{ openVendor(); }, 500);
   } else {
     document.getElementById('next-btn').classList.remove('hidden');
+    document.getElementById('spawn-btn').classList.remove('hidden');
     showPotionBtn();
     if(G.wave >= 3) {
       document.getElementById('boss-btn').classList.remove('hidden');
@@ -1081,6 +1081,7 @@ function saveGame() {
       playerName:G.playerName, hp:G.hp, maxHp:G.maxHp,
       gold:G.gold, kills:G.kills, wave:G.wave,
       xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
+      spPending, passivePending,
       startingClass:G.startingClass,
       baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
@@ -1100,6 +1101,7 @@ function loadGame(name) {
     G.hp = save.hp; G.maxHp = save.maxHp;
     G.gold = save.gold;
     G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
+    spPending = save.spPending||0; passivePending = save.passivePending||0;
     if(save.startingClass) G.startingClass = save.startingClass;
     G.kills = save.kills; G.wave = save.wave;
     G.baseStats = save.baseStats;
@@ -1242,6 +1244,7 @@ function spawnEnemy() {
   if(IS_MOBILE()) mobileTab('arena');
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
+  document.getElementById('spawn-btn').classList.add('hidden');
   hidePotionBtn();
   drawArena();
   startEnemyAutoAttack();
@@ -2368,10 +2371,7 @@ function onEnemyDeath() {
   drawArena();
   saveGame();
 
-  // Let player initiate next wave
-  document.getElementById('next-btn').classList.remove('hidden');
-  showPotionBtn();
-  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
+  onSegmentWaveComplete();
 }
 
 function onDeath() {
@@ -2451,6 +2451,21 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
       </div>
     </div>`;
   document.body.appendChild(overlay);
+}
+
+function emergencySpawn() {
+  // Safety net — if no enemy present, force spawn
+  if(!G.enemy || G.enemy.hp <= 0) {
+    document.getElementById('spawn-btn').classList.add('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+    hidePotionBtn();
+    if(!MAP.difficulty) {
+      // No difficulty selected — show map
+      showMapScreen(false);
+    } else {
+      spawnNextSegmentWave();
+    }
+  }
 }
 
 function nextWave() {
@@ -4635,9 +4650,12 @@ function spBoostStat(key) {
 }
 
 function spSpendPassive(el, idx) {
-  upgradeSkill(el, idx);
-  G.passivePoints = Math.max(0, G.passivePoints - 1);
-  passivePending = Math.max(0, passivePending - 1);
+  const before = G.passivePoints;
+  upgradeSkill(el, idx); // already decrements G.passivePoints
+  // Only consume pending if upgrade actually happened
+  if(G.passivePoints < before) {
+    passivePending = Math.max(0, passivePending - 1);
+  }
   closeSPPopup();
 }
 
@@ -4952,12 +4970,12 @@ function resetTutorial() {
 // ═══════════════════════════════════════════════
 let trinityShopStock = []; // 6 random artifacts shown in shop
 
-function openTrinityShop() {
+async function openTrinityShop() {
   if(!sbUser) {
     alert('Sign in to access the Trinity Force shop.');
     return;
   }
-  // Roll shop stock
+  await loadTrinity();
   trinityShopStock = [];
   const tiers = ['Basic','Basic','Great','Great','Exquisite','Exquisite'];
   const lv = trinityData.trinity_level||0;
