@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.5</title>
+<title>Elemental Rift v1.6.7</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -718,6 +718,7 @@ let sbProfile = null; // players row
       <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()" style="flex:1;"><span class="btn-icon">💀</span>Boss Attempt</button>
       <button class="action-btn hidden" id="potion-btn" onclick="buyPotion()" style="flex:1;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
+      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:#554422;color:#887755;" title="End run and collect Orbs"><span class="btn-icon">⚔️</span>Retire</button>
     </div>
   </div>
 
@@ -3969,6 +3970,57 @@ async function fetchSupabaseLeaderboard() {
 }
 
 // ── SIGN OUT ──
+function honorableDeath() {
+  // Calculate orbs earned from current progress
+  const orbsEarned = sbUser ? Math.max(1, Math.floor(G.wave * 1.5)) : 0;
+  const overlay = document.createElement('div');
+  overlay.id = 'honorable-death-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:28px;max-width:360px;width:100%;text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;">⚔️</div>
+      <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:#e8b84b;margin-bottom:6px;">Honorable Death</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5;">End your current run with honor. Your progress is lost but your legacy endures.</div>
+      <div style="background:#0d1018;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:20px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Run Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div style="font-size:12px;color:var(--muted);">Wave Reached</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${G.wave}</div>
+          <div style="font-size:12px;color:var(--muted);">Kills</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${G.kills}</div>
+          ${sbUser ? `
+          <div style="font-size:12px;color:var(--muted);">Orbs Earned</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855ff;">${orbsEarned} ✦</div>
+          ` : `
+          <div style="font-size:12px;color:var(--muted);grid-column:1/-1;color:#e83a3a;margin-top:4px;">Sign in to earn Orbs</div>
+          `}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('honorable-death-overlay').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:12px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;">Cancel</button>
+        <button onclick="executeHonorableDeath(${orbsEarned})" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px;border-radius:8px;border:1px solid #e8b84b;background:rgba(232,184,75,0.1);color:#e8b84b;cursor:pointer;">⚔️ Accept Death</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function executeHonorableDeath(orbsEarned) {
+  // Award orbs
+  if(sbUser && orbsEarned > 0) {
+    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
+    saveTrinity().catch(()=>{});
+  }
+  // Clear all save data
+  ['elementalRift_v3','er_tooltip_seen','er_ability_tutorial_done',
+   'er_passive_tutorial_done','er_lb_version','elementalRift_leaderboard',
+   'elementalRift_heal'].forEach(k => localStorage.removeItem(k));
+  if(sbUser) {
+    sb.from('player_saves').delete().eq('player_id', sbUser.id).then(()=>location.reload());
+  } else {
+    location.reload();
+  }
+}
+
 async function signOut() {
   await sb.auth.signOut();
   sbUser = null; sbProfile = null;
