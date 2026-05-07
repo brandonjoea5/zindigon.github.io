@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.7</title>
+<title>Elemental Rift v1.6.8</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2655,7 +2655,11 @@ function buildComparisonHTML(newItem) {
 }
 
 function showItemModal(item, context){
-  // Pause combat while viewing item
+  if(context === 'vendor_buy' || context === 'equip_choose') {
+    showVendorItemDecision(item);
+    return;
+  }
+  // Pause combat while inspecting gear
   if(G.combatActive && G.enemy) {
     stopEnemyAutoAttack();
     stopAllAutoSlots();
@@ -2664,26 +2668,127 @@ function showItemModal(item, context){
   const t = item.tier||item.rarity;
   document.getElementById('modal-rarity').innerHTML = `<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>`;
   document.getElementById('modal-slot').textContent = `Slot: ${item.slot}`;
-
-  // Show comparison for new items, plain stats for inspect
-  if (context === 'vendor_buy' || context === 'equip_choose') {
-    document.getElementById('modal-stats').innerHTML = buildComparisonHTML(item);
-  } else {
-    document.getElementById('modal-stats').innerHTML = Object.entries(item.stats).map(([k,v]) =>
-      `<div class="item-stat">${STAT_LABELS[k]||k}: <span>+${v}</span></div>`
-    ).join('');
-  }
-
+  document.getElementById('modal-stats').innerHTML = Object.entries(item.stats).map(([k,v]) =>
+    `<div class="item-stat">${STAT_LABELS[k]||k}: <span>+${v}</span></div>`
+  ).join('');
   document.getElementById('modal-sell-val').textContent = `Sell value: ${item.sellVal} gold`;
   const btns = document.getElementById('modal-btns'); btns.innerHTML = '';
-  if (context === 'vendor_buy' || context === 'equip_choose') {
-    const eq = document.createElement('button'); eq.className='btn-equip'; eq.textContent='Equip'; eq.onclick=()=>equipItem(item); btns.appendChild(eq);
-    const sl = document.createElement('button'); sl.className='btn-sell'; sl.textContent=`Sell (${item.sellVal}g)`; sl.onclick=()=>sellItem(item); btns.appendChild(sl);
-  } else {
-    const sl = document.createElement('button'); sl.className='btn-sell'; sl.textContent=`Sell (${item.sellVal}g)`; sl.onclick=()=>{sellItem(item,item.slot);closeItemModal();}; btns.appendChild(sl);
-    const cl = document.createElement('button'); cl.className='btn-close-m'; cl.textContent='Close'; cl.onclick=closeItemModal; btns.appendChild(cl);
-  }
+  const sl = document.createElement('button'); sl.className='btn-sell'; sl.textContent=`Sell (${item.sellVal}g)`; sl.onclick=()=>{sellItem(item,item.slot);closeItemModal();}; btns.appendChild(sl);
+  const cl = document.createElement('button'); cl.className='btn-close-m'; cl.textContent='Close'; cl.onclick=closeItemModal; btns.appendChild(cl);
   document.getElementById('item-modal').classList.remove('hidden');
+}
+
+function showVendorItemDecision(item) {
+  // Remove any existing decision modal
+  const existing = document.getElementById('vendor-decision-modal');
+  if(existing) existing.remove();
+
+  const t = item.tier||item.rarity;
+  const equipped = G.equipment[item.slot]||null;
+  const et = equipped ? (equipped.tier||equipped.rarity) : null;
+
+  // Build stat comparison
+  const allStats = new Set([...Object.keys(item.stats), ...(equipped ? Object.keys(equipped.stats) : [])]);
+  let newCol = '', eqCol = '';
+
+  allStats.forEach(k => {
+    const newVal = item.stats[k]||0;
+    const eqVal  = equipped ? (equipped.stats[k]||0) : 0;
+    const delta  = newVal - eqVal;
+    const deltaHtml = delta > 0
+      ? `<span style="color:#3acc7a;font-size:10px;margin-left:4px;">+${delta}</span>`
+      : delta < 0
+      ? `<span style="color:#e83a3a;font-size:10px;margin-left:4px;">${delta}</span>`
+      : '';
+    newCol += `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
+      <span style="color:var(--muted);">${STAT_LABELS[k]||k}</span>
+      <span style="color:${delta>0?'#3acc7a':delta<0?'#e83a3a':'var(--text)'};">+${newVal}${deltaHtml}</span>
+    </div>`;
+    eqCol += `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
+      <span style="color:var(--muted);">${STAT_LABELS[k]||k}</span>
+      <span style="color:var(--text);">${eqVal>0?'+'+eqVal:'—'}</span>
+    </div>`;
+  });
+
+  const modal = document.createElement('div');
+  modal.id = 'vendor-decision-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML = `
+    <div style="background:#151a28;border:1px solid ${t.color}44;border-radius:16px;padding:18px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;">
+      <div style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:${t.color};margin-bottom:2px;">${item.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">${t.name} · ${item.slot}</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:#0d1018;border:1px solid ${t.color}33;border-radius:8px;padding:10px;">
+          <div style="font-family:'Cinzel',serif;font-size:9px;color:${t.color};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">New Item</div>
+          ${newCol || '<div style="color:var(--muted);font-size:11px;">No stats</div>'}
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;">Sell value: ${item.sellVal}g</div>
+        </div>
+        <div style="background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:10px;">
+          <div style="font-family:'Cinzel',serif;font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Equipped</div>
+          ${equipped ? eqCol : '<div style="color:var(--muted);font-size:11px;font-style:italic;">Nothing equipped</div>'}
+          ${equipped ? `<div style="font-size:10px;color:var(--muted);margin-top:6px;">Sell value: ${equipped.sellVal}g</div>` : ''}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button onclick="vendorEquipItem()" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:13px;border-radius:10px;border:1px solid #3acc7a;background:rgba(58,204,122,0.1);color:#3acc7a;cursor:pointer;">
+          ✓ Equip${equipped?' (sell old for '+equipped.sellVal+'g)':''}
+        </button>
+        <button onclick="vendorSellNew()" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">
+          Sell (+${item.sellVal}g)
+        </button>
+      </div>
+    </div>`;
+
+  // Store item reference
+  modal._item = item;
+  document.body.appendChild(modal);
+}
+
+function vendorEquipItem() {
+  const modal = document.getElementById('vendor-decision-modal');
+  if(!modal) return;
+  const item = modal._item;
+  // Auto-sell equipped piece first
+  const equipped = G.equipment[item.slot];
+  if(equipped) {
+    G.gold += equipped.sellVal;
+  }
+  // Equip new item
+  G.equipment[item.slot] = item;
+  updateEquipUI();
+  updateStatsPanel();
+  updateHpBar();
+  updateResourceBar();
+  refreshAutoAttackSpeeds && refreshAutoAttackSpeeds();
+  saveGame();
+  log(`<span style="color:#3acc7a">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equipped.sellVal+'g':''}</span>`);
+  modal.remove();
+  // Back to vendor — re-render and refresh gold
+  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  renderVendor();
+  // Show next queued item if any
+  if(itemModalQueue.length > 0) {
+    const next = itemModalQueue.shift();
+    setTimeout(()=>showVendorItemDecision(next), 150);
+  }
+}
+
+function vendorSellNew() {
+  const modal = document.getElementById('vendor-decision-modal');
+  if(!modal) return;
+  const item = modal._item;
+  G.gold += item.sellVal;
+  updateResourceBar();
+  log(`<span style="color:#e8b84b">💰 Sold ${item.name} for ${item.sellVal}g</span>`);
+  modal.remove();
+  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  renderVendor();
+  if(itemModalQueue.length > 0) {
+    const next = itemModalQueue.shift();
+    setTimeout(()=>showVendorItemDecision(next), 150);
+  }
 }
 
 function equipItem(item){
@@ -2700,30 +2805,26 @@ function equipItem(item){
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){
   document.getElementById('item-modal').classList.add('hidden');
-  // Remove queue hint
   const queueHint = document.getElementById('item-queue-hint');
   if(queueHint) queueHint.remove();
+  const vdm = document.getElementById('vendor-decision-modal');
+  if(vdm) vdm.remove();
 
-  // Show next queued item if any
   if(itemModalQueue.length > 0) {
     const nextItem = itemModalQueue.shift();
     setTimeout(() => showItemModal(nextItem, 'vendor_buy'), 150);
     return;
   }
-
-  // Re-render vendor if it's open (so gold updates)
   const vendorModal = document.getElementById('vendor-modal');
   if(vendorModal && !vendorModal.classList.contains('hidden')) {
     document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
     renderVendor();
     return;
   }
-  // If SP popup is pending, show it now
   if(spPending > 0 && !spPopupOpen) {
     setTimeout(()=>showSPPopup(), 200);
     return;
   }
-  // Resume combat if enemy is still alive
   if(G.combatActive && G.enemy && G.enemy.hp > 0 && !G.enemyAttackInterval) {
     startEnemyAutoAttack();
   }
