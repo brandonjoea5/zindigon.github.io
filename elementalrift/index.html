@@ -1211,26 +1211,41 @@ function getPlayerPower() {
 function rollEnemy(wave) {
   const isBrute = Math.random() < 0.35;
   const name = ENEMY_NAMES[Math.floor(Math.random()*ENEMY_NAMES.length)];
-  // Scale by BOTH wave AND player power
+
+  // HP scales with both wave and player power — makes enemies feel meaty
   const power = getPlayerPower();
   const waveScale = 1 + (wave-1)*0.11;
-  const powerScale = 1 + Math.min(power, 150) * 0.012; // cap power influence
-  const scale = waveScale * powerScale;
+  const powerScale = 1 + Math.min(power, 150) * 0.012;
+  const hpScale = waveScale * powerScale;
+
+  // Attack scales ONLY with wave, much more slowly — prevents one-shots
+  // Capped so even wave 15 hard enemies are dangerous but not instant death
+  const atkScale = 1 + (wave-1)*0.07;
 
   if (isBrute) {
-    return {name,type:'brute',elements:[],
-      hp:Math.floor((55+wave*18)*scale), maxHp:Math.floor((55+wave*18)*scale),
-      attack:Math.floor((3+wave*0.55)*scale), armor:Math.floor(8+wave*0.8),
-      magicResist:Math.floor(10+wave*1.2), gold:Math.floor(8+wave*3), xp:1+Math.floor(wave/2)};
+    const baseAtk = Math.floor((4 + wave*0.4) * atkScale);
+    return {name, type:'brute', elements:[],
+      hp:         Math.floor((55+wave*18)*hpScale),
+      maxHp:      Math.floor((55+wave*18)*hpScale),
+      attack:     Math.min(baseAtk, 35 + wave*2), // hard cap
+      armor:      Math.floor(8+wave*0.8),
+      magicResist:Math.floor(10+wave*1.2),
+      gold:       Math.floor(8+wave*3),
+      xp:         1+Math.floor(wave/2)};
   } else {
+    const baseAtk = Math.floor((3 + wave*0.3) * atkScale);
     const pool=[...ELEMENTS];
     const numEl = Math.random()<0.3?2:1;
     const elements=[];
     for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
-    return {name,type:'elemental',elements,
-      hp:Math.floor((40+wave*13)*scale), maxHp:Math.floor((40+wave*13)*scale),
-      attack:Math.floor((2+wave*0.45)*scale), armor:Math.floor(2+wave*0.5),
-      magicResist:Math.floor(2+wave*0.8), gold:Math.floor(6+wave*2), xp:1+Math.floor(wave/3)};
+    return {name, type:'elemental', elements,
+      hp:         Math.floor((40+wave*13)*hpScale),
+      maxHp:      Math.floor((40+wave*13)*hpScale),
+      attack:     Math.min(baseAtk, 25 + wave*1.5), // hard cap
+      armor:      Math.floor(2+wave*0.5),
+      magicResist:Math.floor(2+wave*0.8),
+      gold:       Math.floor(6+wave*2),
+      xp:         1+Math.floor(wave/3)};
   }
 }
 
@@ -2317,7 +2332,7 @@ function attack(element) {
 function enemyAttack() {
   if (!G.enemy||!G.combatActive) return;
   const st=getStats();
-  const rawDmg = G.enemy.attack * (1 - Math.min(0.75, st.armor * 0.006));
+  const rawDmg = G.enemy.attack * (1 - Math.min(0.70, st.armor * 0.008));
   const dmg = Math.max(1, Math.floor(rawDmg + (Math.random()*3-1.5)));
   G.hp-=dmg;
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
@@ -2394,13 +2409,13 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
-  // Award orbs based on wave reached — death screen handles the reload
-  if(sbUser) {
-    const orbsEarned = Math.max(1, Math.floor(G.wave * 1.5));
+  // Award orbs based on wave reached
+  const orbsEarned = sbUser ? Math.max(1, Math.floor(G.wave * 1.5)) : 0;
+  if(sbUser && orbsEarned > 0) {
     trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
-    // Fire but don't block — death screen stays up while this saves
     saveTrinity().catch(e => console.warn('Orb save failed:', e));
   }
+  const orbTotal = trinityData.orbs||0;
 
   // Find most used element
   const uses = G.runStats.elementUses;
@@ -2442,6 +2457,21 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
           <div style="font-family:'Cinzel',serif;font-size:22px;color:#e8b84b;">${numberWithCommas(G.runStats.totalGold)}</div>
         </div>
       </div>
+
+      ${sbUser ? `
+      <div style="background:#0d1018;border:1px solid #8855ff44;border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:10px;color:#8855ff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">⚡ Orbs Earned This Run</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#8855ff;">+${orbsEarned} ✦</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Total Orbs</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#aa77ff;">${orbTotal} ✦</div>
+        </div>
+      </div>` : `
+      <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;text-align:center;font-size:12px;color:#5a6080;">
+        Sign in to earn Orbs for the Trinity Force shop
+      </div>`}
 
       <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;">
         <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Element Usage</div>
@@ -4038,6 +4068,8 @@ function onAuthReady() {
     document.getElementById('player-name-display').textContent = sbProfile.username;
     const idEl = document.getElementById('name-screen-identity');
     if(idEl) idEl.textContent = `Signed in as ${sbProfile.username}`;
+    // Load trinity data (orbs, artifacts) as soon as we know who the player is
+    loadTrinity().catch(()=>{});
   } else {
     // Guest — name already set in authGuest()
     const idEl = document.getElementById('name-screen-identity');
@@ -4113,8 +4145,12 @@ async function fetchSupabaseLeaderboard() {
 
 // ── SIGN OUT ──
 function honorableDeath() {
-  // Calculate orbs earned from current progress
   const orbsEarned = sbUser ? Math.max(1, Math.floor(G.wave * 1.5)) : 0;
+  // Add orbs now so the total shown is accurate
+  if(sbUser && orbsEarned > 0) {
+    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
+  }
+  const orbTotal = trinityData.orbs||0;
   const overlay = document.createElement('div');
   overlay.id = 'honorable-death-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -4132,7 +4168,9 @@ function honorableDeath() {
           <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${G.kills}</div>
           ${sbUser ? `
           <div style="font-size:12px;color:var(--muted);">Orbs Earned</div>
-          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855ff;">${orbsEarned} ✦</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855ff;">+${orbsEarned} ✦</div>
+          <div style="font-size:12px;color:var(--muted);">Total Orbs</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#aa77ff;">${orbTotal} ✦</div>
           ` : `
           <div style="font-size:12px;color:var(--muted);grid-column:1/-1;color:#e83a3a;margin-top:4px;">Sign in to earn Orbs</div>
           `}
@@ -4147,19 +4185,17 @@ function honorableDeath() {
 }
 
 function executeHonorableDeath(orbsEarned) {
-  // Award orbs
-  // Clear local save data first
+  // Clear local save data
   ['elementalRift_v3','er_tooltip_seen','er_ability_tutorial_done',
    'er_passive_tutorial_done','er_lb_version','elementalRift_leaderboard',
    'elementalRift_heal'].forEach(k => localStorage.removeItem(k));
 
   if(sbUser) {
-    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
+    // trinityData.orbs already updated in honorableDeath() — just save and reload
     const ops = [
-      sb.from('player_saves').delete().eq('player_id', sbUser.id)
+      sb.from('player_saves').delete().eq('player_id', sbUser.id),
+      saveTrinity()
     ];
-    if(orbsEarned > 0) ops.push(saveTrinity());
-    // Wait up to 5 seconds then reload regardless
     const timeout = new Promise(r => setTimeout(r, 5000));
     Promise.race([Promise.all(ops), timeout]).finally(() => location.reload());
   } else {
@@ -4197,25 +4233,16 @@ async function loadTrinity() {
 
 async function saveTrinity() {
   if(!sbUser) return;
-  // Always reload current orbs from DB first to avoid overwriting
-  const { data: existing } = await sb.from('player_trinity')
-    .select('orbs, trinity_level').eq('player_id', sbUser.id).single();
-
   const payload = {
     player_id: sbUser.id,
-    orbs: trinityData.orbs||0, // trinityData already has the correct total (loaded + earned)
+    orbs: trinityData.orbs||0,
     trinity_level: trinityData.trinity_level||0,
     slot1: trinityData.slot1||null,
     slot2: trinityData.slot2||null,
     slot3: trinityData.slot3||null,
     updated_at: new Date().toISOString()
   };
-
-  if(existing) {
-    await sb.from('player_trinity').update(payload).eq('player_id', sbUser.id);
-  } else {
-    await sb.from('player_trinity').insert(payload);
-  }
+  await sb.from('player_trinity').upsert(payload, { onConflict: 'player_id' });
 }
 
 // ═══════════════════════════════════════════════
@@ -4994,8 +5021,8 @@ async function openTrinityShop() {
     alert('Sign in to access the Trinity Force shop.');
     return;
   }
-  // Only reload from DB if trinityData hasn't been loaded this session
-  // (loadTrinity already runs in onAuthReady — reloading here would overwrite pending orbs)
+  // Always reload from DB to get current orb count
+  await loadTrinity().catch(()=>{});
   trinityShopStock = [];
   const tiers = ['Basic','Basic','Great','Great','Exquisite','Exquisite'];
   const lv = trinityData.trinity_level||0;
