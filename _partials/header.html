@@ -1,0 +1,31 @@
+<!-- Zindigon header partial — copy into each page; set aria-current on active link -->
+<div id="fx" aria-hidden="true">
+  <div class="fx-grid"></div>
+  <div class="fx-glow"></div>
+  <div class="fx-grain"></div>
+</div>
+
+<header class="site-header">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg>
+      </span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/projects.html" data-nav="projects">Projects</a>
+      <a href="/work.html" data-nav="work">Work</a>
+      <a href="/contact.html" data-nav="contact">Contact</a>
+    </div>
+    <span class="nav-clock" id="navClock">—</span>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">Menu</button>
+  </nav>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="/">Home</a>
+    <a href="/projects.html">Projects</a>
+    <a href="/work.html">Work</a>
+    <a href="/contact.html">Contact</a>
+  </div>
+</header>
