@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.8</title>
+<title>Elemental Rift v1.6.10</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -557,9 +557,9 @@ let sbProfile = null; // players row
       <div class="res-item"><span class="res-label">Kills</span><span class="res-val" id="kills-val">0</span></div>
 
     </div>
-    <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:160px;min-width:80px;">
-      <div style="display:flex;justify-content:space-between;">
-        <span style="font-size:9px;color:#8888ff;font-family:'Cinzel',serif;letter-spacing:0.06em;">XP</span>
+    <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:180px;min-width:80px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Cinzel',serif;font-size:9px;color:#aa77ff;letter-spacing:0.05em;">Lv <span id="player-level-display">1</span></span>
         <span style="font-size:9px;color:#8888ff;font-family:'Cinzel',serif;" id="xp-bar-text">0/80</span>
       </div>
       <div style="height:6px;background:#1a1f2e;border-radius:3px;overflow:hidden;">
@@ -898,7 +898,7 @@ let G = {
   playerName: '',
   hp:200, maxHp:200, energy:100, maxEnergy:100,
   gold:0, kills:0, wave:1,
-  xp:0, xpToNext:80, skillPoints:0, passivePoints:0,
+  xp:0, xpToNext:80, playerLevel:1, skillPoints:0, passivePoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
@@ -1079,7 +1079,7 @@ function saveGame() {
     const save = {
       playerName:G.playerName, hp:G.hp, maxHp:G.maxHp,
       gold:G.gold, kills:G.kills, wave:G.wave,
-      xp:G.xp, xpToNext:G.xpToNext, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
+      xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
       startingClass:G.startingClass,
       baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
@@ -1098,7 +1098,7 @@ function loadGame(name) {
     G.playerName = save.playerName;
     G.hp = save.hp; G.maxHp = save.maxHp;
     G.gold = save.gold;
-    G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
+    G.xp = save.xp||0; G.xpToNext = save.xpToNext||100; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
     if(save.startingClass) G.startingClass = save.startingClass;
     G.kills = save.kills; G.wave = save.wave;
     G.baseStats = save.baseStats;
@@ -2338,8 +2338,7 @@ function onEnemyDeath() {
     updateClassXPPanel();
     updateResourceBar();
     log(`<span style="color:#8888ff">🔮 Passive Skill Point earned! (${G.passivePoints} available)</span>`);
-    // Show tutorial on first passive point
-    if(G.passivePoints === 1) setTimeout(showPassivePointTutorial, 600);
+
   }
   log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${xpGain} XP</span>`);
 
@@ -4376,8 +4375,9 @@ function awardXP(amount) {
     G.xpToNext = Math.floor(G.xpToNext * 1.18);
     G.skillPoints++;
     G.passivePoints++;
-    spPending++;
-    passivePending++;
+    G.playerLevel = (G.playerLevel||1) + 1;
+    spPending++;       // one skill investment per level
+    passivePending++;  // one passive investment per level
   }
   if(spPending > 0 && !spPopupOpen) {
     stopEnemyAutoAttack();
@@ -4394,8 +4394,12 @@ function awardXP(amount) {
 }
 
 function triggerLevelUpPopup() {
-  if(spPending <= 0 && passivePending <= 0) return;
-  spPhase = 'skill';
+  if(spPending <= 0 && passivePending <= 0) {
+    spPopupOpen = false;
+    return;
+  }
+  if(spPopupOpen) return; // already open — don't stack
+  spPhase = spPending > 0 ? 'skill' : 'passive';
   spPopupOpen = true;
   spStep = 1;
   spChosenClass = null;
@@ -4407,8 +4411,10 @@ function updateXPBar() {
   const pct = Math.min(100, (G.xp / G.xpToNext) * 100);
   const bar = document.getElementById('xp-bar-fill');
   const txt = document.getElementById('xp-bar-text');
+  const lvl = document.getElementById('player-level-display');
   if (bar) bar.style.width = pct + '%';
-  if (txt) txt.textContent = `${G.xp}/${G.xpToNext} XP`;
+  if (txt) txt.textContent = `${G.xp}/${G.xpToNext}`;
+  if (lvl) lvl.textContent = G.playerLevel||1;
 }
 
 // sp popup state
@@ -4588,17 +4594,16 @@ function spBoostStat(key) {
   }
   if (key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
   log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
-  G.skillPoints--;
-  spPending--;
+  G.skillPoints = Math.max(0, G.skillPoints - 1);
+  spPending = Math.max(0, spPending - 1);
   updateStatsPanel();
   updateClassXPPanel();
   saveGame();
-  // Now show passive point popup if pending
+  // Move to passive phase for this level-up
   if(passivePending > 0) {
     spPhase = 'passive';
     spStep = 1;
     renderSPPopup();
-    // popup already open
   } else {
     closeSPPopup();
   }
@@ -4606,8 +4611,8 @@ function spBoostStat(key) {
 
 function spSpendPassive(el, idx) {
   upgradeSkill(el, idx);
-  G.passivePoints--;
-  passivePending--;
+  G.passivePoints = Math.max(0, G.passivePoints - 1);
+  passivePending = Math.max(0, passivePending - 1);
   closeSPPopup();
 }
 
@@ -4907,72 +4912,6 @@ function resetTutorial() {
 }
 
 
-// ═══════════════════════════════════════════════
-// PASSIVE POINT TUTORIAL
-// ═══════════════════════════════════════════════
-const PASSIVE_TUT_KEY = 'er_passive_tutorial_done';
-
-function showPassivePointTutorial() {
-  if(localStorage.getItem(PASSIVE_TUT_KEY)) return;
-
-  // Find the right target — upgrades tab on mobile, right panel on desktop
-  const isMob = IS_MOBILE();
-  const targetId = isMob ? 'mtab-upgrades' : 'panel-skills';
-
-  const target = document.getElementById(targetId);
-  if(!target) return;
-
-  const rect = target.getBoundingClientRect();
-  if(rect.width === 0) return;
-
-  // Create overlay
-  const overlay = document.createElement('div');
-  overlay.id = 'passive-tut-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:400;pointer-events:all;';
-  overlay.innerHTML = `
-    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.78);" onclick="dismissPassiveTutorial()"></div>
-    <div id="passive-tut-spotlight" style="
-      position:absolute;
-      left:${rect.left - 6}px;top:${rect.top - 6}px;
-      width:${rect.width + 12}px;height:${rect.height + 12}px;
-      border-radius:10px;
-      box-shadow:0 0 0 9999px rgba(0,0,0,0.78);
-      border:2px solid #8888ff;
-      pointer-events:none;
-    "></div>
-    <div style="
-      position:absolute;
-      left:${Math.max(8, Math.min(window.innerWidth - 260, rect.left + rect.width/2 - 120))}px;
-      top:${rect.bottom + 50}px;
-      width:240px;
-      background:#151a28;border:1px solid #8888ff;border-radius:14px;padding:16px;
-    ">
-      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:#8888ff;margin-bottom:8px;">🔮 Passive Points</div>
-      <p style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:10px;">
-        You earned a <strong style="color:#8888ff">Passive Skill Point</strong>! These are different from level-up points.<br><br>
-        Spend them here to permanently boost stats like Attack, Crit, CDR and more. They carry over between waves.
-      </p>
-      <div style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:10px;">👆 Tap ${isMob ? 'Upgrades' : 'the Skills panel'} to spend your points</div>
-      <button onclick="dismissPassiveTutorial()" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:8px;border:1px solid #8888ff;color:#8888ff;background:rgba(136,136,255,0.1);cursor:pointer;">Got it</button>
-    </div>
-    <!-- Arrow pointing up at target -->
-    <svg style="position:absolute;left:${rect.left + rect.width/2 - 15}px;top:${rect.bottom + 10}px;pointer-events:none;" width="30" height="40" viewBox="0 0 30 40">
-      <path d="M15,35 Q15,10 15,5" stroke="#8888ff" stroke-width="3" fill="none" marker-end="url(#ph)"/>
-      <defs><marker id="ph" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#8888ff"/>
-      </marker></defs>
-    </svg>
-  `;
-  document.body.appendChild(overlay);
-}
-
-function dismissPassiveTutorial() {
-  const overlay = document.getElementById('passive-tut-overlay');
-  if(overlay) overlay.remove();
-  localStorage.setItem(PASSIVE_TUT_KEY, '1');
-  // On mobile, auto-switch to upgrades tab
-  if(IS_MOBILE()) mobileTab('upgrades');
-}
 
 
 // ═══════════════════════════════════════════════
