@@ -464,6 +464,12 @@ let sbProfile = null; // players row
       <div class="diff-loot" style="color:#ff4d1a;">Exquisite–Ancient loot</div>
       <div style="font-size:20px;margin-top:6px;">💀</div>
     </div>
+    <div class="diff-card" style="border-color:#8855ff;flex:1;min-width:130px;max-width:160px;" onclick="selectDifficulty('infinite')">
+      <div class="diff-title" style="color:#8855ff;">Infinite</div>
+      <div class="diff-waves" style="color:#aa77ff;">∞ Waves</div>
+      <div class="diff-loot" style="color:#aa77ff;">All tiers · Boss every wave</div>
+      <div style="font-size:20px;margin-top:6px;">⚡</div>
+    </div>
   </div>
   <div style="font-size:12px;color:var(--muted);text-align:center;max-width:320px;">Final wave of each path has a chance to spawn a Boss with bonus rewards</div>
   <div id="map-boss-section" class="hidden" style="margin-top:4px;text-align:center;">
@@ -801,7 +807,9 @@ let sbProfile = null; // players row
     <div class="modal-subtitle">Buy to reveal stats</div>
     <div style="text-align:center;font-family:'Cinzel',serif;font-size:14px;color:var(--gold);margin:-8px 0 12px;letter-spacing:0.05em;" id="vendor-gold-display">💰 0 gold</div>
     <div id="vendor-items"></div>
-    <div id="vendor-resets" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);"></div>
+    <div id="vendor-resets" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+      <button onclick="refreshVendorStock()" id="vendor-refresh-btn" style="width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;">🔄 Refresh Stock — <span id="vendor-refresh-cost">30g</span></button>
+    </div>
     <div class="modal-btns">
       <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;" onclick="closeVendor()">Leave Shop</button>
     </div>
@@ -1005,9 +1013,10 @@ function initGState() {
 // MAP SYSTEM
 // ═══════════════════════════════════════════════
 const DIFF_CONFIG = {
-  easy:   { min:3,  max:3,  bossChance:0.3,  lootCap:'Great',     waveBonus:1.0 },
-  medium: { min:7,  max:7,  bossChance:0.55, lootCap:'Exquisite', waveBonus:1.4 },
-  hard:   { min:15, max:15, bossChance:0.8,  lootCap:'Ancient',   waveBonus:2.0 },
+  easy:     { min:3,  max:3,  bossChance:0.3,  lootCap:'Great',     waveBonus:1.0 },
+  medium:   { min:7,  max:7,  bossChance:0.55, lootCap:'Exquisite', waveBonus:1.4 },
+  hard:     { min:15, max:15, bossChance:0.8,  lootCap:'Ancient',   waveBonus:2.0 },
+  infinite: { min:999, max:999, bossChance:1.0, lootCap:'Cosmic',   waveBonus:3.0 },
 };
 
 let MAP = {
@@ -1038,10 +1047,11 @@ function showMapScreen(isFirst=false) {
 function selectDifficulty(diff) {
   const cfg = DIFF_CONFIG[diff];
   MAP.difficulty = diff;
-  MAP.totalWaves = cfg.min; // fixed wave count
+  MAP.totalWaves = diff === 'infinite' ? 999 : cfg.min;
   MAP.currentSegWave = 0;
   MAP.isBossWave = false;
   MAP.segmentComplete = false;
+  MAP.pendingBoss = false;
   document.getElementById('map-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
   setTimeout(() => {
@@ -1049,7 +1059,8 @@ function selectDifficulty(diff) {
     initMobileLayout();
     renderWaveTimeline();
     initUI();
-    log(`<span class="log-sys">⚔️ ${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.</span>`);
+    const label = diff === 'infinite' ? '⚡ INFINITE mode — waves never end. Vendor every 5 waves.' : `${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.`;
+    log(`<span class="log-sys">${label}</span>`);
     spawnNextSegmentWave();
   }, 100);
 }
@@ -1057,10 +1068,30 @@ function selectDifficulty(diff) {
 function renderWaveTimeline() {
   const tl = document.getElementById('wave-timeline');
   if(!tl) return;
+  const diff = MAP.difficulty||'easy';
+  const diffColor = {easy:'#3acc7a',medium:'#e8b84b',hard:'#ff4d1a',infinite:'#8855ff'}[diff]||'#8855ff';
+
+  if(diff === 'infinite') {
+    // Show a rolling window of 8 waves around current position
+    const cur = MAP.currentSegWave;
+    const start = Math.max(1, cur - 3);
+    const end = start + 7;
+    let html = `<span class="wt-diff-label" style="color:${diffColor}">∞ WAVE ${cur}</span>`;
+    for(let i=start;i<=end;i++){
+      const isBoss = i % 5 === 0;
+      const isDone = i < cur;
+      const isCurrent = i === cur;
+      const nodeClass = `wt-node${isBoss?' boss-node':''}${isDone?' done':''}${isCurrent?' current':''}`;
+      const label = isBoss ? '💀' : i;
+      html += `<div class="${nodeClass}">${label}</div>`;
+      if(i<end) html += `<div class="wt-connector${isDone?' done':''}"></div>`;
+    }
+    tl.innerHTML = html;
+    return;
+  }
+
   const total = MAP.totalWaves;
   const cur = MAP.currentSegWave;
-  const diff = MAP.difficulty||'easy';
-  const diffColor = {easy:'#3acc7a',medium:'#e8b84b',hard:'#ff4d1a'}[diff];
   let html = `<span class="wt-diff-label" style="color:${diffColor}">${diff.toUpperCase()}</span>`;
   for(let i=1;i<=total;i++){
     const isBoss = i===total;
@@ -1076,12 +1107,14 @@ function renderWaveTimeline() {
 
 function spawnNextSegmentWave() {
   MAP.currentSegWave++;
-  G.wave = MAP.currentSegWave; // single source of truth
-  MAP.isBossWave = MAP.currentSegWave === MAP.totalWaves;
+  G.wave = MAP.currentSegWave;
+  MAP.isBossWave = MAP.difficulty === 'infinite'
+    ? (MAP.currentSegWave % 5 === 0) // every 5th wave in infinite
+    : MAP.currentSegWave === MAP.totalWaves;
   renderWaveTimeline();
 
-  if(MAP.isBossWave && Math.random() < DIFF_CONFIG[MAP.difficulty].bossChance) {
-    // Final wave has a boss available — spawn normal enemy first, then offer boss after
+  const bossChance = DIFF_CONFIG[MAP.difficulty].bossChance;
+  if(MAP.isBossWave && Math.random() < bossChance) {
     MAP.pendingBoss = true;
     spawnEnemy();
   } else {
@@ -1143,22 +1176,27 @@ function skipWaveBoss() {
 }
 
 function onSegmentWaveComplete() {
-  if(MAP.currentSegWave >= MAP.totalWaves) {
-    MAP.segmentComplete = true;
+  const isInfinite = MAP.difficulty === 'infinite';
+  const pathDone = !isInfinite && MAP.currentSegWave >= MAP.totalWaves;
+  const infiniteVendor = isInfinite && MAP.currentSegWave % 5 === 0;
+
+  if(pathDone || infiniteVendor) {
+    MAP.segmentComplete = !isInfinite;
     if(MAP.pendingBoss) {
       MAP.pendingBoss = false;
       showWaveBossPrompt();
     } else {
-      log(`<span class="log-sys">✅ ${MAP.difficulty} path complete! Vendor incoming...</span>`);
+      const msg = isInfinite
+        ? `✅ Wave ${MAP.currentSegWave} complete! Merchant incoming...`
+        : `✅ ${MAP.difficulty} path complete! Vendor incoming...`;
+      log(`<span class="log-sys">${msg}</span>`);
       setTimeout(()=>{ openVendor(); }, 500);
     }
   } else {
-    log(`<span class="log-sys">Wave ${MAP.currentSegWave}/${MAP.totalWaves} complete.</span>`);
+    log(`<span class="log-sys">Wave ${MAP.currentSegWave}${isInfinite ? '' : '/'+MAP.totalWaves} complete.</span>`);
     document.getElementById('next-btn').classList.remove('hidden');
     showPotionBtn();
-    if(G.wave >= 3) {
-      document.getElementById('boss-btn').classList.remove('hidden');
-    }
+    if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
   }
 }
 
@@ -1310,20 +1348,20 @@ function rollEnemy(wave) {
 
   // Attack scales ONLY with wave, much more slowly — prevents one-shots
   // Capped so even wave 15 hard enemies are dangerous but not instant death
-  const atkScale = 1 + (wave-1)*0.07;
+  const atkScale = 1 + (wave-1)*0.09;
 
   if (isBrute) {
-    const baseAtk = Math.floor((4 + wave*0.4) * atkScale);
+    const baseAtk = Math.floor((4 + wave*0.5) * atkScale);
     return {name, type:'brute', elements:[],
       hp:         Math.floor((55+wave*18)*hpScale),
       maxHp:      Math.floor((55+wave*18)*hpScale),
-      attack:     Math.min(baseAtk, 35 + wave*2), // hard cap
+      attack:     Math.min(baseAtk, 22 + wave*1.5), // hard cap
       armor:      Math.floor(8+wave*0.8),
       magicResist:Math.floor(10+wave*1.2),
       gold:       Math.floor(8+wave*3),
       xp:         1+Math.floor(wave/2)};
   } else {
-    const baseAtk = Math.floor((3 + wave*0.3) * atkScale);
+    const baseAtk = Math.floor((3 + wave*0.35) * atkScale);
     const pool=[...ELEMENTS];
     const numEl = Math.random()<0.3?2:1;
     const elements=[];
@@ -1331,7 +1369,7 @@ function rollEnemy(wave) {
     return {name, type:'elemental', elements,
       hp:         Math.floor((40+wave*13)*hpScale),
       maxHp:      Math.floor((40+wave*13)*hpScale),
-      attack:     Math.min(baseAtk, 25 + wave*1.5), // hard cap
+      attack:     Math.min(baseAtk, 16 + wave*1.2), // hard cap
       armor:      Math.floor(2+wave*0.5),
       magicResist:Math.floor(2+wave*0.8),
       gold:       Math.floor(6+wave*2),
@@ -1441,7 +1479,7 @@ function rollBoss(level, infinite=false) {
     };
   }
   // Wave boss — real HP, attacks player, hard cap on attack
-  const baseAtk = Math.min(Math.floor((8+level*3)*atkScale), 40 + level*5);
+  const baseAtk = Math.min(Math.floor((8+level*3)*atkScale), 28 + level*4);
   return {
     name:`${name}`, type:'boss', elements, bossLevel:level,
     hp:         Math.floor((600+level*400)*hpScale),
@@ -1508,7 +1546,10 @@ function onBossPhaseKill() {
     G.kills++;
     G.gold += Math.floor(50 + G.wave*15);
     G.passivePoints += 2 + Math.floor(G.wave/3);
-    log(`<span class="log-gold">💀 Boss slain! 💰 +${Math.floor(50+G.wave*15)}g  ✨ +${3+Math.floor(G.wave/2)} SP</span>`);
+    // Boss XP scales with wave HP — significantly more than a regular enemy
+    const bossXP = Math.floor((30 + G.wave * 12) * 1.5);
+    awardXP(bossXP);
+    log(`<span class="log-gold">💀 Boss slain! 💰 +${Math.floor(50+G.wave*15)}g  ✨ +${bossXP} XP</span>`);
     // Big loot drop
     const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
     const dropItem = rollItem(dropSlot, G.wave, false);
@@ -2691,11 +2732,32 @@ const COSMIC_NAMES = {
 };
 
 function rollTier(vendorCap=false) {
-  const pool = vendorCap ? TIERS.filter(t=>t.name!=='Ancient'&&t.name!=='Cosmic') : TIERS;
-  const total = pool.reduce((a,t)=>a+t.weight,0);
+  // Shift weights toward better tiers based on player level and wave
+  const lv = G.playerLevel || 1;
+  const wave = G.wave || 1;
+  const progress = Math.min(1.0, (lv * 0.04) + (wave * 0.015)); // 0→1 over progression
+
+  // Weights shift: Basic drops off, higher tiers rise
+  const weights = {
+    Basic:     Math.max(5,  55  - progress * 48),
+    Great:     Math.min(40, 25  + progress * 15),
+    Exquisite: Math.min(35, 18  + progress * 25),
+    Ancient:   Math.min(15, 1.5 + progress * 13),
+    Cosmic:    Math.min(8,  0.5 + progress * 7.5),
+  };
+
+  let pool = TIERS.map(t => ({ ...t, weight: weights[t.name] }));
+  if(vendorCap && MAP.difficulty !== 'infinite') {
+    // Cap vendor loot based on difficulty
+    const cap = DIFF_CONFIG[MAP.difficulty]?.lootCap || 'Exquisite';
+    const capIdx = TIERS.findIndex(t => t.name === cap);
+    pool = pool.filter((_, i) => i <= capIdx);
+  }
+
+  const total = pool.reduce((a,t)=>a+t.weight, 0);
   let r = Math.random()*total, acc=0;
   for(const t of pool){ acc+=t.weight; if(r<acc) return t; }
-  return pool[0];
+  return pool[pool.length-1];
 }
 
 function rollStatValue(stat, cls) {
@@ -2997,18 +3059,47 @@ function closeItemModal(){
 
 // VENDOR
 let vendorStock=[];
+let vendorResetCount = 0;
+const VENDOR_RESET_BASE_COST = 30;
+
 function openVendor(){
-  // Pause combat while shopping
   stopEnemyAutoAttack();
   stopAllAutoSlots();
   G.combatActive = false;
-  vendorStock=SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
+  vendorResetCount = 0;
+  vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
   renderVendor();
   document.getElementById('vendor-modal').classList.remove('hidden');
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
   playSound('vendor');
 }
+
+function refreshVendorStock() {
+  const cost = Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount));
+  if(G.gold < cost) {
+    log(`<span style="color:#cc4444">Need ${cost}g to refresh the merchant.</span>`);
+    return;
+  }
+  G.gold -= cost;
+  vendorResetCount++;
+  vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
+  updateResourceBar();
+  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  renderVendor();
+  log(`<span class="log-sys">🔄 Merchant refreshed!</span>`);
+  playSound('vendor');
+}
 function renderVendor(){
+  // Update refresh cost display
+  const nextCost = Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount));
+  const costEl = document.getElementById('vendor-refresh-cost');
+  if(costEl) costEl.textContent = `${nextCost}g`;
+  const refreshBtn = document.getElementById('vendor-refresh-btn');
+  if(refreshBtn) {
+    const canAfford = G.gold >= nextCost;
+    refreshBtn.style.color = canAfford ? 'var(--gold)' : 'var(--muted)';
+    refreshBtn.style.borderColor = canAfford ? 'var(--gold)' : 'var(--border)';
+  }
   document.getElementById('vendor-items').innerHTML=vendorStock.map((v,i)=>{
     const t=v.item.tier||v.item.rarity;
     const glow=t.name==='Exquisite'?'border-color:#2196f3;':t.name==='Ancient'?'border-color:#ff4444;box-shadow:0 0 8px rgba(255,68,68,0.4);':'';
@@ -3073,12 +3164,15 @@ function buyVendorItem(idx){
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
   itemModalQueue = [];
-  G.buyingVendorItem = false; // always release lock on close
+  G.buyingVendorItem = false;
   if(MAP.segmentComplete){
-    MAP.segmentComplete=false;
+    MAP.segmentComplete = false;
     showMapScreen(false);
+  } else if(MAP.difficulty === 'infinite') {
+    // In infinite mode, vendor closes and next wave begins
+    document.getElementById('next-btn').classList.remove('hidden');
+    showPotionBtn();
   } else {
-    // Resume combat if there's still an active enemy
     if(G.enemy && G.enemy.hp > 0){
       G.combatActive = true;
       startEnemyAutoAttack();
