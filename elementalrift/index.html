@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.10</title>
+<title>Elemental Rift v1.6.12</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -962,9 +962,9 @@ function initGState() {
 // MAP SYSTEM
 // ═══════════════════════════════════════════════
 const DIFF_CONFIG = {
-  easy:   { min:1,  max:5,  bossChance:0.3,  lootCap:'Great',     waveBonus:1.0 },
-  medium: { min:5,  max:12, bossChance:0.55, lootCap:'Exquisite', waveBonus:1.4 },
-  hard:   { min:10, max:20, bossChance:0.8,  lootCap:'Ancient',   waveBonus:2.0 },
+  easy:   { min:3,  max:3,  bossChance:0.3,  lootCap:'Great',     waveBonus:1.0 },
+  medium: { min:7,  max:7,  bossChance:0.55, lootCap:'Exquisite', waveBonus:1.4 },
+  hard:   { min:15, max:15, bossChance:0.8,  lootCap:'Ancient',   waveBonus:2.0 },
 };
 
 let MAP = {
@@ -994,20 +994,21 @@ function showMapScreen(isFirst=false) {
 function selectDifficulty(diff) {
   const cfg = DIFF_CONFIG[diff];
   MAP.difficulty = diff;
-  MAP.totalWaves = cfg.min + Math.floor(Math.random()*(cfg.max - cfg.min + 1));
+  MAP.totalWaves = cfg.min; // fixed wave count
   MAP.currentSegWave = 0;
   MAP.isBossWave = false;
   MAP.segmentComplete = false;
   document.getElementById('map-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
-  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+  setTimeout(() => {
     resizeCanvas();
     initMobileLayout();
     renderWaveTimeline();
     updateWaveStatusBanner();
+    initUI();
     log(`<span class="log-sys">⚔️ ${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.</span>`);
     spawnNextSegmentWave();
-  });});
+  }, 100);
 }
 
 function renderWaveTimeline() {
@@ -4106,16 +4107,18 @@ function honorableDeath() {
 
 function executeHonorableDeath(orbsEarned) {
   // Award orbs
-  if(sbUser && orbsEarned > 0) {
-    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
-    saveTrinity().catch(()=>{});
-  }
-  // Clear all save data
+  // Clear local save data first
   ['elementalRift_v3','er_tooltip_seen','er_ability_tutorial_done',
    'er_passive_tutorial_done','er_lb_version','elementalRift_leaderboard',
    'elementalRift_heal'].forEach(k => localStorage.removeItem(k));
+
   if(sbUser) {
-    sb.from('player_saves').delete().eq('player_id', sbUser.id).then(()=>location.reload());
+    // Award orbs and clear cloud save — WAIT for both before reloading
+    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
+    Promise.all([
+      orbsEarned > 0 ? saveTrinity() : Promise.resolve(),
+      sb.from('player_saves').delete().eq('player_id', sbUser.id)
+    ]).finally(() => location.reload());
   } else {
     location.reload();
   }
@@ -4619,6 +4622,14 @@ function spSpendPassive(el, idx) {
 function closeSPPopup() {
   document.getElementById('sp-popup').classList.add('hidden');
   spStep = 1; spChosenClass = null;
+  spPopupOpen = false;
+  updateXPBar();
+  if(spPending > 0 || passivePending > 0) {
+    setTimeout(() => triggerLevelUpPopup(), 300);
+  } else {
+    if(G.combatActive && G.enemy) startEnemyAutoAttack();
+    saveGame();
+  }
 }
 
 // ── SLOT UNLOCK HELPERS ──
