@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.18</title>
+<title>Elemental Rift v1.6.19</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1057,14 +1057,14 @@ function startBossWave() {
 }
 
 function onSegmentWaveComplete() {
+  console.log(`Wave complete: segWave=${MAP.currentSegWave} totalWaves=${MAP.totalWaves}`);
   if(MAP.currentSegWave >= MAP.totalWaves) {
-    // Segment done — show vendor then map
     MAP.segmentComplete = true;
-    log(`<span class="log-sys">✅ Segment complete! Vendor incoming...</span>`);
+    log(`<span class="log-sys">✅ ${MAP.difficulty} path complete! (${MAP.currentSegWave}/${MAP.totalWaves} waves) Vendor incoming...</span>`);
     setTimeout(()=>{ openVendor(); }, 500);
   } else {
+    log(`<span class="log-sys">Wave ${MAP.currentSegWave}/${MAP.totalWaves} complete.</span>`);
     document.getElementById('next-btn').classList.remove('hidden');
-    document.getElementById('spawn-btn').classList.remove('hidden');
     showPotionBtn();
     if(G.wave >= 3) {
       document.getElementById('boss-btn').classList.remove('hidden');
@@ -1096,7 +1096,8 @@ function loadGame(name) {
     const raw = localStorage.getItem('elementalRift_v3');
     if (!raw) return false;
     const save = JSON.parse(raw);
-    if (save.playerName !== name) return false; // different player
+    // Accept save if name matches OR if signed in (cloud save owns the name)
+    if (!sbUser && save.playerName !== name) return false;
     G.playerName = save.playerName;
     G.hp = save.hp; G.maxHp = save.maxHp;
     G.gold = save.gold;
@@ -1244,7 +1245,7 @@ function spawnEnemy() {
   if(IS_MOBILE()) mobileTab('arena');
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
-  document.getElementById('spawn-btn').classList.add('hidden');
+  safeHide('spawn-btn');
   hidePotionBtn();
   drawArena();
   startEnemyAutoAttack();
@@ -2456,7 +2457,7 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
 function emergencySpawn() {
   // Safety net — if no enemy present, force spawn
   if(!G.enemy || G.enemy.hp <= 0) {
-    document.getElementById('spawn-btn').classList.add('hidden');
+    safeHide('spawn-btn');
     document.getElementById('next-btn').classList.add('hidden');
     hidePotionBtn();
     if(!MAP.difficulty) {
@@ -2467,6 +2468,10 @@ function emergencySpawn() {
     }
   }
 }
+
+
+function safeHide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
+function safeShow(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
 
 function nextWave() {
   stopAllAutoAttacks();
