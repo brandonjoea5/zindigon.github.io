@@ -48,9 +48,8 @@
   }
 
   /* ───────── Leaderboard ───────── */
-  const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
-  const BIN_ID = '69fb6fae6373f77b4253ba55';
-  const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgIG';
+  const SUPABASE_URL = 'https://kryfuceztfzccsidkzog.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyeWZ1Y2V6dGZ6Y2NzaWRrem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODY1MjIsImV4cCI6MjA5MzY2MjUyMn0.c_pmdXWHLQYh1dwkCwhqpW7lpgIzK13UUq2ZW53XhAs';
 
   const fmt = n => Number(n).toLocaleString();
 
@@ -97,13 +96,20 @@
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 6000);
-      const r = await fetch(`${JSONBIN_API}/${BIN_ID}/latest`, {
-        headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
-        signal: ctrl.signal
-      });
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/leaderboard?select=display_name,boss_damage,wave&order=boss_damage.desc&limit=10`,
+        {
+          headers: {
+            'apikey': SUPABASE_ANON,
+            'Authorization': `Bearer ${SUPABASE_ANON}`
+          },
+          signal: ctrl.signal
+        }
+      );
       clearTimeout(t);
       if (!r.ok) throw new Error('network');
-      const data = await r.json();
+      const raw = await r.json();
+      const data = raw.map(e => ({ name: e.display_name, score: e.boss_damage, wave: e.wave }));
       const limit = body.dataset.limit ? +body.dataset.limit : 10;
       renderLb(Array.isArray(data) ? data : [], { limit });
     } catch {
