@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.3</title>
+<title>Elemental Rift v1.6.5</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2326,11 +2326,10 @@ function onEnemyDeath() {
   G.kills++;
   G.gold+=G.enemy.gold;
   G.runStats.totalGold += G.enemy.gold;
-  // XP based on enemy difficulty — roughly 4-5 kills per level early, scaling up
-  const enemyPower = G.enemy.maxHp * 0.1 + G.enemy.attack * 3;
-  const playerPower = Math.max(1, getPlayerPower());
-  const ratio = Math.min(2.0, enemyPower / playerPower); // cap ratio so overleveled enemies don't give insane xp
-  const xpGain = Math.max(3, Math.floor(15 + ratio * 20));
+  // XP scales with enemy HP relative to current threshold
+  const rawXP = Math.max(8, Math.floor(G.enemy.maxHp * 0.07 + G.enemy.attack * 1.0));
+  const scaledXP = Math.floor(rawXP * (G.xpToNext / 80));
+  const xpGain = Math.max(5, Math.min(scaledXP, Math.floor(G.xpToNext * 0.35)));
   awardXP(xpGain);
   // Award passive skill point every 5 kills
   if(G.kills % 5 === 0) {
