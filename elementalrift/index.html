@@ -506,7 +506,50 @@ let sbProfile = null; // players row
       </div>
       <div id="auth-error" style="font-size:11px;color:#e83a3a;text-align:center;min-height:16px;"></div>
       <button id="auth-submit-btn" onclick="authSubmit()" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:13px;border-radius:10px;border:1px solid var(--gold);background:rgba(232,184,75,0.12);color:var(--gold);cursor:pointer;width:100%;">Sign In</button>
+      <div style="text-align:center;">
+        <button id="forgot-pw-btn" onclick="showForgotPassword()" style="font-family:'Cinzel',serif;font-size:11px;background:transparent;border:none;color:var(--muted);cursor:pointer;text-decoration:underline;">Forgot password?</button>
+      </div>
       <button onclick="authGuest()" style="font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;width:100%;">Play as Guest (no save)</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSWORD RESET MODAL -->
+<div id="reset-pw-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#151a28;border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:380px;">
+    <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:4px;">⚔️ Reset Password</div>
+    <div id="reset-pw-subtitle" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:20px;">Enter your new password below.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;display:block;margin-bottom:4px;">NEW PASSWORD</label>
+        <input id="reset-pw-input" type="password" placeholder="Min 6 characters"
+          style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;display:block;margin-bottom:4px;">CONFIRM PASSWORD</label>
+        <input id="reset-pw-confirm" type="password" placeholder="Repeat password"
+          style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
+      </div>
+      <div id="reset-pw-error" style="font-size:11px;color:#e83a3a;text-align:center;min-height:16px;"></div>
+      <button onclick="submitPasswordReset()" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:13px;border-radius:10px;border:1px solid var(--gold);background:rgba(232,184,75,0.12);color:var(--gold);cursor:pointer;width:100%;">Set New Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD MODAL -->
+<div id="forgot-pw-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#151a28;border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:380px;">
+    <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:4px;">⚔️ Forgot Password</div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:20px;">Enter your email and we'll send a reset link.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;display:block;margin-bottom:4px;">EMAIL</label>
+        <input id="forgot-pw-email" type="email" placeholder="your@email.com" autocomplete="email"
+          style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
+      </div>
+      <div id="forgot-pw-msg" style="font-size:11px;text-align:center;min-height:16px;"></div>
+      <button onclick="sendPasswordReset()" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:13px;border-radius:10px;border:1px solid var(--gold);background:rgba(232,184,75,0.12);color:var(--gold);cursor:pointer;width:100%;">Send Reset Email</button>
+      <button onclick="document.getElementById('forgot-pw-modal').classList.add('hidden')" style="font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;width:100%;">← Back to Sign In</button>
     </div>
   </div>
 </div>
@@ -3992,11 +4035,13 @@ function authTab(mode) {
   if(mode === 'register') {
     nameWrap.classList.remove('hidden');
     submitBtn.textContent = 'Create Account';
+    document.getElementById('forgot-pw-btn').style.display = 'none';
     tabLogin.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);';
     tabReg.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:var(--gold);color:#000;font-weight:700;';
   } else {
     nameWrap.classList.add('hidden');
     submitBtn.textContent = 'Sign In';
+    document.getElementById('forgot-pw-btn').style.display = '';
     tabLogin.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:var(--gold);color:#000;font-weight:700;';
     tabReg.style.cssText = 'flex:1;font-family:Cinzel,serif;font-size:11px;padding:7px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--muted);';
   }
@@ -4004,6 +4049,28 @@ function authTab(mode) {
 
 // Live username availability check
 document.addEventListener('DOMContentLoaded', () => {
+  // ── PASSWORD RESET TOKEN DETECTION ──
+  // Supabase puts the token in the URL hash when user clicks reset email link
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const accessToken = params.get('access_token');
+  const type = params.get('type');
+
+  if(accessToken && type === 'recovery') {
+    // Set the session from the token so updateUser works
+    sb.auth.setSession({ access_token: accessToken, refresh_token: params.get('refresh_token') || '' })
+      .then(() => {
+        // Clean the token out of the URL
+        history.replaceState(null, '', window.location.pathname);
+        document.getElementById('reset-pw-modal').classList.remove('hidden');
+      })
+      .catch(() => {
+        document.getElementById('reset-pw-modal').classList.remove('hidden');
+        document.getElementById('reset-pw-subtitle').textContent = 'Link may have expired. Request a new one.';
+      });
+    return; // don't show auth modal yet
+  }
+
   const nameInput = document.getElementById('auth-display-name');
   if(nameInput) {
     nameInput.addEventListener('input', () => {
@@ -4110,11 +4177,56 @@ async function loadSbProfile() {
 
 function authGuest() {
   sbUser = null; sbProfile = null;
-  // Assign random guest name — no choice, prevents LB pollution
   const guestNum = Math.floor(Math.random() * 9000) + 1000;
   G.playerName = `Guest#${guestNum}`;
   hideAuthModal();
   onAuthReady();
+}
+
+function showForgotPassword() {
+  document.getElementById('forgot-pw-modal').classList.remove('hidden');
+  document.getElementById('forgot-pw-msg').textContent = '';
+  document.getElementById('forgot-pw-email').value = document.getElementById('auth-email').value || '';
+}
+
+async function sendPasswordReset() {
+  const email = document.getElementById('forgot-pw-email').value.trim();
+  const msgEl = document.getElementById('forgot-pw-msg');
+  if(!email) { msgEl.style.color='#e83a3a'; msgEl.textContent='Please enter your email.'; return; }
+  msgEl.style.color='var(--muted)'; msgEl.textContent='Sending...';
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href.split('#')[0] // redirect back to this page
+  });
+  if(error) {
+    msgEl.style.color='#e83a3a'; msgEl.textContent=error.message;
+  } else {
+    msgEl.style.color='#3acc7a';
+    msgEl.textContent='✓ Email sent! Check your inbox and click the link.';
+  }
+}
+
+async function submitPasswordReset() {
+  const pw = document.getElementById('reset-pw-input').value;
+  const confirm = document.getElementById('reset-pw-confirm').value;
+  const errEl = document.getElementById('reset-pw-error');
+  if(pw.length < 6) { errEl.textContent='Password must be at least 6 characters.'; return; }
+  if(pw !== confirm) { errEl.textContent='Passwords do not match.'; return; }
+  errEl.textContent='';
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if(error) {
+    errEl.textContent = error.message;
+  } else {
+    document.getElementById('reset-pw-modal').classList.add('hidden');
+    // Session is already active from setSession — just load profile and go
+    const { data: { session } } = await sb.auth.getSession();
+    if(session) {
+      sbUser = session.user;
+      await loadSbProfile();
+      onAuthReady();
+    } else {
+      showAuthModal();
+    }
+  }
 }
 
 function onAuthReady() {
