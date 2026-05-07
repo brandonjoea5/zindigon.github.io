@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.0</title>
+<title>Elemental Rift v1.6.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -636,6 +636,8 @@ let sbProfile = null; // players row
       <canvas id="canvas"></canvas>
       <div id="combat-log-overlay"></div>
       <div id="mute-btn" onclick="toggleMute()">🔊 SFX</div>
+      <!-- Wave status banner -->
+      <div id="wave-status-banner" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-family:'Cinzel',serif;font-size:11px;color:var(--text);letter-spacing:0.06em;white-space:nowrap;z-index:5;display:none;"></div>
 
       <!-- Heal + Mana overlay — bottom right of arena -->
       <div style="position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;z-index:6;">
@@ -1001,6 +1003,7 @@ function selectDifficulty(diff) {
     resizeCanvas();
     initMobileLayout();
     renderWaveTimeline();
+    updateWaveStatusBanner();
     log(`<span class="log-sys">⚔️ ${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.</span>`);
     spawnNextSegmentWave();
   });});
@@ -2055,12 +2058,12 @@ const STAT_BOOST_OPTIONS = [
 ];
 // ── BOSS DAMAGE MILESTONES ──
 const BOSS_MILESTONES = [
-  { dmg:1000,    gold:50,    xp:50,   icon:'🥉', label:'1K' },
-  { dmg:5000,    gold:200,   xp:150,  icon:'🥈', label:'5K' },
-  { dmg:15000,   gold:600,   xp:300,  icon:'🥇', label:'15K' },
-  { dmg:50000,   gold:1500,  xp:500,  icon:'💎', label:'50K' },
-  { dmg:150000,  gold:4000,  xp:1000, icon:'👑', label:'150K' },
-  { dmg:500000,  gold:10000, xp:2000, icon:'⚡', label:'500K' },
+  { dmg:1000,    gold:50,    xp:15,  icon:'🥉', label:'1K' },
+  { dmg:5000,    gold:200,   xp:25,  icon:'🥈', label:'5K' },
+  { dmg:15000,   gold:600,   xp:35,  icon:'🥇', label:'15K' },
+  { dmg:50000,   gold:1500,  xp:45,  icon:'💎', label:'50K' },
+  { dmg:150000,  gold:4000,  xp:55,  icon:'👑', label:'150K' },
+  { dmg:500000,  gold:10000, xp:65,  icon:'⚡', label:'500K' },
 ];
 
 
