@@ -5,11 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Zindigon — Games</title>
   <meta name="description" content="Game projects by Zindigon."/>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="/assets/site.css"/>
+
   <style>
+
+    /* ───────────────────────────────────────────
+       LEADERBOARD
+    ─────────────────────────────────────────── */
+
     .lb-card {
       border-radius: var(--radius2);
       border: 1px solid rgba(255,34,102,.22);
@@ -19,26 +28,33 @@
       position: relative;
       overflow: hidden;
     }
+
     .lb-card::before {
       content: "";
       position: absolute;
-      top: 0; left: 0;
-      width: 80px; height: 80px;
+      top: 0;
+      left: 0;
+      width: 80px;
+      height: 80px;
       background:
         linear-gradient(to right, rgba(255,34,102,.45) 0%, transparent 100%) top/100% 1px no-repeat,
         linear-gradient(to bottom, rgba(255,34,102,.45) 0%, transparent 100%) left/1px 100% no-repeat;
       pointer-events: none;
     }
+
     .lb-card::after {
       content: "";
       position: absolute;
-      bottom: 0; right: 0;
-      width: 80px; height: 80px;
+      bottom: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
       background:
         linear-gradient(to left, rgba(255,79,191,.30) 0%, transparent 100%) bottom/100% 1px no-repeat,
         linear-gradient(to top, rgba(255,79,191,.30) 0%, transparent 100%) right/1px 100% no-repeat;
       pointer-events: none;
     }
+
     .lb-header {
       display: flex;
       align-items: center;
@@ -46,6 +62,7 @@
       margin-bottom: 20px;
       gap: 12px;
     }
+
     .lb-title {
       font-family: var(--serif);
       font-size: 1rem;
@@ -54,6 +71,7 @@
       letter-spacing: .10em;
       color: #ff2266;
     }
+
     .lb-subtitle {
       font-family: var(--mono);
       font-size: .70rem;
@@ -61,6 +79,7 @@
       letter-spacing: .04em;
       margin-top: 3px;
     }
+
     .lb-refresh {
       font-family: var(--mono);
       font-size: .70rem;
@@ -74,13 +93,34 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
-    .lb-refresh:hover { color: #ff2266; border-color: rgba(255,34,102,.35); }
 
-    .lb-table { width: 100%; border-collapse: collapse; }
-    .lb-table tr { border-bottom: 1px solid rgba(255,255,255,.05); transition: background .1s; }
-    .lb-table tr:last-child { border-bottom: none; }
-    .lb-table tr:hover { background: rgba(255,255,255,.025); }
-    .lb-table td { padding: 10px 6px; }
+    .lb-refresh:hover {
+      color: #ff2266;
+      border-color: rgba(255,34,102,.35);
+    }
+
+    .lb-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .lb-table tr {
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      transition: background .1s;
+    }
+
+    .lb-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .lb-table tr:hover {
+      background: rgba(255,255,255,.025);
+    }
+
+    .lb-table td {
+      padding: 10px 6px;
+    }
+
     .lb-rank-cell {
       font-family: var(--serif);
       font-size: .85rem;
@@ -88,7 +128,12 @@
       width: 40px;
       text-align: center;
     }
-    .lb-name-cell { color: var(--muted); font-size: .9rem; }
+
+    .lb-name-cell {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
     .lb-score-cell {
       font-family: var(--mono);
       font-size: .82rem;
@@ -96,6 +141,7 @@
       text-align: right;
       white-space: nowrap;
     }
+
     .lb-wave-cell {
       font-family: var(--mono);
       font-size: .72rem;
@@ -104,6 +150,7 @@
       padding-left: 10px;
       white-space: nowrap;
     }
+
     .lb-loading {
       text-align: center;
       padding: 36px 0;
@@ -112,10 +159,26 @@
       color: rgba(232,238,255,.30);
       letter-spacing: .08em;
     }
-    .lb-dot { display: inline-block; animation: lb-blink 1.2s ease-in-out infinite; margin: 0 2px; }
-    .lb-dot:nth-child(2) { animation-delay: .2s; }
-    .lb-dot:nth-child(3) { animation-delay: .4s; }
-    @keyframes lb-blink { 0%,80%,100%{opacity:.15} 40%{opacity:1} }
+
+    .lb-dot {
+      display: inline-block;
+      animation: lb-blink 1.2s ease-in-out infinite;
+      margin: 0 2px;
+    }
+
+    .lb-dot:nth-child(2) {
+      animation-delay: .2s;
+    }
+
+    .lb-dot:nth-child(3) {
+      animation-delay: .4s;
+    }
+
+    @keyframes lb-blink {
+      0%,80%,100% { opacity:.15 }
+      40% { opacity:1 }
+    }
+
     .lb-empty {
       text-align: center;
       padding: 32px 0;
@@ -124,6 +187,7 @@
       color: rgba(232,238,255,.28);
       font-style: italic;
     }
+
     .lb-play-cta {
       display: flex;
       align-items: center;
@@ -134,7 +198,12 @@
       border-top: 1px solid rgba(255,255,255,.06);
       flex-wrap: wrap;
     }
-    .lb-play-hint { font-size: .82rem; color: rgba(232,238,255,.35); }
+
+    .lb-play-hint {
+      font-size: .82rem;
+      color: rgba(232,238,255,.35);
+    }
+
     .btn-boss {
       display: inline-block;
       font-family: var(--serif);
@@ -152,24 +221,245 @@
       transition: transform .15s, box-shadow .15s;
       white-space: nowrap;
     }
-    .btn-boss:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(255,34,102,.55); }
+
+    .btn-boss:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 36px rgba(255,34,102,.55);
+    }
+
+    /* ───────────────────────────────────────────
+       GAMES GRID
+    ─────────────────────────────────────────── */
+
+    .games-grid-section{
+      padding: 10px 0 20px;
+    }
+
+    .games-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:16px;
+    }
+
+    .game-card{
+      position:relative;
+      overflow:hidden;
+      padding:28px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.08);
+      background:
+        linear-gradient(
+          160deg,
+          rgba(12,16,32,.82) 0%,
+          rgba(8,11,22,.72) 100%
+        );
+      text-decoration:none;
+      color:var(--text);
+      transition:
+        transform .18s ease,
+        border-color .18s ease,
+        box-shadow .18s ease;
+      box-shadow:0 16px 48px rgba(0,0,0,.38);
+    }
+
+    .game-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(
+          circle at top right,
+          rgba(0,245,196,.12),
+          transparent 55%
+        );
+      pointer-events:none;
+    }
+
+    .game-card:hover{
+      transform:translateY(-4px);
+      border-color:rgba(0,245,196,.25);
+      box-shadow:
+        0 24px 60px rgba(0,0,0,.48),
+        0 0 36px rgba(0,245,196,.08);
+    }
+
+    .game-tag{
+      display:inline-block;
+      margin-bottom:14px;
+      padding:5px 12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:rgba(232,238,255,.55);
+      font-family:var(--mono);
+      font-size:.70rem;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+
+    .game-card h3{
+      margin:0 0 14px;
+      font-family:var(--serif);
+      font-size:1.6rem;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+    }
+
+    .game-card p{
+      margin:0 0 22px;
+      line-height:1.75;
+      color:rgba(232,238,255,.66);
+      font-size:.95rem;
+    }
+
+    .game-link{
+      color:var(--accent);
+      font-weight:700;
+      letter-spacing:.04em;
+    }
+
+    /* ───────────────────────────────────────────
+       VERSION SECTION
+    ─────────────────────────────────────────── */
+
+    .version-section{
+      padding-top:18px;
+    }
+
+    .version-card{
+      position:relative;
+      overflow:hidden;
+      border-radius:24px;
+      border:1px solid rgba(0,245,196,.14);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(0,245,196,.05) 0%,
+          rgba(91,158,255,.04) 100%
+        );
+      padding:34px 30px;
+      box-shadow:
+        0 18px 54px rgba(0,0,0,.40),
+        inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .version-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(
+          circle at top left,
+          rgba(0,245,196,.12),
+          transparent 40%
+        );
+      pointer-events:none;
+    }
+
+    .version-eyebrow{
+      display:inline-block;
+      font-family:var(--mono);
+      font-size:.72rem;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:var(--accent);
+      background:rgba(0,245,196,.08);
+      border:1px solid rgba(0,245,196,.18);
+      border-radius:999px;
+      padding:6px 14px;
+    }
+
+    .version-title{
+      margin:18px 0 14px;
+      font-family:var(--serif);
+      font-size:2rem;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+    }
+
+    .version-sub{
+      max-width:720px;
+      line-height:1.8;
+      color:rgba(232,238,255,.70);
+      margin-bottom:28px;
+    }
+
+    .version-stats{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:14px;
+      margin-bottom:28px;
+    }
+
+    .version-stat{
+      padding:18px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+    }
+
+    .version-stat strong{
+      display:block;
+      font-size:1.1rem;
+      color:var(--text);
+      margin-bottom:6px;
+    }
+
+    .version-stat span{
+      color:rgba(232,238,255,.58);
+      font-size:.88rem;
+    }
+
+    .version-link{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      text-decoration:none;
+      color:var(--accent);
+      font-weight:700;
+      letter-spacing:.04em;
+    }
+
+    @media (max-width:780px){
+
+      .game-card{
+        padding:24px;
+      }
+
+      .version-card{
+        padding:28px 22px;
+      }
+
+      .version-title{
+        font-size:1.5rem;
+      }
+
+    }
+
   </style>
 </head>
+
 <body>
+
   <div id="fx" aria-hidden="true">
     <canvas id="starfield"></canvas>
     <div class="fx-aurora"></div>
   </div>
+
   <header>
     <nav class="nav" aria-label="Primary">
+
       <a class="brand" href="/">
         <span class="logo" aria-hidden="true"></span>
         <span>Zindigon</span>
       </a>
+
       <div class="spacer"></div>
+
       <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">
         ☰ Menu
       </button>
+
       <div class="navlinks" data-nav>
         <a href="/">Home</a>
         <a href="/Games/" aria-current="page">Games</a>
@@ -177,162 +467,381 @@
         <a href="/partners.html">Partners</a>
         <a href="/contact.html">Contact</a>
       </div>
+
     </nav>
-    <div class="mobilenav" id="mobileNav" data-nav>
+
+    <div class="mobilenav" id="mobileNav" data-nav">
       <a href="/">Home</a>
       <a href="/Games/">Games</a>
       <a href="/Anime/BloodlineZero/">Anime</a>
       <a href="/partners.html">Partners</a>
       <a href="/contact.html">Contact</a>
     </div>
+
   </header>
 
   <main>
+
+    <!-- HERO -->
+
     <section class="hero">
+
       <div class="hero-inner">
+
         <div class="hero-glow" aria-hidden="true"></div>
-        <span class="kicker">🎮 Systems-first design • clean code • satisfying progression</span>
-        <h1 class="h1">Games</h1>
-        <p class="sub">Projects built with a "ship it, polish it, iterate" mindset. If you like tight mechanics and readable engineering, start here.</p>
-      </div>
-    </section>
 
-    <!-- Elemental Rift CTA -->
-    <section class="rift-section">
-      <div class="rift-banner">
-        <span class="rift-eyebrow">🔥 New — Playtest Live</span>
-        <h2 class="rift-title">Elemental Rift</h2>
-        <p class="rift-sub">
-          Master the elements. Defeat waves of enemies. Challenge the Boss — and get your name on the board.
+        <span class="kicker">
+          🎮 Systems-first design • clean code • satisfying progression
+        </span>
+
+        <h1 class="h1">
+          Games
+        </h1>
+
+        <p class="sub">
+          Projects built with a "ship it, polish it, iterate" mindset.
+          Fast gameplay, rewarding progression, and systems designed to feel satisfying every second you play.
         </p>
+
+      </div>
+
+    </section>
+
+    <!-- FEATURED GAME -->
+
+    <section class="rift-section">
+
+      <div class="rift-banner">
+
+        <span class="rift-eyebrow">
+          🔥 Featured • Live Playtest
+        </span>
+
+        <h2 class="rift-title">
+          Elemental Rift
+        </h2>
+
+        <p class="rift-sub">
+          Master the elements. Survive escalating enemy waves.
+          Defeat bosses. Climb the leaderboard.
+        </p>
+
         <div class="rift-cta-wrap">
-          <a class="btn-rift" href="/elementalrift/">Play Elemental Rift →</a>
+
+          <a class="btn-rift" href="/elementalrift/">
+            Play Elemental Rift →
+          </a>
+
           <p class="rift-feedback">
-            Feedback &amp; updates → <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>
+            Feedback &amp; updates →
+            <a href="mailto:banderson@zindigon.com">
+              banderson@zindigon.com
+            </a>
           </p>
+
         </div>
+
       </div>
+
     </section>
 
-    <!-- Live leaderboard -->
+    <!-- LEADERBOARD -->
+
     <section class="section">
+
       <div class="lb-card">
+
         <div class="lb-header">
+
           <div>
-            <div class="lb-title">💀 Boss Damage Leaderboard</div>
-            <div class="lb-subtitle" id="lb-status">Loading scores…</div>
+            <div class="lb-title">
+              💀 Boss Damage Leaderboard
+            </div>
+
+            <div class="lb-subtitle" id="lb-status">
+              Loading scores…
+            </div>
           </div>
-          <button class="lb-refresh" onclick="loadLeaderboard(true)">↻ Refresh</button>
+
+          <button class="lb-refresh" onclick="loadLeaderboard(true)">
+            ↻ Refresh
+          </button>
+
         </div>
+
         <div id="lb-body">
+
           <div class="lb-loading">
-            <span class="lb-dot">●</span><span class="lb-dot">●</span><span class="lb-dot">●</span>
+            <span class="lb-dot">●</span>
+            <span class="lb-dot">●</span>
+            <span class="lb-dot">●</span>
           </div>
+
         </div>
+
         <div class="lb-play-cta">
-          <span class="lb-play-hint">Think you can crack the top 10?</span>
-          <a class="btn-boss" href="/elementalrift/">Play now →</a>
+
+          <span class="lb-play-hint">
+            Think you can crack the top 10?
+          </span>
+
+          <a class="btn-boss" href="/elementalrift/">
+            Play now →
+          </a>
+
         </div>
+
       </div>
+
     </section>
 
-    <!-- Other games -->
-    <section class="section">
-      <div class="grid">
-        <article class="card glow" style="grid-column: span 12;">
-          <h2 class="h2">AetherFall</h2>
-          <p class="p">A tower-defense roguelike with "keeper" synergies, upgrade paths, and run-to-run progression. Built to feel good at minute 1 and still surprise you at hour 40.</p>
-          <div class="chips">
-            <span class="chip">Tower Defense</span>
-            <span class="chip">Roguelike</span>
-            <span class="chip">Progression</span>
-          </div>
-          <div class="cta-row" style="margin-top:14px;">
-            <a class="btn" href="/Games/AetherFall/">Open project</a>
-            <a class="btn ghost" href="/Games/AetherFall/leaderboards.html">Leaderboards</a>
-            <a class="btn ghost" href="/Games/AetherFall/privacy.html">Privacy</a>
-          </div>
-        </article>
-        <article class="card" style="grid-column: span 12;">
-          <h2 class="h2">In the lab</h2>
-          <p class="p">More experiments coming soon: prototypes, dev tools, and small playable concepts. I keep this page updated as things become public.</p>
-          <p class="mini">Want early access or to collaborate? Hit the contact page.</p>
-          <div class="cta-row" style="margin-top:14px;">
-            <a class="btn ghost" href="/contact.html">Contact</a>
-          </div>
-        </article>
+    <!-- OTHER GAMES -->
+
+    <section class="games-grid-section">
+
+      <div class="games-grid">
+
+        <a class="game-card" href="/hypercell/">
+
+          <span class="game-tag">
+            Arcade Runner
+          </span>
+
+          <h3>
+            HyperCell
+          </h3>
+
+          <p>
+            Fast-paced cube runner gameplay focused on speed,
+            precision movement, momentum, and reaction time.
+          </p>
+
+          <span class="game-link">
+            Play HyperCell →
+          </span>
+
+        </a>
+
+        <a class="game-card" href="/nexusdefense/">
+
+          <span class="game-tag">
+            Strategy Defense
+          </span>
+
+          <h3>
+            Nexus Defense
+          </h3>
+
+          <p>
+            Build defenses, survive escalating enemy pressure,
+            and experiment with evolving strategy systems.
+          </p>
+
+          <span class="game-link">
+            Explore Nexus Defense →
+          </span>
+
+        </a>
+
       </div>
+
     </section>
+
+    <!-- VERSION HISTORY -->
+
+    <section class="version-section">
+
+      <div class="version-card">
+
+        <span class="version-eyebrow">
+          Active Development
+        </span>
+
+        <h2 class="version-title">
+          Elemental Rift Updates
+        </h2>
+
+        <p class="version-sub">
+          Elemental Rift is continuously evolving with new systems,
+          balancing, classes, Trinity artifacts, progression updates,
+          cloud saves, boss improvements, and quality-of-life changes.
+        </p>
+
+        <div class="version-stats">
+
+          <div class="version-stat">
+            <strong>70+ Updates</strong>
+            <span>Major systems & balance patches</span>
+          </div>
+
+          <div class="version-stat">
+            <strong>Cloud Saves</strong>
+            <span>Supabase account progression</span>
+          </div>
+
+          <div class="version-stat">
+            <strong>Live Evolution</strong>
+            <span>New content added constantly</span>
+          </div>
+
+        </div>
+
+        <a class="version-link" href="/elementalrift/version-history/">
+          View Full Version History →
+        </a>
+
+      </div>
+
+    </section>
+
   </main>
 
   <footer>
-    <div>© <span id="year"></span> Zindigon — From imagination to expectation.</div>
+    <div>
+      © <span id="year"></span> Zindigon — From imagination to expectation.
+    </div>
   </footer>
 
   <script src="/assets/site.js"></script>
+
   <script>
+
     const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
     const BIN_ID = '69fb6fae6373f77b4253ba55';
     const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgIG';
-    const MEDALS      = ['🥇','🥈','🥉'];
 
-    function fmt(n) { return Number(n).toLocaleString(); }
+    const MEDALS = ['🥇','🥈','🥉'];
+
+    function fmt(n) {
+      return Number(n).toLocaleString();
+    }
 
     function renderLeaderboard(data) {
-      const body   = document.getElementById('lb-body');
+
+      const body = document.getElementById('lb-body');
       const status = document.getElementById('lb-status');
+
       if (!data || data.length === 0) {
-        body.innerHTML = '<div class="lb-empty">No scores yet — be the first!</div>';
+
+        body.innerHTML =
+          '<div class="lb-empty">No scores yet — be the first!</div>';
+
         status.textContent = 'No entries yet';
+
         return;
       }
-      const rows = data.slice(0, 20).map((e, i) => {
-        const rankColor = i === 0 ? '#e8b84b' : i === 1 ? '#aaaaaa' : i === 2 ? '#cd7f32' : 'rgba(232,238,255,.38)';
-        const medal     = MEDALS[i] || ('#' + (i + 1));
-        return `<tr>
-          <td class="lb-rank-cell" style="color:${rankColor}">${medal}</td>
-          <td class="lb-name-cell">${e.name || '—'}</td>
-          <td class="lb-score-cell">${fmt(e.score)}</td>
-          <td class="lb-wave-cell">wave&nbsp;${e.wave || '?'}</td>
-        </tr>`;
+
+      const rows = data.slice(0,20).map((e,i) => {
+
+        const rankColor =
+          i === 0 ? '#e8b84b'
+          : i === 1 ? '#aaaaaa'
+          : i === 2 ? '#cd7f32'
+          : 'rgba(232,238,255,.38)';
+
+        const medal = MEDALS[i] || ('#' + (i + 1));
+
+        return `
+          <tr>
+            <td class="lb-rank-cell" style="color:${rankColor}">
+              ${medal}
+            </td>
+
+            <td class="lb-name-cell">
+              ${e.name || '—'}
+            </td>
+
+            <td class="lb-score-cell">
+              ${fmt(e.score)}
+            </td>
+
+            <td class="lb-wave-cell">
+              wave&nbsp;${e.wave || '?'}
+            </td>
+          </tr>
+        `;
+
       }).join('');
-      body.innerHTML = `<table class="lb-table">${rows}</table>`;
+
+      body.innerHTML =
+        `<table class="lb-table">${rows}</table>`;
+
       const t = new Date();
-      status.textContent = `${data.length} player${data.length !== 1 ? 's' : ''} · updated ${t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+
+      status.textContent =
+        `${data.length} player${data.length !== 1 ? 's' : ''} · updated ${t.toLocaleTimeString([], {
+          hour:'2-digit',
+          minute:'2-digit'
+        })}`;
+
     }
 
     async function loadLeaderboard(manual = false) {
+
       if (manual) {
+
         document.getElementById('lb-body').innerHTML =
           '<div class="lb-loading"><span class="lb-dot">●</span><span class="lb-dot">●</span><span class="lb-dot">●</span></div>';
-        document.getElementById('lb-status').textContent = 'Refreshing…';
+
+        document.getElementById('lb-status').textContent =
+          'Refreshing…';
       }
+
       try {
+
         const ctrl = new AbortController();
-        const t    = setTimeout(() => ctrl.abort(), 5000);
-        const r    = await fetch(`${JSONBIN_API}/${BIN_ID}/latest`, {
-          headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
-          signal: ctrl.signal
-        });
+
+        const t = setTimeout(() => ctrl.abort(), 5000);
+
+        const r = await fetch(
+          `${JSONBIN_API}/${BIN_ID}/latest`,
+          {
+            headers: {
+              'X-Master-Key': JSONBIN_KEY,
+              'X-Bin-Meta': 'false'
+            },
+            signal: ctrl.signal
+          }
+        );
+
         clearTimeout(t);
+
         if (!r.ok) throw new Error('network');
+
         const data = await r.json();
-        renderLeaderboard(Array.isArray(data) ? data : []);
+
+        renderLeaderboard(
+          Array.isArray(data) ? data : []
+        );
+
       } catch {
-        // Try localStorage fallback (only works if visitor has played on same browser)
+
         try {
-          const local = JSON.parse(localStorage.getItem('elementalRift_leaderboard') || '[]');
+
+          const local = JSON.parse(
+            localStorage.getItem('elementalRift_leaderboard') || '[]'
+          );
+
           renderLeaderboard(local);
-          document.getElementById('lb-status').textContent = 'Cached data · play to update';
+
+          document.getElementById('lb-status').textContent =
+            'Cached data · play to update';
+
         } catch {
+
           document.getElementById('lb-body').innerHTML =
             '<div class="lb-empty">Could not load scores — check back soon.</div>';
-          document.getElementById('lb-status').textContent = 'Unavailable';
+
+          document.getElementById('lb-status').textContent =
+            'Unavailable';
         }
       }
+
     }
 
     loadLeaderboard();
+
   </script>
+
 </body>
 </html>
