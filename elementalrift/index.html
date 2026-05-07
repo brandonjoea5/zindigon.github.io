@@ -4454,8 +4454,10 @@ function triggerLevelUpPopup() {
     spPopupOpen = false;
     return;
   }
-  if(spPopupOpen) return; // already open — don't stack
-  spPhase = spPending > 0 ? 'skill' : 'passive';
+  if(spPopupOpen) return;
+  // Set phase based on what's pending — passive takes priority if skill already done
+  if(spPending > 0) spPhase = 'skill';
+  else spPhase = 'passive';
   spPopupOpen = true;
   spStep = 1;
   spChosenClass = null;
@@ -4589,6 +4591,8 @@ function renderSPPopup() {
 
 function spPickClass(cls) {
   spChosenClass = cls;
+  spPending = Math.max(0, spPending - 1);
+  G.skillPoints = Math.max(0, G.skillPoints - 1);
   // Level up that class
   G.classLv[cls] = (G.classLv[cls]||0) + 1;
   const lv = G.classLv[cls];
@@ -4650,19 +4654,10 @@ function spBoostStat(key) {
   }
   if (key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
   log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
-  G.skillPoints = Math.max(0, G.skillPoints - 1);
-  spPending = Math.max(0, spPending - 1);
   updateStatsPanel();
   updateClassXPPanel();
   saveGame();
-  // Move to passive phase for this level-up
-  if(passivePending > 0) {
-    spPhase = 'passive';
-    spStep = 1;
-    renderSPPopup();
-  } else {
-    closeSPPopup();
-  }
+  closeSPPopup();
 }
 
 function spSpendPassive(el, idx) {
@@ -4680,7 +4675,12 @@ function closeSPPopup() {
   spStep = 1; spChosenClass = null;
   spPopupOpen = false;
   updateXPBar();
-  if(spPending > 0 || passivePending > 0) {
+  // If passive still pending, show that next
+  if(passivePending > 0) {
+    spPhase = 'passive';
+    setTimeout(() => triggerLevelUpPopup(), 300);
+  } else if(spPending > 0) {
+    spPhase = 'skill';
     setTimeout(() => triggerLevelUpPopup(), 300);
   } else {
     if(G.combatActive && G.enemy) startEnemyAutoAttack();
