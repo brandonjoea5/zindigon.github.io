@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.6.23</title>
+<title>Elemental Rift v1.7.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -417,7 +417,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.6.22 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.7.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1451,9 +1451,16 @@ function updateEnemyUI() {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
     if(hpNums) hpNums.textContent = `${Math.max(0,Math.floor(e.hp))}/${e.maxHp}`;
+    // Build weakness hint — what's SE against this enemy
+    const weakTo = e.type==='brute'
+      ? '⚔️ physical'
+      : e.elements.map(el => {
+          const beater = Object.entries(SE).find(([atk, targets]) => targets.includes(el));
+          return beater ? `<span style="color:${ELEMENT_COLORS[beater[0]]};font-size:9px;">▲${beater[0]}</span>` : '';
+        }).join('');
     const typeBadge = e.type==='brute'
-      ? '<span style="color:#cc8844;font-size:10px;">🪨 Brute</span>'
-      : e.elements.map(el=>`<span style="color:${ELEMENT_COLORS[el]};font-size:10px;">${el} </span>`).join('');
+      ? '<span style="color:#cc8844;font-size:10px;">🪨 Brute · <span style="color:#aaa;font-size:9px;">▲physical</span></span>'
+      : e.elements.map(el=>`<span style="color:${ELEMENT_COLORS[el]};font-size:10px;">${el}</span>`).join('+') + ' ' + weakTo;
     document.getElementById('enemy-type-badge').innerHTML = typeBadge + getStatusBadgesHTML(e);
   }
 }
@@ -1823,12 +1830,13 @@ function fireAbility(ab) {
   playSound(soundKey);
   if(isCrit) { playSound('crit'); triggerScreenShake(6, 0.25); }
   else if(isUlt) { playSound('ultimate'); triggerScreenShake(10, 0.5); }
-  else if(seMult>1.0) triggerScreenShake(3, 0.2);
+  else if(seMult>=1.6) triggerScreenShake(3, 0.2);
+  else if(seMult<0.75) triggerScreenShake(0.5, 0.1);
   else triggerScreenShake(1.5, 0.15);
   if(healAmt>0) setTimeout(()=>playSound('heal'), 200);
 
   // Log + animations
-  const seText = seMult>1.0?' <span class="log-se">SE!</span>':(seMult<1.0?' <span style="color:#555">weak</span>':'');
+  const seText = seMult>=1.6?' <span class="log-se">SE!</span>':seMult<0.75?' <span style="color:#e87040">NVE</span>':'';
   const critText = isCrit?' <span style="color:#ffaa00">CRIT!</span>':'';
   const hitsText = hits>1?` (x${hits})`:'';
   log(`<span style="color:${CLASS_COLORS[ab.class]}">${ab.icon} ${ab.name}</span> → <span class="log-dmg">${totalDmg}</span>${hitsText}${seText}${critText}`);
@@ -1856,10 +1864,10 @@ function fireAbility(ab) {
   }
 
   // Combat log overlay
-  if(isCrit&&seMult>1.0) combatLog(`⚡ CRIT+SE ${totalDmg} ${ab.icon}`,'crit');
-  else if(isCrit)         combatLog(`⚡ CRIT ${totalDmg} ${ab.icon}`,'crit');
-  else if(seMult>1.0)     combatLog(`✦ SE ${totalDmg} ${ab.icon}`,'se');
-  else                    combatLog(`▶ ${totalDmg} ${ab.icon}`,'dmg-out');
+  if(isCrit&&seMult>=1.6) combatLog(`⚡ CRIT+SE ${totalDmg} ${ab.icon}`,'crit');
+  else if(isCrit)          combatLog(`⚡ CRIT ${totalDmg} ${ab.icon}`,'crit');
+  else if(seMult>=1.6)     combatLog(`✦ SE ${totalDmg} ${ab.icon}`,'se');
+  else if(seMult<0.75)     combatLog(`▽ NVE ${totalDmg} ${ab.icon}`,'dmg-out');
   if(healAmt>0)           combatLog(`♥ +${healAmt} ${ab.isMagic?'vamp':'steal'}`,'heal');
 
   // Apply status effects based on ability
@@ -2198,13 +2206,33 @@ function updateClassXPPanel() {
 // COMBAT
 // ═══════════════════════════════════════════════
 function getSEMultiplier(attackEl, enemy) {
-  if (attackEl==='physical') return enemy.type==='brute' ? 1.6 : 0.8;
-  if (enemy.type==='brute') return 0.6; // elements weak vs brute
+  // Physical: strong vs brute, weak vs elementals
+  if (attackEl === 'physical') return enemy.type === 'brute' ? 1.5 : 0.75;
+
+  // Brute resists ALL elemental damage — only physical works well on it
+  if (enemy.type === 'brute') return 0.5;
+
+  // Build reverse SE table — what beats the attacker
+  // SE: fire>grass, grass>water, water>fire, dark>light, light>dark
+  const NVE = {fire:['water'], grass:['fire'], water:['grass'], dark:['light'], light:['dark']};
+
   let mult = 1.0;
+
+  // Super effective — attacker beats enemy element
   (SE[attackEl]||[]).forEach(el => {
-    if(enemy.elements.includes(el)) mult += 0.6; // SE = 1.6x
+    if(enemy.elements.includes(el)) mult += 0.6; // 1.6x
   });
-  return mult;
+
+  // Not very effective — enemy element beats attacker
+  (NVE[attackEl]||[]).forEach(el => {
+    if(enemy.elements.includes(el)) mult -= 0.4; // 0.6x
+  });
+
+  // Same element — attacker matches enemy element (NVE)
+  if(enemy.elements.includes(attackEl)) mult -= 0.3; // 0.7x (less harsh than being countered)
+
+  // Floor at 0.4x so nothing is completely useless
+  return Math.max(0.4, mult);
 }
 
 // Base spell cooldowns in ms (physical has no cooldown — pure atkSpeed)
@@ -2423,14 +2451,15 @@ function attack(element) {
     combatLog(`♥ +${healAmt} (${isMagic?'spell vamp':'lifesteal'})`, 'heal');
   }
 
-  const seText = seMult>1.0?' <span class="log-se">SUPER EFFECTIVE!</span>':(seMult<1.0?' <span style="color:#555">weak</span>':'');
+  const seText = seMult>=1.6?' <span class="log-se">SUPER EFFECTIVE!</span>':seMult<0.75?' <span style="color:#e87040">Not very effective</span>':'';
   const critText = isCrit?' <span style="color:#ffaa00">CRIT!</span>':'';
   log(`Hit <span style="color:${ELEMENT_COLORS[element]}">${element}</span> → <span class="log-dmg">${dmg}</span>${seText}${critText}`);
   // Combat overlay entry
-  if(isCrit && seMult>1.0) combatLog(`⚡ CRIT + SE! ${dmg} (${element})`, 'crit');
-  else if(isCrit)           combatLog(`⚡ CRIT ${dmg} (${element})`, 'crit');
-  else if(seMult>1.0)       combatLog(`✦ SE ${dmg} (${element})`, 'se');
-  else                      combatLog(`▶ ${dmg} (${element})`, 'dmg-out');
+  if(isCrit && seMult>=1.6) combatLog(`⚡ CRIT + SE! ${dmg} (${element})`, 'crit');
+  else if(isCrit)            combatLog(`⚡ CRIT ${dmg} (${element})`, 'crit');
+  else if(seMult>=1.6)       combatLog(`✦ SE ${dmg} (${element})`, 'se');
+  else if(seMult<0.75)       combatLog(`▽ NVE ${dmg} (${element})`, 'dmg-out');
+  else                       combatLog(`▶ ${dmg} (${element})`, 'dmg-out');
 
   // Sound
   const sndKey = {'fire':'hit_fire','water':'hit_water','grass':'hit_grass','dark':'hit_dark','light':'hit_light','physical':'hit_physical'}[element]||'hit_physical';
@@ -4830,7 +4859,12 @@ function renderSPPopup() {
             <span style="font-size:16px;">${ab.icon}</span>
             <div style="flex:1;">
               <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">${ab.name} <span style="color:${typeColor};font-size:9px;border:1px solid ${typeColor};border-radius:6px;padding:1px 4px;">${ab.type}</span></div>
-              <div style="font-size:10px;color:var(--muted);">Lv${abLv} · ${ab.type==='heal' ? `+${abLv*10}% healing` : `${Math.floor(ab.dmgMult*(1+abLv*0.15)*100)}% base dmg`}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px;">
+                ${ab.type==='heal'
+                  ? `Healing: ${abLv*10}% → <span style="color:#3acc7a;font-weight:700;">+${(abLv+1)*10}%</span>`
+                  : `Dmg: ${Math.floor(ab.dmgMult*(1+abLv*0.15)*100)}% → <span style="color:#3acc7a;font-weight:700;">${Math.floor(ab.dmgMult*(1+(abLv+1)*0.15)*100)}%</span>`
+                }
+              </div>
             </div>
             <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--gold);">⬆ Upgrade</div>
           </div>
@@ -4846,6 +4880,9 @@ function renderSPPopup() {
               <div style="flex:1;">
                 <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">🔓 Unlock ${ab.name}</div>
                 <div style="font-size:10px;color:var(--muted);">${ab.desc}</div>
+                <div style="font-size:10px;color:#3acc7a;margin-top:2px;">
+                  ${ab.type==='heal' ? 'Base healing: unlocked at 10%' : `Base dmg: <span style="color:#3acc7a;font-weight:700;">${Math.floor(ab.dmgMult*100)}%</span>`}
+                </div>
               </div>
               <div style="font-family:'Cinzel',serif;font-size:10px;color:#3acc7a;">NEW</div>
             </div>
