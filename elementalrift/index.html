@@ -846,48 +846,48 @@ const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgI
 // ═══════════════════════════════════════════════
 const ABILITIES = {
   // ── FIRE ──
-  fire_basic:   { id:'fire_basic',   class:'fire',     type:'basic',    name:'Ember Strike', icon:'🔥', cd:0,    desc:'Rapid fire hits dealing magic damage. Auto-attacks at attack speed.', dmgMult:0.8,  isMagic:true  },
+  fire_basic:   { id:'fire_basic',   class:'fire',     type:'basic',    name:'Ember Strike', icon:'🔥', cd:0,    desc:'Rapid fire strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8,  isMagic:true  },
   fire_reg1:    { id:'fire_reg1',    class:'fire',     type:'regular',  name:'Flame Burst',  icon:'🔥', cd:3500, desc:'Explosive fireball dealing heavy magic damage.', dmgMult:2.2, isMagic:true, unlockLv:3  },
-  fire_reg2:    { id:'fire_reg2',    class:'fire',     type:'regular',  name:'Scorch',       icon:'🌋', cd:5000, desc:'Burns the enemy — deals damage twice over 2s.', dmgMult:1.6, isMagic:true, dot:true, unlockLv:6 },
+  fire_reg2:    { id:'fire_reg2',    class:'fire',     type:'regular',  name:'Scorch',       icon:'🌋', cd:5000, desc:'Burns the enemy — deals damage over 2 seconds.', dmgMult:1.6, isMagic:true, dot:true, unlockLv:6 },
   fire_ult:     { id:'fire_ult',     class:'fire',     type:'ultimate', name:'Inferno',      icon:'☄️', cd:18000,desc:'Devastating meteor dealing massive magic damage.', dmgMult:6.0, isMagic:true, unlockLv:10 },
 
   // ── WATER ──
-  water_basic:  { id:'water_basic',  class:'water',    type:'basic',    name:'Tide Slash',   icon:'💧', cd:0,    desc:'Flowing water strikes. Auto-attacks at attack speed.', dmgMult:0.8, isMagic:true  },
-  water_reg1:   { id:'water_reg1',   class:'water',    type:'regular',  name:'Frost Bolt',   icon:'❄️', cd:3200, desc:'Ice shard dealing magic damage and slowing enemy attacks by 30% for 3s.', dmgMult:2.0, isMagic:true, slow:true, unlockLv:3 },
-  water_reg2:   { id:'water_reg2',   class:'water',    type:'regular',  name:'Hydro Pulse',  icon:'🌊', cd:4500, desc:'Tidal wave hitting for heavy damage. Heals 15% of damage dealt.', dmgMult:2.5, isMagic:true, healPct:15, unlockLv:6 },
+  water_basic:  { id:'water_basic',  class:'water',    type:'basic',    name:'Tide Slash',   icon:'💧', cd:0,    desc:'Flowing water strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8, isMagic:true  },
+  water_reg1:   { id:'water_reg1',   class:'water',    type:'regular',  name:'Frost Bolt',   icon:'❄️', cd:3200, desc:'Ice shard dealing magic damage. Slows enemy attack speed by 30% for 3s.', dmgMult:2.0, isMagic:true, slow:true, unlockLv:3 },
+  water_reg2:   { id:'water_reg2',   class:'water',    type:'regular',  name:'Hydro Pulse',  icon:'🌊', cd:4500, desc:'Tidal wave dealing heavy magic damage. Heals you for 15% of damage dealt.', dmgMult:2.5, isMagic:true, healPct:15, unlockLv:6 },
   water_ult:    { id:'water_ult',    class:'water',    type:'ultimate', name:'Tsunami',      icon:'🌊', cd:20000,desc:'Massive wave dealing huge magic damage. Resets all cooldowns on kill.', dmgMult:5.5, isMagic:true, unlockLv:10 },
 
   // ── GRASS ──
-  grass_basic:  { id:'grass_basic',  class:'grass',    type:'basic',    name:'Thorn Whip',   icon:'🌿', cd:0,    desc:'Nature strikes auto-attacking at attack speed.', dmgMult:0.8, isMagic:true  },
-  grass_reg1:   { id:'grass_reg1',   class:'grass',    type:'regular',  name:'Vine Snare',   icon:'🌱', cd:4000, desc:'Entangling vines dealing damage and healing you for 20% of damage.', dmgMult:1.8, isMagic:true, healPct:20, unlockLv:3 },
-  grass_reg2:   { id:'grass_reg2',   class:'grass',    type:'regular',  name:'Spore Cloud',  icon:'🍄', cd:5500, desc:'Toxic spores dealing damage over 3s. Restores 30 HP on cast.', dmgMult:2.0, isMagic:true, dot:true, flatHeal:30, unlockLv:6 },
-  grass_ult:    { id:'grass_ult',    class:'grass',    type:'ultimate', name:'Overgrowth',   icon:'🌳', cd:22000,desc:'Massive nature explosion. Heals 25% of total damage dealt.', dmgMult:5.0, isMagic:true, healPct:25, unlockLv:10 },
+  grass_basic:  { id:'grass_basic',  class:'grass',    type:'basic',    name:'Thorn Whip',   icon:'🌿', cd:0,    desc:'Nature strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8, isMagic:true  },
+  grass_reg1:   { id:'grass_reg1',   class:'grass',    type:'regular',  name:'Vine Snare',   icon:'🌱', cd:4000, desc:'Entangling vines dealing magic damage. Heals you for 20% of damage dealt.', dmgMult:1.8, isMagic:true, healPct:20, unlockLv:3 },
+  grass_reg2:   { id:'grass_reg2',   class:'grass',    type:'regular',  name:'Spore Cloud',  icon:'🍄', cd:5500, desc:'Toxic spores dealing damage over 3s. Also restores 30 HP instantly on cast.', dmgMult:2.0, isMagic:true, dot:true, flatHeal:30, unlockLv:6 },
+  grass_ult:    { id:'grass_ult',    class:'grass',    type:'ultimate', name:'Overgrowth',   icon:'🌳', cd:22000,desc:'Massive nature explosion dealing huge magic damage. Heals you for 25% of damage dealt.', dmgMult:5.0, isMagic:true, healPct:25, unlockLv:10 },
 
   // ── DARK ──
-  dark_basic:   { id:'dark_basic',   class:'dark',     type:'basic',    name:'Shadow Strike',icon:'🌑', cd:0,    desc:'Dark energy auto-attacking at attack speed.', dmgMult:0.85, isMagic:true  },
-  dark_reg1:    { id:'dark_reg1',    class:'dark',     type:'regular',  name:'Void Bolt',    icon:'🔮', cd:3800, desc:'Dark projectile with 20% increased crit chance.', dmgMult:2.3, isMagic:true, bonusCrit:20, unlockLv:3 },
-  dark_reg2:    { id:'dark_reg2',    class:'dark',     type:'regular',  name:'Soul Drain',   icon:'💀', cd:5000, desc:'Drains life — deals damage and heals 40% of damage dealt.', dmgMult:1.9, isMagic:true, healPct:40, unlockLv:6 },
-  dark_ult:     { id:'dark_ult',     class:'dark',     type:'ultimate', name:'Void Collapse', icon:'🕳️', cd:20000,desc:'Collapses reality — massive damage and steals 30% as HP.', dmgMult:5.8, isMagic:true, healPct:30, unlockLv:10 },
+  dark_basic:   { id:'dark_basic',   class:'dark',     type:'basic',    name:'Shadow Strike',icon:'🌑', cd:0,    desc:'Dark energy strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.85, isMagic:true  },
+  dark_reg1:    { id:'dark_reg1',    class:'dark',     type:'regular',  name:'Void Bolt',    icon:'🔮', cd:3800, desc:'Dark projectile dealing magic damage. This cast has +20% crit chance.', dmgMult:2.3, isMagic:true, bonusCrit:20, unlockLv:3 },
+  dark_reg2:    { id:'dark_reg2',    class:'dark',     type:'regular',  name:'Soul Drain',   icon:'💀', cd:5000, desc:'Drains life — deals magic damage and heals you for 40% of damage dealt.', dmgMult:1.9, isMagic:true, healPct:40, unlockLv:6 },
+  dark_ult:     { id:'dark_ult',     class:'dark',     type:'ultimate', name:'Void Collapse', icon:'🕳️', cd:20000,desc:'Collapses reality dealing massive magic damage. Heals you for 30% of damage dealt.', dmgMult:5.8, isMagic:true, healPct:30, unlockLv:10 },
 
   // ── LIGHT ──
-  light_basic:  { id:'light_basic',  class:'light',    type:'basic',    name:'Radiant Strike',icon:'✨', cd:0,   desc:'Holy light auto-attacking at attack speed.', dmgMult:0.8, isMagic:true  },
-  light_reg1:   { id:'light_reg1',   class:'light',    type:'regular',  name:'Holy Bolt',    icon:'⚡', cd:3500, desc:'Divine energy dealing magic damage and restoring 15 HP.', dmgMult:2.1, isMagic:true, flatHeal:15, unlockLv:3 },
-  light_reg2:   { id:'light_reg2',   class:'light',    type:'regular',  name:'Smite',        icon:'☀️', cd:4200, desc:'Righteous strike — triple damage vs Dark enemies.', dmgMult:2.4, isMagic:true, unlockLv:6 },
-  light_ult:    { id:'light_ult',    class:'light',    type:'ultimate', name:'Divine Nova',  icon:'🌟', cd:19000,desc:'Holy explosion hitting all weaknesses. Heals 20% damage dealt.', dmgMult:6.0, isMagic:true, healPct:20, unlockLv:10 },
+  light_basic:  { id:'light_basic',  class:'light',    type:'basic',    name:'Radiant Strike',icon:'✨', cd:0,   desc:'Holy light strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8, isMagic:true  },
+  light_reg1:   { id:'light_reg1',   class:'light',    type:'regular',  name:'Holy Bolt',    icon:'⚡', cd:3500, desc:'Divine energy dealing magic damage and restoring 15 HP on hit.', dmgMult:2.1, isMagic:true, flatHeal:15, unlockLv:3 },
+  light_reg2:   { id:'light_reg2',   class:'light',    type:'regular',  name:'Smite',        icon:'☀️', cd:4200, desc:'Righteous strike dealing magic damage. Deals triple damage vs Dark enemies.', dmgMult:2.4, isMagic:true, unlockLv:6 },
+  light_ult:    { id:'light_ult',    class:'light',    type:'ultimate', name:'Divine Nova',  icon:'🌟', cd:19000,desc:'Holy explosion dealing massive magic damage. Heals you for 20% of damage dealt.', dmgMult:6.0, isMagic:true, healPct:20, unlockLv:10 },
 
   // ── PHYSICAL ──
-  phys_basic:   { id:'phys_basic',   class:'physical', type:'basic',    name:'Quick Strike', icon:'⚔️', cd:0,    desc:'Fast physical attack auto-attacking at attack speed.', dmgMult:1.0, isMagic:false },
-  phys_reg1:    { id:'phys_reg1',    class:'physical', type:'regular',  name:'Power Slam',   icon:'🪓', cd:3000, desc:'Crushing blow — 2.5x physical damage. Bonus damage vs Brutes.', dmgMult:2.5, isMagic:false, unlockLv:3 },
-  phys_reg2:    { id:'phys_reg2',    class:'physical', type:'regular',  name:'Whirlwind',    icon:'🌀', cd:4500, desc:'Spinning attack dealing damage twice in quick succession.', dmgMult:1.8, isMagic:false, hits:2, unlockLv:6 },
-  phys_ult:     { id:'phys_ult',     class:'physical', type:'ultimate', name:'Devastate',    icon:'💥', cd:16000,desc:'Overwhelm the enemy with 7x physical damage. Ignores 50% armor.', dmgMult:7.0, isMagic:false, armorPen:0.5, unlockLv:10 },
+  phys_basic:   { id:'phys_basic',   class:'physical', type:'basic',    name:'Quick Strike', icon:'⚔️', cd:0,    desc:'Fast physical attack dealing physical damage. Toggles auto-attack on/off.', dmgMult:1.0, isMagic:false },
+  phys_reg1:    { id:'phys_reg1',    class:'physical', type:'regular',  name:'Power Slam',   icon:'🪓', cd:3000, desc:'Crushing blow dealing 2.5x physical damage. Deals bonus damage vs Brutes.', dmgMult:2.5, isMagic:false, unlockLv:3 },
+  phys_reg2:    { id:'phys_reg2',    class:'physical', type:'regular',  name:'Whirlwind',    icon:'🌀', cd:4500, desc:'Spinning attack that strikes twice in quick succession.', dmgMult:1.8, isMagic:false, hits:2, unlockLv:6 },
+  phys_ult:     { id:'phys_ult',     class:'physical', type:'ultimate', name:'Devastate',    icon:'💥', cd:16000,desc:'Overwhelming strike dealing 7x physical damage. Ignores 50% of enemy armor.', dmgMult:7.0, isMagic:false, armorPen:0.5, unlockLv:10 },
 
   // ── HEALS (one per class) ──
-  heal_physical:{ id:'heal_physical',class:'physical', type:'heal', name:'Bandage',       icon:'🩹', cd:12000, desc:'Patch yourself up. Restores 25% of max HP.', healFlat:0, healPct:25 },
-  heal_fire:    { id:'heal_fire',    class:'fire',     type:'heal', name:'Cauterize',      icon:'🔥', cd:10000, desc:'Sear your wounds. Restores 20% max HP instantly.', healFlat:0, healPct:20 },
-  heal_water:   { id:'heal_water',   class:'water',    type:'heal', name:'Tidal Mend',     icon:'💧', cd:9000,  desc:'Healing waters restore 30% of max HP.', healFlat:0, healPct:30 },
-  heal_grass:   { id:'heal_grass',   class:'grass',    type:'heal', name:'Nature Bloom',   icon:'🌿', cd:8000,  desc:'Nature energy restores 35% max HP over 3 pulses.', healFlat:0, healPct:35, hot:true },
-  heal_dark:    { id:'heal_dark',    class:'dark',     type:'heal', name:'Soul Siphon',    icon:'🌑', cd:11000, desc:'Drain life from the enemy. Deals 50% magic dmg, heals equal amount.', healFlat:0, healPct:0, siphon:true },
-  heal_light:   { id:'heal_light',   class:'light',    type:'heal', name:'Holy Mend',      icon:'✨', cd:8000,  desc:'Divine light restores 40% of max HP instantly.', healFlat:0, healPct:40 },
+  heal_physical:{ id:'heal_physical',class:'physical', type:'heal', name:'Bandage',       icon:'🩹', cd:12000, desc:'Patch yourself up. Restores 25% of your max HP. Costs 30 mana.', healFlat:0, healPct:25 },
+  heal_fire:    { id:'heal_fire',    class:'fire',     type:'heal', name:'Cauterize',      icon:'🔥', cd:10000, desc:'Sear your wounds closed. Restores 20% of your max HP instantly. Costs 30 mana.', healFlat:0, healPct:20 },
+  heal_water:   { id:'heal_water',   class:'water',    type:'heal', name:'Tidal Mend',     icon:'💧', cd:9000,  desc:'Healing waters restore 30% of your max HP. Costs 30 mana.', healFlat:0, healPct:30 },
+  heal_grass:   { id:'heal_grass',   class:'grass',    type:'heal', name:'Nature Bloom',   icon:'🌿', cd:8000,  desc:'Nature energy restores 35% of your max HP in 3 pulses over 2 seconds. Costs 30 mana.', healFlat:0, healPct:35, hot:true },
+  heal_dark:    { id:'heal_dark',    class:'dark',     type:'heal', name:'Soul Siphon',    icon:'🌑', cd:11000, desc:'Drain life from the enemy. Deals magic damage equal to 50% of your Magic Power and heals you for the same amount. Costs 30 mana.', healFlat:0, healPct:0, siphon:true },
+  heal_light:   { id:'heal_light',   class:'light',    type:'heal', name:'Holy Mend',      icon:'✨', cd:8000,  desc:'Divine light restores 40% of your max HP instantly. Costs 30 mana.', healFlat:0, healPct:40 },
 };
 const CLASS_COLORS = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', dark:'#9b4dff', light:'#ffd700', physical:'#aaaaaa' };
 const CLASS_ICONS  = { fire:'🔥', water:'💧', grass:'🌿', dark:'🌑', light:'✨', physical:'⚔️' };
@@ -3856,7 +3856,7 @@ function openHealPicker() {
         <span class="apc-type" style="border-color:#3acc7a;color:#3acc7a">heal</span>
       </div>
       <div class="apc-desc">${ab.desc}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:3px;">CD: ${(ab.cd/1000).toFixed(1)}s · ${lv > 0 ? 'Lv'+lv+' · +'+Math.floor(lv*10)+'% effect' : 'Base'}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px;">CD: ${(ab.cd/1000).toFixed(1)}s · ${lv > 0 ? 'Lv'+lv+' · +'+Math.floor(lv*10)+'% stronger healing' : 'Base healing'}</div>
       ${!unlocked ? `<div class="apc-unlock">🔒 Requires ${ab.class} class level ${ab.unlockLv || 0}</div>` : ''}
     </div>`;
   }).join('');
@@ -4498,7 +4498,7 @@ function renderSPPopup() {
         const lvl = G.skillLevels[key]||0;
         ph += '<div class="skill-row" onclick="spSpendPassive(&quot;'+elKey+'&quot;,'+i+')" style="cursor:pointer;border-radius:6px;padding:4px;" onmouseover="this.style.background=&quot;#ffffff10&quot;" onmouseout="this.style.background=&quot;transparent&quot;">';
         ph += '<div><div class="skill-name">'+sk.name+'</div>';
-        ph += '<div class="skill-pts">Lv'+lvl+' · +'+(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)+' '+(STAT_LABELS[sk.stat]||sk.stat)+' after</div></div>';
+        ph += '<div class="skill-pts">Lv'+lvl+' · Upgrade gives: +'+(sk.per).toFixed(sk.per<1?1:0)+' '+(STAT_LABELS[sk.stat]||sk.stat)+' (total: +'+(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)+')</div></div>';
         ph += '<button class="skill-btn" style="pointer-events:none;">+</button></div>';
       });
       ph += '</div>';
@@ -4542,7 +4542,7 @@ function renderSPPopup() {
             <span style="font-size:16px;">${ab.icon}</span>
             <div style="flex:1;">
               <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">${ab.name} <span style="color:${typeColor};font-size:9px;border:1px solid ${typeColor};border-radius:6px;padding:1px 4px;">${ab.type}</span></div>
-              <div style="font-size:10px;color:var(--muted);">Lv${abLv} · ${Math.floor(ab.dmgMult*(1+abLv*0.15)*100)}% dmg</div>
+              <div style="font-size:10px;color:var(--muted);">Lv${abLv} · ${ab.type==='heal' ? `+${abLv*10}% healing` : `${Math.floor(ab.dmgMult*(1+abLv*0.15)*100)}% base dmg`}</div>
             </div>
             <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--gold);">⬆ Upgrade</div>
           </div>
@@ -4728,7 +4728,7 @@ function upgradeAbility(abId) {
   G.classCP[ab.class] -= cost;
   G.abilityLevels[abId] = (G.abilityLevels[abId] || 0) + 1;
   const newLv = G.abilityLevels[abId];
-  log(`<span style="color:${CLASS_COLORS[ab.class]}">⬆ ${ab.icon} ${ab.name} upgraded to Level ${newLv}! (+${Math.floor(ab.dmgMult * 15)}% dmg)</span>`);
+  log(`<span style="color:${CLASS_COLORS[ab.class]}">⬆ ${ab.icon} ${ab.name} upgraded to Level ${newLv}! ${ab.type==='heal' ? `(+${newLv*10}% stronger healing)` : `(+${Math.floor(ab.dmgMult * 15)}% damage)`}</span>`);
   playSound('level_up');
   saveGame();
   updateClassXPPanel();
@@ -4771,7 +4771,9 @@ function buildAbilityUpgradesHTML() {
         const abLv = G.abilityLevels[ab.id] || 0;
         const cost = getAbilityUpgradeCost(ab.id);
         const canUp = canUpgradeAbility(ab.id);
-        const dmgBonus = abLv > 0 ? `+${Math.floor(abLv * 15)}% dmg` : 'Base';
+        const dmgBonus = abLv > 0
+      ? (ab.type==='heal' ? `+${abLv*10}% healing power` : `+${Math.floor(abLv * 15)}% damage`)
+      : 'Base power';
         const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
 
         if (!unlocked) {
