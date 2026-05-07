@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.5.51</title>
+<title>Elemental Rift v1.6.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -404,7 +404,10 @@ let sbProfile = null; // players row
     <span class="el-badge" style="border-color:#ffd700;color:#ffd700;">✨ Light</span>
   </div>
   <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
-  <button id="start-btn" onclick="startGame()">Begin Journey</button>
+  <div style="display:flex;gap:8px;width:100%;max-width:340px;">
+    <button id="start-btn" onclick="startGame()" style="flex:2;">Begin Journey</button>
+    <button onclick="openTrinityShop()" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:12px 8px;border-radius:10px;border:1px solid #8855ff;background:rgba(136,85,255,0.1);color:#8855ff;cursor:pointer;">⚡ Trinity</button>
+  </div>
   <div style="width:100%;max-width:340px;margin-top:4px;">
     <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--muted);letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-transform:uppercase;">🏆 Top Scores</div>
     <div id="name-screen-lb" style="display:flex;flex-direction:column;gap:4px;min-height:60px;">
@@ -414,7 +417,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.51 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.5.55 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -515,6 +518,34 @@ let sbProfile = null; // players row
   <button onclick="signOut()" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid #e83a3a;color:#e83a3a;background:transparent;cursor:pointer;">Sign Out</button>
   <button onclick="document.getElementById('account-menu').classList.add('hidden')" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;margin-top:6px;">Close</button>
 </div>
+
+<!-- TRINITY FORCE SHOP -->
+<div id="trinity-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
+  <div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:#e8b84b;">⚡ Trinity Force</div>
+      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:12px;">✕ Close</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Permanent artifacts that empower every run. Only changeable from this menu.</div>
+
+    <!-- Orbs display -->
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#0d1018;border-radius:8px;padding:8px 14px;margin-bottom:14px;">
+      <span style="font-family:'Cinzel',serif;font-size:12px;color:var(--muted);">Your Orbs</span>
+      <span style="font-family:'Cinzel',serif;font-size:18px;color:#8855ff;" id="trinity-orb-count">0 ✦</span>
+    </div>
+
+    <!-- Trinity slots -->
+    <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Your Trinity (3 slots)</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;" id="trinity-slots"></div>
+
+    <!-- Shop -->
+    <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">
+      Artifact Shop — Trinity Level <span id="trinity-level-display">0</span>
+    </div>
+    <div id="trinity-shop-items"></div>
+  </div>
+</div>
+
 <!-- MAIN GAME -->
 <div id="game" class="hidden">
 
@@ -524,7 +555,7 @@ let sbProfile = null; // players row
       <div class="res-item"><span class="res-label">Wave</span><span class="res-val" id="wave-num">1</span></div>
       <div class="res-item"><span class="res-label">Gold</span><span class="res-val" id="gold-val">0</span></div>
       <div class="res-item"><span class="res-label">Kills</span><span class="res-val" id="kills-val">0</span></div>
-      <div class="res-item"><span class="res-label" style="color:#8888ff">🔮</span><span class="res-val blue" id="passive-pts-val">0</span></div>
+
     </div>
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:160px;min-width:80px;">
       <div style="display:flex;justify-content:space-between;">
@@ -724,6 +755,7 @@ let sbProfile = null; // players row
     <div class="modal-subtitle">Buy to reveal stats</div>
     <div style="text-align:center;font-family:'Cinzel',serif;font-size:14px;color:var(--gold);margin:-8px 0 12px;letter-spacing:0.05em;" id="vendor-gold-display">💰 0 gold</div>
     <div id="vendor-items"></div>
+    <div id="vendor-resets" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);"></div>
     <div class="modal-btns">
       <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;" onclick="closeVendor()">Leave Shop</button>
     </div>
@@ -1169,14 +1201,14 @@ function rollEnemy(wave) {
   const name = ENEMY_NAMES[Math.floor(Math.random()*ENEMY_NAMES.length)];
   // Scale by BOTH wave AND player power
   const power = getPlayerPower();
-  const waveScale = 1 + (wave-1)*0.22;
+  const waveScale = 1 + (wave-1)*0.11;
   const powerScale = 1 + Math.min(power, 150) * 0.012; // cap power influence
   const scale = waveScale * powerScale;
 
   if (isBrute) {
     return {name,type:'brute',elements:[],
       hp:Math.floor((55+wave*18)*scale), maxHp:Math.floor((55+wave*18)*scale),
-      attack:Math.floor((5+wave*1.2)*scale), armor:Math.floor(10+wave*1.2),
+      attack:Math.floor((3+wave*0.55)*scale), armor:Math.floor(8+wave*0.8),
       magicResist:Math.floor(10+wave*1.2), gold:Math.floor(8+wave*3), xp:1+Math.floor(wave/2)};
   } else {
     const pool=[...ELEMENTS];
@@ -1185,7 +1217,7 @@ function rollEnemy(wave) {
     for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
     return {name,type:'elemental',elements,
       hp:Math.floor((40+wave*13)*scale), maxHp:Math.floor((40+wave*13)*scale),
-      attack:Math.floor((4+wave*1.0)*scale), armor:Math.floor(2+wave*0.8),
+      attack:Math.floor((2+wave*0.45)*scale), armor:Math.floor(2+wave*0.5),
       magicResist:Math.floor(2+wave*0.8), gold:Math.floor(6+wave*2), xp:1+Math.floor(wave/3)};
   }
 }
@@ -1284,7 +1316,7 @@ function rollBoss(level, infinite=false) {
   return {
     name:`${name}`, type:'boss', elements, bossLevel:level,
     hp:Math.floor((600+level*400)*scale), maxHp:Math.floor((600+level*400)*scale),
-    attack:Math.floor((18+level*8)*scale), armor:Math.floor(15+level*5),
+    attack:Math.floor((12+level*5)*scale), armor:Math.floor(12+level*4),
     magicResist:Math.floor(15+level*5), gold:Math.floor(80+G.wave*20), xp:0
   };
 }
@@ -1352,7 +1384,10 @@ function onBossPhaseKill() {
     setTimeout(()=>showItemModal(dropItem,'vendor_buy'), 500);
     G.combatActive=false; G.enemy=null;
     updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena(); saveGame();
-    onSegmentWaveComplete();
+    // Always let player initiate next enemy
+  document.getElementById('next-btn').classList.remove('hidden');
+  showPotionBtn();
+  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
     return;
   }
   G.bossLevel++;
@@ -2028,6 +2063,70 @@ const BOSS_MILESTONES = [
   { dmg:500000,  gold:10000, xp:2000, icon:'⚡', label:'500K' },
 ];
 
+
+// ═══════════════════════════════════════════════
+// TRINITY FORCE SYSTEM
+// ═══════════════════════════════════════════════
+const TRINITY_TIER_UNLOCK = { Basic:0, Great:3, Exquisite:8, Ancient:15, Cosmic:25 };
+
+const ARTIFACT_STAT_POOLS = [
+  { key:'attack',      label:'Attack',       icon:'⚔️',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
+  { key:'magicPower',  label:'Magic Power',  icon:'🔮',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
+  { key:'health',      label:'Max HP',       icon:'❤️',  per:{ Basic:8, Great:18, Exquisite:35, Ancient:60, Cosmic:100 } },
+  { key:'mana',        label:'Max Mana',     icon:'💧',  per:{ Basic:5, Great:12, Exquisite:22, Ancient:40, Cosmic:70 } },
+  { key:'critChance',  label:'Crit Chance',  icon:'🎯',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
+  { key:'critDmg',     label:'Crit Damage',  icon:'💥',  per:{ Basic:5, Great:10, Exquisite:18, Ancient:30, Cosmic:50 } },
+  { key:'armor',       label:'Armor',        icon:'🛡️',  per:{ Basic:2, Great:4, Exquisite:8, Ancient:14, Cosmic:22 } },
+  { key:'lifeSteal',   label:'Life Steal',   icon:'🩸',  per:{ Basic:0.3, Great:0.6, Exquisite:1.1, Ancient:1.8, Cosmic:3.0 } },
+  { key:'manaRegen',   label:'Mana Regen',   icon:'💦',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
+  { key:'cdr',         label:'CDR',          icon:'⏱️',  per:{ Basic:1, Great:2, Exquisite:4, Ancient:7, Cosmic:12 } },
+];
+
+const ARTIFACT_TIER_COLORS = {
+  Basic:'#aaaaaa', Great:'#3acc7a', Exquisite:'#2196f3', Ancient:'#ff4444', Cosmic:'#e8b84b'
+};
+
+const ARTIFACT_ORB_COST = { Basic:10, Great:30, Exquisite:80, Ancient:200, Cosmic:500 };
+
+// Trinity state (loaded from Supabase)
+let trinityData = {
+  orbs: 0,
+  trinity_level: 0,
+  slot1: null,
+  slot2: null,
+  slot3: null
+};
+
+function rollArtifact(tierName) {
+  const pool = [...ARTIFACT_STAT_POOLS];
+  // Shuffle
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  // Pick 1-2 stats based on tier
+  const count = tierName === 'Basic' ? 1 : tierName === 'Great' ? 1 : tierName === 'Exquisite' ? 2 : tierName === 'Ancient' ? 2 : 3;
+  const stats = {};
+  for(let i=0;i<Math.min(count,pool.length);i++) {
+    const s = pool[i];
+    stats[s.key] = s.per[tierName];
+  }
+  return {
+    tier: tierName,
+    color: ARTIFACT_TIER_COLORS[tierName],
+    stats,
+    id: Date.now() + '_' + Math.random().toString(36).substr(2,6)
+  };
+}
+
+function getArtifactBonuses() {
+  const bonuses = {};
+  [trinityData.slot1, trinityData.slot2, trinityData.slot3].forEach(art => {
+    if(!art || !art.stats) return;
+    Object.entries(art.stats).forEach(([k,v]) => {
+      bonuses[k] = (bonuses[k]||0) + v;
+    });
+  });
+  return bonuses;
+}
+
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
 const SPELL_BASE_CD = { fire:3500, water:3200, grass:4000, dark:3800, light:4200 };
@@ -2266,8 +2365,10 @@ function onEnemyDeath() {
   drawArena();
   saveGame();
 
-  // Use map system for wave progression
-  onSegmentWaveComplete();
+  // Let player initiate next wave
+  document.getElementById('next-btn').classList.remove('hidden');
+  showPotionBtn();
+  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
 }
 
 function onDeath() {
@@ -2278,6 +2379,13 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
+  // Award orbs based on wave reached
+  if(sbUser) {
+    const orbsEarned = Math.max(1, Math.floor(G.wave * 1.5));
+    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
+    saveTrinity().catch(()=>{});
+    console.log('Orbs earned:', orbsEarned, 'Total:', trinityData.orbs);
+  }
 
   // Find most used element
   const uses = G.runStats.elementUses;
@@ -2589,6 +2697,17 @@ function equipItem(item){
 function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){
   document.getElementById('item-modal').classList.add('hidden');
+  // Remove queue hint
+  const queueHint = document.getElementById('item-queue-hint');
+  if(queueHint) queueHint.remove();
+
+  // Show next queued item if any
+  if(itemModalQueue.length > 0) {
+    const nextItem = itemModalQueue.shift();
+    setTimeout(() => showItemModal(nextItem, 'vendor_buy'), 150);
+    return;
+  }
+
   // Re-render vendor if it's open (so gold updates)
   const vendorModal = document.getElementById('vendor-modal');
   if(vendorModal && !vendorModal.classList.contains('hidden')) {
@@ -2644,33 +2763,44 @@ function renderVendor(){
       </div>
     </div>`;}).join('');
 }
+// Queue for purchased items waiting to be shown
+let itemModalQueue = [];
+
 function buyVendorItem(idx){
   const v = vendorStock[idx];
-
-  // stale index or already bought
-  if(!v){
-    renderVendor();
-    return;
-  }
-
+  if(!v){ renderVendor(); return; }
   if(G.gold < v.item.buyVal){
     log('<span style="color:#cc4444">Not enough gold!</span>');
     renderVendor();
     return;
   }
-
   G.gold -= v.item.buyVal;
   updateResourceBar();
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
-
   const boughtItem = v.item;
   vendorStock.splice(idx, 1);
-
   renderVendor();
-  showItemModal(boughtItem, 'vendor_buy');
+  // Queue the item — show immediately if no modal open, otherwise queue it
+  const itemModal = document.getElementById('item-modal');
+  if(itemModal.classList.contains('hidden')) {
+    showItemModal(boughtItem, 'vendor_buy');
+  } else {
+    itemModalQueue.push(boughtItem);
+    // Update the queue count hint in the modal
+    const queueHint = document.getElementById('item-queue-hint');
+    if(queueHint) queueHint.textContent = `${itemModalQueue.length} more item${itemModalQueue.length>1?'s':''} to review`;
+    else {
+      const hint = document.createElement('div');
+      hint.id = 'item-queue-hint';
+      hint.style.cssText = 'text-align:center;font-size:11px;color:#e8b84b;margin-top:6px;font-family:Cinzel,serif;';
+      hint.textContent = `${itemModalQueue.length} more item${itemModalQueue.length>1?'s':''} to review`;
+      document.querySelector('#item-modal .modal').appendChild(hint);
+    }
+  }
 }
 function closeVendor(){
   document.getElementById('vendor-modal').classList.add('hidden');
+  itemModalQueue = []; // clear any unreviewed items
   if(MAP.segmentComplete){
     MAP.segmentComplete=false;
     showMapScreen(false);
@@ -2698,8 +2828,7 @@ function updateResourceBar(){
   document.getElementById('gold-val').textContent=G.gold;
   document.getElementById('kills-val').textContent=G.kills;
   document.getElementById('wave-num').textContent=G.wave;
-  const ppEl = document.getElementById('passive-pts-val');
-  if(ppEl) ppEl.textContent = G.passivePoints||0;
+
   updateXPBar();
 }
 
@@ -3845,6 +3974,40 @@ async function signOut() {
   location.reload();
 }
 
+
+// ═══════════════════════════════════════════════
+// TRINITY FORCE — SUPABASE
+// ═══════════════════════════════════════════════
+async function loadTrinity() {
+  if(!sbUser) return;
+  const { data } = await sb.from('player_trinity')
+    .select('*')
+    .eq('player_id', sbUser.id)
+    .single();
+  if(data) {
+    trinityData = {
+      orbs: data.orbs||0,
+      trinity_level: data.trinity_level||0,
+      slot1: data.slot1||null,
+      slot2: data.slot2||null,
+      slot3: data.slot3||null
+    };
+  }
+}
+
+async function saveTrinity() {
+  if(!sbUser) return;
+  await sb.from('player_trinity').upsert({
+    player_id: sbUser.id,
+    orbs: trinityData.orbs||0,
+    trinity_level: trinityData.trinity_level||0,
+    slot1: trinityData.slot1||null,
+    slot2: trinityData.slot2||null,
+    slot3: trinityData.slot3||null,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'player_id' });
+}
+
 // ═══════════════════════════════════════════════
 // STATUS EFFECTS
 // ═══════════════════════════════════════════════
@@ -4045,8 +4208,10 @@ function selectStartingClass(cls) {
 // ═══════════════════════════════════════════════
 // XP & SKILL POINT POPUP SYSTEM
 // ═══════════════════════════════════════════════
-let spPending = 0; // queued skill points waiting for popup
+let spPending = 0;      // queued skill points (class invest + stat boost)
+let passivePending = 0; // queued passive points
 let spPopupOpen = false;
+let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
 
 function awardXP(amount) {
   G.xp += amount;
@@ -4055,22 +4220,32 @@ function awardXP(amount) {
     G.xp -= G.xpToNext;
     G.xpToNext = Math.floor(G.xpToNext * 1.18);
     G.skillPoints++;
+    G.passivePoints++;
     spPending++;
+    passivePending++;
   }
   if(spPending > 0 && !spPopupOpen) {
     stopEnemyAutoAttack();
     stopAllAutoSlots();
     setTimeout(() => {
-      // Don't show if item modal is open
       const itemModal = document.getElementById('item-modal');
       if(itemModal && !itemModal.classList.contains('hidden')) {
-        // Retry after item modal is dealt with
-        setTimeout(()=>{ if(spPending>0&&!spPopupOpen) showSPPopup(); }, 500);
+        setTimeout(()=>{ if(spPending>0&&!spPopupOpen) triggerLevelUpPopup(); }, 500);
         return;
       }
-      if(spPending > 0 && !spPopupOpen) showSPPopup();
-    }, 900); // after item drop at 600ms
+      triggerLevelUpPopup();
+    }, 900);
   }
+}
+
+function triggerLevelUpPopup() {
+  if(spPending <= 0 && passivePending <= 0) return;
+  spPhase = 'skill';
+  spPopupOpen = true;
+  spStep = 1;
+  spChosenClass = null;
+  renderSPPopup();
+  document.getElementById('sp-popup').classList.remove('hidden');
 }
 
 function updateXPBar() {
@@ -4086,13 +4261,7 @@ let spStep = 1; // 1=pick class, 2=pick class investment, 3=pick stat
 let spChosenClass = null;
 
 function showSPPopup() {
-  if(spPending <= 0) return;
-  spPending--;
-  spPopupOpen = true;
-  spStep = 1;
-  spChosenClass = null;
-  renderSPPopup();
-  document.getElementById('sp-popup').classList.remove('hidden');
+  triggerLevelUpPopup();
 }
 
 function renderSPPopup() {
@@ -4167,8 +4336,8 @@ function renderSPPopup() {
     `;
   } else if (spStep === 3) {
     el.innerHTML = `
-      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">Also boost a base stat</div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Choose one permanent upgrade</div>
+      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">📈 Boost a Base Stat</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Choose one permanent upgrade — then your passive point awaits</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
         ${STAT_BOOST_OPTIONS.map(opt => `
           <div onclick="spBoostStat('${opt.key}')" style="background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -4179,6 +4348,25 @@ function renderSPPopup() {
             </div>
           </div>`).join('')}
       </div>`;
+  } else if (spPhase === 'passive') {
+    const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+    let ph = '<div style="font-family:Cinzel,serif;font-size:14px;font-weight:700;color:#8888ff;text-align:center;margin-bottom:4px;">🔮 Passive Skill Point</div>';
+    ph += '<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Permanently boost a passive stat</div>';
+    Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
+      const color = CLASS_COLORS[elKey]||'#88aacc';
+      ph += '<div class="skill-section">';
+      ph += '<div class="skill-element-title" style="color:'+color+'">'+(elEmoji[elKey]||'⚡')+' '+elKey.charAt(0).toUpperCase()+elKey.slice(1)+'</div>';
+      skills.forEach((sk, i) => {
+        const key = elKey+'_'+i;
+        const lvl = G.skillLevels[key]||0;
+        ph += '<div class="skill-row" onclick="spSpendPassive(&quot;'+elKey+'&quot;,'+i+')" style="cursor:pointer;border-radius:6px;padding:4px;" onmouseover="this.style.background=&quot;#ffffff10&quot;" onmouseout="this.style.background=&quot;transparent&quot;">';
+        ph += '<div><div class="skill-name">'+sk.name+'</div>';
+        ph += '<div class="skill-pts">Lv'+lvl+' · +'+(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)+' '+(STAT_LABELS[sk.stat]||sk.stat)+' after</div></div>';
+        ph += '<button class="skill-btn" style="pointer-events:none;">+</button></div>';
+      });
+      ph += '</div>';
+    });
+    el.innerHTML = ph;
   }
 }
 
@@ -4237,7 +4425,6 @@ function spBoostStat(key) {
   const opt = STAT_BOOST_OPTIONS.find(o => o.key === key);
   if (!opt) return;
   G.baseStats[key] = (G.baseStats[key]||0) + opt.amount;
-  // Recalc hp/mana if health/mana changed
   const st = getStats();
   if (key === 'health') {
     const oldMax = G.maxHp; G.maxHp = st.maxHp;
@@ -4247,12 +4434,26 @@ function spBoostStat(key) {
   if (key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
   log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
   G.skillPoints--;
-  closeSPPopup();
+  spPending--;
   updateStatsPanel();
   updateClassXPPanel();
   saveGame();
-  // Resume combat
-  if (G.combatActive && G.enemy) startEnemyAutoAttack();
+  // Now show passive point popup if pending
+  if(passivePending > 0) {
+    spPhase = 'passive';
+    spStep = 1;
+    renderSPPopup();
+    // popup already open
+  } else {
+    closeSPPopup();
+  }
+}
+
+function spSpendPassive(el, idx) {
+  upgradeSkill(el, idx);
+  G.passivePoints--;
+  passivePending--;
+  closeSPPopup();
 }
 
 function closeSPPopup() {
@@ -4616,6 +4817,143 @@ function dismissPassiveTutorial() {
   localStorage.setItem(PASSIVE_TUT_KEY, '1');
   // On mobile, auto-switch to upgrades tab
   if(IS_MOBILE()) mobileTab('upgrades');
+}
+
+
+// ═══════════════════════════════════════════════
+// TRINITY FORCE — SHOP UI
+// ═══════════════════════════════════════════════
+let trinityShopStock = []; // 6 random artifacts shown in shop
+
+function openTrinityShop() {
+  if(!sbUser) {
+    alert('Sign in to access the Trinity Force shop.');
+    return;
+  }
+  // Roll shop stock
+  trinityShopStock = [];
+  const tiers = ['Basic','Basic','Great','Great','Exquisite','Exquisite'];
+  const lv = trinityData.trinity_level||0;
+  if(lv >= TRINITY_TIER_UNLOCK.Ancient) tiers.push('Ancient');
+  if(lv >= TRINITY_TIER_UNLOCK.Cosmic) tiers.push('Cosmic');
+  tiers.forEach(t => trinityShopStock.push(rollArtifact(t)));
+
+  renderTrinityShop();
+  document.getElementById('trinity-modal').classList.remove('hidden');
+}
+
+function closeTrinityShop() {
+  document.getElementById('trinity-modal').classList.add('hidden');
+}
+
+function renderTrinityShop() {
+  // Orbs
+  document.getElementById('trinity-orb-count').textContent = (trinityData.orbs||0) + ' ✦';
+  document.getElementById('trinity-level-display').textContent = trinityData.trinity_level||0;
+
+  // Slots
+  const slotsEl = document.getElementById('trinity-slots');
+  slotsEl.innerHTML = ['slot1','slot2','slot3'].map((slot,i) => {
+    const art = trinityData[slot];
+    if(!art) return `<div onclick="selectTrinitySlot(${i})" style="background:#0d1018;border:2px dashed #8855ff44;border-radius:10px;padding:12px;text-align:center;cursor:pointer;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="font-size:20px;margin-bottom:4px;">✦</div>
+      <div style="font-family:'Cinzel',serif;font-size:9px;color:#8855ff;">Empty Slot ${i+1}</div>
+    </div>`;
+    return `<div style="background:#0d1018;border:1px solid ${art.color}44;border-radius:10px;padding:10px;cursor:pointer;position:relative;" onclick="selectTrinitySlot(${i})">
+      <div style="font-family:'Cinzel',serif;font-size:9px;color:${art.color};margin-bottom:4px;">${art.tier}</div>
+      ${Object.entries(art.stats).map(([k,v]) => {
+        const s = ARTIFACT_STAT_POOLS.find(p=>p.key===k);
+        return `<div style="font-size:10px;color:#3acc7a;">+${v} ${s?s.label:k}</div>`;
+      }).join('')}
+      <div style="font-size:9px;color:var(--muted);margin-top:4px;">Tap to swap</div>
+    </div>`;
+  }).join('');
+
+  // Shop items
+  const shopEl = document.getElementById('trinity-shop-items');
+  shopEl.innerHTML = trinityShopStock.map((art, i) => {
+    const cost = ARTIFACT_ORB_COST[art.tier];
+    const canAfford = (trinityData.orbs||0) >= cost;
+    const tierLvReq = TRINITY_TIER_UNLOCK[art.tier];
+    const canUnlock = (trinityData.trinity_level||0) >= tierLvReq;
+    return `<div style="background:#0d1018;border:1px solid ${art.color}33;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;opacity:${canUnlock?1:0.4};">
+      <div style="flex:1;">
+        <div style="font-family:'Cinzel',serif;font-size:12px;color:${art.color};margin-bottom:4px;">${art.tier} Artifact</div>
+        ${Object.entries(art.stats).map(([k,v]) => {
+          const s = ARTIFACT_STAT_POOLS.find(p=>p.key===k);
+          return `<div style="font-size:11px;color:#3acc7a;">${s?s.icon:''} +${v} ${s?s.label:k}</div>`;
+        }).join('')}
+        ${!canUnlock ? `<div style="font-size:10px;color:#e83a3a;margin-top:4px;">Requires Trinity Level ${tierLvReq}</div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-family:'Cinzel',serif;font-size:13px;color:${canAfford&&canUnlock?'#8855ff':'var(--muted)'};">${cost} ✦</div>
+        <button onclick="buyArtifact(${i})" ${canAfford&&canUnlock?'':'disabled'}
+          style="margin-top:6px;font-family:'Cinzel',serif;font-size:11px;padding:6px 12px;border-radius:6px;border:1px solid ${canAfford&&canUnlock?'#8855ff':'var(--border)'};color:${canAfford&&canUnlock?'#8855ff':'var(--muted)'};background:${canAfford&&canUnlock?'rgba(136,85,255,0.1)':'transparent'};cursor:${canAfford&&canUnlock?'pointer':'not-allowed'};">
+          Buy
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let trinitySelectMode = false; // waiting for slot selection
+let pendingArtifact = null;
+
+function buyArtifact(shopIdx) {
+  const art = trinityShopStock[shopIdx];
+  if(!art) return;
+  const cost = ARTIFACT_ORB_COST[art.tier];
+  if((trinityData.orbs||0) < cost) return;
+  trinityData.orbs -= cost;
+  trinityData.trinity_level = (trinityData.trinity_level||0) + 1;
+  trinityShopStock.splice(shopIdx, 1);
+  // Place in first empty slot, or prompt to choose
+  const emptySlot = ['slot1','slot2','slot3'].find(s => !trinityData[s]);
+  if(emptySlot) {
+    trinityData[emptySlot] = art;
+    saveTrinity().catch(()=>{});
+    renderTrinityShop();
+  } else {
+    // All slots full — pick which to replace
+    pendingArtifact = art;
+    showTrinityReplacePrompt(art);
+  }
+}
+
+function showTrinityReplacePrompt(art) {
+  const slotsEl = document.getElementById('trinity-slots');
+  slotsEl.innerHTML = `<div style="grid-column:1/-1;font-family:'Cinzel',serif;font-size:11px;color:var(--gold);text-align:center;padding:8px;">All slots full — tap a slot to replace it</div>`;
+  slotsEl.innerHTML += ['slot1','slot2','slot3'].map((slot,i) => {
+    const existing = trinityData[slot];
+    return `<div onclick="replaceTrinitySlot('${slot}')" style="background:#0d1018;border:2px solid #e8b84b55;border-radius:10px;padding:10px;cursor:pointer;">
+      <div style="font-family:'Cinzel',serif;font-size:9px;color:${existing.color};margin-bottom:4px;">${existing.tier}</div>
+      ${Object.entries(existing.stats).map(([k,v]) => {
+        const s = ARTIFACT_STAT_POOLS.find(p=>p.key===k);
+        return `<div style="font-size:10px;color:#e83a3a;">-${v} ${s?s.label:k}</div>`;
+      }).join('')}
+      <div style="font-size:9px;color:var(--muted);margin-top:4px;">Replace this?</div>
+    </div>`;
+  }).join('');
+}
+
+function replaceTrinitySlot(slot) {
+  if(!pendingArtifact) return;
+  trinityData[slot] = pendingArtifact;
+  pendingArtifact = null;
+  saveTrinity().catch(()=>{});
+  renderTrinityShop();
+}
+
+function selectTrinitySlot(idx) {
+  // Open a confirmation to remove the artifact
+  const slotKey = ['slot1','slot2','slot3'][idx];
+  const art = trinityData[slotKey];
+  if(!art) return;
+  if(confirm(`Remove this ${art.tier} artifact from slot ${idx+1}? You will not get orbs back.`)) {
+    trinityData[slotKey] = null;
+    saveTrinity().catch(()=>{});
+    renderTrinityShop();
+  }
 }
 
 // ═══════════════════════════════════════════════
