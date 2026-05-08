@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.2.4</title>
+<title>Elemental Rift v2.2.7</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.4 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.7 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1289,15 +1289,20 @@ function selectDifficulty(diff) {
   MAP.pendingBoss = false;
   document.getElementById('map-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
-  setTimeout(() => {
+  // Double rAF ensures layout has fully settled before we measure the canvas
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     resizeCanvas();
     initMobileLayout();
-    renderWaveTimeline();
-    initUI();
-    const label = diff === 'infinite' ? '⚡ INFINITE mode — waves never end. Vendor every 5 waves.' : `${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.`;
-    log(`<span class="log-sys">${label}</span>`);
-    spawnNextSegmentWave();
-  }, 100);
+    // Second resize after mobile layout moves elements around
+    requestAnimationFrame(() => {
+      resizeCanvas();
+      renderWaveTimeline();
+      initUI();
+      const label = diff === 'infinite' ? '⚡ INFINITE mode — waves never end. Vendor every 5 waves.' : `${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.`;
+      log(`<span class="log-sys">${label}</span>`);
+      spawnNextSegmentWave();
+    });
+  }));
 }
 
 function renderWaveTimeline() {
@@ -1528,6 +1533,7 @@ function startGame() {
   initUI();
   requestAnimationFrame(() => { requestAnimationFrame(() => {
     resizeCanvas();
+    requestAnimationFrame(() => resizeCanvas()); // second pass after layout
     log(`<span class="log-sys">Welcome${loaded?' back':''}, ${G.playerName}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
     if (!loaded) {
       showClassSelection();
@@ -2454,9 +2460,11 @@ function openLoadoutPicker(slotIdx) {
 
   const list = document.getElementById('ability-picker-list');
   const abilities = Object.values(ABILITIES).filter(ab => {
-    if(ab.type === 'heal') return false; // heals use separate picker
+    if(ab.type === 'heal') return false;
     if(targetType && ab.type !== targetType) return false;
-    return isAbilityUnlocked(ab.id); // show all unlocked, regardless of abilityLevels
+    // Always show currently equipped ability even if below level requirement
+    if(G.loadout.includes(ab.id)) return ab.class === G.playerClass;
+    return isAbilityUnlocked(ab.id);
   });
 
   list.innerHTML = abilities.map(ab => {
@@ -2812,17 +2820,17 @@ function enemyAttack() {
 }
 
 function onEnemyDeath() {
-  if(!G.enemy || G._enemyDeathInProgress) return; // guard against double-call / reentrance
+  if(!G.enemy || G._enemyDeathInProgress) return;
   G._enemyDeathInProgress = true;
   G.combatActive = false;
   stopEnemyAutoAttack();
   stopAllAutoSlots(true);
   stopStatusTick();
-  // Capture enemy data before nulling
-  const enemyGold = G.enemy.gold;
-  const enemyType = G.enemy.type;
+  const enemyGold = G.enemy.gold || 0;
+  const enemyType = G.enemy.type || 'wolf';
   const enemyMaxHp = G.enemy.maxHp || 50;
-  G.enemy = null; // null immediately so no other code can re-trigger death
+  G.enemy = null;
+  try {
   G.kills++;
   G.gold += enemyGold;
   G.runStats.totalGold += enemyGold;
@@ -2862,8 +2870,15 @@ function onEnemyDeath() {
   syncMobileLog();
   drawArena();
   saveGame();
-  G._enemyDeathInProgress = false;
-  onSegmentWaveComplete();
+    G._enemyDeathInProgress = false;
+    onSegmentWaveComplete();
+  } catch(e) {
+    console.error('onEnemyDeath error:', e);
+    G._enemyDeathInProgress = false;
+    // Force show next wave button so player isn't stuck
+    setNextBtnActive(true);
+    if(autoWaveEnabled) setTimeout(()=>nextWave(), 800);
+  }
 }
 
 function onDeath() {
@@ -5488,7 +5503,7 @@ function selectImbue(imbue) {
   G.loadout[3] = null;
   healLoadout = `heal_${cls}`;
   G.abilityLevels[`heal_${cls}`] = 1;
-  G.classLv[cls] = 1;
+  G.classLv[cls] = 3; // start at 3 so reg1 skill is immediately usable
   G.classXP[cls] = 0;
 
   // Warrior gets offhand slot
@@ -6454,6 +6469,18 @@ function idlePulse(){applyScreenShake();drawArena();requestAnimationFrame(idlePu
 // INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('resize',()=>{resizeCanvas();initUI();initMobileLayout();});
+
+// ResizeObserver keeps canvas in sync if layout shifts (e.g. keyboard on mobile)
+if(typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(() => {
+    const a = document.getElementById('arena');
+    if(a && a.offsetWidth > 0 && a.offsetHeight > 0) resizeCanvas();
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    const a = document.getElementById('arena');
+    if(a) ro.observe(a);
+  });
+}
 resizeCanvas();
 idlePulse();
 
