@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.2.2</title>
+<title>Elemental Rift v2.2.4</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.2 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.4 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1608,16 +1608,19 @@ function getPlayerPower() {
 // ENEMIES
 // ═══════════════════════════════════════════════
 function rollEnemy(wave) {
-  // Enemy level rolls between playerLevel-2 and playerLevel+5
-  // This means enemies always feel relevant regardless of when you restart
+  // Enemy level rolls between playerLevel-2 and playerLevel+8
+  // Range widens at higher levels so enemies stay challenging as player scales
   const playerLv = G.playerLevel || 1;
   const minLv = Math.max(1, playerLv - 2);
-  const maxLv = playerLv + 5;
+  const maxBonus = Math.min(12, 5 + Math.floor(playerLv / 15)); // +5 early, up to +12 at lv105
+  const maxLv = playerLv + maxBonus;
   const enemyLv = Math.floor(minLv + Math.random() * (maxLv - minLv + 1));
 
-  // HP and ATK scale with enemy level — exponential growth
-  const hpBase = Math.floor(30 * Math.pow(1.18, enemyLv - 1));
-  const atkBase = Math.floor(3 * Math.pow(1.12, enemyLv - 1));
+  // HP and ATK use a power curve — scales aggressively but stays manageable
+  // HP  = 30 * lv^1.85  — roughly doubles every 8-10 levels
+  // ATK = 3  * lv^1.40  — grows slower than HP so defense matters
+  const hpBase = Math.floor(30 * Math.pow(enemyLv, 1.85));
+  const atkBase = Math.floor(3  * Math.pow(enemyLv, 1.40));
 
   // Pick enemy type weighted by rarity — higher level unlocks rarer types
   const pool = ENEMY_TYPES.filter(e => {
@@ -2232,13 +2235,12 @@ function fireAbility(ab) {
       G.enemy.hp = G.enemy.maxHp;
       updateEnemyUI();
     } else if(G.enemy.type==='boss'){
-      // Wave boss — dies normally, gives loot
-      G.combatActive = false; // stop interval from re-firing
-      stopAllAutoSlots();
+      G.combatActive = false;
+      stopAllAutoSlots(true);
       setTimeout(()=>{ onBossPhaseKill(); }, ab.isMagic?500:300);
     } else {
-      G.combatActive = false; // stop interval from re-firing
-      stopAllAutoSlots();
+      G.combatActive = false;
+      stopAllAutoSlots(true);
       setTimeout(()=>{ onEnemyDeath(); }, ab.isMagic?500:300);
     }
     return true;
@@ -2314,9 +2316,13 @@ function startCDBarAnimation(slotIdx, ab) {
 
 function stopAllAutoSlots(save=false) {
   if(save) {
-    // Remember which slots were active so we can restore after vendor/popup
-    G.savedAutoSlots = Object.keys(G.autoSlots).map(Number);
-    G.healWasAuto = !!G.autoSlots['heal'];
+    // Only overwrite saved state if there's something currently running
+    const activeSlots = Object.keys(G.autoSlots).map(Number).filter(k => !isNaN(k));
+    const healActive = !!G.autoSlots['heal'];
+    if(activeSlots.length > 0 || healActive) {
+      G.savedAutoSlots = activeSlots;
+      G.healWasAuto = healActive;
+    }
   }
   Object.values(G.autoSlots).forEach(id=>clearInterval(id));
   G.autoSlots = {};
@@ -2810,7 +2816,7 @@ function onEnemyDeath() {
   G._enemyDeathInProgress = true;
   G.combatActive = false;
   stopEnemyAutoAttack();
-  stopAllAutoSlots(true); // save=true so we can restore after wave
+  stopAllAutoSlots(true);
   stopStatusTick();
   // Capture enemy data before nulling
   const enemyGold = G.enemy.gold;
@@ -5250,7 +5256,7 @@ function tickStatusEffects() {
     updateEnemyUI();
     if(G.enemy.hp <= 0 && !G.inBoss) {
       G.combatActive = false;
-      stopAllAutoSlots();
+      stopAllAutoSlots(true);
       stopEnemyAutoAttack();
       onEnemyDeath();
       return;
@@ -5530,7 +5536,7 @@ function awardXP(amount) {
   }
   if(spPending > 0 && !spPopupOpen) {
     stopEnemyAutoAttack();
-    stopAllAutoSlots();
+    stopAllAutoSlots(true);
     setTimeout(() => {
       const itemModal = document.getElementById('item-modal');
       if(itemModal && !itemModal.classList.contains('hidden')) {
