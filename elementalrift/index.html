@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.1.1</title>
+<title>Elemental Rift v2.2.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.1.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -999,6 +999,96 @@ const ABILITIES = {
   heal_mage:    { id:'heal_mage',    class:'mage',    type:'heal', name:'Mana Surge',    icon:'✨', cd:9000,  desc:'Channel mana into healing. Restores 30% of max HP. Costs 30 mana.', healFlat:0, healPct:30 },
   heal_warrior: { id:'heal_warrior', class:'warrior', type:'heal', name:'Battle Cry',    icon:'🛡️', cd:10000, desc:'Rally your strength. Restores 25% of max HP. Costs 30 mana.', healFlat:0, healPct:25 },
   heal_rogue:   { id:'heal_rogue',   class:'rogue',   type:'heal', name:'Evasive Roll',  icon:'💨', cd:8000,  desc:'Evade and recover. Restores 20% of max HP. Costs 30 mana.', healFlat:0, healPct:20 },
+
+  // ══════════════════════════════════════════════════════
+  // MAGE — FIRE (2nd basic + 3 more skills + 2 more ults)
+  // ══════════════════════════════════════════════════════
+  // 2nd basic — high single hit instead of fast auto
+  mage_basic_fire2: { id:'mage_basic_fire2', class:'mage', imbue:'fire', type:'basic', name:'Magma Fist', icon:'🌋', cd:0, desc:'Slow heavy fire punch. Lower attack speed but 1.5x damage per hit. Toggles auto.', dmgMult:1.3, isMagic:true },
+
+  // Skills 3-5
+  fire_reg3: { id:'fire_reg3', class:'mage', imbue:'fire', type:'regular', name:'Combustion',   icon:'💥', cd:4000, desc:'Ignite the enemy — doubles current Burn tick rate for 4s. Deals light damage on cast.', dmgMult:1.2, isMagic:true, applyEffect:'burn', buff:{ id:'fire_combustion', stat:'dotDamage', amount:8, duration:4000, icon:'💥', label:'Combustion' }, unlockLv:4 },
+  fire_reg4: { id:'fire_reg4', class:'mage', imbue:'fire', type:'regular', name:'Firestorm',    icon:'🌪️', cd:7000, desc:'Spinning fire vortex dealing 3x rapid hits. Each hit can apply Burn.', dmgMult:1.4, isMagic:true, applyEffect:'burn', hits:3, unlockLv:5 },
+  fire_reg5: { id:'fire_reg5', class:'mage', imbue:'fire', type:'regular', name:'Cinder Aura',  icon:'🔆', cd:12000,desc:'Wrap yourself in flames for 5s — auto attacks gain +30% damage and apply Burn on every hit.', dmgMult:0.8, isMagic:true, buff:{ id:'fire_aura', stat:'attack', amount:0, pct:0.30, duration:5000, icon:'🔆', label:'Cinder Aura' }, unlockLv:7 },
+
+  // 2 more ults
+  fire_ult2: { id:'fire_ult2', class:'mage', imbue:'fire', type:'ultimate', name:'Phoenix Surge', icon:'🦅', cd:20000, desc:'Transform briefly — gain +60% attack speed and +40% damage for 6s. All hits apply Burn.', dmgMult:3.0, isMagic:true, applyEffect:'burn', buff:{ id:'fire_phoenix', stat:'atkSpeed', amount:0, pct:0.60, duration:6000, icon:'🦅', label:'Phoenix Surge' }, unlockLv:10 },
+  fire_ult3: { id:'fire_ult3', class:'mage', imbue:'fire', type:'ultimate', name:'Meteor Shower', icon:'☄️', cd:25000, desc:'Call down 5 meteors in rapid succession. Each meteor deals heavy damage and stacks Burn.', dmgMult:2.2, isMagic:true, applyEffect:'burn', hits:5, unlockLv:10 },
+
+  // ══════════════════════════════════════════════════════
+  // MAGE — WATER
+  // ══════════════════════════════════════════════════════
+  mage_basic_water2: { id:'mage_basic_water2', class:'mage', imbue:'water', type:'basic', name:'Riptide', icon:'🌊', cd:0, desc:'Channeled water blast. Slower but hits twice per auto cycle. Heals 5% per hit. Toggles auto.', dmgMult:1.0, isMagic:true, hits:2, healPct:5 },
+
+  water_reg3: { id:'water_reg3', class:'mage', imbue:'water', type:'regular', name:'Whirlpool',    icon:'🌀', cd:5500, desc:'Trap enemy in a whirlpool — fully stops their attacks for 2s and deals moderate damage.', dmgMult:1.6, isMagic:true, buff:{ id:'water_whirlpool', stat:'enemyStun', amount:1, duration:2000, icon:'🌀', label:'Whirlpool' }, unlockLv:4 },
+  water_reg4: { id:'water_reg4', class:'mage', imbue:'water', type:'regular', name:'Mana Spring',  icon:'💦', cd:8000, desc:'Draw power from water — instantly restore 50 mana and gain +25% spell vamp for 5s.', dmgMult:0.5, isMagic:true, buff:{ id:'water_spring', stat:'spellVamp', amount:8, duration:5000, icon:'💦', label:'Mana Spring' }, unlockLv:5 },
+  water_reg5: { id:'water_reg5', class:'mage', imbue:'water', type:'regular', name:'Tidal Barrier', icon:'🛡️', cd:10000,desc:'Erect a water shield — reduce all incoming damage by 40% for 4s.', dmgMult:0.6, isMagic:true, buff:{ id:'water_barrier', stat:'defense', amount:20, duration:4000, icon:'🛡️', label:'Tidal Barrier' }, unlockLv:7 },
+
+  water_ult2: { id:'water_ult2', class:'mage', imbue:'water', type:'ultimate', name:'Abyssal Pull',  icon:'🌊', cd:22000, desc:'Drag the enemy into the abyss — deal massive damage and reduce their attack by 60% for 8s.', dmgMult:5.0, isMagic:true, applyEffect:'slow', buff:{ id:'water_abyss', stat:'defense', amount:15, duration:8000, icon:'🌊', label:'Abyssal Pull' }, unlockLv:10 },
+  water_ult3: { id:'water_ult3', class:'mage', imbue:'water', type:'ultimate', name:'Glacial Epoch', icon:'🧊', cd:28000, desc:'Flash-freeze the entire battlefield — deal heavy damage and fully freeze enemy for 5s while healing 30% of damage.', dmgMult:4.5, isMagic:true, applyEffect:'ice', healPct:30, unlockLv:10 },
+
+  // ══════════════════════════════════════════════════════
+  // MAGE — GRASS
+  // ══════════════════════════════════════════════════════
+  mage_basic_grass2: { id:'mage_basic_grass2', class:'mage', imbue:'grass', type:'basic', name:'Thornwall', icon:'🌵', cd:0, desc:'Send out a wall of thorns each auto. Moderate speed, each hit heals 8% of damage. Toggles auto.', dmgMult:0.9, isMagic:true, healPct:8 },
+
+  grass_reg3: { id:'grass_reg3', class:'mage', imbue:'grass', type:'regular', name:'Rejuvenate',   icon:'💚', cd:6000,  desc:'Activate a heal-over-time — recover 3% max HP per second for 6s. No damage.', dmgMult:0, isMagic:true, buff:{ id:'grass_regen', stat:'hpRegen', amount:3, duration:6000, icon:'💚', label:'Rejuvenate' }, unlockLv:4 },
+  grass_reg4: { id:'grass_reg4', class:'mage', imbue:'grass', type:'regular', name:'Entangle',     icon:'🌿', cd:5000,  desc:'Root the enemy in vines — they cannot attack for 2.5s. Deals light damage.', dmgMult:1.0, isMagic:true, buff:{ id:'grass_entangle', stat:'enemyStun', amount:1, duration:2500, icon:'🌿', label:'Entangle' }, unlockLv:5 },
+  grass_reg5: { id:'grass_reg5', class:'mage', imbue:'grass', type:'regular', name:'Photosynthesis',icon:'🌞', cd:9000,  desc:'Absorb sunlight — gain +20% max HP temporarily and heal to that new max. Lasts 8s.', dmgMult:0, isMagic:true, buff:{ id:'grass_photo', stat:'health', amount:40, duration:8000, icon:'🌞', label:'Photosynthesis' }, unlockLv:7 },
+
+  grass_ult2: { id:'grass_ult2', class:'mage', imbue:'grass', type:'ultimate', name:"Nature's Wrath",icon:'⚡', cd:20000, desc:'Channel nature — deal massive damage and for 8s all your abilities heal you for an extra 15% of damage.', dmgMult:5.5, isMagic:true, healPct:15, buff:{ id:'grass_wrath', stat:'spellVamp', amount:15, duration:8000, icon:'⚡', label:"Nature's Wrath" }, unlockLv:10 },
+  grass_ult3: { id:'grass_ult3', class:'mage', imbue:'grass', type:'ultimate', name:'World Tree',   icon:'🌳', cd:30000, desc:'Summon the World Tree — heal 50% of max HP instantly, then regen 5% per second for 8s and gain +25% all damage.', dmgMult:2.0, isMagic:true, healPct:50, buff:{ id:'grass_tree', stat:'attack', amount:0, pct:0.25, duration:8000, icon:'🌳', label:'World Tree' }, unlockLv:10 },
+
+  // ══════════════════════════════════════════════════════
+  // WARRIOR — 2nd basic + 3 more skills + 2 more ults per imbue
+  // ══════════════════════════════════════════════════════
+  warrior_basic2: { id:'warrior_basic2', class:'warrior', imbue:null, type:'basic', name:'Shield Bash', icon:'🛡️', cd:0, desc:'Strike with your shield — slower than Sword Strike but reduces incoming damage by 15% for 2s after each hit. Toggles auto.', dmgMult:0.8, isMagic:false, buff:{ id:'warrior_shieldbash', stat:'defense', amount:8, duration:2000, icon:'🛡️', label:'Shield Bash' } },
+
+  // ── WARRIOR POISON skills 3-5 + ults 2-3 ──
+  warrior_poison_reg3: { id:'warrior_poison_reg3', class:'warrior', imbue:'poison', type:'regular', name:'Toxic Armor',    icon:'🧪', cd:7000,  desc:'Coat yourself in poison — any enemy that attacks you takes 15 poison damage. Lasts 6s.', dmgMult:0.5, isMagic:false, buff:{ id:'wp_toxicarmor', stat:'thorns', amount:15, duration:6000, icon:'🧪', label:'Toxic Armor' }, unlockLv:4 },
+  warrior_poison_reg4: { id:'warrior_poison_reg4', class:'warrior', imbue:'poison', type:'regular', name:'Envenomed Blade', icon:'⚗️', cd:6000,  desc:'Supercharge your weapon — next 5 auto attacks deal +50% damage and each applies Poison.', dmgMult:1.5, isMagic:false, applyEffect:'poison', buff:{ id:'wp_envenom', stat:'attack', amount:0, pct:0.50, duration:5000, hits:5, icon:'⚗️', label:'Envenomed' }, unlockLv:5 },
+  warrior_poison_reg5: { id:'warrior_poison_reg5', class:'warrior', imbue:'poison', type:'regular', name:'Plague Bearer',   icon:'☣️', cd:10000, desc:'Become a plague bearer — all Poison DOT deals double damage for 8s. Applies Poison on cast.', dmgMult:1.0, isMagic:false, applyEffect:'poison', buff:{ id:'wp_plague', stat:'dotDamage', amount:12, duration:8000, icon:'☣️', label:'Plague Bearer' }, unlockLv:7 },
+  warrior_poison_ult2: { id:'warrior_poison_ult2', class:'warrior', imbue:'poison', type:'ultimate', name:'Pandemic',       icon:'💀', cd:20000, desc:'Release a pandemic — stack Poison 5x, +30% attack speed for 6s, and all hits extend Poison duration.', dmgMult:4.0, isMagic:false, applyEffect:'poison', poisonStacks:5, buff:{ id:'wp_pandemic', stat:'atkSpeed', amount:0, pct:0.30, duration:6000, icon:'💀', label:'Pandemic' }, unlockLv:10 },
+  warrior_poison_ult3: { id:'warrior_poison_ult3', class:'warrior', imbue:'poison', type:'ultimate', name:'Toxic Titan',    icon:'🗿', cd:25000, desc:'Transform into a Toxic Titan — gain +50% max HP shield, deal massive AOE poison damage, and stack Poison 6x.', dmgMult:6.0, isMagic:false, applyEffect:'poison', poisonStacks:6, buff:{ id:'wp_titan', stat:'health', amount:80, duration:8000, icon:'🗿', label:'Toxic Titan' }, unlockLv:10 },
+
+  // ── WARRIOR ELECTRIC skills 3-5 + ults 2-3 ──
+  warrior_electric_reg3: { id:'warrior_electric_reg3', class:'warrior', imbue:'electric', type:'regular', name:'Static Field',    icon:'⚡', cd:6000,  desc:'Generate a static field — your next 4 auto attacks deal bonus electric AOE damage. Lasts 5s.', dmgMult:1.0, isMagic:false, applyEffect:'electric', buff:{ id:'we_static', stat:'electricDot', amount:5, duration:5000, icon:'⚡', label:'Static Field' }, unlockLv:4 },
+  warrior_electric_reg4: { id:'warrior_electric_reg4', class:'warrior', imbue:'electric', type:'regular', name:'Overcharge',      icon:'🔋', cd:8000,  desc:'Overcharge your body — gain +40% attack damage for 5s but take 10% more damage during.', dmgMult:1.2, isMagic:false, buff:{ id:'we_overcharge', stat:'attack', amount:0, pct:0.40, duration:5000, icon:'🔋', label:'Overcharge' }, unlockLv:5 },
+  warrior_electric_reg5: { id:'warrior_electric_reg5', class:'warrior', imbue:'electric', type:'regular', name:'Grounding Stance', icon:'🦵', cd:9000,  desc:'Plant your feet — gain +35% defense and +20% damage for 6s. Cannot be slowed or frozen during.', dmgMult:0.8, isMagic:false, buff:{ id:'we_grounding', stat:'defense', amount:18, duration:6000, icon:'🦵', label:'Grounding' }, unlockLv:7 },
+  warrior_electric_ult2: { id:'warrior_electric_ult2', class:'warrior', imbue:'electric', type:'ultimate', name:'Storm King',      icon:'👑', cd:20000, desc:'Become the Storm King — +60% attack speed and all hits chain electric to deal 50% bonus damage for 7s.', dmgMult:4.0, isMagic:false, applyEffect:'electric', buff:{ id:'we_stormking', stat:'atkSpeed', amount:0, pct:0.60, duration:7000, icon:'👑', label:'Storm King' }, unlockLv:10 },
+  warrior_electric_ult3: { id:'warrior_electric_ult3', class:'warrior', imbue:'electric', type:'ultimate', name:'Ball Lightning',  icon:'🌩️', cd:26000, desc:'Unleash a ball of pure lightning — deal catastrophic damage in 4 pulses and triple electric DOT for 8s.', dmgMult:2.8, isMagic:false, applyEffect:'electric', hits:4, buff:{ id:'we_balllightning', stat:'electricDot', amount:10, duration:8000, icon:'🌩️', label:'Ball Lightning' }, unlockLv:10 },
+
+  // ── WARRIOR ICE skills 3-5 + ults 2-3 ──
+  warrior_ice_reg3: { id:'warrior_ice_reg3', class:'warrior', imbue:'ice', type:'regular', name:'Frost Armor',    icon:'🧊', cd:7000,  desc:'Encase yourself in ice — gain +30% defense for 6s and reflect 10 ice damage to attackers.', dmgMult:0.4, isMagic:false, buff:{ id:'wi_frostarmor', stat:'defense', amount:16, duration:6000, icon:'🧊', label:'Frost Armor' }, unlockLv:4 },
+  warrior_ice_reg4: { id:'warrior_ice_reg4', class:'warrior', imbue:'ice', type:'regular', name:'Shatter Strike', icon:'💎', cd:5500,  desc:'Strike a frozen or slowed enemy for triple damage. If not frozen, applies a hard Freeze instead.', dmgMult:1.8, isMagic:false, applyEffect:'ice', shatterBonus:true, unlockLv:5 },
+  warrior_ice_reg5: { id:'warrior_ice_reg5', class:'warrior', imbue:'ice', type:'regular', name:'Glacial Aura',   icon:'❄️', cd:10000, desc:'Emit a freezing aura — slows enemy attack speed by 50% and your defense increases by 25% for 7s.', dmgMult:0.5, isMagic:false, applyEffect:'slow', buff:{ id:'wi_glacialaura', stat:'defense', amount:14, duration:7000, icon:'❄️', label:'Glacial Aura' }, unlockLv:7 },
+  warrior_ice_ult2: { id:'warrior_ice_ult2', class:'warrior', imbue:'ice', type:'ultimate', name:'Frozen Colossus', icon:'🗿', cd:22000, desc:'Become a Frozen Colossus — immune to damage for 2s, then explode for catastrophic ice damage and guaranteed Freeze.', dmgMult:6.5, isMagic:false, applyEffect:'ice', buff:{ id:'wi_colossus', stat:'defense', amount:999, duration:2000, icon:'🗿', label:'Colossus' }, unlockLv:10 },
+  warrior_ice_ult3: { id:'warrior_ice_ult3', class:'warrior', imbue:'ice', type:'ultimate', name:'Permafrost',      icon:'🌨️', cd:28000, desc:'Blanket everything in permafrost — deal massive damage, freeze enemy for full duration, and gain +25% all stats for 8s.', dmgMult:5.0, isMagic:false, applyEffect:'ice', buff:{ id:'wi_permafrost', stat:'attack', amount:0, pct:0.25, duration:8000, icon:'🌨️', label:'Permafrost' }, unlockLv:10 },
+
+  // ══════════════════════════════════════════════════════
+  // ROGUE — 3 more skills + 2 more ults per imbue
+  // ══════════════════════════════════════════════════════
+
+  // ── ROGUE POISON skills 3-5 + ults 2-3 ──
+  rogue_poison_reg3: { id:'rogue_poison_reg3', class:'rogue', imbue:'poison', type:'regular', name:'Smoke Bomb',    icon:'💨', cd:7000,  desc:'Throw a smoke bomb — next 3s your attacks deal +40% damage and always apply Poison. Enemy cannot retaliate.', dmgMult:0.5, isMagic:false, buff:{ id:'rp_smoke', stat:'attack', amount:0, pct:0.40, duration:3000, icon:'💨', label:'Smoke Bomb' }, unlockLv:4 },
+  rogue_poison_reg4: { id:'rogue_poison_reg4', class:'rogue', imbue:'poison', type:'regular', name:'Crippling Shot', icon:'🎯', cd:5500,  desc:'Precise strike that reduces enemy defense by 30% for 5s and applies double Poison.', dmgMult:2.0, isMagic:false, applyEffect:'poison', poisonStacks:2, buff:{ id:'rp_cripple', stat:'bonusArmorPen', amount:0.30, duration:5000, icon:'🎯', label:'Crippled' }, unlockLv:5 },
+  rogue_poison_reg5: { id:'rogue_poison_reg5', class:'rogue', imbue:'poison', type:'regular', name:'Hemorrhage',    icon:'🩸', cd:9000,  desc:'Open a deep wound — deals damage and causes the enemy to take 25% more damage from all sources for 6s.', dmgMult:2.5, isMagic:false, applyEffect:'poison', buff:{ id:'rp_hemor', stat:'bonusArmorPen', amount:0.25, duration:6000, icon:'🩸', label:'Hemorrhage' }, unlockLv:7 },
+  rogue_poison_ult2: { id:'rogue_poison_ult2', class:'rogue', imbue:'poison', type:'ultimate', name:'Death Mark',   icon:'☠️', cd:18000, desc:'Mark the enemy for death — they take 50% more damage for 5s. Then unleash a massive poison strike. Stack Poison 3x.', dmgMult:5.5, isMagic:false, applyEffect:'poison', poisonStacks:3, buff:{ id:'rp_deathmark', stat:'bonusArmorPen', amount:0.50, duration:5000, icon:'☠️', label:'Death Mark' }, unlockLv:10 },
+  rogue_poison_ult3: { id:'rogue_poison_ult3', class:'rogue', imbue:'poison', type:'ultimate', name:'Shadow Realm',  icon:'🌑', cd:24000, desc:'Enter the Shadow Realm — +80% attack speed, +50% damage, all hits apply Poison for 6s. Then vanish and re-emerge dealing a massive strike.', dmgMult:4.0, isMagic:false, applyEffect:'poison', poisonStacks:2, buff:{ id:'rp_shadow', stat:'atkSpeed', amount:0, pct:0.80, duration:6000, icon:'🌑', label:'Shadow Realm' }, unlockLv:10 },
+
+  // ── ROGUE ELECTRIC skills 3-5 + ults 2-3 ──
+  rogue_electric_reg3: { id:'rogue_electric_reg3', class:'rogue', imbue:'electric', type:'regular', name:'Voltaic Dash',   icon:'⚡', cd:5000,  desc:'Dash forward in a burst of electricity — +50% attack speed for 4s and next 3 hits arc to deal bonus electric damage.', dmgMult:1.2, isMagic:false, applyEffect:'electric', buff:{ id:'re_voltaic', stat:'atkSpeed', amount:0, pct:0.50, duration:4000, icon:'⚡', label:'Voltaic Dash' }, unlockLv:4 },
+  rogue_electric_reg4: { id:'rogue_electric_reg4', class:'rogue', imbue:'electric', type:'regular', name:'Charged Traps',  icon:'🪤', cd:8000,  desc:'Set electric traps — enemy takes 20 electric damage per second for 5s automatically (stacks with Electric DOT).', dmgMult:0.8, isMagic:false, applyEffect:'electric', buff:{ id:'re_traps', stat:'electricDot', amount:8, duration:5000, icon:'🪤', label:'Charged Traps' }, unlockLv:5 },
+  rogue_electric_reg5: { id:'rogue_electric_reg5', class:'rogue', imbue:'electric', type:'regular', name:'Static Cloak',   icon:'🫥', cd:10000, desc:'Cloak in static electricity — gain +35% crit chance and all crits arc electric to deal bonus damage for 5s.', dmgMult:0.5, isMagic:false, buff:{ id:'re_cloak', stat:'critChance', amount:12, duration:5000, icon:'🫥', label:'Static Cloak' }, unlockLv:7 },
+  rogue_electric_ult2: { id:'rogue_electric_ult2', class:'rogue', imbue:'electric', type:'ultimate', name:'Lightning Step', icon:'🌩️', cd:18000, desc:'Blink through the enemy dealing damage on each pass — hit 4 times at lightning speed. Gain +60% attack speed for 5s.', dmgMult:2.0, isMagic:false, applyEffect:'electric', hits:4, buff:{ id:'re_lstep', stat:'atkSpeed', amount:0, pct:0.60, duration:5000, icon:'🌩️', label:'Lightning Step' }, unlockLv:10 },
+  rogue_electric_ult3: { id:'rogue_electric_ult3', class:'rogue', imbue:'electric', type:'ultimate', name:'Superconductor', icon:'⚡', cd:26000, desc:'Become a superconductor — electric DOT deals 4x damage for 8s, +50% attack speed, and all hits guarantee Electric proc.', dmgMult:4.0, isMagic:false, applyEffect:'electric', buff:{ id:'re_super', stat:'electricDot', amount:15, duration:8000, icon:'⚡', label:'Superconductor' }, unlockLv:10 },
+
+  // ── ROGUE ICE skills 3-5 + ults 2-3 ──
+  rogue_ice_reg3: { id:'rogue_ice_reg3', class:'rogue', imbue:'ice', type:'regular', name:'Cold Blood',     icon:'🩸', cd:6000,  desc:'Enter cold blood — your crit damage increases by +50% and all crits apply Ice slow for 4s.', dmgMult:1.0, isMagic:false, applyEffect:'ice', buff:{ id:'ri_coldblooded', stat:'critDmg', amount:40, duration:4000, icon:'🩸', label:'Cold Blood' }, unlockLv:4 },
+  rogue_ice_reg4: { id:'rogue_ice_reg4', class:'rogue', imbue:'ice', type:'regular', name:'Shatter Point',  icon:'💎', cd:5500,  desc:'Find the shatter point — deal 2.5x damage to frozen or slowed enemies. If neither, guaranteed Freeze on hit.', dmgMult:2.0, isMagic:false, applyEffect:'ice', shatterBonus:true, unlockLv:5 },
+  rogue_ice_reg5: { id:'rogue_ice_reg5', class:'rogue', imbue:'ice', type:'regular', name:"Winter's Edge",  icon:'❄️', cd:9000,  desc:'Channel winter into your blade — +40% attack speed and every hit applies Ice slow for 5s.', dmgMult:0.8, isMagic:false, applyEffect:'ice', buff:{ id:'ri_winter', stat:'atkSpeed', amount:0, pct:0.40, duration:5000, icon:'❄️', label:"Winter's Edge" }, unlockLv:7 },
+  rogue_ice_ult2: { id:'rogue_ice_ult2', class:'rogue', imbue:'ice', type:'ultimate', name:'Frozen Fangs',   icon:'🐍', cd:18000, desc:'Strike with frozen fangs 6 times — each hit applies Ice and the final hit guarantees Freeze. +50% attack speed for 5s after.', dmgMult:1.5, isMagic:false, applyEffect:'ice', hits:6, buff:{ id:'ri_fangs', stat:'atkSpeed', amount:0, pct:0.50, duration:5000, icon:'🐍', label:'Frozen Fangs' }, unlockLv:10 },
+  rogue_ice_ult3: { id:'rogue_ice_ult3', class:'rogue', imbue:'ice', type:'ultimate', name:'Absolute Zero',  icon:'🌡️', cd:26000, desc:'Drop to absolute zero — freeze enemy for maximum duration, deal catastrophic damage, then gain +70% attack speed and +40% crit for 6s.', dmgMult:6.0, isMagic:false, applyEffect:'ice', buff:{ id:'ri_absZero', stat:'atkSpeed', amount:0, pct:0.70, duration:6000, icon:'🌡️', label:'Absolute Zero' }, unlockLv:10 },
 };
 
 // JSONBin config — leaderboard storage
@@ -1117,6 +1207,7 @@ function updateNameDisplay() {
 
 // Init G state
 function initGState() {
+  if(!G.buffs) G.buffs = {};
   CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
   Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
@@ -1492,8 +1583,16 @@ function getStats() {
   }
 
   s.maxHp = s.health;
-  // Remove magicPower/armor/magicResist — replaced by attack/defense
   delete s.magicPower; delete s.armor; delete s.magicResist;
+  // Apply active buffs
+  if(G.buffs) {
+    const now = Date.now();
+    Object.values(G.buffs).forEach(b => {
+      if(now < b.expiresAt && b.stat && b.amount) {
+        s[b.stat] = (s[b.stat]||0) + b.amount;
+      }
+    });
+  }
   return s;
 }
 
@@ -2011,6 +2110,36 @@ function fireAbility(ab) {
     applyImbueEffect(G.enemy, ab.applyEffect, st, ab.poisonStacks||1);
   }
 
+  // Apply ability buff if defined
+  if(ab.buff) {
+    const b = ab.buff;
+    let buffAmt = b.amount;
+    // pct-based buffs scale off current stat
+    if(b.pct && b.pct > 0) {
+      buffAmt = Math.floor((st[b.stat]||0) * b.pct);
+    }
+    applyBuff(b.id, b.stat, buffAmt, b.duration||3000, b.icon||'✨', b.label||ab.name);
+  }
+
+  // Shatter bonus — deal 2.5x damage if enemy is slowed/frozen
+  if(ab.shatterBonus && G.enemy) {
+    const se = G.enemy.statusEffects||{};
+    if(se.slow || se.frozen) {
+      const bonusDmg = Math.floor(totalDmg * 1.5);
+      G.enemy.hp -= bonusDmg;
+      if(G.inBoss) G.bossDmgDealt += bonusDmg;
+      log(`<span style="color:#88eeff">💎 Shatter! +${bonusDmg} bonus damage!</span>`);
+      spawnDamageNumber(ex+(Math.random()-.5)*20, ey-55, bonusDmg, false, false, '#88eeff');
+    }
+  }
+
+  // Mana restore abilities (Mana Spring)
+  if(ab.id === 'water_reg4') {
+    G.mana = Math.min(getMaxMana(), G.mana + 50);
+    updateManaBar();
+    log(`<span style="color:#63b3ff">💦 +50 mana restored!</span>`);
+  }
+
   // Class XP
   earnClassXP(G.playerClass||ab.class, ab.type==='ultimate'?15:ab.type==='regular'?6:2);
 
@@ -2199,8 +2328,13 @@ function isAbilityUnlocked(abId) {
   if(ab.type === 'heal')    return classLv >= 1;
   if(ab.type === 'basic')   return classLv >= 1;
   if(ab.type === 'regular') {
-    const isReg1 = abId.endsWith('_reg1');
-    return isReg1 ? classLv >= 3 : classLv >= 5;
+    if(ab.unlockLv) return classLv >= ab.unlockLv;
+    if(abId.endsWith('_reg1')) return classLv >= 3;
+    if(abId.endsWith('_reg2')) return classLv >= 5;
+    if(abId.endsWith('_reg3')) return classLv >= 6;
+    if(abId.endsWith('_reg4')) return classLv >= 7;
+    if(abId.endsWith('_reg5')) return classLv >= 8;
+    return classLv >= 3;
   }
   if(ab.type === 'ultimate') return classLv >= 8;
   return (G.abilityLevels[abId]||0) > 0;
@@ -2218,6 +2352,7 @@ function openSlotSelector() {
   const list = document.getElementById('ability-picker-list');
   const slotLabels = ['Attack','Skill 1','Skill 2','Ultimate'];
   const slotTypes  = ['basic','regular','regular','ultimate'];
+  // Skill slots hold any regular ability — players choose which 2 of up to 5 to equip
   list.innerHTML = slotLabels.map((label, i) => {
     const abId = G.loadout[i];
     const ab = abId ? ABILITIES[abId] : null;
@@ -2527,6 +2662,51 @@ function getArtifactBonuses() {
 
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
+
+// ── PLAYER BUFF SYSTEM ──
+// G.buffs = { buffId: { stat, amount, expiresAt, icon, label } }
+function applyBuff(id, stat, amount, durationMs, icon, label) {
+  if(!G.buffs) G.buffs = {};
+  G.buffs[id] = { stat, amount, durationMs, expiresAt: Date.now() + durationMs, icon, label };
+  log(`<span style="color:#ffdd00">${icon} ${label} active for ${(durationMs/1000).toFixed(0)}s!</span>`);
+  setTimeout(()=>{ expireBuff(id); }, durationMs + 100);
+  updateBuffDisplay();
+}
+
+function expireBuff(id) {
+  if(G.buffs && G.buffs[id]) {
+    delete G.buffs[id];
+    updateBuffDisplay();
+  }
+}
+
+function getBuffBonus(stat) {
+  if(!G.buffs) return 0;
+  let total = 0;
+  const now = Date.now();
+  Object.values(G.buffs).forEach(b => {
+    if(b.stat === stat && now < b.expiresAt) total += b.amount;
+  });
+  return total;
+}
+
+function updateBuffDisplay() {
+  let el = document.getElementById('buff-display');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = 'buff-display';
+    el.style.cssText = 'position:absolute;top:38px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:6;pointer-events:none;';
+    const arena = document.getElementById('arena');
+    if(arena) arena.appendChild(el);
+  }
+  if(!G.buffs) { el.innerHTML=''; return; }
+  const now = Date.now();
+  el.innerHTML = Object.entries(G.buffs).map(([id,b])=>{
+    if(now >= b.expiresAt) return '';
+    const remaining = ((b.expiresAt - now)/1000).toFixed(0);
+    return `<div style="background:rgba(0,0,0,0.7);border:1px solid #ffdd0066;border-radius:6px;padding:2px 6px;font-size:10px;color:#ffdd00;font-family:'Cinzel',serif;">${b.icon} ${b.label} ${remaining}s</div>`;
+  }).join('');
+}
 // Legacy attack system removed in v2.0 — all attacks go through fireAbility()
 function refreshAutoAttackSpeeds() {} // stub — auto speeds handled by activateAbility interval
 function toggleAutoAttack(element) {} // stub — no longer used
@@ -5194,6 +5374,7 @@ function selectImbue(imbue) {
 
   G._deathInProgress = false;
   G._enemyDeathInProgress = false;
+  G.buffs = {};
   G.loadout[0] = basicId;
   G.loadout[1] = skill1Id;
   G.loadout[2] = null;
@@ -5369,7 +5550,8 @@ function renderSPPopup() {
         </div>`;
       } else {
         // Can unlock if class level is high enough and it's next tier
-        const needed = ab.type==='basic'?1:ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3;
+        const needed = ab.type==='basic'?1:ab.type==='ultimate'?8:
+          ab.id.endsWith('_reg5')?8:ab.id.endsWith('_reg4')?7:ab.id.endsWith('_reg3')?6:ab.id.endsWith('_reg2')?5:3;
         const canUnlock = lv >= needed;
         if (canUnlock) {
           abHTML += `<div onclick="spUnlockAbility('${ab.id}')" style="background:#0d1018;border:1px solid ${color}55;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}55'">
@@ -5434,8 +5616,11 @@ function spPickClass(cls) {
   G.hp = Math.min(G.hp, G.maxHp);
   G.maxMana = st.mana||100;
   updateHpBar(); updateManaBar();
+  if(lv === 3) log(`<span style="color:${color}">🔓 First skill unlocked!</span>`);
   if(lv === 5) log(`<span style="color:${color}">🔓 Skill 2 slot unlocked!</span>`);
-  if(lv === 8) log(`<span style="color:${color}">🔓 Ultimate slot unlocked!</span>`);
+  if(lv === 6) log(`<span style="color:${color}">🔓 Skill 3 unlocked!</span>`);
+  if(lv === 7) log(`<span style="color:${color}">🔓 Skill 4 unlocked!</span>`);
+  if(lv === 8) log(`<span style="color:${color}">🔓 Skill 5 + Ultimate unlocked!</span>`);
   spStep = 2;
   renderSPPopup();
 }
