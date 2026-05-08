@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.0.3</title>
+<title>Elemental Rift v2.0.5</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.3 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.5 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1551,7 +1551,7 @@ function startEnemyAutoAttack() {
   // Enemy attacks every 2-3 seconds automatically, regardless of player input
   const interval = 2000 + Math.random() * 1000;
   G.enemyAttackInterval = setInterval(() => {
-    if (G.combatActive && G.enemy && G.hp > 0) {
+    if (G.combatActive && G.enemy && G.hp > 0 && !G._deathInProgress) {
       enemyAttack();
     } else {
       stopEnemyAutoAttack();
@@ -2479,7 +2479,7 @@ function attack(element) {} // stub — no longer used
 
 
 function enemyAttack() {
-  if (!G.enemy||!G.combatActive) return;
+  if (!G.enemy||!G.combatActive||G.hp<=0||G._deathInProgress) return;
   const st=getStats();
   // Check if frozen — frozen enemies can't attack
   if(G.enemy.frozenUntil && Date.now() < G.enemy.frozenUntil) return;
@@ -2505,17 +2505,21 @@ function enemyAttack() {
 }
 
 function onEnemyDeath() {
-  if(!G.enemy) return; // guard against double-call
-  G.combatActive=false;
+  if(!G.enemy || G._enemyDeathInProgress) return; // guard against double-call / reentrance
+  G._enemyDeathInProgress = true;
+  G.combatActive = false;
   stopEnemyAutoAttack();
   stopAllAutoSlots();
+  stopStatusTick();
+  // Capture enemy data before nulling
+  const enemyGold = G.enemy.gold;
+  const enemyType = G.enemy.type;
+  G.enemy = null; // null immediately so no other code can re-trigger death
   G.kills++;
-  G.gold+=G.enemy.gold;
-  G.runStats.totalGold += G.enemy.gold;
-  // XP based on wave — guaranteed to feel meaningful early on
-  // Wave 1 gives ~15 XP (level in ~3 kills), scales up with wave
+  G.gold += enemyGold;
+  G.runStats.totalGold += enemyGold;
   const baseXP = 10 + (MAP.currentSegWave || G.wave) * 5;
-  const xpGain = Math.floor(baseXP * (G.enemy.type === 'brute' ? 1.3 : 1.0));
+  const xpGain = Math.floor(baseXP * (enemyType === 'brute' ? 1.3 : 1.0));
   awardXP(xpGain);
   // Award passive skill point every 5 kills
   if(G.kills % 5 === 0) {
@@ -2538,7 +2542,7 @@ function onEnemyDeath() {
       setTimeout(()=>showItemModal(dropItem,'vendor_buy'),600);
     }
   }
-  G.enemy=null;
+  G._enemyDeathInProgress = false;
   playSound('enemy_death');
   triggerScreenShake(5, 0.3);
   updateEnemyUI();
@@ -2556,7 +2560,10 @@ function onEnemyDeath() {
 }
 
 function onDeath() {
+  if(G._deathInProgress) return; // prevent double death
+  G._deathInProgress = true;
   G.combatActive=false;
+  G.enemy=null;
   stopEnemyAutoAttack();
   stopAllAutoSlots();
   stopStatusTick();
@@ -4668,7 +4675,13 @@ function tickStatusEffects() {
     G.enemy.hp -= totalDot;
     if(G.inBoss) G.bossDmgDealt += totalDot;
     updateEnemyUI();
-    if(G.enemy.hp <= 0 && !G.inBoss) { onEnemyDeath(); return; }
+    if(G.enemy.hp <= 0 && !G.inBoss) {
+      G.combatActive = false;
+      stopAllAutoSlots();
+      stopEnemyAutoAttack();
+      onEnemyDeath();
+      return;
+    }
   }
 }
 
@@ -4877,6 +4890,8 @@ function selectImbue(imbue) {
     : cls === 'rogue' ? `rogue_${imbue}_reg1`
     : `${imbue}_reg1`;
 
+  G._deathInProgress = false;
+  G._enemyDeathInProgress = false;
   G.loadout[0] = basicId;
   G.loadout[1] = skill1Id;
   G.loadout[2] = null;
@@ -5193,7 +5208,7 @@ function closeSPPopup() {
     spPhase = 'skill';
     setTimeout(() => triggerLevelUpPopup(), 300);
   } else {
-    if(G.combatActive && G.enemy) startEnemyAutoAttack();
+    if(G.combatActive && G.enemy && G.enemy.hp > 0) startEnemyAutoAttack();
     saveGame();
   }
 }
