@@ -4874,8 +4874,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Failsafe: dismiss loader after 3s regardless
-  setTimeout(dismissLoader, 3000);
+  // Failsafe: dismiss loader after 6s regardless
+  setTimeout(dismissLoader, 6000);
 
 // Check if already signed in
   sb.auth.getSession().then(({ data: { session } }) => {
