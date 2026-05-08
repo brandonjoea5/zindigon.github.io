@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.0.0</title>
+<title>Elemental Rift v2.0.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1725,7 +1725,7 @@ function onBossPhaseKill() {
 function endBossAttempt() {
   clearInterval(G.bossTimerInterval);
   stopEnemyAutoAttack();
-  stopAllAutoAttacks();
+  stopAllAutoSlots();
   stopAllAutoSlots();
   G.inBoss = false;
   G.combatActive = false;
@@ -2502,7 +2502,7 @@ function enemyAttack() {
 function onEnemyDeath() {
   G.combatActive=false;
   stopEnemyAutoAttack();
-  stopAllAutoAttacks();
+  stopAllAutoSlots();
   stopAllAutoSlots();
   G.kills++;
   G.gold+=G.enemy.gold;
@@ -2553,7 +2553,7 @@ function onEnemyDeath() {
 function onDeath() {
   G.combatActive=false;
   stopEnemyAutoAttack();
-  stopAllAutoAttacks();
+  stopAllAutoSlots();
   stopAllAutoSlots();
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
@@ -2664,7 +2664,7 @@ function safeHide(id) { const el=document.getElementById(id); if(el) el.classLis
 function safeShow(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
 
 function nextWave() {
-  stopAllAutoAttacks();
+  stopAllAutoSlots();
   stopAllAutoSlots();
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
@@ -5196,16 +5196,10 @@ function closeSPPopup() {
 
 // ── SLOT UNLOCK HELPERS ──
 function isSlotUnlocked(slotIdx) {
-  if (slotIdx === 0) return true; // Attack always unlocked
-  if (slotIdx === 1) return G.startingClass !== null; // Skill 1 after class chosen
-  if (slotIdx === 2) {
-    // Skill 2: any class at level 5
-    return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 5);
-  }
-  if (slotIdx === 3) {
-    // Ultimate: any class at level 8
-    return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 8);
-  }
+  if (slotIdx === 0) return true;
+  if (slotIdx === 1) return G.playerClass !== null && G.playerClass !== undefined;
+  if (slotIdx === 2) return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 5);
+  if (slotIdx === 3) return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 8);
   return false;
 }
 
