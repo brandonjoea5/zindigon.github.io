@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.2.7</title>
+<title>Elemental Rift v2.3.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.7 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.3.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -2169,7 +2169,7 @@ function fireAbility(ab) {
 
   // Sound + screen shake
   const isUlt = ab.type==='ultimate';
-  const soundKey = {'fire':'hit_fire','water':'hit_water','grass':'hit_grass','dark':'hit_dark','light':'hit_light','physical':'hit_physical'}[ab.class]||'hit_physical';
+  const soundKey = {'fire':'hit_fire','water':'hit_water','grass':'hit_grass','poison':'hit_physical','electric':'hit_physical','ice':'hit_water','physical':'hit_physical'}[ab.imbue||ab.class]||'hit_physical';
   playSound(soundKey);
   if(isCrit) { playSound('crit'); triggerScreenShake(6, 0.25); }
   else if(isUlt) { playSound('ultimate'); triggerScreenShake(10, 0.5); }
@@ -2208,7 +2208,8 @@ function fireAbility(ab) {
       },160);
     }
   } else {
-    const elKey = ab.class==='physical'?'physical':ab.class;
+    // Use imbue for particle color — mage class name isn't a valid element
+    const elKey = ab.imbue || (ab.class==='physical'?'physical':'fire');
     spawnParticles(elKey,px,py,ex,ey);
     setTimeout(()=>{
       spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,totalDmg,isCrit,seMult>1.0,elColor);
@@ -3965,8 +3966,8 @@ function spawnEnemyAttackParticles(fromX,fromY,toX,toY){
   for(let i=0;i<6;i++){const a=(Math.random()-.5)*.8+Math.atan2(toY-fromY,toX-fromX),speed=4+Math.random()*3;particles.push({type:'burst',x:fromX,y:fromY,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,life:1,decay:.05,size:4+Math.random()*6,color:'#cc4422',element:'physical',delay:i*20});}
 }
 
-function elementParticleColor(el){return{fire:'#ff6633',water:'#44ccff',grass:'#55ee66',dark:'#bb66ff',light:'#ffee44',physical:'#ffffff'}[el]||'#fff';}
-function elementTrailColor(el){return{fire:'#ff220080',water:'#0088ff60',grass:'#00cc3360',dark:'#6600cc60',light:'#ffcc0060',physical:'#ffffff40'}[el]||'#ffffff40';}
+function elementParticleColor(el){return{fire:'#ff6633',water:'#44ccff',grass:'#55ee66',dark:'#bb66ff',light:'#ffee44',physical:'#ffffff',poison:'#88cc00',electric:'#ffdd00',ice:'#88eeff',mage:'#4488ff',warrior:'#e8b84b',rogue:'#3dcc5a'}[el]||'#aaaaff';}
+function elementTrailColor(el){return{fire:'#ff220080',water:'#0088ff60',grass:'#00cc3360',dark:'#6600cc60',light:'#ffcc0060',physical:'#ffffff40',poison:'#88cc0060',electric:'#ffdd0060',ice:'#88eeff60',mage:'#4488ff60',warrior:'#e8b84b60',rogue:'#3dcc5a60'}[el]||'#aaaaff40';}
 
 function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){damageNumbers.push({x,y:y-10,vy:-2.2-Math.random(),text:isCrit?`${dmg}!`:`${dmg}`,life:1,decay:.022,size:isCrit?22:(isSE?18:15),color:isCrit?'#ffcc00':(isSE?'#ff9900':color),bold:isCrit||isSE});}
 function spawnHealNumber(x,y,amt){
@@ -4005,23 +4006,11 @@ function animLoop(ts){
     if(p.delay>0){p.delay-=16;return true;}
     p.life-=p.decay;if(p.life<=0)return false;
     if(p.type==='arrow'){
+      // Just update position here — drawing happens in drawParticlesLayer
       if(!p.landed) {
         p.x = p.startX + (p.endX - p.startX) * p.progress;
         p.y = p.startY + (p.endY - p.startY) * p.progress;
         p.progress = Math.min(1, p.progress + p.speed);
-        const angle = Math.atan2(p.endY - p.startY, p.endX - p.startX);
-        const len = 18;
-        ctx.strokeStyle = '#e8d090';
-        ctx.lineWidth = 2.5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(p.x - Math.cos(angle)*len, p.y - Math.sin(angle)*len);
-        ctx.lineTo(p.x + Math.cos(angle)*4,   p.y + Math.sin(angle)*4);
-        ctx.stroke();
-        ctx.fillStyle = '#c0a060';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
-        ctx.fill();
         if(p.progress >= 1 && !p.landed) {
           p.landed = true;
           spawnImpactBurst(p.x, p.y, 'physical');
@@ -4030,6 +4019,25 @@ function animLoop(ts){
           spawnDamageNumber(p.x+(Math.random()-.5)*20, p.y-30, p.dmg, p.isCrit, p.isSE, p.color);
           p.life = 0;
         }
+      }
+      return true;
+    }
+    if(p.type==='arrow'){
+      if(!p.landed && p.life > 0) {
+        const angle = Math.atan2(p.endY - p.startY, p.endX - p.startX);
+        const len = 18;
+        ctx.strokeStyle = '#e8d090';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = Math.min(1, p.life * 3);
+        ctx.beginPath();
+        ctx.moveTo(p.x - Math.cos(angle)*len, p.y - Math.sin(angle)*len);
+        ctx.lineTo(p.x + Math.cos(angle)*4,   p.y + Math.sin(angle)*4);
+        ctx.stroke();
+        ctx.fillStyle = '#c0a060';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+        ctx.fill();
       }
       ctx.restore();
       return;
@@ -4170,30 +4178,6 @@ function drawArena(){
         }
         ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,12,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#aaffaa';ctx.beginPath();ctx.arc(ex-3,ey-25,3,0,Math.PI*2);ctx.fill();
-      } else if(el0==='dark'){
-        // Fractured shadow — jagged void shape
-        ctx.fillStyle='#000000cc';
-        for(let i=0;i<6;i++){
-          const a=(Math.PI*2/6)*i+t*0.4;
-          ctx.beginPath();
-          ctx.moveTo(ex,ey-22);
-          ctx.lineTo(ex+Math.cos(a)*(22+Math.sin(t+i)*6),ey-22+Math.sin(a)*(22+Math.sin(t+i)*6));
-          ctx.lineTo(ex+Math.cos(a+0.6)*12,ey-22+Math.sin(a+0.6)*12);
-          ctx.closePath();ctx.fillStyle=ec+(i%2===0?'cc':'88');ctx.fill();
-        }
-        ctx.fillStyle='#c080ff';ctx.beginPath();ctx.arc(ex,ey-22,8,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ex,ey-22,3,0,Math.PI*2);ctx.fill();
-      } else if(el0==='light'){
-        // Radiant star burst
-        for(let i=0;i<12;i++){
-          const a=(Math.PI*2/12)*i+t*0.5;
-          const len=14+Math.sin(t*4+i)*6;
-          ctx.strokeStyle=ec;ctx.lineWidth=2.5;ctx.globalAlpha=0.6+Math.sin(t+i)*0.3;
-          ctx.beginPath();ctx.moveTo(ex,ey-22);ctx.lineTo(ex+Math.cos(a)*len,ey-22+Math.sin(a)*len);ctx.stroke();
-        }
-        ctx.globalAlpha=1;
-        ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ex,ey-22,10,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,7,0,Math.PI*2);ctx.fill();
       } else {
         // Fallback circle for dual/unknown
         ctx.fillStyle=ec+'44';ctx.beginPath();ctx.arc(ex,ey-22,24,0,Math.PI*2);ctx.fill();
@@ -4347,35 +4331,6 @@ function playSound(type, options={}) {
         const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=400; f.Q.value=2;
         const g=ac.createGain(); g.gain.setValueAtTime(vol,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
         src.connect(f); f.connect(g); g.connect(ac.destination); src.start(now);
-        break;
-      }
-
-      case 'hit_dark': {
-        const osc=ac.createOscillator(); const g=ac.createGain();
-        osc.type='square'; osc.frequency.setValueAtTime(80,now); osc.frequency.exponentialRampToValueAtTime(30,now+0.35);
-        g.gain.setValueAtTime(vol*0.6,now); g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
-        const f=ac.createBiquadFilter(); f.type='lowpass'; f.frequency.value=200;
-        osc.connect(f); f.connect(g); g.connect(ac.destination);
-        osc.start(now); osc.stop(now+0.35);
-        // Void whoosh
-        const buf=ac.createBuffer(1,ac.sampleRate*0.3,ac.sampleRate);
-        const d=buf.getChannelData(0);
-        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.sin(Math.PI*i/d.length)*0.3;
-        const ns=ac.createBufferSource(); ns.buffer=buf;
-        const nf=ac.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=150; nf.Q.value=3;
-        const ng=ac.createGain(); ng.gain.setValueAtTime(vol*0.5,now);
-        ns.connect(nf); nf.connect(ng); ng.connect(ac.destination); ns.start(now);
-        break;
-      }
-
-      case 'hit_light': {
-        [0,0.04,0.08].forEach((delay,i)=>{
-          const osc=ac.createOscillator(); const g=ac.createGain();
-          osc.type='sine'; osc.frequency.value=1200-i*200;
-          g.gain.setValueAtTime(vol*0.5,now+delay); g.gain.exponentialRampToValueAtTime(0.001,now+delay+0.2);
-          osc.connect(g); g.connect(ac.destination);
-          osc.start(now+delay); osc.stop(now+delay+0.2);
-        });
         break;
       }
 
