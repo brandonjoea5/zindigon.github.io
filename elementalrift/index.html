@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.0.1</title>
+<title>Elemental Rift v2.0.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.3 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -2035,8 +2035,12 @@ function fireAbility(ab) {
       updateEnemyUI();
     } else if(G.enemy.type==='boss'){
       // Wave boss — dies normally, gives loot
+      G.combatActive = false; // stop interval from re-firing
+      stopAllAutoSlots();
       setTimeout(()=>{ onBossPhaseKill(); }, ab.isMagic?500:300);
     } else {
+      G.combatActive = false; // stop interval from re-firing
+      stopAllAutoSlots();
       setTimeout(()=>{ onEnemyDeath(); }, ab.isMagic?500:300);
     }
     return true;
@@ -2469,6 +2473,7 @@ function getArtifactBonuses() {
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
 // Legacy attack system removed in v2.0 — all attacks go through fireAbility()
+function refreshAutoAttackSpeeds() {} // stub — auto speeds handled by activateAbility interval
 function toggleAutoAttack(element) {} // stub — no longer used
 function attack(element) {} // stub — no longer used
 
@@ -2500,9 +2505,9 @@ function enemyAttack() {
 }
 
 function onEnemyDeath() {
+  if(!G.enemy) return; // guard against double-call
   G.combatActive=false;
   stopEnemyAutoAttack();
-  stopAllAutoSlots();
   stopAllAutoSlots();
   G.kills++;
   G.gold+=G.enemy.gold;
@@ -2553,7 +2558,6 @@ function onEnemyDeath() {
 function onDeath() {
   G.combatActive=false;
   stopEnemyAutoAttack();
-  stopAllAutoSlots();
   stopAllAutoSlots();
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
