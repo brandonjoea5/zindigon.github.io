@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.2.1</title>
+<title>Elemental Rift v2.2.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.2 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -765,13 +765,13 @@ let sbProfile = null; // players row
     </div>
 
 
-    <!-- Wave control buttons (hidden until needed) -->
-    <div style="display:flex;gap:6px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
+    <!-- Bottom action bar — always fully visible -->
+    <div style="display:flex;gap:4px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
       <button class="action-btn btn-next" id="next-btn" onclick="toggleAutoWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
-      <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()" style="flex:1;"><span class="btn-icon">💀</span>Boss Attempt</button>
-      <button class="action-btn hidden" id="potion-btn" onclick="buyPotion()" style="flex:1;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
+      <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">💀</span>Boss</button>
+      <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
-      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:#554422;color:#887755;" title="End run and collect Orbs"><span class="btn-icon">⚔️</span>Retire</button>
+      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:#554422;color:#887755;"><span class="btn-icon">⚔️</span>Retire</button>
     </div>
   </div>
 
@@ -1208,6 +1208,8 @@ function updateNameDisplay() {
 // Init G state
 function initGState() {
   if(!G.buffs) G.buffs = {};
+  if(!G.savedAutoSlots) G.savedAutoSlots = null;
+  if(G.healWasAuto === undefined) G.healWasAuto = false;
   CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
   Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
@@ -1429,7 +1431,7 @@ function onSegmentWaveComplete() {
     log(`<span class="log-sys">Wave ${MAP.currentSegWave}${isInfinite ? '' : '/'+MAP.totalWaves} complete.</span>`);
     setNextBtnActive(true);
     showPotionBtn();
-    if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
+    if(G.wave >= 3) setBossBtnActive(true);
     if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
   }
 }
@@ -1606,18 +1608,23 @@ function getPlayerPower() {
 // ENEMIES
 // ═══════════════════════════════════════════════
 function rollEnemy(wave) {
-  const power = getPlayerPower();
-  const waveScale = 1 + (wave-1)*0.11;
-  const powerScale = 1 + Math.min(power, 150) * 0.012;
-  const hpScale = waveScale * powerScale;
-  const atkScale = 1 + (wave-1)*0.09;
+  // Enemy level rolls between playerLevel-2 and playerLevel+5
+  // This means enemies always feel relevant regardless of when you restart
+  const playerLv = G.playerLevel || 1;
+  const minLv = Math.max(1, playerLv - 2);
+  const maxLv = playerLv + 5;
+  const enemyLv = Math.floor(minLv + Math.random() * (maxLv - minLv + 1));
 
-  // Pick enemy type weighted by rarity (lower rarity = more common)
-  // Unicorn very rare, dragon rare
+  // HP and ATK scale with enemy level — exponential growth
+  const hpBase = Math.floor(30 * Math.pow(1.18, enemyLv - 1));
+  const atkBase = Math.floor(3 * Math.pow(1.12, enemyLv - 1));
+
+  // Pick enemy type weighted by rarity — higher level unlocks rarer types
   const pool = ENEMY_TYPES.filter(e => {
-    if(e.id === 'dragon') return wave >= 10; // only late game
-    if(e.rarity >= 4) return wave >= 8 && Math.random() < 0.05;
-    if(e.rarity === 5) return wave >= 5 && Math.random() < 0.03; // unicorn
+    if(e.id === 'dragon') return enemyLv >= 25;
+    if(e.rarity >= 4)     return enemyLv >= 20 && Math.random() < 0.08;
+    if(e.rarity === 5)    return enemyLv >= 15 && Math.random() < 0.04;
+    if(e.rarity >= 3)     return enemyLv >= 10;
     return true;
   });
   const weights = pool.map(e => Math.max(1, 6 - e.rarity));
@@ -1625,20 +1632,17 @@ function rollEnemy(wave) {
   let r = Math.random()*totalW, acc=0, enemyType=pool[0];
   for(let i=0;i<pool.length;i++){acc+=weights[i];if(r<acc){enemyType=pool[i];break;}}
 
-  // Chance for enraged variant
+  // Enraged variant chance scales with level gap (higher level enemies more likely enraged)
   let variant = null;
-  if(wave >= 3 && Math.random() < 0.25) {
+  const enrageChance = 0.15 + Math.max(0, enemyLv - playerLv) * 0.05;
+  if(Math.random() < enrageChance) {
     variant = ENRAGED_VARIANTS[Math.floor(Math.random()*ENRAGED_VARIANTS.length)];
   }
 
-  const baseHp  = Math.floor((50 + wave*15) * enemyType.hpM * hpScale);
-  const baseAtk = Math.min(
-    Math.floor((4 + wave*0.45) * enemyType.atkM * atkScale * (variant?.prefix==='Ancient'?1.3:1)),
-    18 + wave*1.4
-  );
+  const baseHp  = Math.floor(hpBase * enemyType.hpM * (variant?.prefix==='Ancient'?1.4:1));
+  const baseAtk = Math.floor(atkBase * enemyType.atkM * (variant?.prefix==='Ancient'?1.3:1));
 
   const name = variant ? `${variant.prefix} ${enemyType.name}` : enemyType.name;
-
   return {
     name, id: enemyType.id,
     type: enemyType.id,
@@ -1646,11 +1650,12 @@ function rollEnemy(wave) {
     special: enemyType.special,
     resistance: variant?.resistance || null,
     enragedColor: variant?.color || null,
+    level: enemyLv,
     hp: baseHp, maxHp: baseHp,
     attack: baseAtk,
-    defense: Math.floor(4 + wave*0.6),
-    gold: Math.floor(6 + wave*2.5) * (enemyType.id==='unicorn'?5:1),
-    xp: 0, // set by caller
+    defense: Math.floor(2 + enemyLv * 0.5),
+    gold: Math.floor(4 + enemyLv * 2) * (enemyType.id==='unicorn'?5:1),
+    xp: 0,
     statusEffects: {},
     frozenUntil: 0,
   };
@@ -1678,7 +1683,7 @@ function spawnEnemy() {
   }
   if(IS_MOBILE()) mobileTab('arena');
   setNextBtnActive(false);
-  document.getElementById('boss-btn').classList.add('hidden');
+  setBossBtnActive(false);
   safeHide('spawn-btn');
   hidePotionBtn();
   drawArena();
@@ -1789,7 +1794,7 @@ function startBossAttempt() {
   G.enemy = rollBoss(1, true); // infinite HP leaderboard boss
   G.combatActive = true;
   setNextBtnActive(false);
-  document.getElementById('boss-btn').classList.add('hidden');
+  setBossBtnActive(false);
   document.getElementById('boss-timer-wrap').style.display = 'block';
   document.getElementById('boss-level-badge').style.display = 'block';
   document.getElementById('boss-level-badge').textContent = 'BOSS LV 1';
@@ -1849,7 +1854,7 @@ function onBossPhaseKill() {
     // Always let player initiate next enemy
   setNextBtnActive(true);
   showPotionBtn();
-  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
+  if(G.wave >= 3) setBossBtnActive(true);
     return;
   }
   G.bossLevel++;
@@ -1958,7 +1963,7 @@ function closeBossResults() {
   renderIngameLB();
   // Show next wave button — let player initiate, don't auto-spawn
   setNextBtnActive(true);
-  if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
+  if(G.wave >= 3) setBossBtnActive(true);
   showPotionBtn();
   G.combatActive = false;
   G.enemy = null;
@@ -2060,11 +2065,13 @@ function isAbilityReady(ab) {
 
 function getAbilityDmg(ab) {
   const st = getStats();
-  // All damage now scales with attack stat
   const base = st.attack || 18;
   const lvl = G.abilityLevels[ab.id]||0;
   const lvlBonus = 1 + lvl * 0.15;
-  return Math.floor(base * ab.dmgMult * lvlBonus);
+  const avg = base * ab.dmgMult * lvlBonus;
+  // Roll between 80% and 120% of average
+  const roll = 0.80 + Math.random() * 0.40;
+  return { value: Math.floor(avg * roll), roll, avg: Math.floor(avg) };
 }
 
 function fireAbility(ab) {
@@ -2087,13 +2094,19 @@ function fireAbility(ab) {
   const hits = ab.hits||1;
 
   let totalDmg = 0;
+  let bestRoll = 0;
   for(let h=0;h<hits;h++){
-    const rawDmg = getAbilityDmg(ab) * seMult * critMult;
+    const dmgResult = getAbilityDmg(ab);
+    const rawDmg = dmgResult.value * seMult * critMult;
     const dmg = Math.max(1, Math.floor(rawDmg * (1 - defenseReduction*(1-armorPen))));
     G.enemy.hp -= dmg;
     totalDmg += dmg;
+    if(dmgResult.roll > bestRoll) bestRoll = dmgResult.roll;
     if(G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
   }
+  // Roll quality flags
+  const isMaxRoll = bestRoll >= 1.15;  // top ~13% — near-max roll
+  const isPerfect = isMaxRoll && isCrit; // max roll + crit = gold
 
   // Healing — mage uses spellVamp, warrior/rogue use lifeSteal
   const stealPct = Math.min(35, ab.isMagic ? (st.spellVamp||0) : (st.lifeSteal||0));
@@ -2159,12 +2172,15 @@ function fireAbility(ab) {
   // Log + animations
   const seText = seMult>=1.6?' <span class="log-se">SE!</span>':seMult<0.75?' <span style="color:#e87040">NVE</span>':'';
   const critText = isCrit?' <span style="color:#ffaa00">CRIT!</span>':'';
+  const maxText = isMaxRoll&&!isCrit?' <span style="color:#44aaff">MAX</span>':'';
+  const perfectText = isPerfect?' <span style="color:#ffdd00">PERFECT!</span>':'';
   const hitsText = hits>1?` (x${hits})`:'';
-  log(`<span style="color:${CLASS_COLORS[ab.class]}">${ab.icon} ${ab.name}</span> → <span class="log-dmg">${totalDmg}</span>${hitsText}${seText}${critText}`);
+  log(`<span style="color:${CLASS_COLORS[ab.class]}">${ab.icon} ${ab.name}</span> → <span class="log-dmg">${totalDmg}</span>${hitsText}${seText}${critText}${maxText}${perfectText}`);
 
   const W=canvas.width,H=canvas.height;
   const px=W*.25,py=H*.62,ex=W*.72,ey=H*.60;
-  const elColor = CLASS_COLORS[ab.class]||'#fff';
+  // Color: gold=perfect(max+crit), red=crit, blue=max roll, white=normal
+  const elColor = isPerfect ? '#ffdd00' : isCrit ? '#ff4444' : isMaxRoll ? '#44aaff' : (CLASS_COLORS[ab.class]||'#fff');
 
   if(!ab.isMagic){
     const isBowShot = ab.id === 'rogue_basic_bow';
@@ -2177,7 +2193,7 @@ function fireAbility(ab) {
       triggerPlayerLunge(ex,ey,px,py);
       setTimeout(()=>{
         spawnParticles('physical',px,py,ex,ey);
-        spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,totalDmg,isCrit,seMult>1.0,elColor);
+        spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,totalDmg,isCrit||isPerfect,seMult>1.0||isMaxRoll,elColor);
         if(healAmt>0) spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt);
         startAnimLoop();
       },160);
@@ -2193,8 +2209,10 @@ function fireAbility(ab) {
   }
 
   // Combat log overlay
-  if(isCrit&&seMult>=1.6) combatLog(`⚡ CRIT+SE ${totalDmg} ${ab.icon}`,'crit');
+  if(isPerfect)            combatLog(`✨ PERFECT ${totalDmg} ${ab.icon}`,'crit');
+  else if(isCrit&&seMult>=1.6) combatLog(`⚡ CRIT+SE ${totalDmg} ${ab.icon}`,'crit');
   else if(isCrit)          combatLog(`⚡ CRIT ${totalDmg} ${ab.icon}`,'crit');
+  else if(isMaxRoll)       combatLog(`◆ MAX ${totalDmg} ${ab.icon}`,'se');
   else if(seMult>=1.6)     combatLog(`✦ SE ${totalDmg} ${ab.icon}`,'se');
   else if(seMult<0.75)     combatLog(`▽ NVE ${totalDmg} ${ab.icon}`,'dmg-out');
   if(healAmt>0)           combatLog(`♥ +${healAmt} ${ab.isMagic?'vamp':'steal'}`,'heal');
@@ -2307,13 +2325,39 @@ function stopAllAutoSlots(save=false) {
 }
 
 function restoreAutoSlots() {
-  if(!G.savedAutoSlots || !G.combatActive || !G.enemy) return;
-  G.savedAutoSlots.forEach(slotIdx => {
-    if(!G.autoSlots[slotIdx]) activateAbility(slotIdx);
+  if(!G.savedAutoSlots && !G.healWasAuto) return;
+  if(!G.combatActive || !G.enemy || G.enemy.hp <= 0) return;
+  const slots = G.savedAutoSlots || [];
+  // Directly activate each saved slot — don't call activateAbility (that toggles)
+  slots.forEach(slotIdx => {
+    if(G.autoSlots[slotIdx]) return; // already on
+    const abId = G.loadout[slotIdx];
+    if(!abId || !isSlotUnlocked(slotIdx)) return;
+    const ab = ABILITIES[abId];
+    if(!ab) return;
+    // Fire immediately if ready
+    if(isAbilityReady(ab)) {
+      fireAbility(ab);
+      if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+    }
+    const st = getStats();
+    const checkInterval = ab.type === 'basic'
+      ? Math.max(300, Math.floor(1000 / st.atkSpeed))
+      : 250;
+    G.autoSlots[slotIdx] = setInterval(() => {
+      if(!G.combatActive || !G.enemy){ clearInterval(G.autoSlots[slotIdx]); delete G.autoSlots[slotIdx]; updateLoadoutUI(); return; }
+      if(!isAbilityReady(ab)) return;
+      const manaCost = MANA_COSTS[ab.type]||0;
+      if(manaCost > 0 && G.mana < manaCost) return;
+      fireAbility(ab);
+      if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+    }, checkInterval);
   });
   if(G.healWasAuto && !G.autoSlots['heal']) activateHeal();
   G.savedAutoSlots = null;
   G.healWasAuto = false;
+  updateLoadoutUI();
+  updateHealSlotUI();
 }
 
 // ── CLASS XP ──
@@ -2940,6 +2984,24 @@ function setNextBtnActive(active) {
   btn.style.pointerEvents = active ? 'auto' : 'none';
 }
 
+function setBossBtnActive(active) {
+  const btn = document.getElementById('boss-btn');
+  if(!btn) return;
+  btn.style.opacity = active ? '1' : '0.35';
+  btn.style.pointerEvents = active ? 'auto' : 'none';
+}
+
+function setPotionBtnActive(active, label='') {
+  const btn = document.getElementById('potion-btn');
+  if(!btn) return;
+  btn.style.opacity = active ? '1' : '0.35';
+  btn.style.pointerEvents = active ? 'auto' : 'none';
+  if(label) {
+    const lbl = document.getElementById('potion-label');
+    if(lbl) lbl.textContent = label;
+  }
+}
+
 function toggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
   updateAutoWaveBtn();
@@ -2969,7 +3031,7 @@ function updateAutoWaveBtn() {
 function nextWave() {
   stopAllAutoSlots(true); // save=true so slots restore on next enemy
   setNextBtnActive(false);
-  document.getElementById('boss-btn').classList.add('hidden');
+  setBossBtnActive(false);
   G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.1));
   updateHpBar();
   updateResourceBar();
@@ -3662,7 +3724,7 @@ function closeVendor(){
       setTimeout(restoreAutoSlots, 200);
     } else {
       setNextBtnActive(true);
-      if(G.wave>=3) document.getElementById('boss-btn').classList.remove('hidden');
+      if(G.wave>=3) setBossBtnActive(true);
       if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
     }
   }
@@ -5275,20 +5337,21 @@ function getPotionHeal() {
 }
 
 function showPotionBtn() {
-  const btn = document.getElementById('potion-btn');
-  const lbl = document.getElementById('potion-label');
-  if (!btn) return;
   const cost = getPotionCost();
   const heal = getPotionHeal();
   const canAfford = G.gold >= cost;
-  btn.classList.remove('hidden');
-  btn.style.opacity = canAfford ? '1' : '0.45';
-  if (lbl) lbl.textContent = `+${heal}hp (${cost}g)`;
+  setPotionBtnActive(canAfford, `+${heal}hp (${cost}g)`);
+  if(!canAfford) {
+    // Still show but dimmer
+    const btn = document.getElementById('potion-btn');
+    if(btn) { btn.style.opacity='0.45'; btn.style.pointerEvents='auto'; }
+  }
 }
 
 function hidePotionBtn() {
-  const btn = document.getElementById('potion-btn');
-  if (btn) btn.classList.add('hidden');
+  setPotionBtnActive(false);
+  const lbl = document.getElementById('potion-label');
+  if(lbl) lbl.textContent = 'Potion';
 }
 
 function buyPotion() {
