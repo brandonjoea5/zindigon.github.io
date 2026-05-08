@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.1.0</title>
+<title>Elemental Rift v2.1.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.1.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.1.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -1049,6 +1049,9 @@ const TITLES = {
   season1_gold:     { id:'season1_gold',     label:'🥇 Season 1 Champion', desc:'Highest boss damage in Season 1.' },
   season1_silver:   { id:'season1_silver',   label:'🥈 Season 1 Runner-Up',desc:'Second highest boss damage in Season 1.' },
   season1_bronze:   { id:'season1_bronze',   label:'🥉 Season 1 Third',    desc:'Third highest boss damage in Season 1.' },
+  boss_10m:         { id:'boss_10m',         label:'👹 Decimator',          desc:'Dealt 10 million damage to the World Boss.' },
+  boss_30m:         { id:'boss_30m',         label:'🐉 Dragonslayer',       desc:'Dealt 30 million damage to the World Boss.' },
+  boss_50m:         { id:'boss_50m',         label:'☄️ World Ender',        desc:'Dealt 50 million damage to the World Boss.' },
 };
 
 function getTitleDisplay(titleId) {
@@ -2443,12 +2446,18 @@ const STAT_BOOST_OPTIONS = [
 ];
 // ── BOSS DAMAGE MILESTONES ──
 const BOSS_MILESTONES = [
-  { dmg:1000,    gold:50,    xp:15,  icon:'🥉', label:'1K' },
-  { dmg:5000,    gold:200,   xp:25,  icon:'🥈', label:'5K' },
-  { dmg:15000,   gold:600,   xp:35,  icon:'🥇', label:'15K' },
-  { dmg:50000,   gold:1500,  xp:45,  icon:'💎', label:'50K' },
-  { dmg:150000,  gold:4000,  xp:55,  icon:'👑', label:'150K' },
-  { dmg:500000,  gold:10000, xp:65,  icon:'⚡', label:'500K' },
+  { dmg:1000,      gold:50,    xp:15,  icon:'🥉', label:'1K' },
+  { dmg:5000,      gold:200,   xp:25,  icon:'🥈', label:'5K' },
+  { dmg:15000,     gold:600,   xp:35,  icon:'🥇', label:'15K' },
+  { dmg:50000,     gold:1500,  xp:45,  icon:'💎', label:'50K' },
+  { dmg:150000,    gold:4000,  xp:55,  icon:'👑', label:'150K' },
+  { dmg:500000,    gold:10000, xp:65,  icon:'⚡', label:'500K' },
+  { dmg:1000000,   gold:25000, xp:80,  icon:'🌟', label:'1M' },
+  { dmg:2000000,   gold:50000, xp:95,  icon:'💫', label:'2M' },
+  { dmg:5000000,   gold:100000,xp:110, icon:'🔥', label:'5M' },
+  { dmg:10000000,  gold:200000,xp:130, icon:'👹', label:'10M',  titleReward:'boss_10m' },
+  { dmg:30000000,  gold:400000,xp:150, icon:'🐉', label:'30M',  titleReward:'boss_30m' },
+  { dmg:50000000,  gold:750000,xp:200, icon:'☄️', label:'50M',  titleReward:'boss_50m' },
 ];
 
 
@@ -2966,6 +2975,113 @@ function buildComparisonHTML(newItem) {
   return `<div class="compare-wrap">${newCol}${eqCol}</div>`;
 }
 
+// ── GEAR UPGRADE SYSTEM ──
+const UPGRADE_COSTS = [50, 150, 400, 900, 1800]; // cost for upgrades 1-5
+const UPGRADE_STAT_BONUS = 0.15; // 15% per upgrade level
+const STAR_REROLL_COST = 2500;
+
+function getUpgradeCost(item) {
+  const lv = item.upgradeLv || 0;
+  return lv >= 5 ? null : UPGRADE_COSTS[lv];
+}
+
+function getUpgradePreview(item) {
+  // Show what stats will look like after next upgrade
+  const lv = (item.upgradeLv || 0) + 1;
+  const mult = 1 + lv * UPGRADE_STAT_BONUS;
+  const baseMult = 1 + (item.upgradeLv || 0) * UPGRADE_STAT_BONUS;
+  const preview = {};
+  Object.entries(item.stats).forEach(([k, v]) => {
+    const base = item.baseStats ? item.baseStats[k] : v / baseMult;
+    preview[k] = parseFloat((base * mult).toFixed(1));
+  });
+  return preview;
+}
+
+function upgradeItem(slot) {
+  const item = G.equipment[slot];
+  if (!item) return;
+  const cost = getUpgradeCost(item);
+  if (cost === null) return;
+  if (G.gold < cost) {
+    log(`<span style="color:#cc4444">Need ${cost}g to upgrade!</span>`);
+    return;
+  }
+  G.gold -= cost;
+  item.upgradeLv = (item.upgradeLv || 0) + 1;
+  // Store base stats on first upgrade so we can recalculate cleanly
+  if (!item.baseStats) {
+    item.baseStats = {...item.stats};
+  }
+  // Apply upgrade multiplier to all stats
+  const mult = 1 + item.upgradeLv * UPGRADE_STAT_BONUS;
+  Object.keys(item.baseStats).forEach(k => {
+    const isFloat = ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(k);
+    item.stats[k] = isFloat
+      ? parseFloat((item.baseStats[k] * mult).toFixed(1))
+      : Math.floor(item.baseStats[k] * mult);
+  });
+  // On max upgrade (lv 5) — roll for a star bonus on one random stat
+  if (item.upgradeLv === 5) {
+    rollStarBonus(item);
+  }
+  // Recalculate player stats
+  const st = getStats();
+  const oldMax = G.maxHp;
+  G.maxHp = st.maxHp;
+  if (G.maxHp > oldMax) G.hp += G.maxHp - oldMax;
+  G.hp = Math.min(G.hp, G.maxHp);
+  G.maxMana = st.mana || 100;
+  updateHpBar(); updateManaBar(); updateResourceBar(); updateStatsPanel(); updateEquipUI();
+  saveGame();
+  log(`<span style="color:#e8b84b">⬆ ${item.name} upgraded to +${item.upgradeLv}!</span>`);
+  playSound('level_up');
+  // Refresh the modal
+  showItemModal(item, 'gear_inspect');
+}
+
+function rollStarBonus(item) {
+  // Pick a random stat and give it a big bonus (25-50% extra on top)
+  const statKeys = Object.keys(item.baseStats);
+  const chosen = statKeys[Math.floor(Math.random() * statKeys.length)];
+  const isFloat = ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(chosen);
+  const bonusMult = 0.25 + Math.random() * 0.25; // 25-50% extra
+  const bonus = item.baseStats[chosen] * bonusMult;
+  item.stats[chosen] = isFloat
+    ? parseFloat((item.stats[chosen] + bonus).toFixed(1))
+    : Math.floor(item.stats[chosen] + bonus);
+  item.starStat = chosen;
+  item.starBonus = bonusMult;
+  log(`<span style="color:#ffdd00">⭐ Star bonus! ${STAT_LABELS[chosen]||chosen} got an extra ${Math.round(bonusMult*100)}% boost!</span>`);
+}
+
+function rerollStarBonus(slot) {
+  const item = G.equipment[slot];
+  if (!item || item.upgradeLv < 5) return;
+  if (G.gold < STAR_REROLL_COST) {
+    log(`<span style="color:#cc4444">Need ${STAR_REROLL_COST}g to reroll star bonus!</span>`);
+    return;
+  }
+  G.gold -= STAR_REROLL_COST;
+  // Remove old star bonus by recalculating from base + upgrade mult
+  const mult = 1 + item.upgradeLv * UPGRADE_STAT_BONUS;
+  Object.keys(item.baseStats).forEach(k => {
+    const isFloat = ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(k);
+    item.stats[k] = isFloat
+      ? parseFloat((item.baseStats[k] * mult).toFixed(1))
+      : Math.floor(item.baseStats[k] * mult);
+  });
+  item.starStat = null;
+  rollStarBonus(item);
+  const st = getStats();
+  G.maxHp = st.maxHp; G.hp = Math.min(G.hp, G.maxHp);
+  G.maxMana = st.mana || 100;
+  updateHpBar(); updateManaBar(); updateResourceBar(); updateStatsPanel(); updateEquipUI();
+  saveGame();
+  updateResourceBar();
+  showItemModal(item, 'gear_inspect');
+}
+
 function showItemModal(item, context){
   if(context === 'vendor_buy' || context === 'equip_choose') {
     showVendorItemDecision(item);
@@ -2976,15 +3092,68 @@ function showItemModal(item, context){
     stopEnemyAutoAttack();
     stopAllAutoSlots();
   }
-  document.getElementById('modal-title').textContent = item.name;
   const t = item.tier||item.rarity;
-  document.getElementById('modal-rarity').innerHTML = `<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>`;
+  const upgLv = item.upgradeLv || 0;
+  const upgCost = getUpgradeCost(item);
+  const preview = upgLv < 5 ? getUpgradePreview(item) : null;
+  const canAffordUpg = upgCost !== null && G.gold >= upgCost;
+  const canAffordReroll = upgLv >= 5 && G.gold >= STAR_REROLL_COST;
+  const upgStars = '⭐'.repeat(upgLv) || '';
+
+  // Name with upgrade badge
+  document.getElementById('modal-title').innerHTML = `${item.name} ${upgLv > 0 ? `<span style="color:#e8b84b;font-size:13px;">+${upgLv}${upgLv===5&&item.starStat?' ⭐':''}</span>` : ''}`;
+  document.getElementById('modal-rarity').innerHTML = `<span style="color:${t.color};font-family:Cinzel,serif;">${t.name}</span>${upgLv>0?` <span style="color:#e8b84b;font-size:11px;">${upgStars}</span>`:''}`;
   document.getElementById('modal-slot').textContent = `Slot: ${item.slot}`;
-  document.getElementById('modal-stats').innerHTML = Object.entries(item.stats).map(([k,v]) =>
-    `<div class="item-stat">${STAT_LABELS[k]||k}: <span>+${v}</span></div>`
-  ).join('');
-  document.getElementById('modal-sell-val').textContent = `Sell value: ${item.sellVal} gold`;
+
+  // Stats with upgrade preview
+  document.getElementById('modal-stats').innerHTML = Object.entries(item.stats).map(([k,v]) => {
+    const isStar = item.starStat === k;
+    const nextVal = preview ? preview[k] : null;
+    const delta = nextVal ? (nextVal - v) : 0;
+    const fmt = val => ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(k) ? parseFloat(val).toFixed(1) : Math.floor(val);
+    return `<div class="item-stat" style="${isStar?'color:#ffdd00;':''}">${isStar?'⭐ ':''}${STAT_LABELS[k]||k}: <span style="${isStar?'color:#ffdd00;':''}">+${fmt(v)}</span>${nextVal&&delta>0?`<span style="color:#3acc7a;font-size:10px;"> → +${fmt(nextVal)}</span>`:''}${isStar?` <span style="color:#ffdd00;font-size:9px;">(star bonus)</span>`:''}</div>`;
+  }).join('');
+
+  // Upgrade section
+  let upgradeHTML = '';
+  if(upgLv < 5) {
+    upgradeHTML = `
+      <div style="margin-top:10px;padding:10px;background:#0d1018;border:1px solid ${canAffordUpg?'#e8b84b44':'var(--border)'};border-radius:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-family:'Cinzel',serif;font-size:11px;color:#e8b84b;">⬆ Upgrade to +${upgLv+1}</span>
+          <span style="font-family:'Cinzel',serif;font-size:12px;color:${canAffordUpg?'#e8b84b':'#cc4444'};">${upgCost}g</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);">All stats +${Math.round(UPGRADE_STAT_BONUS*100)}% · ${upgLv===4?'<span style="color:#ffdd00;">Final upgrade — chance for ⭐ star bonus!</span>':'Cost increases each level'}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;">Your gold: ${G.gold}g</div>
+      </div>`;
+  } else {
+    upgradeHTML = `
+      <div style="margin-top:10px;padding:10px;background:#0d1018;border:1px solid #ffdd0044;border-radius:8px;">
+        <div style="font-family:'Cinzel',serif;font-size:11px;color:#ffdd00;margin-bottom:4px;">⭐ Max Upgraded</div>
+        ${item.starStat ? `
+          <div style="font-size:11px;color:#ffdd00;">Star: +${Math.round((item.starBonus||0)*100)}% on ${STAT_LABELS[item.starStat]||item.starStat}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">Reroll star bonus for ${STAR_REROLL_COST}g</div>
+        ` : '<div style="font-size:10px;color:var(--muted);">No star bonus rolled</div>'}
+      </div>`;
+  }
+
+  document.getElementById('modal-sell-val').innerHTML = upgradeHTML + `<div style="font-size:11px;color:var(--muted);margin-top:6px;">Sell value: ${item.sellVal} gold${upgLv>0?' (upgrades not refunded)':''}</div>`;
+
   const btns = document.getElementById('modal-btns'); btns.innerHTML = '';
+  // Upgrade button
+  if(upgLv < 5) {
+    const ub = document.createElement('button');
+    ub.style.cssText = `flex:2;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid ${canAffordUpg?'#e8b84b':'var(--border)'};color:${canAffordUpg?'#e8b84b':'var(--muted)'};background:${canAffordUpg?'rgba(232,184,75,0.1)':'transparent'};`;
+    ub.textContent = canAffordUpg ? `⬆ Upgrade (${upgCost}g)` : `⬆ Need ${upgCost}g`;
+    if(canAffordUpg) ub.onclick = () => upgradeItem(item.slot);
+    btns.appendChild(ub);
+  } else if(item.starStat) {
+    const rb = document.createElement('button');
+    rb.style.cssText = `flex:2;font-family:'Cinzel',serif;font-size:12px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid ${canAffordReroll?'#ffdd00':'var(--border)'};color:${canAffordReroll?'#ffdd00':'var(--muted)'};background:${canAffordReroll?'rgba(255,221,0,0.08)':'transparent'};`;
+    rb.textContent = canAffordReroll ? `⭐ Reroll (${STAR_REROLL_COST}g)` : `⭐ Need ${STAR_REROLL_COST}g`;
+    if(canAffordReroll) rb.onclick = () => rerollStarBonus(item.slot);
+    btns.appendChild(rb);
+  }
   const sl = document.createElement('button'); sl.className='btn-sell'; sl.textContent=`Sell (${item.sellVal}g)`; sl.onclick=()=>{sellItem(item,item.slot);closeItemModal();}; btns.appendChild(sl);
   const cl = document.createElement('button'); cl.className='btn-close-m'; cl.textContent='Close'; cl.onclick=closeItemModal; btns.appendChild(cl);
   document.getElementById('item-modal').classList.remove('hidden');
@@ -3316,7 +3485,7 @@ function updateStatsPanel(){
     const item=G.equipment[slot];
     return `<div class="equip-slot ${item?'has-item':''}" onclick="${item?`inspectGear('${slot}')`:''}" >
       <div class="slot-name">${slot}</div>
-      ${item?`<div class="slot-item" style="color:${item.rarity.color}">${item.rarity.name}</div>`:'<div class="slot-empty">—</div>'}
+      ${item?`<div class="slot-item" style="color:${item.rarity.color}">${item.rarity.name}${item.upgradeLv?` <span style="color:#e8b84b;font-size:9px;">+${item.upgradeLv}${item.upgradeLv===5&&item.starStat?' ⭐':''}</span>`:''}</div>`:'<div class="slot-empty">—</div>'}
     </div>`;
   }).join('')+'</div>';
   // Render into desktop panel (left col) and mobile panel
@@ -4841,10 +5010,19 @@ function checkBossMilestones() {
       G.gold += m.gold;
       awardXP(m.xp);
       updateResourceBar();
-      // Flash reward notification on arena
       showMilestoneNotification(m);
       log(`<span style="color:var(--gold)">${m.icon} Milestone ${m.label}! +${m.gold}g +${m.xp}xp</span>`);
       playSound('level_up');
+      // Grant exclusive title if milestone has one
+      if(m.titleReward && sbUser) {
+        grantTitle(sbUser.id, m.titleReward).then(()=>{
+          if(!playerTitles.includes(m.titleReward)) {
+            playerTitles.push(m.titleReward);
+            log(`<span style="color:#aa77ff">🎖️ Title unlocked: ${TITLES[m.titleReward]?.label}!</span>`);
+            setTimeout(()=>showTitleTutorial(), 1500);
+          }
+        });
+      }
     }
   });
 }
@@ -5843,7 +6021,7 @@ function buildGearPanelHTML() {
     html += `<div class="equip-slot ${item?'has-item':''}${tierClass}" onclick="${item?`mobileInspectGear('${slot}')`:''}" style="min-height:52px;">
       <div class="slot-name">${slot}</div>
       ${item
-        ? `<div class="slot-item" style="color:${color};font-size:10px;${tierName==='Cosmic'?'text-shadow:0 0 6px #e8e8ff;':''}">${item.name}</div>`
+        ? `<div class="slot-item" style="color:${color};font-size:10px;${tierName==='Cosmic'?'text-shadow:0 0 6px #e8e8ff;':''}">${item.name}${item.upgradeLv?` <span style="color:#e8b84b;font-size:9px;">+${item.upgradeLv}${item.upgradeLv===5&&item.starStat?' ⭐':''}</span>`:''}</div>`
         : '<div class="slot-empty">—</div>'}
     </div>`;
   });
