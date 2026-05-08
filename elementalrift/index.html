@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v1.7.0</title>
+<title>Elemental Rift v2.0.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-  --fire:#ff4d1a; --water:#1ab3ff; --grass:#3dcc5a; --dark:#9b4dff; --light:#ffd700;
+  --fire:#ff4d1a; --water:#1ab3ff; --grass:#3dcc5a;
+  --poison:#88cc00; --electric:#ffdd00; --ice:#88eeff;
   --bg:#0a0c12; --panel:#111520; --border:#2a2f45; --text:#c8d0e8; --muted:#5a6080;
   --gold:#e8b84b; --red:#e83a3a; --green:#3acc7a; --boss:#ff2266;
+  --mage:#1ab3ff; --warrior:#e8b84b; --rogue:#3dcc5a;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font-size:15px;touch-action:manipulation;}
@@ -397,11 +399,13 @@ let sbProfile = null; // players row
   <h1>Elemental Rift</h1>
   <p>Master the elements. Defeat waves of enemies. Challenge the Boss.</p>
   <div class="element-badges">
-    <span class="el-badge" style="border-color:#ff4d1a;color:#ff4d1a;">🔥 Fire</span>
-    <span class="el-badge" style="border-color:#1ab3ff;color:#1ab3ff;">💧 Water</span>
-    <span class="el-badge" style="border-color:#3dcc5a;color:#3dcc5a;">🌿 Grass</span>
-    <span class="el-badge" style="border-color:#9b4dff;color:#9b4dff;">🌑 Dark</span>
-    <span class="el-badge" style="border-color:#ffd700;color:#ffd700;">✨ Light</span>
+    <span class="el-badge" style="border-color:#1ab3ff;color:#1ab3ff;">🧙 Mage</span>
+    <span class="el-badge" style="border-color:#e8b84b;color:#e8b84b;">⚔️ Warrior</span>
+    <span class="el-badge" style="border-color:#3dcc5a;color:#3dcc5a;">🗡️ Rogue</span>
+  </div>
+  <div id="welcome-back-msg" style="display:none;text-align:center;">
+    <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--gold);" id="welcome-name-text"></div>
+    <div style="font-size:12px;color:#aa77ff;margin-top:2px;" id="welcome-title-text"></div>
   </div>
   <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
   <div style="display:flex;gap:8px;width:100%;max-width:340px;">
@@ -417,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v1.7.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -867,24 +871,135 @@ let sbProfile = null; // players row
 // ═══════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════
-const SLOTS = ['Head','Neck','Chest','Belt','Pants','Boots','Ring1','Ring2','Weapon'];
-const ELEMENTS = ['fire','water','grass','dark','light'];
-const ELEMENT_COLORS = {fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaaaaa'};
-const STAT_KEYS = ['attack','magicPower','atkSpeed','critChance','critDmg','armor','health','magicResist','lifeSteal','spellVamp','cdr','mana','manaRegen'];
-const STAT_LABELS = {attack:'Attack',magicPower:'Magic Pwr',atkSpeed:'Atk Speed',critChance:'Crit %',critDmg:'Crit Dmg',armor:'Armor',health:'Health',magicResist:'Mag Resist',lifeSteal:'Life Steal',spellVamp:'Spell Vamp',cdr:'CDR %',mana:'Mana',manaRegen:'Mana Regen'};
-const SE = {fire:['grass'],grass:['water'],water:['fire'],dark:['light'],light:['dark']};
-const SKILL_TREE = {
-  fire:    [{name:'Ember Touch',stat:'magicPower',per:3},{name:'Ignite',stat:'critChance',per:2},{name:'Inferno',stat:'magicPower',per:5}],
-  water:   [{name:'Tide Pull',stat:'magicPower',per:3},{name:'Frost Bite',stat:'atkSpeed',per:0.1},{name:'Tsunami',stat:'spellVamp',per:2}],
-  grass:   [{name:'Regrowth',stat:'health',per:15},{name:'Thorn',stat:'lifeSteal',per:2},{name:'Overgrowth',stat:'armor',per:4}],
-  dark:    [{name:'Shadow Veil',stat:'critDmg',per:15},{name:'Drain',stat:'lifeSteal',per:3},{name:'Void Burst',stat:'magicPower',per:6}],
-  light:   [{name:'Radiance',stat:'magicResist',per:5},{name:'Smite',stat:'attack',per:4},{name:'Holy Nova',stat:'spellVamp',per:3}],
-  physical:[{name:'Brute Force',stat:'attack',per:5},{name:'Precision',stat:'critChance',per:3},{name:'Rampage',stat:'atkSpeed',per:0.15}],
-  defense: [{name:'Iron Will',stat:'armor',per:4},{name:'Spell Ward',stat:'magicResist',per:4},{name:'Swiftcast',stat:'cdr',per:2}],
+// ── SLOTS: Warrior has Offhand, others don't ──
+const SLOTS_BASE = ['Head','Neck','Chest','Belt','Pants','Boots','Ring1','Ring2','Weapon'];
+const SLOTS_WARRIOR = ['Head','Neck','Chest','Belt','Pants','Boots','Ring1','Ring2','Weapon','Offhand'];
+const SLOTS = SLOTS_BASE; // dynamic — set after class chosen
+
+// ── CLASS SYSTEM ──
+const CLASS_NAMES = ['mage','warrior','rogue'];
+const CLASS_COLORS = { mage:'#1ab3ff', warrior:'#e8b84b', rogue:'#3dcc5a' };
+const CLASS_ICONS  = { mage:'🧙', warrior:'⚔️', rogue:'🗡️' };
+const CLASS_XP_TO_LEVEL = [0, 30, 80, 160, 280, 440, 650, 920, 1250, 1650, 2100];
+
+// ── IMBUE CHOICES ──
+// Mage picks one of: fire, water, grass
+// Warrior/Rogue pick one of: poison, electric, ice
+const MAGE_IMBUES   = ['fire','water','grass'];
+const PHYS_IMBUES   = ['poison','electric','ice'];
+const IMBUE_COLORS  = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', poison:'#88cc00', electric:'#ffdd00', ice:'#88eeff' };
+const IMBUE_ICONS   = { fire:'🔥', water:'💧', grass:'🌿', poison:'☠️', electric:'⚡', ice:'❄️' };
+
+// ── STATS ──
+const STAT_KEYS = ['attack','atkSpeed','critChance','critDmg','defense','health','lifeSteal','spellVamp','cdr','mana','manaRegen','dotDamage','burnDuration','poisonDuration','freezeDuration','electricDot','slowStrength'];
+const STAT_LABELS = {
+  attack:'Attack', atkSpeed:'Atk Speed', critChance:'Crit %', critDmg:'Crit Dmg',
+  defense:'Defense', health:'Health', lifeSteal:'Life Steal', spellVamp:'Spell Vamp',
+  cdr:'CDR %', mana:'Mana', manaRegen:'Mana Regen',
+  dotDamage:'DOT Dmg', burnDuration:'Burn Dur', poisonDuration:'Poison Dur',
+  freezeDuration:'Freeze Dur', electricDot:'Elec DOT', slowStrength:'Slow %'
 };
-const BASE_STATS = {attack:15,magicPower:12,atkSpeed:1.0,critChance:0,critDmg:150,armor:5,health:180,magicResist:5,lifeSteal:0,spellVamp:0,cdr:0,mana:100,manaRegen:3};
-const ENEMY_NAMES = ['Gorgash','Vexil','Thornback','Sable Wraith','Cindermaw','Tidecaller','Luminos','Shade','Bramblehide','Voidling','Ashfang','Crystalclaw','Frostmaw','Emberclaw','Duskwalker','Nullshade'];
-const BOSS_NAMES = ['The Devourer','Void Colossus','Ashen Titan','The Undying','Chaos Incarnate'];
+const BASE_STATS = {
+  attack:18, atkSpeed:1.0, critChance:0, critDmg:150,
+  defense:8, health:200, lifeSteal:0, spellVamp:0,
+  cdr:0, mana:100, manaRegen:3,
+  dotDamage:0, burnDuration:3, poisonDuration:4,
+  freezeDuration:1.5, electricDot:3, slowStrength:30
+};
+
+// ── SKILL TREE (passive upgrades) ──
+const SKILL_TREE = {
+  offense:  [{name:'Sharpening',stat:'attack',per:5},{name:'Precision',stat:'critChance',per:2},{name:'Lethality',stat:'critDmg',per:15}],
+  defense:  [{name:'Toughening',stat:'defense',per:4},{name:'Vitality',stat:'health',per:20},{name:'Swiftcast',stat:'cdr',per:2}],
+  effects:  [{name:'Lingering',stat:'dotDamage',per:3},{name:'Prolonged',stat:'burnDuration',per:0.5},{name:'Deep Freeze',stat:'freezeDuration',per:0.3}],
+  utility:  [{name:'Mana Well',stat:'mana',per:10},{name:'Flow',stat:'manaRegen',per:1},{name:'Haste',stat:'atkSpeed',per:0.05}],
+};
+
+// ── ENEMY ROSTER ──
+// type, displayName, baseHpMult, baseAtkMult, special, resistance(imbue or null)
+const ENEMY_TYPES = [
+  { id:'wolf',    name:'Wolf',       hpM:0.7,  atkM:1.2,  special:'fast',      icon:'🐺', rarity:1   },
+  { id:'bear',    name:'Bear',       hpM:1.4,  atkM:1.1,  special:'heavy',     icon:'🐻', rarity:1   },
+  { id:'troll',   name:'Troll',      hpM:1.6,  atkM:0.9,  special:'regen',     icon:'👹', rarity:2   },
+  { id:'harpy',   name:'Harpy',      hpM:0.8,  atkM:0.9,  special:'slow_atk',  icon:'🦅', rarity:2   },
+  { id:'golem',   name:'Golem',      hpM:2.0,  atkM:0.7,  special:'armored',   icon:'🪨', rarity:2   },
+  { id:'giant',   name:'Giant',      hpM:2.5,  atkM:1.3,  special:'heavy',     icon:'🗿', rarity:3   },
+  { id:'wraith',  name:'Wraith',     hpM:1.0,  atkM:1.0,  special:'poison_immune', icon:'👻', rarity:3 },
+  { id:'dragon',  name:'Dragon',     hpM:3.0,  atkM:1.5,  special:'boss',      icon:'🐉', rarity:4   },
+  { id:'unicorn', name:'Unicorn',    hpM:0.4,  atkM:0.3,  special:'bonus_loot',icon:'🦄', rarity:5   },
+];
+// Enraged prefix variants — add resistance to one imbue
+const ENRAGED_VARIANTS = [
+  { prefix:'Fire',    resistance:'fire',    color:'#ff4d1a' },
+  { prefix:'Frost',   resistance:'ice',     color:'#88eeff' },
+  { prefix:'Venomed', resistance:'poison',  color:'#88cc00' },
+  { prefix:'Charged', resistance:'electric',color:'#ffdd00' },
+  { prefix:'Ancient', resistance:null,      color:'#e8b84b' }, // no resistance, just stronger
+];
+const BOSS_NAMES = ['The Stonecrusher','Frostfang Alpha','Plague Harbinger','The Thundertitan','Ancient Warbear','Deathmaw Dragon'];
+
+// ── ABILITIES ──
+const ABILITIES = {
+  // ── MAGE BASICS (scale with attack stat, toggle auto) ──
+  mage_basic_fire:  { id:'mage_basic_fire',  class:'mage', imbue:'fire',  type:'basic', name:'Ember Strike',  icon:'🔥', cd:0, desc:'Rapid fire strikes. Attack speed scales this. Toggles auto.', dmgMult:0.85, isMagic:true },
+  mage_basic_water: { id:'mage_basic_water', class:'mage', imbue:'water', type:'basic', name:'Tide Slash',    icon:'💧', cd:0, desc:'Flowing water strikes. Attack speed scales this. Toggles auto.', dmgMult:0.85, isMagic:true },
+  mage_basic_grass: { id:'mage_basic_grass', class:'mage', imbue:'grass', type:'basic', name:'Thorn Whip',    icon:'🌿', cd:0, desc:'Nature strikes. Attack speed scales this. Toggles auto.', dmgMult:0.85, isMagic:true },
+
+  // ── MAGE FIRE SKILLS ──
+  fire_reg1: { id:'fire_reg1', class:'mage', imbue:'fire', type:'regular', name:'Flame Burst',  icon:'🔥', cd:3500, desc:'Explosive fireball dealing heavy damage. Applies Burn — deals damage over time.', dmgMult:2.2, isMagic:true, applyEffect:'burn', unlockLv:3 },
+  fire_reg2: { id:'fire_reg2', class:'mage', imbue:'fire', type:'regular', name:'Scorch',       icon:'🌋', cd:5000, desc:'Intense heat dealing damage and applying a long Burn DOT.', dmgMult:1.8, isMagic:true, applyEffect:'burn', unlockLv:6 },
+  fire_ult:  { id:'fire_ult',  class:'mage', imbue:'fire', type:'ultimate',name:'Inferno',       icon:'☄️', cd:18000,desc:'Devastating meteor. Heavy damage + Burn. Burn intensity scales with DOT Dmg stat.', dmgMult:6.0, isMagic:true, applyEffect:'burn', unlockLv:10 },
+
+  // ── MAGE WATER SKILLS ──
+  water_reg1: { id:'water_reg1', class:'mage', imbue:'water', type:'regular', name:'Frost Bolt',  icon:'❄️', cd:3200, desc:'Ice shard dealing damage. Applies Drowning — slows enemy attack speed.', dmgMult:2.0, isMagic:true, applyEffect:'slow', unlockLv:3 },
+  water_reg2: { id:'water_reg2', class:'mage', imbue:'water', type:'regular', name:'Hydro Pulse', icon:'🌊', cd:4500, desc:'Tidal wave dealing heavy damage. Heals 15% of damage. Weakens enemy damage.', dmgMult:2.5, isMagic:true, healPct:15, applyEffect:'slow', unlockLv:6 },
+  water_ult:  { id:'water_ult',  class:'mage', imbue:'water', type:'ultimate',name:'Tsunami',      icon:'🌊', cd:20000,desc:'Massive wave dealing huge damage. Heals 20% dealt. Full enemy slow for 6s.', dmgMult:5.5, isMagic:true, healPct:20, applyEffect:'slow', unlockLv:10 },
+
+  // ── MAGE GRASS SKILLS ──
+  grass_reg1: { id:'grass_reg1', class:'mage', imbue:'grass', type:'regular', name:'Vine Snare',   icon:'🌱', cd:4000, desc:'Entangling vines dealing damage and healing 20% of damage dealt.', dmgMult:1.8, isMagic:true, healPct:20, unlockLv:3 },
+  grass_reg2: { id:'grass_reg2', class:'mage', imbue:'grass', type:'regular', name:'Spore Cloud',  icon:'🍄', cd:5500, desc:'Toxic spores dealing damage over 3s. Restores 30 HP instantly on cast.', dmgMult:2.0, isMagic:true, flatHeal:30, unlockLv:6 },
+  grass_ult:  { id:'grass_ult',  class:'mage', imbue:'grass', type:'ultimate',name:'Overgrowth',    icon:'🌳', cd:22000,desc:'Massive nature explosion. Heals 25% of damage dealt.', dmgMult:5.0, isMagic:true, healPct:25, unlockLv:10 },
+
+  // ── WARRIOR/ROGUE BASICS ──
+  warrior_basic: { id:'warrior_basic', class:'warrior', imbue:null, type:'basic', name:'Sword Strike',  icon:'⚔️', cd:0, desc:'Powerful sword strike. Attack speed scales this. Toggles auto.', dmgMult:1.0, isMagic:false },
+  rogue_basic:   { id:'rogue_basic',   class:'rogue',   imbue:null, type:'basic', name:'Dual Strike',   icon:'🗡️', cd:0, desc:'Twin dagger strikes hitting twice rapidly. Fast attack speed. Toggles auto.', dmgMult:0.65, isMagic:false, hits:2 },
+  rogue_basic_bow:{ id:'rogue_basic_bow',class:'rogue', imbue:null, type:'basic', name:'Arrow Shot',    icon:'🏹', cd:0, desc:'Ranged arrow dealing physical damage. Fast attack speed. Toggles auto.', dmgMult:0.75, isMagic:false },
+
+  // ── WARRIOR POISON ──
+  warrior_poison_reg1: { id:'warrior_poison_reg1', class:'warrior', imbue:'poison', type:'regular', name:'Venom Slash',   icon:'☠️', cd:3000, desc:'Venomous strike dealing damage. Applies Poison — deals DOT scaling with Poison Dur.', dmgMult:1.8, isMagic:false, applyEffect:'poison', unlockLv:3 },
+  warrior_poison_reg2: { id:'warrior_poison_reg2', class:'warrior', imbue:'poison', type:'regular', name:'Plague Strike', icon:'🧪', cd:4500, desc:'Infects the enemy with a powerful poison dealing heavy DOT.', dmgMult:2.2, isMagic:false, applyEffect:'poison', unlockLv:6 },
+  warrior_poison_ult:  { id:'warrior_poison_ult',  class:'warrior', imbue:'poison', type:'ultimate',name:'Death Blossom', icon:'💀', cd:16000,desc:'Explosive poison burst dealing massive damage and stacking 3x Poison.', dmgMult:5.0, isMagic:false, applyEffect:'poison', poisonStacks:3, unlockLv:10 },
+
+  // ── WARRIOR ELECTRIC ──
+  warrior_electric_reg1: { id:'warrior_electric_reg1', class:'warrior', imbue:'electric', type:'regular', name:'Thunder Slam',   icon:'⚡', cd:3000, desc:'Electric strike dealing damage. Applies Electric — constant DOT with AOE splash.', dmgMult:2.0, isMagic:false, applyEffect:'electric', unlockLv:3 },
+  warrior_electric_reg2: { id:'warrior_electric_reg2', class:'warrior', imbue:'electric', type:'regular', name:'Chain Lightning',icon:'🌩️', cd:4500, desc:'Arc of lightning dealing heavy damage and intensifying the Electric DOT.', dmgMult:2.4, isMagic:false, applyEffect:'electric', unlockLv:6 },
+  warrior_electric_ult:  { id:'warrior_electric_ult',  class:'warrior', imbue:'electric', type:'ultimate',name:'Thunderstrike',  icon:'⚡', cd:16000,desc:'Overwhelming electric explosion dealing massive damage. Electric DOT triples briefly.', dmgMult:5.5, isMagic:false, applyEffect:'electric', unlockLv:10 },
+
+  // ── WARRIOR ICE ──
+  warrior_ice_reg1: { id:'warrior_ice_reg1', class:'warrior', imbue:'ice', type:'regular', name:'Frost Strike',  icon:'❄️', cd:3000, desc:'Chilling strike dealing damage. Applies Ice — slows enemy attacks and may Freeze.', dmgMult:1.9, isMagic:false, applyEffect:'ice', unlockLv:3 },
+  warrior_ice_reg2: { id:'warrior_ice_reg2', class:'warrior', imbue:'ice', type:'regular', name:'Glacial Smash', icon:'🧊', cd:4500, desc:'Shattering ice blow dealing heavy damage. Strong Freeze chance.', dmgMult:2.5, isMagic:false, applyEffect:'ice', unlockLv:6 },
+  warrior_ice_ult:  { id:'warrior_ice_ult',  class:'warrior', imbue:'ice', type:'ultimate',name:'Blizzard',       icon:'🌨️', cd:16000,desc:'Howling blizzard dealing massive damage. Guaranteed Freeze for full duration.', dmgMult:5.5, isMagic:false, applyEffect:'ice', unlockLv:10 },
+
+  // ── ROGUE POISON ──
+  rogue_poison_reg1: { id:'rogue_poison_reg1', class:'rogue', imbue:'poison', type:'regular', name:'Poison Blade',  icon:'☠️', cd:2800, desc:'Coated blade dealing damage and applying Poison DOT. Fast cooldown.', dmgMult:1.7, isMagic:false, applyEffect:'poison', unlockLv:3 },
+  rogue_poison_reg2: { id:'rogue_poison_reg2', class:'rogue', imbue:'poison', type:'regular', name:'Shadow Venom',  icon:'🧪', cd:4000, desc:'Deadly strike from the shadows applying double-strength Poison.', dmgMult:2.0, isMagic:false, applyEffect:'poison', poisonStacks:2, unlockLv:6 },
+  rogue_poison_ult:  { id:'rogue_poison_ult',  class:'rogue', imbue:'poison', type:'ultimate',name:'Toxic Barrage', icon:'💀', cd:14000,desc:'Rain of poisoned arrows dealing massive damage and stacking Poison 4x.', dmgMult:4.5, isMagic:false, applyEffect:'poison', poisonStacks:4, unlockLv:10 },
+
+  // ── ROGUE ELECTRIC ──
+  rogue_electric_reg1: { id:'rogue_electric_reg1', class:'rogue', imbue:'electric', type:'regular', name:'Shock Bolt',    icon:'⚡', cd:2800, desc:'Electric arrow dealing damage and applying Electric DOT.', dmgMult:1.8, isMagic:false, applyEffect:'electric', unlockLv:3 },
+  rogue_electric_reg2: { id:'rogue_electric_reg2', class:'rogue', imbue:'electric', type:'regular', name:'Arc Shot',      icon:'🌩️', cd:4000, desc:'Charged arrow that arcs to deal damage and intensify Electric DOT.', dmgMult:2.2, isMagic:false, applyEffect:'electric', unlockLv:6 },
+  rogue_electric_ult:  { id:'rogue_electric_ult',  class:'rogue', imbue:'electric', type:'ultimate',name:'Storm Volley',  icon:'⚡', cd:14000,desc:'Volley of electric arrows dealing massive damage. Triple Electric DOT briefly.', dmgMult:4.5, isMagic:false, applyEffect:'electric', unlockLv:10 },
+
+  // ── ROGUE ICE ──
+  rogue_ice_reg1: { id:'rogue_ice_reg1', class:'rogue', imbue:'ice', type:'regular', name:'Frost Arrow',   icon:'❄️', cd:2800, desc:'Ice-tipped arrow dealing damage and applying Ice slow.', dmgMult:1.8, isMagic:false, applyEffect:'ice', unlockLv:3 },
+  rogue_ice_reg2: { id:'rogue_ice_reg2', class:'rogue', imbue:'ice', type:'regular', name:'Blizzard Shot', icon:'🧊', cd:4000, desc:'Powerful ice arrow dealing heavy damage with strong Freeze chance.', dmgMult:2.3, isMagic:false, applyEffect:'ice', unlockLv:6 },
+  rogue_ice_ult:  { id:'rogue_ice_ult',  class:'rogue', imbue:'ice', type:'ultimate',name:'Avalanche',      icon:'🌨️', cd:14000,desc:'Avalanche of ice projectiles dealing massive damage. Guaranteed Freeze.', dmgMult:5.0, isMagic:false, applyEffect:'ice', unlockLv:10 },
+
+  // ── HEALS (one per class) ──
+  heal_mage:    { id:'heal_mage',    class:'mage',    type:'heal', name:'Mana Surge',    icon:'✨', cd:9000,  desc:'Channel mana into healing. Restores 30% of max HP. Costs 30 mana.', healFlat:0, healPct:30 },
+  heal_warrior: { id:'heal_warrior', class:'warrior', type:'heal', name:'Battle Cry',    icon:'🛡️', cd:10000, desc:'Rally your strength. Restores 25% of max HP. Costs 30 mana.', healFlat:0, healPct:25 },
+  heal_rogue:   { id:'heal_rogue',   class:'rogue',   type:'heal', name:'Evasive Roll',  icon:'💨', cd:8000,  desc:'Evade and recover. Restores 20% of max HP. Costs 30 mana.', healFlat:0, healPct:20 },
+};
 
 // JSONBin config — leaderboard storage
 // NOTE: Replace BIN_ID with your own from jsonbin.io (free). Create a bin with [] as default content.
@@ -914,17 +1029,6 @@ const ABILITIES = {
   grass_reg2:   { id:'grass_reg2',   class:'grass',    type:'regular',  name:'Spore Cloud',  icon:'🍄', cd:5500, desc:'Toxic spores dealing damage over 3s. Also restores 30 HP instantly on cast.', dmgMult:2.0, isMagic:true, dot:true, flatHeal:30, unlockLv:6 },
   grass_ult:    { id:'grass_ult',    class:'grass',    type:'ultimate', name:'Overgrowth',   icon:'🌳', cd:22000,desc:'Massive nature explosion dealing huge magic damage. Heals you for 25% of damage dealt.', dmgMult:5.0, isMagic:true, healPct:25, unlockLv:10 },
 
-  // ── DARK ──
-  dark_basic:   { id:'dark_basic',   class:'dark',     type:'basic',    name:'Shadow Strike',icon:'🌑', cd:0,    desc:'Dark energy strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.85, isMagic:true  },
-  dark_reg1:    { id:'dark_reg1',    class:'dark',     type:'regular',  name:'Void Bolt',    icon:'🔮', cd:3800, desc:'Dark projectile dealing magic damage. This cast has +20% crit chance.', dmgMult:2.3, isMagic:true, bonusCrit:20, unlockLv:3 },
-  dark_reg2:    { id:'dark_reg2',    class:'dark',     type:'regular',  name:'Soul Drain',   icon:'💀', cd:5000, desc:'Drains life — deals magic damage and heals you for 40% of damage dealt.', dmgMult:1.9, isMagic:true, healPct:40, unlockLv:6 },
-  dark_ult:     { id:'dark_ult',     class:'dark',     type:'ultimate', name:'Void Collapse', icon:'🕳️', cd:20000,desc:'Collapses reality dealing massive magic damage. Heals you for 30% of damage dealt.', dmgMult:5.8, isMagic:true, healPct:30, unlockLv:10 },
-
-  // ── LIGHT ──
-  light_basic:  { id:'light_basic',  class:'light',    type:'basic',    name:'Radiant Strike',icon:'✨', cd:0,   desc:'Holy light strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8, isMagic:true  },
-  light_reg1:   { id:'light_reg1',   class:'light',    type:'regular',  name:'Holy Bolt',    icon:'⚡', cd:3500, desc:'Divine energy dealing magic damage and restoring 15 HP on hit.', dmgMult:2.1, isMagic:true, flatHeal:15, unlockLv:3 },
-  light_reg2:   { id:'light_reg2',   class:'light',    type:'regular',  name:'Smite',        icon:'☀️', cd:4200, desc:'Righteous strike dealing magic damage. Deals triple damage vs Dark enemies.', dmgMult:2.4, isMagic:true, unlockLv:6 },
-  light_ult:    { id:'light_ult',    class:'light',    type:'ultimate', name:'Divine Nova',  icon:'🌟', cd:19000,desc:'Holy explosion dealing massive magic damage. Heals you for 20% of damage dealt.', dmgMult:6.0, isMagic:true, healPct:20, unlockLv:10 },
 
   // ── PHYSICAL ──
   phys_basic:   { id:'phys_basic',   class:'physical', type:'basic',    name:'Quick Strike', icon:'⚔️', cd:0,    desc:'Fast physical attack dealing physical damage. Toggles auto-attack on/off.', dmgMult:1.0, isMagic:false },
@@ -941,27 +1045,26 @@ const ABILITIES = {
   heal_light:   { id:'heal_light',   class:'light',    type:'heal', name:'Holy Mend',      icon:'✨', cd:8000,  desc:'Divine light restores 40% of your max HP instantly. Costs 30 mana.', healFlat:0, healPct:40 },
 };
 const CLASS_COLORS = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', dark:'#9b4dff', light:'#ffd700', physical:'#aaaaaa' };
-const CLASS_ICONS  = { fire:'🔥', water:'💧', grass:'🌿', dark:'🌑', light:'✨', physical:'⚔️' };
+const CLASS_ICONS  = { mage:'🧙', warrior:'⚔️', rogue:'🗡️', fire:'🔥', water:'💧', grass:'🌿' };
 const CLASS_XP_TO_LEVEL = [0, 30, 80, 160, 280, 440, 650, 920, 1250, 1650, 2100]; // xp needed per level
 
 const CLASS_NAMES = ['fire','water','grass','dark','light','physical'];
 let G = {
   playerName: '',
-  hp:200, maxHp:200, energy:100, maxEnergy:100,
+  hp:200, maxHp:200,
   gold:0, kills:0, wave:1,
   xp:0, xpToNext:40, playerLevel:1, skillPoints:0, passivePoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
-  enemy:null,
+  enemy:null, enemies:[], // enemies array for multi-enemy support
   combatActive:false,
   pendingItem:null,
   inBoss:false,
   bossLevel:1,
   bossDmgDealt:0,
   bossRewardsClaimed:[],
-  // Run stats
-  runStats:{ totalDmg:0, bestHit:0, elementUses:{fire:0,water:0,grass:0,dark:0,light:0,physical:0}, totalGold:0, bossHits:0 }, // indices of BOSS_MILESTONES already claimed this attempt
+  runStats:{ totalDmg:0, bestHit:0, imbueUses:{}, totalGold:0 },
   bossTimerSec:60,
   bossTimerInterval:null,
   enemyAttackInterval:null,
@@ -969,22 +1072,64 @@ let G = {
   bossName:'',
   mana:100, maxMana:100,
   manaRegenInterval:null,
-  startingClass: null,
+  // New class system
+  playerClass: null,    // 'mage' | 'warrior' | 'rogue'
+  playerImbue: null,    // 'fire'|'water'|'grass' for mage, 'poison'|'electric'|'ice' for warrior/rogue
+  rogueWeapon: 'dagger', // 'dagger' | 'bow'
   classXP:{}, classLv:{}, classCP:{},
   abilityLevels:{}, abilityCDs:{},
   loadout: [null, null, null, null],
   autoSlots: {},
 };
-// Init after all consts are declared
+
+// ── TITLE SYSTEM ──
+let playerTitles = [];       // array of title_id strings the player owns
+let playerSelectedTitle = null; // currently equipped title id
+
+const TITLES = {
+  guinea_pig:       { id:'guinea_pig',       label:'🐾 Guinea Pig',        desc:'Original tester — was there from the start.' },
+  season1_gold:     { id:'season1_gold',     label:'🥇 Season 1 Champion', desc:'Highest boss damage in Season 1.' },
+  season1_silver:   { id:'season1_silver',   label:'🥈 Season 1 Runner-Up',desc:'Second highest boss damage in Season 1.' },
+  season1_bronze:   { id:'season1_bronze',   label:'🥉 Season 1 Third',    desc:'Third highest boss damage in Season 1.' },
+};
+
+function getTitleDisplay(titleId) {
+  return TITLES[titleId] ? TITLES[titleId].label : '';
+}
+
+async function loadPlayerTitles() {
+  if(!sbUser) return;
+  const { data } = await sb.from('player_titles').select('title_id').eq('player_id', sbUser.id);
+  playerTitles = (data||[]).map(r => r.title_id);
+  const profile = await sb.from('players').select('selected_title').eq('id', sbUser.id).single();
+  playerSelectedTitle = profile?.data?.selected_title || null;
+}
+
+async function selectTitle(titleId) {
+  if(!playerTitles.includes(titleId)) return;
+  playerSelectedTitle = titleId;
+  if(sbUser) await sb.from('players').update({ selected_title: titleId }).eq('id', sbUser.id);
+  updateNameDisplay();
+}
+
+function updateNameDisplay() {
+  const titleText = playerSelectedTitle ? getTitleDisplay(playerSelectedTitle) : '';
+  const nameEl = document.getElementById('player-name-display');
+  if(nameEl) nameEl.innerHTML = `<span style="color:var(--gold)">${G.playerName}</span>${titleText ? `<br><span style="font-size:9px;color:#aa77ff;letter-spacing:0.06em;">${titleText}</span>` : ''}`;
+}
+
+// Init G state
 function initGState() {
   CLASS_NAMES.forEach(c=>{ G.classXP[c]=G.classXP[c]||0; G.classLv[c]=G.classLv[c]||0; G.classCP[c]=G.classCP[c]||0; });
   Object.keys(ABILITIES).forEach(k=>{ if(G.abilityLevels[k]===undefined) G.abilityLevels[k]=0; });
   Object.keys(SKILL_TREE).forEach(el=>SKILL_TREE[el].forEach((_,i)=>{ const k=`${el}_${i}`; if(G.skillLevels[k]===undefined) G.skillLevels[k]=0; }));
-  // Ensure starting class abilities are usable
-  if(G.startingClass) {
-    if(!healLoadout) healLoadout = 'heal_' + G.startingClass;
-    // Make sure loadout has attack slot filled
-    const basicId = G.startingClass === 'physical' ? 'phys_basic' : G.startingClass + '_basic';
+  if(G.playerImbue) {
+    const healId = 'heal_' + (G.playerClass||'mage');
+    if(!healLoadout) healLoadout = healId;
+    // Ensure basic attack is set
+    const basicId = G.playerClass === 'warrior' ? 'warrior_basic'
+      : G.playerClass === 'rogue' ? (G.rogueWeapon==='bow' ? 'rogue_basic_bow' : 'rogue_basic')
+      : `mage_basic_${G.playerImbue}`;
     if(!G.loadout[0]) G.loadout[0] = basicId;
   }
 }
@@ -1210,10 +1355,11 @@ function saveGame() {
       gold:G.gold, kills:G.kills, wave:G.wave,
       xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
       spPending, passivePending,
-      startingClass:G.startingClass,
+      playerClass:G.playerClass, playerImbue:G.playerImbue, rogueWeapon:G.rogueWeapon,
       baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
       abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
+      selectedTitle: playerSelectedTitle,
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
   } catch(e){}
@@ -1231,7 +1377,10 @@ function loadGame(name) {
     G.gold = save.gold;
     G.xp = save.xp||0; G.xpToNext = save.xpToNext||40; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
     spPending = save.spPending||0; passivePending = save.passivePending||0;
-    if(save.startingClass) G.startingClass = save.startingClass;
+    if(save.playerClass)  G.playerClass  = save.playerClass;
+    if(save.playerImbue)  G.playerImbue  = save.playerImbue;
+    if(save.rogueWeapon)  G.rogueWeapon  = save.rogueWeapon;
+    if(save.selectedTitle) playerSelectedTitle = save.selectedTitle;
     G.kills = save.kills; G.wave = save.wave;
     G.baseStats = save.baseStats;
     G.skillLevels = save.skillLevels;
@@ -1281,7 +1430,7 @@ function startGame() {
   const loaded = loadGame(G.playerName);
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
-  document.getElementById('player-name-display').textContent = G.playerName;
+  updateNameDisplay();
   // Show game div first so canvas can size
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
@@ -1313,69 +1462,103 @@ function resumeFromSave() {
 // ═══════════════════════════════════════════════
 function getStats() {
   let s = {...G.baseStats};
+
+  // Trinity artifact bonuses
+  const trinityBonuses = getArtifactBonuses();
+  Object.entries(trinityBonuses).forEach(([k,v]) => { s[k] = (s[k]||0) + v; });
+
+  // Equipment bonuses
   Object.values(G.equipment).forEach(item => {
     if (!item) return;
     STAT_KEYS.forEach(k => { if (item.stats[k]) s[k] = (s[k]||0) + item.stats[k]; });
   });
+
+  // Passive skill tree bonuses
   Object.keys(SKILL_TREE).forEach(el => {
     SKILL_TREE[el].forEach((sk,i) => {
       const lvl = G.skillLevels[`${el}_${i}`]||0;
       if (lvl>0) s[sk.stat]=(s[sk.stat]||0)+sk.per*lvl;
     });
   });
+
+  // Class bonuses
+  if(G.playerClass === 'warrior') {
+    s.defense = (s.defense||8) + (G.classLv['warrior']||0) * 1.5;
+    s.health  = (s.health||200) + (G.classLv['warrior']||0) * 8;
+  }
+  if(G.playerClass === 'rogue') {
+    s.atkSpeed = (s.atkSpeed||1.0) + (G.classLv['rogue']||0) * 0.03;
+  }
+  if(G.playerClass === 'mage') {
+    s.spellVamp = (s.spellVamp||0) + (G.classLv['mage']||0) * 0.5;
+  }
+
   s.maxHp = s.health;
+  // Remove magicPower/armor/magicResist — replaced by attack/defense
+  delete s.magicPower; delete s.armor; delete s.magicResist;
   return s;
 }
 
 // Player "power level" — drives enemy scaling
 function getPlayerPower() {
   const s = getStats();
-  return (s.attack + s.magicPower) * (1 + s.critChance/100) + s.armor + s.health/20 + G.wave * 2;
+  return s.attack * (1 + (s.critChance||0)/100) + (s.defense||8) + (s.health||200)/20 + G.wave * 2;
 }
 
 // ═══════════════════════════════════════════════
 // ENEMIES
 // ═══════════════════════════════════════════════
 function rollEnemy(wave) {
-  const isBrute = Math.random() < 0.35;
-  const name = ENEMY_NAMES[Math.floor(Math.random()*ENEMY_NAMES.length)];
-
-  // HP scales with both wave and player power — makes enemies feel meaty
   const power = getPlayerPower();
   const waveScale = 1 + (wave-1)*0.11;
   const powerScale = 1 + Math.min(power, 150) * 0.012;
   const hpScale = waveScale * powerScale;
-
-  // Attack scales ONLY with wave, much more slowly — prevents one-shots
-  // Capped so even wave 15 hard enemies are dangerous but not instant death
   const atkScale = 1 + (wave-1)*0.09;
 
-  if (isBrute) {
-    const baseAtk = Math.floor((4 + wave*0.5) * atkScale);
-    return {name, type:'brute', elements:[],
-      hp:         Math.floor((55+wave*18)*hpScale),
-      maxHp:      Math.floor((55+wave*18)*hpScale),
-      attack:     Math.min(baseAtk, 22 + wave*1.5), // hard cap
-      armor:      Math.floor(8+wave*0.8),
-      magicResist:Math.floor(10+wave*1.2),
-      gold:       Math.floor(8+wave*3),
-      xp:         1+Math.floor(wave/2)};
-  } else {
-    const baseAtk = Math.floor((3 + wave*0.35) * atkScale);
-    const pool=[...ELEMENTS];
-    const numEl = Math.random()<0.3?2:1;
-    const elements=[];
-    for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
-    return {name, type:'elemental', elements,
-      hp:         Math.floor((40+wave*13)*hpScale),
-      maxHp:      Math.floor((40+wave*13)*hpScale),
-      attack:     Math.min(baseAtk, 16 + wave*1.2), // hard cap
-      armor:      Math.floor(2+wave*0.5),
-      magicResist:Math.floor(2+wave*0.8),
-      gold:       Math.floor(6+wave*2),
-      xp:         1+Math.floor(wave/3)};
+  // Pick enemy type weighted by rarity (lower rarity = more common)
+  // Unicorn very rare, dragon rare
+  const pool = ENEMY_TYPES.filter(e => {
+    if(e.id === 'dragon') return wave >= 10; // only late game
+    if(e.rarity >= 4) return wave >= 8 && Math.random() < 0.05;
+    if(e.rarity === 5) return wave >= 5 && Math.random() < 0.03; // unicorn
+    return true;
+  });
+  const weights = pool.map(e => Math.max(1, 6 - e.rarity));
+  const totalW = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random()*totalW, acc=0, enemyType=pool[0];
+  for(let i=0;i<pool.length;i++){acc+=weights[i];if(r<acc){enemyType=pool[i];break;}}
+
+  // Chance for enraged variant
+  let variant = null;
+  if(wave >= 3 && Math.random() < 0.25) {
+    variant = ENRAGED_VARIANTS[Math.floor(Math.random()*ENRAGED_VARIANTS.length)];
   }
+
+  const baseHp  = Math.floor((50 + wave*15) * enemyType.hpM * hpScale);
+  const baseAtk = Math.min(
+    Math.floor((4 + wave*0.45) * enemyType.atkM * atkScale * (variant?.prefix==='Ancient'?1.3:1)),
+    18 + wave*1.4
+  );
+
+  const name = variant ? `${variant.prefix} ${enemyType.name}` : enemyType.name;
+
+  return {
+    name, id: enemyType.id,
+    type: enemyType.id,
+    icon: enemyType.icon,
+    special: enemyType.special,
+    resistance: variant?.resistance || null,
+    enragedColor: variant?.color || null,
+    hp: baseHp, maxHp: baseHp,
+    attack: baseAtk,
+    defense: Math.floor(4 + wave*0.6),
+    gold: Math.floor(6 + wave*2.5) * (enemyType.id==='unicorn'?5:1),
+    xp: 0, // set by caller
+    statusEffects: {},
+    frozenUntil: 0,
+  };
 }
+
 
 function spawnEnemy() {
   if(G.enemy && G.enemy.hp > 0) {
@@ -1388,7 +1571,7 @@ function spawnEnemy() {
   G.enemy = rollEnemy(MAP.currentSegWave || G.wave);
   G.combatActive = true;
   updateEnemyUI();
-  log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! [${G.enemy.type==='brute'?'Brute':G.enemy.elements.join('+')}]</span>`);
+  log(`<span class="log-sys">⚔️ ${G.enemy.name} appears! ${G.enemy.resistance?'[resists '+G.enemy.resistance+']':''}</span>`);
   if(G.kills===0){
     // Dismiss old tooltip system if shown
     const tooltip = document.getElementById('combat-tooltip');
@@ -1437,7 +1620,7 @@ function updateEnemyUI() {
     return;
   }
   document.getElementById('enemy-name').textContent = e.name;
-  const nameColor = G.inBoss ? '#ff2266' : (e.type==='brute'?'#cc8844':(ELEMENT_COLORS[e.elements[0]]||'#fff'));
+  const nameColor = G.inBoss ? '#ff2266' : (e.enragedColor || '#cc8844');
   document.getElementById('enemy-name').style.color = nameColor;
   if(G.inBoss) {
     const milestone = Math.max(1000, Math.ceil(G.bossDmgDealt / 1000) * 1000 || 1000);
@@ -1451,16 +1634,12 @@ function updateEnemyUI() {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
     if(hpNums) hpNums.textContent = `${Math.max(0,Math.floor(e.hp))}/${e.maxHp}`;
-    // Build weakness hint — what's SE against this enemy
-    const weakTo = e.type==='brute'
-      ? '⚔️ physical'
-      : e.elements.map(el => {
-          const beater = Object.entries(SE).find(([atk, targets]) => targets.includes(el));
-          return beater ? `<span style="color:${ELEMENT_COLORS[beater[0]]};font-size:9px;">▲${beater[0]}</span>` : '';
-        }).join('');
-    const typeBadge = e.type==='brute'
-      ? '<span style="color:#cc8844;font-size:10px;">🪨 Brute · <span style="color:#aaa;font-size:9px;">▲physical</span></span>'
-      : e.elements.map(el=>`<span style="color:${ELEMENT_COLORS[el]};font-size:10px;">${el}</span>`).join('+') + ' ' + weakTo;
+    // Show enemy type + resistance badge
+    const resistText = e.resistance
+      ? `<span style="color:${IMBUE_COLORS[e.resistance]||'#aaa'};font-size:9px;">⚔ resists ${e.resistance}</span>`
+      : '';
+    const enragedColor = e.enragedColor || '#cc8844';
+    const typeBadge = `<span style="color:${enragedColor};font-size:10px;">${e.icon||'👹'} ${e.name}</span> ${resistText}`;
     document.getElementById('enemy-type-badge').innerHTML = typeBadge + getStatusBadgesHTML(e);
   }
 }
@@ -1471,31 +1650,33 @@ function updateEnemyUI() {
 function rollBoss(level, infinite=false) {
   const name = BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
   const power = getPlayerPower();
-  // HP scales with power to stay meaty — attack does NOT
   const hpScale = (1 + Math.min(power, 150)*0.025) * (1 + (level-1)*0.4);
-  const atkScale = 1 + (level-1)*0.15; // attack only scales with boss level, not player power
-  const numEl = Math.floor(Math.random()*2)+1;
-  const pool=[...ELEMENTS]; const elements=[];
-  for(let i=0;i<numEl;i++){const idx=Math.floor(Math.random()*pool.length);elements.push(pool.splice(idx,1)[0]);}
+  const atkScale = 1 + (level-1)*0.15;
+  // Pick a heavy enemy type for the boss
+  const bossTypes = ENEMY_TYPES.filter(e => e.rarity >= 2);
+  const base = bossTypes[Math.floor(Math.random()*bossTypes.length)];
+
   if(infinite) {
     return {
-      name:`${name}`, type:'boss', elements, bossLevel:level,
+      name:`${name}`, type:'boss', id:'dragon',
+      icon:'🐉', resistance:null, enragedColor:'#ff2266',
       hp:999999999, maxHp:999999999,
-      attack:0, armor:Math.floor(15+level*5),
-      magicResist:Math.floor(15+level*5), gold:0, xp:0
+      attack:0, defense:Math.floor(15+level*5),
+      gold:0, xp:0, statusEffects:{},
+      frozenUntil:0
     };
   }
-  // Wave boss — real HP, attacks player, hard cap on attack
   const baseAtk = Math.min(Math.floor((8+level*3)*atkScale), 28 + level*4);
   return {
-    name:`${name}`, type:'boss', elements, bossLevel:level,
+    name:`${name}`, type:'boss', id: base.id,
+    icon: base.icon, resistance:null, enragedColor:'#ff2266',
     hp:         Math.floor((600+level*400)*hpScale),
     maxHp:      Math.floor((600+level*400)*hpScale),
     attack:     baseAtk,
-    armor:      Math.floor(12+level*4),
-    magicResist:Math.floor(15+level*5),
+    defense:    Math.floor(12+level*4),
     gold:       Math.floor(80+G.wave*20),
-    xp:         0
+    xp:         0,
+    statusEffects:{}, frozenUntil:0
   };
 }
 
@@ -1695,9 +1876,12 @@ function buildLBHtml(leaderboard, highlightName, limit=10) {
   return leaderboard.slice(0,limit).map((entry,i)=>{
     const rankClass = i===0?'first':i===1?'second':i===2?'third':'';
     const isMe = entry.name === highlightName;
+    const titleStr = entry.title ? `<span style="font-size:9px;color:#aa77ff;display:block;line-height:1.2;">${entry.title}</span>` : '';
     return `<div class="leaderboard-row ${isMe?'lb-row-highlight':''}">
       <span class="lb-rank ${rankClass}">${medals[i]||'#'+(i+1)}</span>
-      <span class="lb-name" style="${isMe?'color:var(--gold);font-weight:600;':''}">${entry.name}</span>
+      <span class="lb-name" style="${isMe?'color:var(--gold);font-weight:600;':''}">
+        ${entry.name}${titleStr}
+      </span>
       <span class="lb-score">${numberWithCommas(entry.score)}</span>
     </div>`;
   }).join('');
@@ -1776,7 +1960,8 @@ function isAbilityReady(ab) {
 
 function getAbilityDmg(ab) {
   const st = getStats();
-  const base = ab.isMagic ? st.magicPower : st.attack;
+  // All damage now scales with attack stat
+  const base = st.attack || 18;
   const lvl = G.abilityLevels[ab.id]||0;
   const lvlBonus = 1 + lvl * 0.15;
   return Math.floor(base * ab.dmgMult * lvlBonus);
@@ -1794,23 +1979,24 @@ function fireAbility(ab) {
   if(manaCost > 0) spendMana(manaCost);
 
   const st = getStats();
-  const seMult = getSEMultiplier(ab.class==='physical'?'physical':ab.class, G.enemy);
+  const seMult = getSEMultiplier(ab.imbue||ab.class, G.enemy);
   const isCrit = Math.random()*100 < (st.critChance + (ab.bonusCrit||0));
   const critMult = isCrit ? st.critDmg/100 : 1.0;
-  const resist = ab.isMagic ? G.enemy.magicResist : G.enemy.armor;
+  const defenseReduction = Math.min(0.70, (G.enemy.defense||0) * 0.008);
   const armorPen = ab.armorPen||0;
   const hits = ab.hits||1;
 
   let totalDmg = 0;
   for(let h=0;h<hits;h++){
-    const dmg = Math.max(1, Math.floor(getAbilityDmg(ab) * seMult * critMult - resist*(1-armorPen)*0.15));
+    const rawDmg = getAbilityDmg(ab) * seMult * critMult;
+    const dmg = Math.max(1, Math.floor(rawDmg * (1 - defenseReduction*(1-armorPen))));
     G.enemy.hp -= dmg;
     totalDmg += dmg;
     if(G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
   }
 
-  // Healing
-  const stealPct = ab.isMagic ? st.spellVamp : st.lifeSteal;
+  // Healing — mage uses spellVamp, warrior/rogue use lifeSteal
+  const stealPct = ab.isMagic ? (st.spellVamp||0) : (st.lifeSteal||0);
   let healAmt = stealPct>0 ? Math.max(1,Math.ceil(totalDmg*stealPct/100)) : 0;
   if(ab.healPct) healAmt += Math.max(1, Math.ceil(totalDmg * ab.healPct/100));
   if(ab.flatHeal) healAmt += ab.flatHeal;
@@ -1821,8 +2007,13 @@ function fireAbility(ab) {
     G.abilityCDs[ab.id] = Date.now() + getAbilityCD(ab);
   }
 
+  // Apply imbue effect
+  if(ab.applyEffect && G.enemy && G.enemy.hp > 0) {
+    applyImbueEffect(G.enemy, ab.applyEffect, st, ab.poisonStacks||1);
+  }
+
   // Class XP
-  earnClassXP(ab.class, ab.type==='ultimate'?15:ab.type==='regular'?6:2);
+  earnClassXP(G.playerClass||ab.class, ab.type==='ultimate'?15:ab.type==='regular'?6:2);
 
   // Sound + screen shake
   const isUlt = ab.type==='ultimate';
@@ -1872,14 +2063,12 @@ function fireAbility(ab) {
 
   // Apply status effects based on ability
   if(G.enemy && G.enemy.hp > 0) {
-    if(ab.id==='fire_reg2') applyStatusEffect(G.enemy,'burn',{dps:Math.floor(st.magicPower*0.15)});
-    if(ab.id==='water_reg1') applyStatusEffect(G.enemy,'slow');
-    if(ab.id==='grass_reg2') applyStatusEffect(G.enemy,'poison',{dps:Math.floor(st.magicPower*0.1)});
+  // Imbue effects now handled by applyEffect flag in ability definition
   }
   // Track run stats
   G.runStats.totalDmg += totalDmg;
   if(totalDmg > G.runStats.bestHit) G.runStats.bestHit = totalDmg;
-  G.runStats.elementUses[ab.class] = (G.runStats.elementUses[ab.class]||0) + 1;
+  G.runStats.imbueUses[G.playerImbue||ab.class] = (G.runStats.imbueUses[G.playerImbue||ab.class]||0) + 1;
 
   if(G.enemy.hp<=0){
     if(G.inBoss){
@@ -1991,18 +2180,18 @@ function earnClassXP(cls, amount) {
 function isAbilityUnlocked(abId) {
   const ab = ABILITIES[abId];
   if(!ab) return false;
+  // Must be player's class
+  if(ab.class !== G.playerClass) return false;
+  // Must match player's imbue (or be a class basic with no imbue restriction)
+  if(ab.imbue && ab.imbue !== G.playerImbue) return false;
   const classLv = G.classLv[ab.class]||0;
-  // Heals: unlocked if class level >= 1
-  if(ab.type === 'heal') return classLv >= 1;
-  // Basic: unlocked if class level >= 1 (any class you've invested in)
-  if(ab.type === 'basic') return classLv >= 1;
-  // reg1 (Skill 1): unlocked at class level 3 for ANY class
-  if(ab.type === 'regular' && abId.endsWith('_reg1')) return classLv >= 3;
-  // reg2 (Skill 2): unlocked at class level 5
-  if(ab.type === 'regular' && abId.endsWith('_reg2')) return classLv >= 5;
-  // ultimate: unlocked at class level 8
+  if(ab.type === 'heal')    return classLv >= 1;
+  if(ab.type === 'basic')   return classLv >= 1;
+  if(ab.type === 'regular') {
+    const isReg1 = abId.endsWith('_reg1');
+    return isReg1 ? classLv >= 3 : classLv >= 5;
+  }
   if(ab.type === 'ultimate') return classLv >= 8;
-  // Fallback: check explicit unlock via abilityLevels
   return (G.abilityLevels[abId]||0) > 0;
 }
 
@@ -2157,7 +2346,10 @@ function updateClassXPPanel() {
   // Class XP bars
   html += '<div class="panel-title" style="position:static;margin-top:4px;">Class Levels</div>';
   html += '<div class="class-xp-section">';
-  CLASS_NAMES.forEach(cls=>{
+  // Only show the player's own class
+  const activeCls = [G.playerClass||'mage'];
+  activeCls.forEach(cls=>{
+    if(!cls) return;
     const lv = G.classLv[cls]||0;
     const cp = G.classCP[cls]||0;
     const xpStart = CLASS_XP_TO_LEVEL[lv]||0;
@@ -2165,10 +2357,15 @@ function updateClassXPPanel() {
     const xpCur = G.classXP[cls]||0;
     const pct = lv >= CLASS_XP_TO_LEVEL.length-1 ? 100 : Math.floor(((xpCur-xpStart)/(xpEnd-xpStart))*100);
     const color = CLASS_COLORS[cls];
+    const imbueColor = IMBUE_COLORS[G.playerImbue||''] || color;
     html += `<div class="class-xp-row">
       <span class="cxp-icon">${CLASS_ICONS[cls]}</span>
       <div class="cxp-info">
-        <div class="cxp-name"><span>${cls.charAt(0).toUpperCase()+cls.slice(1)}</span><span>Lv${lv}</span></div>
+        <div class="cxp-name">
+          <span style="color:${color}">${cls.charAt(0).toUpperCase()+cls.slice(1)}</span>
+          ${G.playerImbue?`<span style="color:${imbueColor};font-size:9px;">${IMBUE_ICONS[G.playerImbue]} ${G.playerImbue}</span>`:''}
+          <span>Lv${lv}</span>
+        </div>
         <div class="cxp-bar-track"><div class="cxp-bar-fill" style="width:${pct}%;background:${color}"></div></div>
       </div>
       ${cp>0?`<span class="cxp-pts">${cp}cp</span>`:'<span class="cxp-pts" style="opacity:0.3">0</span>'}
@@ -2187,9 +2384,10 @@ function updateClassXPPanel() {
   // Original skill tree below
   html += '<div class="panel-title" style="position:static;">🔮 Passive Skills</div>';
   html += `<div class="sp-display">${G.passivePoints} Passive Point${G.passivePoints!==1?'s':''}</div>`;
-  const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+  const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
+  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
-    html+=`<div class="skill-section"><div class="skill-element-title" style="color:${CLASS_COLORS[el]||'#88aacc'}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
+    html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]||'#88aacc'}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
     skills.forEach((sk,i)=>{
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
       html+=`<div class="skill-row"><div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
@@ -2205,34 +2403,13 @@ function updateClassXPPanel() {
 // ═══════════════════════════════════════════════
 // COMBAT
 // ═══════════════════════════════════════════════
-function getSEMultiplier(attackEl, enemy) {
-  // Physical: strong vs brute, weak vs elementals
-  if (attackEl === 'physical') return enemy.type === 'brute' ? 1.5 : 0.75;
-
-  // Brute resists ALL elemental damage — only physical works well on it
-  if (enemy.type === 'brute') return 0.5;
-
-  // Build reverse SE table — what beats the attacker
-  // SE: fire>grass, grass>water, water>fire, dark>light, light>dark
-  const NVE = {fire:['water'], grass:['fire'], water:['grass'], dark:['light'], light:['dark']};
-
-  let mult = 1.0;
-
-  // Super effective — attacker beats enemy element
-  (SE[attackEl]||[]).forEach(el => {
-    if(enemy.elements.includes(el)) mult += 0.6; // 1.6x
-  });
-
-  // Not very effective — enemy element beats attacker
-  (NVE[attackEl]||[]).forEach(el => {
-    if(enemy.elements.includes(el)) mult -= 0.4; // 0.6x
-  });
-
-  // Same element — attacker matches enemy element (NVE)
-  if(enemy.elements.includes(attackEl)) mult -= 0.3; // 0.7x (less harsh than being countered)
-
-  // Floor at 0.4x so nothing is completely useless
-  return Math.max(0.4, mult);
+function getSEMultiplier(attackImbue, enemy) {
+  // No SE system anymore — just check enemy resistance
+  // Enraged enemies resist their specific imbue type
+  if(enemy.resistance && enemy.resistance === attackImbue) return 0.5; // resisted
+  // Wraiths immune to poison
+  if(enemy.id === 'wraith' && attackImbue === 'poison') return 0.1;
+  return 1.0; // normal damage
 }
 
 // Base spell cooldowns in ms (physical has no cooldown — pure atkSpeed)
@@ -2242,10 +2419,11 @@ function getSEMultiplier(attackEl, enemy) {
 const XP_PER_LEVEL = 100; // XP needed per skill point
 const STAT_BOOST_OPTIONS = [
   { key:'attack',      label:'Attack',       amount:5,    icon:'⚔️',  display:'+5' },
-  { key:'magicPower',  label:'Magic Power',  amount:5,    icon:'🔮',  display:'+5' },
+
   { key:'health',      label:'Health',       amount:15,   icon:'❤️',  display:'+15' },
   { key:'armor',       label:'Armor',        amount:3,    icon:'🛡️',  display:'+3' },
-  { key:'magicResist', label:'Mag Resist',   amount:3,    icon:'✨',  display:'+3' },
+  { key:'defense',     label:'Defense',      amount:3,    icon:'🛡️',  display:'+3' },
+  { key:'dotDamage',   label:'DOT Damage',   amount:2,    icon:'☠️',  display:'+2' },
   { key:'atkSpeed',    label:'Atk Speed',    amount:0.05, icon:'⚡',  display:'+0.05' },
   { key:'critChance',  label:'Crit Chance',  amount:1,    icon:'🎯',  display:'+1%' },
   { key:'critDmg',     label:'Crit Damage',  amount:10,   icon:'💥',  display:'+10%' },
@@ -2273,7 +2451,8 @@ const TRINITY_TIER_UNLOCK = { Basic:0, Great:3, Exquisite:8, Ancient:15, Cosmic:
 
 const ARTIFACT_STAT_POOLS = [
   { key:'attack',      label:'Attack',       icon:'⚔️',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
-  { key:'magicPower',  label:'Magic Power',  icon:'🔮',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
+  { key:'defense',     label:'Defense',      icon:'🛡️',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
+  { key:'dotDamage',   label:'DOT Damage',   icon:'☠️',  per:{ Basic:1, Great:2, Exquisite:4, Ancient:7,  Cosmic:12  } },
   { key:'health',      label:'Max HP',       icon:'❤️',  per:{ Basic:8, Great:18, Exquisite:35, Ancient:60, Cosmic:100 } },
   { key:'mana',        label:'Max Mana',     icon:'💧',  per:{ Basic:5, Great:12, Exquisite:22, Ancient:40, Cosmic:70 } },
   { key:'critChance',  label:'Crit Chance',  icon:'🎯',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
@@ -2331,177 +2510,21 @@ function getArtifactBonuses() {
 
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
-const SPELL_BASE_CD = { fire:3500, water:3200, grass:4000, dark:3800, light:4200 };
-const spellCooldowns = {}; // element -> timestamp when ready
+// Legacy attack system removed in v2.0 — all attacks go through fireAbility()
+function toggleAutoAttack(element) {} // stub — no longer used
+function attack(element) {} // stub — no longer used
 
-function getSpellCD(element) {
-  if(element==='physical') return 0;
-  const st = getStats();
-  const cdrPct = Math.min(65, st.cdr||0); // cap at 65%
-  return Math.floor(SPELL_BASE_CD[element] * (1 - cdrPct/100));
-}
-
-function isSpellReady(element) {
-  if(element==='physical') return true;
-  const ready = spellCooldowns[element]||0;
-  return Date.now() >= ready;
-}
-
-function triggerSpellCD(element) {
-  if(element==='physical') return;
-  spellCooldowns[element] = Date.now() + getSpellCD(element);
-  updateCooldownUI(element);
-}
-
-function updateCooldownUI(element) {
-  const btn = document.getElementById('atk-'+element);
-  if(!btn || element==='physical') return;
-  const ready = spellCooldowns[element]||0;
-  const remaining = Math.max(0, ready - Date.now());
-  if(remaining <= 0) {
-    btn.style.background='';
-    btn.querySelector('.cd-text') && (btn.querySelector('.cd-text').textContent='');
-    return;
-  }
-  const total = getSpellCD(element);
-  const pct = remaining/total;
-  const elColor = {'fire':'rgba(255,77,26,0.15)','water':'rgba(26,179,255,0.15)','grass':'rgba(61,204,90,0.15)','dark':'rgba(155,77,255,0.15)','light':'rgba(255,215,0,0.15)'}[element]||'rgba(100,100,100,0.2)';
-  // Sweep overlay using background gradient
-  btn.style.background=`linear-gradient(to top, rgba(0,0,0,0.6) ${Math.floor(pct*100)}%, ${elColor} ${Math.floor(pct*100)}%)`;
-  let cdEl = btn.querySelector('.cd-text');
-  if(!cdEl){ cdEl=document.createElement('span'); cdEl.className='cd-text'; cdEl.style.cssText='position:absolute;bottom:3px;right:5px;font-size:9px;color:rgba(255,255,255,0.7);font-family:Cinzel,serif;pointer-events:none;'; btn.appendChild(cdEl); }
-  cdEl.textContent = (remaining/1000).toFixed(1)+'s';
-  setTimeout(()=>updateCooldownUI(element), 80);
-}
-
-function toggleAutoAttack(element) {
-  if (G.autoAttacks[element]) {
-    // Turn off
-    clearInterval(G.autoAttacks[element]);
-    delete G.autoAttacks[element];
-    const btn = document.getElementById('atk-'+element);
-    if (btn) btn.classList.remove('active-attack');
-  } else {
-    // Turn on — fire once immediately then on interval
-    const btn = document.getElementById('atk-'+element);
-    if (btn) btn.classList.add('active-attack');
-    attack(element);
-    const st = getStats();
-    const interval = Math.max(400, Math.floor(1000 / st.atkSpeed));
-    G.autoAttacks[element] = setInterval(() => {
-      if (!G.combatActive || !G.enemy) return;
-      if(element !== 'physical' && !isSpellReady(element)) return; // wait for CD
-      attack(element);
-    }, interval);
-  }
-}
-
-function refreshAutoAttackSpeeds() {
-  const active = Object.keys(G.autoAttacks);
-  if (active.length === 0) return;
-  active.forEach(el => {
-    clearInterval(G.autoAttacks[el]);
-    const st = getStats();
-    const interval = Math.max(400, Math.floor(1000 / st.atkSpeed));
-    G.autoAttacks[el] = setInterval(() => {
-      if (!G.combatActive || !G.enemy) return;
-      attack(el);
-    }, interval);
-  });
-}
-
-function stopAllAutoAttacks() {
-  Object.keys(G.autoAttacks||{}).forEach(el => {
-    clearInterval(G.autoAttacks[el]);
-    const btn = document.getElementById('atk-'+el);
-    if (btn) btn.classList.remove('active-attack');
-  });
-  G.autoAttacks = {};
-}
-
-let attackLocked = false;
-function attack(element) {
-  if (!G.combatActive||!G.enemy||attackLocked) return;
-  attackLocked = true;
-  const st = getStats();
-  setTimeout(()=>{ attackLocked=false; }, Math.max(200, Math.floor(800/st.atkSpeed)));
-  if(element !== 'physical') triggerSpellCD(element);
-
-  const isMagic = element!=='physical';
-  const baseDmg = isMagic?st.magicPower:st.attack;
-  const resist = isMagic?G.enemy.magicResist:G.enemy.armor;
-  const seMult = getSEMultiplier(element,G.enemy);
-  const isCrit = Math.random()*100 < st.critChance;
-  const critMult = isCrit?st.critDmg/100:1.0;
-  let skillBonus=0;
-  if (isMagic) (SKILL_TREE[element]||[]).forEach((sk,i)=>{skillBonus+=(G.skillLevels[`${element}_${i}`]||0)*0.5;});
-  let dmg = Math.max(1,Math.floor((baseDmg+skillBonus)*seMult*critMult-resist*0.15));
-
-  G.enemy.hp -= dmg;
-  if (G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
-  G.runStats.totalDmg += dmg;
-  if(dmg > G.runStats.bestHit) G.runStats.bestHit = dmg;
-  G.runStats.elementUses[element] = (G.runStats.elementUses[element]||0) + 1;
-
-  const stealPct = isMagic ? st.spellVamp : st.lifeSteal;
-  const healAmt = stealPct > 0 ? Math.max(1, Math.ceil(dmg * stealPct / 100)) : 0;
-  if (healAmt > 0) {
-    G.hp = Math.min(G.maxHp, G.hp + healAmt);
-    updateHpBar();
-    combatLog(`♥ +${healAmt} (${isMagic?'spell vamp':'lifesteal'})`, 'heal');
-  }
-
-  const seText = seMult>=1.6?' <span class="log-se">SUPER EFFECTIVE!</span>':seMult<0.75?' <span style="color:#e87040">Not very effective</span>':'';
-  const critText = isCrit?' <span style="color:#ffaa00">CRIT!</span>':'';
-  log(`Hit <span style="color:${ELEMENT_COLORS[element]}">${element}</span> → <span class="log-dmg">${dmg}</span>${seText}${critText}`);
-  // Combat overlay entry
-  if(isCrit && seMult>=1.6) combatLog(`⚡ CRIT + SE! ${dmg} (${element})`, 'crit');
-  else if(isCrit)            combatLog(`⚡ CRIT ${dmg} (${element})`, 'crit');
-  else if(seMult>=1.6)       combatLog(`✦ SE ${dmg} (${element})`, 'se');
-  else if(seMult<0.75)       combatLog(`▽ NVE ${dmg} (${element})`, 'dmg-out');
-  else                       combatLog(`▶ ${dmg} (${element})`, 'dmg-out');
-
-  // Sound
-  const sndKey = {'fire':'hit_fire','water':'hit_water','grass':'hit_grass','dark':'hit_dark','light':'hit_light','physical':'hit_physical'}[element]||'hit_physical';
-  playSound(sndKey);
-  if(isCrit){ playSound('crit'); triggerScreenShake(6,0.25); } else triggerScreenShake(2,0.15);
-  if(healAmt>0) setTimeout(()=>playSound('heal'),200);
-
-  // Animations
-  const W=canvas.width,H=canvas.height;
-  const px=W*0.25,py=H*0.62,ex=W*0.72,ey=H*0.60;
-  if (element==='physical') {
-    triggerPlayerLunge(ex,ey,px,py);
-    setTimeout(()=>{ spawnParticles(element,px,py,ex,ey); spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,dmg,isCrit,seMult>1.0,ELEMENT_COLORS[element]); if(healAmt>0)spawnHealNumber(px,py-40,healAmt); startAnimLoop(); },160);
-  } else {
-    spawnParticles(element,px,py,ex,ey);
-    setTimeout(()=>{ spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,dmg,isCrit,seMult>1.0,ELEMENT_COLORS[element]); if(healAmt>0)spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt); },400);
-    startAnimLoop();
-  }
-
-  if (G.inBoss) updateBossTimerUI();
-
-  if (G.enemy.hp<=0) {
-    if (G.inBoss) {
-      G.enemy.hp = G.enemy.maxHp;
-      updateEnemyUI();
-      return;
-    }
-    if(G.enemy.type==='boss'){
-      setTimeout(onBossPhaseKill, element==='physical'?300:500);
-      return;
-    }
-    setTimeout(onEnemyDeath, element==='physical'?300:500);
-    return;
-  }
-  // Enemy auto-attacks on its own interval
-}
 
 function enemyAttack() {
   if (!G.enemy||!G.combatActive) return;
   const st=getStats();
-  const rawDmg = G.enemy.attack * (1 - Math.min(0.70, st.armor * 0.008));
-  const dmg = Math.max(1, Math.floor(rawDmg + (Math.random()*3-1.5)));
+  // Check if frozen — frozen enemies can't attack
+  if(G.enemy.frozenUntil && Date.now() < G.enemy.frozenUntil) return;
+  const rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008));
+  // Warrior passive damage reduction
+  const warriorDR = G.playerClass === 'warrior' ? 0.10 : 0;
+  const finalDmg = rawDmg * (1 - warriorDR);
+  const dmg = Math.max(1, Math.floor(finalDmg + (Math.random()*3-1.5)));
   G.hp-=dmg;
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
   combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
@@ -2586,16 +2609,15 @@ function onDeath() {
   const orbTotal = trinityData.orbs||0;
 
   // Find most used element
-  const uses = G.runStats.elementUses;
-  const topElement = Object.entries(uses).sort((a,b)=>b[1]-a[1])[0];
-  const topElemName = topElement ? topElement[0] : 'none';
-  const topElemIcon = CLASS_ICONS[topElemName]||'⚔️';
-  const topElemColor = CLASS_COLORS[topElemName]||'#aaa';
+  const uses = G.runStats.imbueUses;
+  const topElemName = G.playerImbue || 'none';
+  const topElemIcon = IMBUE_ICONS[topElemName]||CLASS_ICONS[G.playerClass]||'⚔️';
+  const topElemColor = IMBUE_COLORS[topElemName]||CLASS_COLORS[G.playerClass]||'#aaa';
 
   // Build share text
   const shareText = `⚔️ Elemental Rift
 I reached Wave ${G.wave} with ${G.kills} kills and my best hit was ${numberWithCommas(G.runStats.bestHit)} damage!
-My favorite element was ${topElemIcon} ${topElemName}.
+Playing as ${(G.playerClass||'').toUpperCase()} with ${(G.playerImbue||'').toUpperCase()} imbue.
 Think you can do better? Play free at https://zindigon.com/elementalrift/`;
 
   const overlay = document.createElement('div');
@@ -2616,9 +2638,10 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
           <div style="font-family:'Cinzel',serif;font-size:22px;color:#ff4d1a;">${numberWithCommas(G.runStats.bestHit)}</div>
         </div>
         <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
-          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Favorite</div>
-          <div style="font-size:20px;">${topElemIcon}</div>
-          <div style="font-family:'Cinzel',serif;font-size:11px;color:${topElemColor};">${topElemName}</div>
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Class</div>
+          <div style="font-size:20px;">${CLASS_ICONS[G.playerClass]||'⚔️'}</div>
+          <div style="font-family:'Cinzel',serif;font-size:11px;color:${CLASS_COLORS[G.playerClass]||'#aaa'};">${(G.playerClass||'').charAt(0).toUpperCase()+(G.playerClass||'').slice(1)}</div>
+          <div style="font-size:10px;color:${topElemColor};">${topElemIcon} ${topElemName}</div>
         </div>
         <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
           <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Gold Earned</div>
@@ -2644,10 +2667,10 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
       <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;">
         <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Element Usage</div>
         <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
-          ${Object.entries(uses).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([el,count])=>`
-            <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;background:${CLASS_COLORS[el]}18;border:1px solid ${CLASS_COLORS[el]}44;border-radius:12px;">
-              <span style="font-size:12px;">${CLASS_ICONS[el]}</span>
-              <span style="font-size:11px;color:${CLASS_COLORS[el]};">${count}</span>
+          ${Object.entries(uses).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([imbue,count])=>`
+            <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;background:${(IMBUE_COLORS[imbue]||CLASS_COLORS[imbue]||'#888')}18;border:1px solid ${(IMBUE_COLORS[imbue]||CLASS_COLORS[imbue]||'#888')}44;border-radius:12px;">
+              <span style="font-size:12px;">${IMBUE_ICONS[imbue]||CLASS_ICONS[imbue]||'⚔️'}</span>
+              <span style="font-size:11px;color:${IMBUE_COLORS[imbue]||CLASS_COLORS[imbue]||'#aaa'};">${count}</span>
             </div>`).join('')}
         </div>
       </div>
@@ -2707,11 +2730,11 @@ const TIERS = [
 
 // Stat value ranges per class
 const STAT_CLASS_RANGES = {
-  D: { attack:[2,5],   magicPower:[2,5],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   armor:[2,5],   health:[10,22],  magicResist:[2,5],   lifeSteal:[0.3,1.0], spellVamp:[0.3,1.0], cdr:[1,3],   mana:[8,15],    manaRegen:[0.5,1.0]  },
-  C: { attack:[5,12],  magicPower:[5,12],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  armor:[4,10],  health:[22,52],  magicResist:[4,10],  lifeSteal:[0.8,2.0], spellVamp:[0.8,2.0], cdr:[2,6],   mana:[15,30],   manaRegen:[1.0,2.0]  },
-  B: { attack:[12,26], magicPower:[12,26], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  armor:[9,20],  health:[50,105], magicResist:[9,20],  lifeSteal:[1.5,3.5], spellVamp:[1.5,3.5], cdr:[5,12],  mana:[28,55],   manaRegen:[1.8,3.5]  },
-  A: { attack:[25,46], magicPower:[25,46], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], armor:[18,36], health:[100,185],magicResist:[18,36], lifeSteal:[3.0,6.0], spellVamp:[3.0,6.0], cdr:[10,20], mana:[50,90],   manaRegen:[3.0,6.0]  },
-  S: { attack:[45,82], magicPower:[45,82], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], armor:[32,60], health:[180,310],magicResist:[32,60], lifeSteal:[5.0,10.0],spellVamp:[5.0,10.0],cdr:[18,35], mana:[80,150],  manaRegen:[5.0,10.0] },
+  D: { attack:[3,6],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   defense:[2,5],   health:[12,25],  lifeSteal:[0.3,1.0], spellVamp:[0.3,1.0], cdr:[1,3],   mana:[8,15],    manaRegen:[0.5,1.0], dotDamage:[1,3],  burnDuration:[0.2,0.5], poisonDuration:[0.2,0.5], freezeDuration:[0.1,0.3], electricDot:[1,2], slowStrength:[3,6]  },
+  C: { attack:[6,14],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  defense:[4,10],  health:[25,55],  lifeSteal:[0.8,2.0], spellVamp:[0.8,2.0], cdr:[2,6],   mana:[15,30],   manaRegen:[1.0,2.0], dotDamage:[3,6],  burnDuration:[0.3,0.8], poisonDuration:[0.3,0.8], freezeDuration:[0.2,0.5], electricDot:[2,4], slowStrength:[5,12] },
+  B: { attack:[13,28], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  defense:[9,20],  health:[50,110], lifeSteal:[1.5,3.5], spellVamp:[1.5,3.5], cdr:[5,12],  mana:[28,55],   manaRegen:[1.8,3.5], dotDamage:[6,11], burnDuration:[0.5,1.2], poisonDuration:[0.5,1.2], freezeDuration:[0.3,0.8], electricDot:[3,7], slowStrength:[10,20]},
+  A: { attack:[26,48], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], defense:[18,36], health:[100,190],lifeSteal:[3.0,6.0], spellVamp:[3.0,6.0], cdr:[10,20], mana:[50,90],   manaRegen:[3.0,6.0], dotDamage:[10,18],burnDuration:[1.0,2.0], poisonDuration:[1.0,2.0], freezeDuration:[0.6,1.4], electricDot:[6,12],slowStrength:[18,32]},
+  S: { attack:[46,85], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], defense:[32,60], health:[180,320],lifeSteal:[5.0,10.0],spellVamp:[5.0,10.0],cdr:[18,35], mana:[80,150],  manaRegen:[5.0,10.0],dotDamage:[18,32],burnDuration:[1.5,3.0], poisonDuration:[1.5,3.0], freezeDuration:[1.0,2.5], electricDot:[10,20],slowStrength:[28,50]},
 };
 
 // CDR can only roll on Exquisite+
@@ -2719,30 +2742,35 @@ const CDR_ELIGIBLE_TIERS = ['Exquisite','Ancient','Cosmic'];
 
 // Stat pools per slot
 const SLOT_STAT_POOLS = {
-  Head:   ['health','armor','magicResist','cdr','mana'],
-  Neck:   ['magicPower','critChance','spellVamp','cdr','manaRegen'],
-  Chest:  ['health','armor','magicResist','lifeSteal','mana'],
-  Belt:   ['health','armor','atkSpeed','lifeSteal','manaRegen'],
-  Pants:  ['health','armor','magicResist','critDmg','mana'],
-  Boots:  ['atkSpeed','armor','health','cdr','manaRegen'],
-  Ring1:  ['magicPower','critChance','spellVamp','cdr','manaRegen'],
-  Ring2:  ['attack','critChance','lifeSteal','critDmg','mana'],
-  Weapon: ['attack','magicPower','atkSpeed','critChance','critDmg'],
+  Head:    ['health','defense','cdr','mana','dotDamage'],
+  Neck:    ['attack','critChance','spellVamp','cdr','manaRegen'],
+  Chest:   ['health','defense','lifeSteal','mana','dotDamage'],
+  Belt:    ['health','defense','atkSpeed','lifeSteal','manaRegen'],
+  Pants:   ['health','defense','critDmg','mana','poisonDuration'],
+  Boots:   ['atkSpeed','defense','health','cdr','freezeDuration'],
+  Ring1:   ['attack','critChance','spellVamp','cdr','burnDuration'],
+  Ring2:   ['attack','critChance','lifeSteal','critDmg','electricDot'],
+  Weapon:  ['attack','atkSpeed','critChance','critDmg','dotDamage'],
+  Offhand: ['defense','health','mana','cdr','slowStrength'], // Warrior only
 };
 
 // Item name generation
 const NAME_PREFIXES = {
-  attack:      ['Savage','Brutal','Warlord','Slayer','Berserker'],
-  magicPower:  ['Arcane','Mystic','Voidweaver','Sage','Spellbound'],
-  critChance:  ['Precise','Keen','Assassin','Deadly','Razor'],
-  critDmg:     ['Ruinous','Vicious','Executioner','Catastrophic','Bloodfang'],
-  atkSpeed:    ['Swift','Rapid','Windchaser','Flickering','Haste'],
-  armor:       ['Iron','Fortress','Guardian','Bulwark','Aegis'],
-  health:      ['Vitalis','Enduring','Titan','Juggernaut','Undying'],
-  magicResist: ['Warded','Runic','Nullifying','Barrier','Mystic'],
-  lifeSteal:   ['Vampiric','Draining','Sanguine','Leeching','Crimson'],
-  spellVamp:   ['Siphoning','Ethereal','Devouring','Arcane','Spectral'],
-  cdr:         ['Temporal','Rushing','Hastened','Flowing','Quickened'],
+  attack:          ['Savage','Brutal','Warlord','Slayer','Berserker'],
+  atkSpeed:        ['Swift','Rapid','Windchaser','Flickering','Haste'],
+  critChance:      ['Precise','Keen','Assassin','Deadly','Razor'],
+  critDmg:         ['Ruinous','Vicious','Executioner','Catastrophic','Bloodfang'],
+  defense:         ['Iron','Fortress','Guardian','Bulwark','Aegis'],
+  health:          ['Vitalis','Enduring','Titan','Juggernaut','Undying'],
+  lifeSteal:       ['Vampiric','Draining','Sanguine','Leeching','Crimson'],
+  spellVamp:       ['Siphoning','Ethereal','Devouring','Arcane','Spectral'],
+  cdr:             ['Temporal','Rushing','Hastened','Flowing','Quickened'],
+  dotDamage:       ['Venomous','Scorching','Festering','Blistering','Toxic'],
+  poisonDuration:  ['Lingering','Festering','Prolonged','Virulent','Creeping'],
+  burnDuration:    ['Scorching','Smoldering','Blazing','Searing','Infernal'],
+  freezeDuration:  ['Glacial','Permafrost','Deep-Freeze','Crystalline','Arctic'],
+  electricDot:     ['Charged','Crackling','Surging','Voltaic','Static'],
+  slowStrength:    ['Ponderous','Binding','Arresting','Hindering','Shackling'],
 };
 const SLOT_SUFFIXES = {
   Head:'Helm', Neck:'Amulet', Chest:'Plate', Belt:'Girdle',
@@ -3230,19 +3258,20 @@ function updateResourceBar(){
 
 function updateStatsPanel(){
   const s=getStats();
-  const elColors={fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaa',defense:'#88aacc'};
+  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'};
   let html=`<div class="panel-title">⚔️ ${G.playerName||'Wanderer'}</div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Class</span><span class="stat-val" style="color:${CLASS_COLORS[G.playerClass]||'#aaa'}">${CLASS_ICONS[G.playerClass]||''} ${(G.playerClass||'—').charAt(0).toUpperCase()+(G.playerClass||'').slice(1)} · ${(G.playerImbue||'—').charAt(0).toUpperCase()+(G.playerImbue||'').slice(1)}</span></div>`;
   html+=`<div class="stat-row"><span class="stat-label">Attack</span><span class="stat-val">${Math.floor(s.attack)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Magic Pwr</span><span class="stat-val">${Math.floor(s.magicPower)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Atk Speed</span><span class="stat-val">${s.atkSpeed.toFixed(2)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Crit %</span><span class="stat-val">${s.critChance.toFixed(1)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Crit Dmg</span><span class="stat-val">${Math.floor(s.critDmg)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Armor</span><span class="stat-val">${Math.floor(s.armor)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Mag Resist</span><span class="stat-val">${Math.floor(s.magicResist)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Life Steal</span><span class="stat-val">${s.lifeSteal.toFixed(1)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Spell Vamp</span><span class="stat-val">${s.spellVamp.toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Atk Speed</span><span class="stat-val">${(s.atkSpeed||1).toFixed(2)}</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Crit %</span><span class="stat-val">${(s.critChance||0).toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Crit Dmg</span><span class="stat-val">${Math.floor(s.critDmg||150)}%</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Defense</span><span class="stat-val">${Math.floor(s.defense||8)}</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Life Steal</span><span class="stat-val">${(s.lifeSteal||0).toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">Spell Vamp</span><span class="stat-val">${(s.spellVamp||0).toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row"><span class="stat-label">DOT Dmg</span><span class="stat-val">+${Math.floor(s.dotDamage||0)}</span></div>`;
   html+=`<div class="panel-title">Equipment</div>`;
-  html+=`<div class="equip-grid">`+SLOTS.map(slot=>{
+  const activeSlots = G.playerClass === 'warrior' ? SLOTS_WARRIOR : SLOTS_BASE;
+  html+=`<div class="equip-grid">`+activeSlots.map(slot=>{
     const item=G.equipment[slot];
     return `<div class="equip-slot ${item?'has-item':''}" onclick="${item?`inspectGear('${slot}')`:''}" >
       <div class="slot-name">${slot}</div>
@@ -3258,8 +3287,8 @@ function inspectGear(slot){const item=G.equipment[slot];if(item)showItemModal(it
 
 function updateSkillPanel(){
   const sp=G.skillPoints;
-  const elColors={fire:'#ff4d1a',water:'#1ab3ff',grass:'#3dcc5a',dark:'#9b4dff',light:'#ffd700',physical:'#aaa'};
-  const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'};
+  const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
   let html=`<div class="panel-title">Skill Tree</div><div class="sp-display">${sp} Skill Point${sp!==1?'s':''}</div>`;
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]}">${elEmoji[el]} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
@@ -3501,7 +3530,8 @@ function drawArena(){
   // Enemy
   if(G.enemy){
     const isBoss=G.inBoss;
-    const ec=isBoss?'#ff2266':(G.enemy.type==='brute'?'#cc8844':(ELEMENT_COLORS[G.enemy.elements[0]]||'#cc4444'));
+    const enemyBaseColor = G.enemy.enragedColor || IMBUE_COLORS[G.enemy.resistance] || '#cc8844';
+    const ec=isBoss?'#ff2266':enemyBaseColor;
     ctx.save();
     const pulse=.3+.15*Math.sin(Date.now()/400);
     const eg=ctx.createRadialGradient(ex,ey-24,5,ex,ey-24,isBoss?80:56);
@@ -3537,7 +3567,7 @@ function drawArena(){
       ctx.beginPath();ctx.moveTo(ex+14,ey-bh);ctx.lineTo(ex+18,ey-bh-14);ctx.lineTo(ex+8,ey-bh);ctx.closePath();ctx.fill();
     } else {
       // Elemental — shape varies by element
-      const el0 = G.enemy.elements[0]||'fire';
+      const el0 = G.enemy.resistance || 'fire'; // use resistance as visual hint
       const t = Date.now()/700;
       ctx.save();
       if(el0==='fire'){
@@ -3607,11 +3637,7 @@ function drawArena(){
         ctx.fillStyle=ec+'88';ctx.beginPath();ctx.arc(ex,ey-22,16,0,Math.PI*2);ctx.fill();
         ctx.fillStyle=ec;ctx.beginPath();ctx.arc(ex,ey-22,10,0,Math.PI*2);ctx.fill();
       }
-      // Orbiting particles for dual-element
-      if(G.enemy.elements.length>1){
-        const ec2=ELEMENT_COLORS[G.enemy.elements[1]]||ec;
-        for(let i=0;i<2;i++){const a=t*1.5+(Math.PI*i);ctx.fillStyle=ec2;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(ex+Math.cos(a)*26,ey-22+Math.sin(a)*12,4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
-      }
+      // No dual elements in v2.0
       // Status effect overlays
       const se = G.enemy.statusEffects||{};
       if(se.burn){ctx.fillStyle='rgba(255,100,0,0.25)';ctx.beginPath();ctx.arc(ex,ey-22,28,0,Math.PI*2);ctx.fill();}
@@ -4001,7 +4027,7 @@ function doHeal(ab) {
   if (ab.siphon) {
     // Soul Siphon — deal damage and heal equal amount
     if (G.enemy && G.combatActive) {
-      const dmg = Math.max(1, Math.floor(st.magicPower * 0.5));
+      const dmg = Math.max(1, Math.floor((st.attack||18) * 0.5));
       G.enemy.hp -= dmg;
       healAmt = dmg;
       updateEnemyUI();
@@ -4360,10 +4386,27 @@ function onAuthReady() {
     if(idEl) idEl.textContent = `Signed in as ${sbProfile.username}`;
     // Load trinity data (orbs, artifacts) as soon as we know who the player is
     loadTrinity().catch(()=>{});
+    // Load titles
+    loadPlayerTitles().catch(()=>{});
   } else {
-    // Guest — name already set in authGuest()
     const idEl = document.getElementById('name-screen-identity');
     if(idEl) idEl.textContent = `Playing as ${G.playerName}`;
+  }
+  // Show welcome back message on name screen
+  if(sbProfile) {
+    const wbMsg = document.getElementById('welcome-back-msg');
+    const wbName = document.getElementById('welcome-name-text');
+    const wbTitle = document.getElementById('welcome-title-text');
+    if(wbMsg && wbName) {
+      wbMsg.style.display = 'block';
+      wbName.textContent = `Welcome back, ${sbProfile.username}`;
+      // Title shows after loadPlayerTitles resolves
+      loadPlayerTitles().then(() => {
+        if(wbTitle && playerSelectedTitle && TITLES[playerSelectedTitle]) {
+          wbTitle.textContent = TITLES[playerSelectedTitle].label;
+        }
+      });
+    }
   }
   initGame();
 }
@@ -4422,16 +4465,66 @@ async function postSupabaseLeaderboard(score) {
 
 async function fetchSupabaseLeaderboard() {
   const { data } = await sb.from('leaderboard')
-    .select('username, boss_damage, wave_reached, updated_at')
+    .select('username, boss_damage, wave_reached, updated_at, players(selected_title)')
     .order('boss_damage', { ascending: false })
     .limit(20);
   return (data || []).map(r => ({
     name: r.username,
     score: r.boss_damage,
     wave: r.wave_reached,
-    date: new Date(r.updated_at).toLocaleDateString()
+    date: new Date(r.updated_at).toLocaleDateString(),
+    title: r.players?.selected_title ? getTitleDisplay(r.players.selected_title) : ''
   }));
 }
+
+// ── TITLE MANAGEMENT ──
+async function grantTitle(playerId, titleId) {
+  if(!sbUser) return;
+  await sb.from('player_titles').upsert(
+    { player_id: playerId, title_id: titleId, acquired_at: new Date().toISOString() },
+    { onConflict: 'player_id,title_id' }
+  );
+}
+
+// Call this once to grant guinea pig to all existing players and set top 3
+// Run from browser console: grantSeasonTitles()
+window.grantSeasonTitles = async function() {
+  if(!sbUser) { console.log('Must be signed in'); return; }
+  console.log('Granting guinea pig to all players...');
+  // Get all players
+  const { data: allPlayers } = await sb.from('players').select('id');
+  if(allPlayers) {
+    for(const p of allPlayers) {
+      await sb.from('player_titles').upsert(
+        { player_id: p.id, title_id: 'guinea_pig', acquired_at: new Date().toISOString() },
+        { onConflict: 'player_id,title_id' }
+      );
+    }
+    console.log(`Guinea pig granted to ${allPlayers.length} players`);
+  }
+  // Grant top 3 titles by username
+  const titleMap = { 'SpaZ': 'season1_gold', 'Slayersin93': 'season1_silver', 'Bjorn': 'season1_bronze' };
+  for(const [username, titleId] of Object.entries(titleMap)) {
+    const { data: player } = await sb.from('players').select('id').eq('username', username).single();
+    if(player) {
+      await sb.from('player_titles').upsert(
+        { player_id: player.id, title_id: titleId, acquired_at: new Date().toISOString() },
+        { onConflict: 'player_id,title_id' }
+      );
+      console.log(`${titleId} granted to ${username}`);
+    } else {
+      console.log(`Player not found: ${username}`);
+    }
+  }
+  console.log('Done! Now wipe the leaderboard with: wipeLeaderboard()');
+};
+
+window.wipeLeaderboard = async function() {
+  if(!sbUser) { console.log('Must be signed in'); return; }
+  const { error } = await sb.from('leaderboard').delete().neq('player_id', '00000000-0000-0000-0000-000000000000');
+  if(error) console.error('Error:', error);
+  else console.log('Leaderboard wiped. Season 2 begins!');
+};
 
 // ── SIGN OUT ──
 function honorableDeath() {
@@ -4536,67 +4629,107 @@ async function saveTrinity() {
 }
 
 // ═══════════════════════════════════════════════
-// STATUS EFFECTS
+// IMBUE EFFECTS (replaces status effects)
 // ═══════════════════════════════════════════════
-// G.enemy.statusEffects = { burn:{stacks,timer}, slow:{timer,pct}, poison:{stacks,timer} }
+// enemy.statusEffects = { burn:{dps,timer}, slow:{timer,pct}, poison:{dps,timer,stacks},
+//                         electric:{dps,timer}, frozen:{timer}, ice:{timer,pct} }
 
-function applyStatusEffect(enemy, type, options={}) {
+function applyImbueEffect(enemy, effect, st, stacks=1) {
   if(!enemy) return;
   if(!enemy.statusEffects) enemy.statusEffects = {};
   const now = Date.now();
-  if(type==='burn') {
-    enemy.statusEffects.burn = { stacks:(enemy.statusEffects.burn?.stacks||0)+1, timer:now+3000, dps:options.dps||5 };
-  } else if(type==='slow') {
-    enemy.statusEffects.slow = { timer:now+3000, pct:0.3 };
-    enemy.slowMult = 0.7; // enemy attack speed reduced
-  } else if(type==='poison') {
-    enemy.statusEffects.poison = { stacks:(enemy.statusEffects.poison?.stacks||0)+1, timer:now+4000, dps:options.dps||3 };
+  const dotBonus = (st.dotDamage||0);
+
+  if(effect === 'burn') {
+    const dur = ((st.burnDuration||3) * 1000);
+    const dps = Math.floor((st.attack||18) * 0.12 + dotBonus * 0.5);
+    enemy.statusEffects.burn = { dps, timer: now + dur };
+    startStatusTick();
   }
+  if(effect === 'poison') {
+    const dur = ((st.poisonDuration||4) * 1000);
+    const dps = Math.floor((st.attack||18) * 0.08 + dotBonus * 0.4);
+    const existing = enemy.statusEffects.poison;
+    enemy.statusEffects.poison = {
+      dps: dps * stacks,
+      timer: now + dur,
+      stacks: (existing ? existing.stacks : 0) + stacks
+    };
+    startStatusTick();
+  }
+  if(effect === 'electric') {
+    const dur = 3000;
+    const dps = Math.floor((st.electricDot||3) + dotBonus * 0.3);
+    enemy.statusEffects.electric = { dps, timer: now + dur, aoe: true };
+    startStatusTick();
+  }
+  if(effect === 'slow' || effect === 'ice') {
+    const slowPct = Math.min(0.7, (st.slowStrength||30) / 100);
+    const dur = effect === 'ice' ? ((st.freezeDuration||1.5) * 1000 * 2) : 3000;
+    enemy.statusEffects.slow = { timer: now + dur, pct: slowPct };
+    enemy.slowMult = 1 - slowPct;
+    // Chance to fully freeze
+    const freezeChance = effect === 'ice' ? 0.35 : 0;
+    if(Math.random() < freezeChance) {
+      const freezeDur = (st.freezeDuration||1.5) * 1000;
+      enemy.statusEffects.frozen = { timer: now + freezeDur };
+      enemy.frozenUntil = now + freezeDur;
+      log(`<span style="color:#88eeff">❄️ ${enemy.name} is FROZEN for ${(st.freezeDuration||1.5).toFixed(1)}s!</span>`);
+    }
+    startStatusTick();
+  }
+  updateEnemyUI();
 }
 
 function tickStatusEffects() {
   if(!G.enemy || !G.enemy.statusEffects) return;
   const now = Date.now();
   const se = G.enemy.statusEffects;
-  // Burn tick
-  if(se.burn && now < se.burn.timer) {
-    const burnDmg = se.burn.dps * se.burn.stacks;
-    G.enemy.hp -= burnDmg;
-    if(G.inBoss) G.bossDmgDealt += burnDmg;
-    checkBossMilestones();
-    updateEnemyUI();
-    if(G.enemy.hp <= 0 && !G.inBoss) { onEnemyDeath(); return; }
-  } else if(se.burn && now >= se.burn.timer) { delete se.burn; }
-  // Poison tick
-  if(se.poison && now < se.poison.timer) {
-    const poisonDmg = se.poison.dps * se.poison.stacks;
-    G.enemy.hp -= poisonDmg;
-    if(G.inBoss) G.bossDmgDealt += poisonDmg;
-    updateEnemyUI();
-    if(G.enemy.hp <= 0 && !G.inBoss) { onEnemyDeath(); return; }
-  } else if(se.poison && now >= se.poison.timer) { delete se.poison; }
-  // Slow expiry
-  if(se.slow && now >= se.slow.timer) { delete se.slow; G.enemy.slowMult = 1; }
-}
+  let totalDot = 0;
 
-// Start status tick interval
-let statusTickInterval = null;
-function startStatusTick() {
-  if(statusTickInterval) clearInterval(statusTickInterval);
-  statusTickInterval = setInterval(tickStatusEffects, 500);
-}
-function stopStatusTick() {
-  if(statusTickInterval) { clearInterval(statusTickInterval); statusTickInterval = null; }
+  if(se.burn && now < se.burn.timer) {
+    totalDot += se.burn.dps;
+  } else if(se.burn) { delete se.burn; }
+
+  if(se.poison && now < se.poison.timer) {
+    totalDot += se.poison.dps;
+  } else if(se.poison) { delete se.poison; }
+
+  if(se.electric && now < se.electric.timer) {
+    totalDot += se.electric.dps;
+  } else if(se.electric) { delete se.electric; }
+
+  if(se.slow && now >= se.slow.timer) { delete se.slow; G.enemy.slowMult = 1; }
+  if(se.frozen && now >= se.frozen.timer) { delete se.frozen; G.enemy.frozenUntil = 0; }
+
+  if(totalDot > 0) {
+    G.enemy.hp -= totalDot;
+    if(G.inBoss) G.bossDmgDealt += totalDot;
+    updateEnemyUI();
+    if(G.enemy.hp <= 0 && !G.inBoss) { onEnemyDeath(); return; }
+  }
 }
 
 function getStatusBadgesHTML(enemy) {
   if(!enemy?.statusEffects) return '';
   const se = enemy.statusEffects;
+  const now = Date.now();
   let html = '';
-  if(se.burn)   html += `<span style="color:#ff4d1a;font-size:11px;">🔥x${se.burn.stacks}</span>`;
-  if(se.slow)   html += `<span style="color:#1ab3ff;font-size:11px;">❄️ Slowed</span>`;
-  if(se.poison) html += `<span style="color:#3dcc5a;font-size:11px;">☠️x${se.poison.stacks}</span>`;
-  return html ? `<div style="display:flex;gap:6px;justify-content:center;margin-top:2px;">${html}</div>` : '';
+  if(se.frozen && now < se.frozen.timer) html += `<span style="color:#88eeff;font-size:11px;">❄️ FROZEN</span>`;
+  else if(se.slow)   html += `<span style="color:#88eeff;font-size:11px;">🌊 Slowed</span>`;
+  if(se.burn)        html += `<span style="color:#ff4d1a;font-size:11px;">🔥x${Math.ceil(se.burn.dps/3)}</span>`;
+  if(se.poison)      html += `<span style="color:#88cc00;font-size:11px;">☠️x${se.poison.stacks||1}</span>`;
+  if(se.electric)    html += `<span style="color:#ffdd00;font-size:11px;">⚡</span>`;
+  return html ? `<div style="display:flex;gap:4px;justify-content:center;margin-top:2px;">${html}</div>` : '';
+}
+
+let statusTickInterval = null;
+function startStatusTick() {
+  if(statusTickInterval) return;
+  statusTickInterval = setInterval(tickStatusEffects, 500);
+}
+function stopStatusTick() {
+  if(statusTickInterval) { clearInterval(statusTickInterval); statusTickInterval = null; }
 }
 
 // ── BOSS MILESTONE REWARDS ──
@@ -4687,50 +4820,132 @@ function buyPotion() {
 }
 
 // ═══════════════════════════════════════════════
-// CLASS SELECTION
+// CLASS & IMBUE SELECTION
 // ═══════════════════════════════════════════════
 function showClassSelection() {
+  const screen = document.getElementById('class-screen');
   const cards = document.getElementById('class-cards');
-  cards.innerHTML = CLASS_NAMES.map(cls => {
-    const color = CLASS_COLORS[cls];
-    const icon = CLASS_ICONS[cls];
-    const basicAb = ABILITIES[cls === 'physical' ? 'phys_basic' : cls + '_basic'];
-    const skill1Ab = ABILITIES[cls === 'physical' ? 'phys_reg1' : cls + '_reg1'];
-    return `<div onclick="selectStartingClass('${cls}')" style="background:#0d1018;border:1px solid ${color}33;border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='#0d1018'">
-      <div style="font-size:28px;margin-bottom:6px;">${icon}</div>
-      <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:${color};margin-bottom:6px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.4;">
-        <div style="color:var(--text);">⚔️ ${basicAb?basicAb.name:'Basic'}</div>
-        <div style="color:var(--text);">⚡ ${skill1Ab?skill1Ab.name:'Skill 1'}</div>
-      </div>
+  // Step 1 — pick class
+  screen.querySelector('h2').textContent = 'Choose Your Class';
+  screen.querySelector('p').textContent = 'Each class has a unique playstyle and imbue options.';
+  cards.innerHTML = `
+    <div onclick="selectClass('mage')" style="background:#0d1018;border:1px solid ${CLASS_COLORS.mage}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${CLASS_COLORS.mage}15'" onmouseout="this.style.background='#0d1018'">
+      <div style="font-size:32px;margin-bottom:6px;">🧙</div>
+      <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:${CLASS_COLORS.mage};margin-bottom:4px;">Mage</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Spell caster · Spell Vamp<br>Fire · Water · Grass imbues</div>
+    </div>
+    <div onclick="selectClass('warrior')" style="background:#0d1018;border:1px solid ${CLASS_COLORS.warrior}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${CLASS_COLORS.warrior}15'" onmouseout="this.style.background='#0d1018'">
+      <div style="font-size:32px;margin-bottom:6px;">⚔️</div>
+      <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:${CLASS_COLORS.warrior};margin-bottom:4px;">Warrior</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Sword &amp; Shield · Life Steal<br>Poison · Electric · Ice imbues</div>
+    </div>
+    <div onclick="selectClass('rogue')" style="background:#0d1018;border:1px solid ${CLASS_COLORS.rogue}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${CLASS_COLORS.rogue}15'" onmouseout="this.style.background='#0d1018'">
+      <div style="font-size:32px;margin-bottom:6px;">🗡️</div>
+      <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:${CLASS_COLORS.rogue};margin-bottom:4px;">Rogue</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Daggers or Bow · Life Steal<br>Poison · Electric · Ice imbues</div>
     </div>`;
-  }).join('');
-  document.getElementById('class-screen').classList.remove('hidden');
+  screen.classList.remove('hidden');
 }
 
-function selectStartingClass(cls) {
-  G.startingClass = cls;
+function selectClass(cls) {
+  G.playerClass = cls;
+  const screen = document.getElementById('class-screen');
+  const cards = document.getElementById('class-cards');
+  const color = CLASS_COLORS[cls];
+
+  if(cls === 'rogue') {
+    // Step 1b — pick weapon for rogue
+    screen.querySelector('h2').textContent = 'Choose Your Weapon';
+    screen.querySelector('p').textContent = 'Both use physical attacks with imbue effects.';
+    cards.innerHTML = `
+      <div onclick="selectRogueWeapon('dagger')" style="background:#0d1018;border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='#0d1018'">
+        <div style="font-size:32px;margin-bottom:6px;">🗡️</div>
+        <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:${color};">Dual Daggers</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">Hits twice per attack<br>Less damage per hit<br>Higher attack speed</div>
+      </div>
+      <div onclick="selectRogueWeapon('bow')" style="background:#0d1018;border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='#0d1018'">
+        <div style="font-size:32px;margin-bottom:6px;">🏹</div>
+        <div style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:${color};">Bow</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">Ranged single shot<br>Moderate damage<br>Fast attack speed</div>
+      </div>`;
+    return;
+  }
+  // Go to imbue selection for mage/warrior
+  showImbueSelection(cls);
+}
+
+function selectRogueWeapon(weapon) {
+  G.rogueWeapon = weapon;
+  showImbueSelection('rogue');
+}
+
+function showImbueSelection(cls) {
+  const screen = document.getElementById('class-screen');
+  const cards = document.getElementById('class-cards');
+  const color = CLASS_COLORS[cls];
+  const imbues = cls === 'mage' ? MAGE_IMBUES : PHYS_IMBUES;
+  const imbueDescs = {
+    fire:     'Burst damage + Burn DOT over time',
+    water:    'Burst damage + slows & weakens enemy',
+    grass:    'Burst damage + heals you on hit',
+    poison:   'Applies Poison DOT, stacks with multiple hits',
+    electric: 'Electric DOT with AOE splash damage',
+    ice:      'Slows enemy attacks, chance to Freeze completely',
+  };
+  screen.querySelector('h2').textContent = 'Choose Your Imbue';
+  screen.querySelector('p').textContent = 'Your imbue permanently defines your special abilities.';
+  cards.innerHTML = imbues.map(imbue => `
+    <div onclick="selectImbue('${imbue}')" style="background:#0d1018;border:1px solid ${IMBUE_COLORS[imbue]}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${IMBUE_COLORS[imbue]}15'" onmouseout="this.style.background='#0d1018'">
+      <div style="font-size:28px;margin-bottom:6px;">${IMBUE_ICONS[imbue]}</div>
+      <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:${IMBUE_COLORS[imbue]};margin-bottom:4px;">${imbue.charAt(0).toUpperCase()+imbue.slice(1)}</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">${imbueDescs[imbue]}</div>
+    </div>`).join('');
+}
+
+function selectImbue(imbue) {
+  G.playerImbue = imbue;
   document.getElementById('class-screen').classList.add('hidden');
 
+  const cls = G.playerClass;
   // Set starting loadout
-  const basicId = cls === 'physical' ? 'phys_basic' : cls + '_basic';
-  const skill1Id = cls === 'physical' ? 'phys_reg1' : cls + '_reg1';
+  const basicId = cls === 'warrior' ? 'warrior_basic'
+    : cls === 'rogue' ? (G.rogueWeapon==='bow' ? 'rogue_basic_bow' : 'rogue_basic')
+    : `mage_basic_${imbue}`;
+  const skill1Id = cls === 'warrior' ? `warrior_${imbue}_reg1`
+    : cls === 'rogue' ? `rogue_${imbue}_reg1`
+    : `${imbue}_reg1`;
+
   G.loadout[0] = basicId;
   G.loadout[1] = skill1Id;
   G.loadout[2] = null;
   G.loadout[3] = null;
-  healLoadout = 'heal_' + cls;
-  G.abilityLevels['heal_' + cls] = 1; // ensure heal is unlocked
-
-  // Give class level 1 in chosen class
+  healLoadout = `heal_${cls}`;
+  G.abilityLevels[`heal_${cls}`] = 1;
   G.classLv[cls] = 1;
   G.classXP[cls] = 0;
+
+  // Warrior gets offhand slot
+  if(cls === 'warrior') {
+    // Auto-equip starter shield
+    const starterShield = {
+      name:'Wooden Shield', slot:'Offhand',
+      tier:{name:'Basic',color:'#9a9a9a'}, rarity:{name:'Basic',color:'#9a9a9a'},
+      stats:{ defense:5, health:20 }, sellVal:5, buyVal:15
+    };
+    G.equipment['Offhand'] = starterShield;
+  }
+
+  // Base stat adjustments per class
+  if(cls === 'warrior') { G.baseStats.defense += 5; G.baseStats.health += 40; }
+  if(cls === 'rogue')   { G.baseStats.atkSpeed += 0.2; }
+  if(cls === 'mage')    { G.baseStats.mana += 30; }
 
   updateLoadoutUI();
   updateHealSlotUI();
   saveGame();
   showMapScreen(true);
 }
+
 
 // ═══════════════════════════════════════════════
 // XP & SKILL POINT POPUP SYSTEM
@@ -4803,7 +5018,7 @@ function showSPPopup() {
 function renderSPPopup() {
   const el = document.getElementById('sp-popup-content');
   if (spPhase === 'passive') {
-    const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+    const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
     let ph = '<div style="font-family:Cinzel,serif;font-size:14px;font-weight:700;color:#8888ff;text-align:center;margin-bottom:4px;">🔮 Passive Skill Point</div>';
     ph += '<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Permanently boost a passive stat</div>';
     Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
@@ -4824,25 +5039,29 @@ function renderSPPopup() {
     return;
   }
   if (spStep === 1) {
-    el.innerHTML = `
-      <div style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">⬆ Level Up!</div>
-      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;">Choose a class to invest in</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        ${CLASS_NAMES.map(cls => {
-          const lv = G.classLv[cls]||0;
-          const color = CLASS_COLORS[cls];
-          return `<div onclick="spPickClass('${cls}')" style="background:#0d1018;border:1px solid ${color}44;border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:background 0.15s;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='#0d1018'">
-            <div style="font-size:20px;">${CLASS_ICONS[cls]}</div>
-            <div style="font-family:'Cinzel',serif;font-size:10px;color:${color};margin-top:4px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
-            <div style="font-size:10px;color:var(--muted);">Lv ${lv}</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-  } else if (spStep === 2) {
-    const cls = spChosenClass;
+    // Only show the player's actual class (not all classes)
+    const cls = G.playerClass || 'mage';
     const color = CLASS_COLORS[cls];
     const lv = G.classLv[cls]||0;
-    const classAbilities = Object.values(ABILITIES).filter(ab => ab.class === cls && ab.type !== 'heal');
+    el.innerHTML = `
+      <div style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">⬆ Level Up!</div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;">Invest in your class to unlock and upgrade abilities</div>
+      <div onclick="spPickClass('${cls}')" style="background:#0d1018;border:1px solid ${color}44;border-radius:12px;padding:16px;cursor:pointer;text-align:center;max-width:200px;margin:0 auto;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}44'">
+        <div style="font-size:32px;">${CLASS_ICONS[cls]}</div>
+        <div style="font-family:'Cinzel',serif;font-size:13px;color:${color};margin-top:6px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
+        <div style="font-size:10px;color:var(--muted);">Level ${lv} → ${lv+1}</div>
+        <div style="font-size:10px;color:#3acc7a;margin-top:4px;">Tap to invest</div>
+      </div>`;
+  } else if (spStep === 2) {
+    const cls = spChosenClass || G.playerClass;
+    const imbue = G.playerImbue;
+    const color = CLASS_COLORS[cls];
+    const lv = G.classLv[cls]||0;
+    // Show abilities for this class+imbue combo
+    const classAbilities = Object.values(ABILITIES).filter(ab =>
+      ab.class === cls && ab.type !== 'heal' &&
+      (ab.imbue === imbue || ab.imbue === null || ab.type === 'basic')
+    );
     const unlockedAbs = classAbilities.filter(ab => isAbilityUnlocked(ab.id));
 
     let abHTML = '';
@@ -4922,9 +5141,13 @@ function spPickClass(cls) {
   G.skillPoints = Math.max(0, G.skillPoints - 1);
   G.classLv[cls] = (G.classLv[cls]||0) + 1;
   const lv = G.classLv[cls];
-  // HP + mana boost
-  G.baseStats.health = (G.baseStats.health||180) + 10;
+  const color = CLASS_COLORS[cls];
+  // Stat boosts on level up
+  G.baseStats.health = (G.baseStats.health||200) + (cls==='warrior'?15:10);
   G.baseStats.mana = (G.baseStats.mana||100) + 5;
+  if(cls==='warrior') G.baseStats.defense = (G.baseStats.defense||8) + 1;
+  if(cls==='rogue')   G.baseStats.atkSpeed = Math.min(3.0, (G.baseStats.atkSpeed||1.0) + 0.02);
+  if(cls==='mage')    G.baseStats.spellVamp = (G.baseStats.spellVamp||0) + 0.3;
   const st = getStats();
   const oldMax = G.maxHp;
   G.maxHp = st.maxHp;
@@ -4932,9 +5155,8 @@ function spPickClass(cls) {
   G.hp = Math.min(G.hp, G.maxHp);
   G.maxMana = st.mana||100;
   updateHpBar(); updateManaBar();
-  // Unlock Skill 2 at class lv 5, Ult at 8
-  if(lv === 5) log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Skill 2 slot unlocked!</span>`);
-  if(lv === 8) log(`<span style="color:${CLASS_COLORS[cls]}">🔓 ${cls} Ultimate slot unlocked!</span>`);
+  if(lv === 5) log(`<span style="color:${color}">🔓 Skill 2 slot unlocked!</span>`);
+  if(lv === 8) log(`<span style="color:${color}">🔓 Ultimate slot unlocked!</span>`);
   spStep = 2;
   renderSPPopup();
 }
@@ -5067,19 +5289,25 @@ function upgradeAbilityAndRefresh(abId) {
 
 function buildAbilityUpgradesHTML() {
   let html = '';
-  CLASS_NAMES.forEach(cls => {
+  // Only show the player's class
+  const clsList = G.playerClass ? [G.playerClass] : CLASS_NAMES;
+  clsList.forEach(cls => {
     const cp = G.classCP[cls] || 0;
     const lv = G.classLv[cls] || 0;
     const color = CLASS_COLORS[cls];
     const icon = CLASS_ICONS[cls];
+    const imbueColor = IMBUE_COLORS[G.playerImbue||'']||color;
 
     html += `<div class="ab-class-header">
-      <span class="ab-class-title" style="color:${color}">${icon} ${cls.charAt(0).toUpperCase()+cls.slice(1)}</span>
+      <span class="ab-class-title" style="color:${color}">${icon} ${cls.charAt(0).toUpperCase()+cls.slice(1)}${G.playerImbue?` <span style="color:${imbueColor};font-size:10px;">${IMBUE_ICONS[G.playerImbue]} ${G.playerImbue}</span>`:''}</span>
       <span class="ab-class-pts">${cp} class pt${cp!==1?'s':''}</span>
     </div>`;
 
-    // Get abilities for this class
-    const classAbilities = Object.values(ABILITIES).filter(ab => ab.class === cls);
+    // Get abilities for this class+imbue
+    const classAbilities = Object.values(ABILITIES).filter(ab =>
+      ab.class === cls && ab.type !== 'heal' &&
+      (ab.imbue === G.playerImbue || ab.imbue === null || ab.type === 'basic')
+    );
     const hasAnyUnlocked = classAbilities.some(ab => isAbilityUnlocked(ab.id));
 
     if (!hasAnyUnlocked) {
@@ -5536,12 +5764,10 @@ function buildStatsPanelHTML() {
   let html = `<div class="panel-title" style="position:static;">📊 ${G.playerName||'Wanderer'}</div>`;
   const rows = [
     ['Attack', Math.floor(s.attack)],
-    ['Magic Pwr', Math.floor(s.magicPower)],
     ['Atk Speed', s.atkSpeed.toFixed(2)],
     ['Crit %', s.critChance.toFixed(1)+'%'],
     ['Crit Dmg', Math.floor(s.critDmg)+'%'],
-    ['Armor', Math.floor(s.armor)],
-    ['Mag Resist', Math.floor(s.magicResist)],
+    ['Defense', Math.floor(s.defense||8)],
     ['Life Steal', s.lifeSteal.toFixed(1)+'%'],
     ['Spell Vamp', s.spellVamp.toFixed(1)+'%'],
     ['CDR', Math.min(65,s.cdr||0).toFixed(1)+'%'],
@@ -5550,6 +5776,22 @@ function buildStatsPanelHTML() {
   rows.forEach(([label, val]) => {
     html += `<div class="stat-row"><span class="stat-label">${label}</span><span class="stat-val">${val}</span></div>`;
   });
+
+  // Title selection
+  if(playerTitles.length > 0) {
+    html += `<div class="panel-title" style="position:static;margin-top:8px;">🎖️ Titles</div>`;
+    html += `<div style="padding:4px 10px;display:flex;flex-direction:column;gap:4px;">`;
+    playerTitles.forEach(tid => {
+      const t = TITLES[tid];
+      if(!t) return;
+      const isActive = playerSelectedTitle === tid;
+      html += `<div onclick="selectTitle('${tid}')" style="padding:6px 10px;border-radius:6px;border:1px solid ${isActive?'#aa77ff':'var(--border)'};background:${isActive?'rgba(170,119,255,0.1)':'transparent'};cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:${isActive?'#aa77ff':'var(--text)'};">${t.label}</span>
+        ${isActive?'<span style="font-size:10px;color:#aa77ff;">✓ Active</span>':''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
 
   // Wave info
   html += `<div class="panel-title" style="position:static;margin-top:8px;">⚔️ Run</div>`;
@@ -5591,7 +5833,7 @@ function buildUpgradesPanelHTML() {
   // Divider + passive skills
   html += '<hr class="upgrade-divider">';
   html += `<div class="panel-title" style="position:static;">🔮 Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.passivePoints} pts)</span></div>`;
-  const elEmoji={fire:'🔥',water:'💧',grass:'🌿',dark:'🌑',light:'✨',physical:'⚔️',defense:'🛡️'};
+  const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     const color = CLASS_COLORS[el]||'#88aacc';
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${color}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
