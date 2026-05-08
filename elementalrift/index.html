@@ -1007,49 +1007,6 @@ const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
 const BIN_ID = '69fb6fae6373f77b4253ba55';
 const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgIG';
 
-// ═══════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════
-const ABILITIES = {
-  // ── FIRE ──
-  fire_basic:   { id:'fire_basic',   class:'fire',     type:'basic',    name:'Ember Strike', icon:'🔥', cd:0,    desc:'Rapid fire strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8,  isMagic:true  },
-  fire_reg1:    { id:'fire_reg1',    class:'fire',     type:'regular',  name:'Flame Burst',  icon:'🔥', cd:3500, desc:'Explosive fireball dealing heavy magic damage.', dmgMult:2.2, isMagic:true, unlockLv:3  },
-  fire_reg2:    { id:'fire_reg2',    class:'fire',     type:'regular',  name:'Scorch',       icon:'🌋', cd:5000, desc:'Burns the enemy — deals damage over 2 seconds.', dmgMult:1.6, isMagic:true, dot:true, unlockLv:6 },
-  fire_ult:     { id:'fire_ult',     class:'fire',     type:'ultimate', name:'Inferno',      icon:'☄️', cd:18000,desc:'Devastating meteor dealing massive magic damage.', dmgMult:6.0, isMagic:true, unlockLv:10 },
-
-  // ── WATER ──
-  water_basic:  { id:'water_basic',  class:'water',    type:'basic',    name:'Tide Slash',   icon:'💧', cd:0,    desc:'Flowing water strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8, isMagic:true  },
-  water_reg1:   { id:'water_reg1',   class:'water',    type:'regular',  name:'Frost Bolt',   icon:'❄️', cd:3200, desc:'Ice shard dealing magic damage. Slows enemy attack speed by 30% for 3s.', dmgMult:2.0, isMagic:true, slow:true, unlockLv:3 },
-  water_reg2:   { id:'water_reg2',   class:'water',    type:'regular',  name:'Hydro Pulse',  icon:'🌊', cd:4500, desc:'Tidal wave dealing heavy magic damage. Heals you for 15% of damage dealt.', dmgMult:2.5, isMagic:true, healPct:15, unlockLv:6 },
-  water_ult:    { id:'water_ult',    class:'water',    type:'ultimate', name:'Tsunami',      icon:'🌊', cd:20000,desc:'Massive wave dealing huge magic damage. Resets all cooldowns on kill.', dmgMult:5.5, isMagic:true, unlockLv:10 },
-
-  // ── GRASS ──
-  grass_basic:  { id:'grass_basic',  class:'grass',    type:'basic',    name:'Thorn Whip',   icon:'🌿', cd:0,    desc:'Nature strikes dealing magic damage. Toggles auto-attack on/off.', dmgMult:0.8, isMagic:true  },
-  grass_reg1:   { id:'grass_reg1',   class:'grass',    type:'regular',  name:'Vine Snare',   icon:'🌱', cd:4000, desc:'Entangling vines dealing magic damage. Heals you for 20% of damage dealt.', dmgMult:1.8, isMagic:true, healPct:20, unlockLv:3 },
-  grass_reg2:   { id:'grass_reg2',   class:'grass',    type:'regular',  name:'Spore Cloud',  icon:'🍄', cd:5500, desc:'Toxic spores dealing damage over 3s. Also restores 30 HP instantly on cast.', dmgMult:2.0, isMagic:true, dot:true, flatHeal:30, unlockLv:6 },
-  grass_ult:    { id:'grass_ult',    class:'grass',    type:'ultimate', name:'Overgrowth',   icon:'🌳', cd:22000,desc:'Massive nature explosion dealing huge magic damage. Heals you for 25% of damage dealt.', dmgMult:5.0, isMagic:true, healPct:25, unlockLv:10 },
-
-
-  // ── PHYSICAL ──
-  phys_basic:   { id:'phys_basic',   class:'physical', type:'basic',    name:'Quick Strike', icon:'⚔️', cd:0,    desc:'Fast physical attack dealing physical damage. Toggles auto-attack on/off.', dmgMult:1.0, isMagic:false },
-  phys_reg1:    { id:'phys_reg1',    class:'physical', type:'regular',  name:'Power Slam',   icon:'🪓', cd:3000, desc:'Crushing blow dealing 2.5x physical damage. Deals bonus damage vs Brutes.', dmgMult:2.5, isMagic:false, unlockLv:3 },
-  phys_reg2:    { id:'phys_reg2',    class:'physical', type:'regular',  name:'Whirlwind',    icon:'🌀', cd:4500, desc:'Spinning attack that strikes twice in quick succession.', dmgMult:1.8, isMagic:false, hits:2, unlockLv:6 },
-  phys_ult:     { id:'phys_ult',     class:'physical', type:'ultimate', name:'Devastate',    icon:'💥', cd:16000,desc:'Overwhelming strike dealing 7x physical damage. Ignores 50% of enemy armor.', dmgMult:7.0, isMagic:false, armorPen:0.5, unlockLv:10 },
-
-  // ── HEALS (one per class) ──
-  heal_physical:{ id:'heal_physical',class:'physical', type:'heal', name:'Bandage',       icon:'🩹', cd:12000, desc:'Patch yourself up. Restores 25% of your max HP. Costs 30 mana.', healFlat:0, healPct:25 },
-  heal_fire:    { id:'heal_fire',    class:'fire',     type:'heal', name:'Cauterize',      icon:'🔥', cd:10000, desc:'Sear your wounds closed. Restores 20% of your max HP instantly. Costs 30 mana.', healFlat:0, healPct:20 },
-  heal_water:   { id:'heal_water',   class:'water',    type:'heal', name:'Tidal Mend',     icon:'💧', cd:9000,  desc:'Healing waters restore 30% of your max HP. Costs 30 mana.', healFlat:0, healPct:30 },
-  heal_grass:   { id:'heal_grass',   class:'grass',    type:'heal', name:'Nature Bloom',   icon:'🌿', cd:8000,  desc:'Nature energy restores 35% of your max HP in 3 pulses over 2 seconds. Costs 30 mana.', healFlat:0, healPct:35, hot:true },
-  heal_dark:    { id:'heal_dark',    class:'dark',     type:'heal', name:'Soul Siphon',    icon:'🌑', cd:11000, desc:'Drain life from the enemy. Deals magic damage equal to 50% of your Magic Power and heals you for the same amount. Costs 30 mana.', healFlat:0, healPct:0, siphon:true },
-  heal_light:   { id:'heal_light',   class:'light',    type:'heal', name:'Holy Mend',      icon:'✨', cd:8000,  desc:'Divine light restores 40% of your max HP instantly. Costs 30 mana.', healFlat:0, healPct:40 },
-};
-const CLASS_COLORS = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', dark:'#9b4dff', light:'#ffd700', physical:'#aaaaaa' };
-const CLASS_ICONS  = { mage:'🧙', warrior:'⚔️', rogue:'🗡️', fire:'🔥', water:'💧', grass:'🌿' };
-const CLASS_XP_TO_LEVEL = [0, 30, 80, 160, 280, 440, 650, 920, 1250, 1650, 2100]; // xp needed per level
-
-const CLASS_NAMES = ['fire','water','grass','dark','light','physical'];
-let G = {
   playerName: '',
   hp:200, maxHp:200,
   gold:0, kills:0, wave:1,
