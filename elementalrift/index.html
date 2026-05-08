@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.0.6</title>
+<title>Elemental Rift v2.1.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.6 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.1.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -767,7 +767,7 @@ let sbProfile = null; // players row
 
     <!-- Wave control buttons (hidden until needed) -->
     <div style="display:flex;gap:6px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
-      <button class="action-btn btn-next hidden" id="next-btn" onclick="nextWave()" style="flex:1;"><span class="btn-icon">▶</span>Next Wave</button>
+      <button class="action-btn btn-next hidden" id="next-btn" onclick="toggleAutoWave()" style="flex:1;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()" style="flex:1;"><span class="btn-icon">💀</span>Boss Attempt</button>
       <button class="action-btn hidden" id="potion-btn" onclick="buyPotion()" style="flex:1;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
@@ -1061,6 +1061,42 @@ async function loadPlayerTitles() {
   playerTitles = (data||[]).map(r => r.title_id);
   const profile = await sb.from('players').select('selected_title').eq('id', sbUser.id).single();
   playerSelectedTitle = profile?.data?.selected_title || null;
+
+  // First-time title tutorial — show once if player has titles but never selected one
+  if(playerTitles.length > 0 && !playerSelectedTitle) {
+    const tutKey = 'er_title_tutorial_seen';
+    if(!localStorage.getItem(tutKey)) {
+      localStorage.setItem(tutKey, '1');
+      setTimeout(() => showTitleTutorial(), 2000);
+    }
+  }
+}
+
+function showTitleTutorial() {
+  // Don't show if game is already in progress
+  const nameScreen = document.getElementById('name-screen');
+  if(!nameScreen || nameScreen.classList.contains('hidden')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'title-tutorial-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#151a28;border:1px solid #aa77ff44;border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
+      <div style="font-size:36px;margin-bottom:10px;">🎖️</div>
+      <div style="font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#aa77ff;margin-bottom:6px;">You have a Title!</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+        You've been awarded the <span style="color:#aa77ff;font-family:'Cinzel',serif;">${playerTitles.map(t=>TITLES[t]?.label||t).join(', ')}</span> title${playerTitles.length>1?'s':''}.
+        Titles appear next to your name on the leaderboard.
+      </div>
+      <div style="background:#0d1018;border:1px solid #aa77ff33;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+        To equip a title:<br>
+        <span style="color:#aa77ff;">1.</span> Start a game<br>
+        <span style="color:#aa77ff;">2.</span> Tap your name in the top bar <span style="color:#e8b84b;">or</span> go to the <span style="color:#e8b84b;">Stats tab</span><br>
+        <span style="color:#aa77ff;">3.</span> Select the title you want displayed
+      </div>
+      <button onclick="document.getElementById('title-tutorial-overlay').remove()" style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px 32px;border-radius:10px;border:1px solid #aa77ff;background:rgba(170,119,255,0.1);color:#aa77ff;cursor:pointer;">Got it</button>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
 async function selectTitle(titleId) {
@@ -1300,6 +1336,7 @@ function onSegmentWaveComplete() {
     document.getElementById('next-btn').classList.remove('hidden');
     showPotionBtn();
     if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
+    if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
   }
 }
 
@@ -1448,7 +1485,7 @@ function getStats() {
     s.atkSpeed = (s.atkSpeed||1.0) + (G.classLv['rogue']||0) * 0.03;
   }
   if(G.playerClass === 'mage') {
-    s.spellVamp = (s.spellVamp||0) + (G.classLv['mage']||0) * 0.5;
+    s.spellVamp = (s.spellVamp||0) + (G.classLv['mage']||0) * 0.2;
   }
 
   s.maxHp = s.health;
@@ -1693,7 +1730,8 @@ function onBossPhaseKill() {
     G.gold += Math.floor(50 + G.wave*15);
     G.passivePoints += 2 + Math.floor(G.wave/3);
     // Boss XP scales with wave HP — significantly more than a regular enemy
-    const bossXP = Math.floor((30 + G.wave * 12) * 1.5);
+    // Boss gives 5x a regular kill's XP — always a meaningful reward
+    const bossXP = Math.floor(G.wave * 12 * 5);
     awardXP(bossXP);
     log(`<span class="log-gold">💀 Boss slain! 💰 +${Math.floor(50+G.wave*15)}g  ✨ +${bossXP} XP</span>`);
     // Big loot drop
@@ -1954,7 +1992,7 @@ function fireAbility(ab) {
   }
 
   // Healing — mage uses spellVamp, warrior/rogue use lifeSteal
-  const stealPct = ab.isMagic ? (st.spellVamp||0) : (st.lifeSteal||0);
+  const stealPct = Math.min(35, ab.isMagic ? (st.spellVamp||0) : (st.lifeSteal||0));
   let healAmt = stealPct>0 ? Math.max(1,Math.ceil(totalDmg*stealPct/100)) : 0;
   if(ab.healPct) healAmt += Math.max(1, Math.ceil(totalDmg * ab.healPct/100));
   if(ab.flatHeal) healAmt += ab.flatHeal;
@@ -1995,13 +2033,21 @@ function fireAbility(ab) {
   const elColor = CLASS_COLORS[ab.class]||'#fff';
 
   if(!ab.isMagic){
-    triggerPlayerLunge(ex,ey,px,py);
-    setTimeout(()=>{
-      spawnParticles('physical',px,py,ex,ey);
-      spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,totalDmg,isCrit,seMult>1.0,elColor);
-      if(healAmt>0) spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt);
+    const isBowShot = ab.id === 'rogue_basic_bow';
+    if(isBowShot) {
+      // Arrow — projectile animation, no lunge
+      spawnArrowProjectile(px, py, ex, ey, totalDmg, isCrit, seMult>1.0, elColor);
+      if(healAmt>0) setTimeout(()=>spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt), 300);
       startAnimLoop();
-    },160);
+    } else {
+      triggerPlayerLunge(ex,ey,px,py);
+      setTimeout(()=>{
+        spawnParticles('physical',px,py,ex,ey);
+        spawnDamageNumber(ex+(Math.random()-.5)*20,ey-30,totalDmg,isCrit,seMult>1.0,elColor);
+        if(healAmt>0) spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt);
+        startAnimLoop();
+      },160);
+    }
   } else {
     const elKey = ab.class==='physical'?'physical':ab.class;
     spawnParticles(elKey,px,py,ex,ey);
@@ -2389,8 +2435,8 @@ const STAT_BOOST_OPTIONS = [
   { key:'atkSpeed',    label:'Atk Speed',    amount:0.05, icon:'⚡',  display:'+0.05' },
   { key:'critChance',  label:'Crit Chance',  amount:1,    icon:'🎯',  display:'+1%' },
   { key:'critDmg',     label:'Crit Damage',  amount:10,   icon:'💥',  display:'+10%' },
-  { key:'lifeSteal',   label:'Life Steal',   amount:0.5,  icon:'🩸',  display:'+0.5%' },
-  { key:'spellVamp',   label:'Spell Vamp',   amount:0.5,  icon:'💫',  display:'+0.5%' },
+  { key:'lifeSteal',   label:'Life Steal',   amount:0.2,  icon:'🩸',  display:'+0.2%' },
+  { key:'spellVamp',   label:'Spell Vamp',   amount:0.2,  icon:'💫',  display:'+0.2%' },
   { key:'cdr',         label:'CDR',          amount:2,    icon:'⏱️',  display:'+2%' },
   { key:'mana',        label:'Mana',         amount:10,   icon:'💧',  display:'+10' },
   { key:'manaRegen',   label:'Mana Regen',   amount:1,    icon:'💦',  display:'+1/s' },
@@ -2420,7 +2466,7 @@ const ARTIFACT_STAT_POOLS = [
   { key:'critChance',  label:'Crit Chance',  icon:'🎯',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
   { key:'critDmg',     label:'Crit Damage',  icon:'💥',  per:{ Basic:5, Great:10, Exquisite:18, Ancient:30, Cosmic:50 } },
   { key:'armor',       label:'Armor',        icon:'🛡️',  per:{ Basic:2, Great:4, Exquisite:8, Ancient:14, Cosmic:22 } },
-  { key:'lifeSteal',   label:'Life Steal',   icon:'🩸',  per:{ Basic:0.3, Great:0.6, Exquisite:1.1, Ancient:1.8, Cosmic:3.0 } },
+  { key:'lifeSteal',   label:'Life Steal',   icon:'🩸',  per:{ Basic:0.1, Great:0.3, Exquisite:0.6, Ancient:1.0, Cosmic:1.8 } },
   { key:'manaRegen',   label:'Mana Regen',   icon:'💦',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
   { key:'cdr',         label:'CDR',          icon:'⏱️',  per:{ Basic:1, Great:2, Exquisite:4, Ancient:7, Cosmic:12 } },
 ];
@@ -2492,10 +2538,15 @@ function enemyAttack() {
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
   combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
   const W=canvas.width,H=canvas.height;
-  spawnEnemyAttackParticles(W*0.72,H*0.60,W*0.25,H*0.62);
-  spawnDamageNumber(W*0.25+(Math.random()-.5)*15,H*0.62-35,dmg,false,false,'#ff4444');
-  playerFlash=0.9;
-  startAnimLoop();
+  const ex=W*0.72, ey=H*0.60, px=W*0.25, py=H*0.62;
+  // Enemy lunge animation toward player
+  triggerEnemyLunge(ex, ey, px, py);
+  setTimeout(()=>{
+    spawnEnemyAttackParticles(ex, ey, px, py);
+    spawnDamageNumber(px+(Math.random()-.5)*15, py-35, dmg, false, false, '#ff4444');
+    playerFlash=0.9;
+    startAnimLoop();
+  }, 140);
   playSound('take_damage');
   triggerScreenShake(4, 0.2);
   if (G.hp<=0) { G.hp=0; onDeath(); return; }
@@ -2514,12 +2565,14 @@ function onEnemyDeath() {
   // Capture enemy data before nulling
   const enemyGold = G.enemy.gold;
   const enemyType = G.enemy.type;
+  const enemyMaxHp = G.enemy.maxHp || 50;
   G.enemy = null; // null immediately so no other code can re-trigger death
   G.kills++;
   G.gold += enemyGold;
   G.runStats.totalGold += enemyGold;
-  const baseXP = 10 + (MAP.currentSegWave || G.wave) * 5;
-  const xpGain = Math.floor(baseXP * (enemyType === 'brute' ? 1.3 : 1.0));
+  // XP per kill = wave * 12 → always ~7 kills to level regardless of wave
+  const waveNum = MAP.currentSegWave || G.wave;
+  const xpGain = Math.floor(waveNum * 12 * (enemyType === 'brute' ? 1.3 : 1.0));
   awardXP(xpGain);
   // Award passive skill point every 5 kills
   if(G.kills % 5 === 0) {
@@ -2672,8 +2725,24 @@ function emergencySpawn() {
 function safeHide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
 function safeShow(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
 
+let autoWaveEnabled = false;
+
+function toggleAutoWave() {
+  autoWaveEnabled = !autoWaveEnabled;
+  const btn = document.getElementById('next-btn');
+  if(autoWaveEnabled) {
+    btn.style.background = 'rgba(58,204,122,0.15)';
+    btn.style.boxShadow = '0 0 10px rgba(58,204,122,0.4)';
+    btn.innerHTML = '<span class="btn-icon">▶</span>Auto ON';
+    nextWave();
+  } else {
+    btn.style.background = '';
+    btn.style.boxShadow = '';
+    btn.innerHTML = '<span class="btn-icon">▶</span>Next Wave';
+  }
+}
+
 function nextWave() {
-  stopAllAutoSlots();
   stopAllAutoSlots();
   document.getElementById('next-btn').classList.add('hidden');
   document.getElementById('boss-btn').classList.add('hidden');
@@ -2697,11 +2766,11 @@ const TIERS = [
 
 // Stat value ranges per class
 const STAT_CLASS_RANGES = {
-  D: { attack:[3,6],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   defense:[2,5],   health:[12,25],  lifeSteal:[0.3,1.0], spellVamp:[0.3,1.0], cdr:[1,3],   mana:[8,15],    manaRegen:[0.5,1.0], dotDamage:[1,3],  burnDuration:[0.2,0.5], poisonDuration:[0.2,0.5], freezeDuration:[0.1,0.3], electricDot:[1,2], slowStrength:[3,6]  },
-  C: { attack:[6,14],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  defense:[4,10],  health:[25,55],  lifeSteal:[0.8,2.0], spellVamp:[0.8,2.0], cdr:[2,6],   mana:[15,30],   manaRegen:[1.0,2.0], dotDamage:[3,6],  burnDuration:[0.3,0.8], poisonDuration:[0.3,0.8], freezeDuration:[0.2,0.5], electricDot:[2,4], slowStrength:[5,12] },
-  B: { attack:[13,28], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  defense:[9,20],  health:[50,110], lifeSteal:[1.5,3.5], spellVamp:[1.5,3.5], cdr:[5,12],  mana:[28,55],   manaRegen:[1.8,3.5], dotDamage:[6,11], burnDuration:[0.5,1.2], poisonDuration:[0.5,1.2], freezeDuration:[0.3,0.8], electricDot:[3,7], slowStrength:[10,20]},
-  A: { attack:[26,48], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], defense:[18,36], health:[100,190],lifeSteal:[3.0,6.0], spellVamp:[3.0,6.0], cdr:[10,20], mana:[50,90],   manaRegen:[3.0,6.0], dotDamage:[10,18],burnDuration:[1.0,2.0], poisonDuration:[1.0,2.0], freezeDuration:[0.6,1.4], electricDot:[6,12],slowStrength:[18,32]},
-  S: { attack:[46,85], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], defense:[32,60], health:[180,320],lifeSteal:[5.0,10.0],spellVamp:[5.0,10.0],cdr:[18,35], mana:[80,150],  manaRegen:[5.0,10.0],dotDamage:[18,32],burnDuration:[1.5,3.0], poisonDuration:[1.5,3.0], freezeDuration:[1.0,2.5], electricDot:[10,20],slowStrength:[28,50]},
+  D: { attack:[3,6],   atkSpeed:[0.02,0.06], critChance:[0.5,1.5], critDmg:[5,15],   defense:[2,5],   health:[12,25],  lifeSteal:[0.1,0.4], spellVamp:[0.1,0.4], cdr:[1,3],   mana:[8,15],    manaRegen:[0.5,1.0], dotDamage:[1,3],  burnDuration:[0.2,0.5], poisonDuration:[0.2,0.5], freezeDuration:[0.1,0.3], electricDot:[1,2], slowStrength:[3,6]  },
+  C: { attack:[6,14],  atkSpeed:[0.05,0.12], critChance:[1.0,3.0], critDmg:[12,28],  defense:[4,10],  health:[25,55],  lifeSteal:[0.3,0.8], spellVamp:[0.3,0.8], cdr:[2,6],   mana:[15,30],   manaRegen:[1.0,2.0], dotDamage:[3,6],  burnDuration:[0.3,0.8], poisonDuration:[0.3,0.8], freezeDuration:[0.2,0.5], electricDot:[2,4], slowStrength:[5,12] },
+  B: { attack:[13,28], atkSpeed:[0.10,0.20], critChance:[2.5,5.5], critDmg:[25,55],  defense:[9,20],  health:[50,110], lifeSteal:[0.6,1.5], spellVamp:[0.6,1.5], cdr:[5,12],  mana:[28,55],   manaRegen:[1.8,3.5], dotDamage:[6,11], burnDuration:[0.5,1.2], poisonDuration:[0.5,1.2], freezeDuration:[0.3,0.8], electricDot:[3,7], slowStrength:[10,20]},
+  A: { attack:[26,48], atkSpeed:[0.18,0.35], critChance:[4.5,9.5], critDmg:[50,100], defense:[18,36], health:[100,190],lifeSteal:[1.2,2.5], spellVamp:[1.2,2.5], cdr:[10,20], mana:[50,90],   manaRegen:[3.0,6.0], dotDamage:[10,18],burnDuration:[1.0,2.0], poisonDuration:[1.0,2.0], freezeDuration:[0.6,1.4], electricDot:[6,12],slowStrength:[18,32]},
+  S: { attack:[46,85], atkSpeed:[0.30,0.55], critChance:[8.0,18.0],critDmg:[90,180], defense:[32,60], health:[180,320],lifeSteal:[2.0,4.5], spellVamp:[2.0,4.5], cdr:[18,35], mana:[80,150],  manaRegen:[5.0,10.0],dotDamage:[18,32],burnDuration:[1.5,3.0], poisonDuration:[1.5,3.0], freezeDuration:[1.0,2.5], electricDot:[10,20],slowStrength:[28,50]},
 };
 
 // CDR can only roll on Exquisite+
@@ -2938,18 +3007,23 @@ function showVendorItemDecision(item) {
     const newVal = item.stats[k]||0;
     const eqVal  = equipped ? (equipped.stats[k]||0) : 0;
     const delta  = newVal - eqVal;
-    const deltaHtml = delta > 0
-      ? `<span style="color:#3acc7a;font-size:10px;margin-left:4px;">+${delta}</span>`
+    // Format value nicely — show decimals for float stats
+    const fmt = v => ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(k) ? v.toFixed(1) : Math.floor(v);
+    const deltaHtml = !equipped
+      ? `<span style="color:#3acc7a;font-size:10px;margin-left:4px;">new</span>`
+      : delta > 0
+      ? `<span style="color:#3acc7a;font-size:10px;margin-left:4px;">▲+${fmt(delta)}</span>`
       : delta < 0
-      ? `<span style="color:#e83a3a;font-size:10px;margin-left:4px;">${delta}</span>`
-      : '';
-    newCol += `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
+      ? `<span style="color:#e83a3a;font-size:10px;margin-left:4px;">▼${fmt(delta)}</span>`
+      : `<span style="color:var(--muted);font-size:10px;margin-left:4px;">—</span>`;
+    const newColor = !equipped ? '#3acc7a' : delta>0 ? '#3acc7a' : delta<0 ? '#e83a3a' : 'var(--text)';
+    newCol += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
       <span style="color:var(--muted);">${STAT_LABELS[k]||k}</span>
-      <span style="color:${delta>0?'#3acc7a':delta<0?'#e83a3a':'var(--text)'};">+${newVal}${deltaHtml}</span>
+      <span style="display:flex;align-items:center;color:${newColor};font-weight:600;">+${fmt(newVal)}${deltaHtml}</span>
     </div>`;
-    eqCol += `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
+    eqCol += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
       <span style="color:var(--muted);">${STAT_LABELS[k]||k}</span>
-      <span style="color:var(--text);">${eqVal>0?'+'+eqVal:'—'}</span>
+      <span style="color:var(--text);">${eqVal>0?'+'+fmt(eqVal):'—'}</span>
     </div>`;
   });
 
@@ -3375,7 +3449,7 @@ function initGame() {
 // ═══════════════════════════════════════════════
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
-let particles=[],damageNumbers=[],playerOffset={x:0,y:0},enemyShake={x:0,y:0,timer:0},enemyFlash=0,playerFlash=0,lungeAnim=null,animLoopRunning=false,lastTime=0;
+let particles=[],damageNumbers=[],playerOffset={x:0,y:0},enemyShake={x:0,y:0,timer:0},enemyFlash=0,playerFlash=0,lungeAnim=null,enemyLungeAnim=null,animLoopRunning=false,lastTime=0;
 
 function spawnParticles(element,fromX,fromY,toX,toY){
   const count=element==='physical'?8:22;
@@ -3402,6 +3476,21 @@ function spawnImpactBurst(x,y,element){
   if(element==='light'){for(let i=0;i<8;i++)particles.push({type:'ray',x,y,angle:(Math.PI*2/8)*i,length:0,maxLength:55+Math.random()*25,life:1,decay:.04,color:'#ffd700',delay:i*8});particles.push({type:'shockwave',x,y,radius:5,maxRadius:70,life:1,decay:.04,color:'#ffe066',delay:0});}
 }
 
+function spawnArrowProjectile(fromX, fromY, toX, toY, dmg, isCrit, isSE, color) {
+  // Arrow travels in a straight line as a single fast orb particle
+  const arrow = {
+    type:'arrow',
+    x:fromX, y:fromY,
+    startX:fromX, startY:fromY,
+    endX:toX+(Math.random()-.5)*15, endY:toY-10+(Math.random()-.5)*10,
+    progress:0, speed:0.09,
+    life:1, decay:0.04,
+    dmg, isCrit, isSE, color,
+    delay:0, landed:false
+  };
+  particles.push(arrow);
+}
+
 function spawnEnemyAttackParticles(fromX,fromY,toX,toY){
   for(let i=0;i<6;i++){const a=(Math.random()-.5)*.8+Math.atan2(toY-fromY,toX-fromX),speed=4+Math.random()*3;particles.push({type:'burst',x:fromX,y:fromY,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,life:1,decay:.05,size:4+Math.random()*6,color:'#cc4422',element:'physical',delay:i*20});}
 }
@@ -3421,6 +3510,7 @@ function spawnHealNumber(x,y,amt){
   });
 }
 function triggerPlayerLunge(tx,ty,sx,sy){lungeAnim={progress:0,startX:sx,startY:sy,targetX:tx,targetY:ty};}
+function triggerEnemyLunge(ex,ey,px,py){enemyLungeAnim={progress:0,startX:ex,startY:ey,targetX:px,targetY:py,offsetX:0,offsetY:0};}
 function triggerEnemyShake(){enemyShake={x:0,y:0,timer:12};}
 
 function startAnimLoop(){if(animLoopRunning)return;animLoopRunning=true;lastTime=performance.now();requestAnimationFrame(animLoop);}
@@ -3433,11 +3523,47 @@ function animLoop(ts){
     else{const t=(p-.5)/.5,ease=t<.5?2*t*t:-1+(4-2*t)*t;playerOffset.x=(lungeAnim.targetX-lungeAnim.startX)*.45*(1-ease);playerOffset.y=(lungeAnim.targetY-lungeAnim.startY)*.2*(1-ease);}
     if(lungeAnim.progress>=1){lungeAnim=null;playerOffset={x:0,y:0};}
   }
+  if(enemyLungeAnim){
+    enemyLungeAnim.progress+=.14;const p=enemyLungeAnim.progress;
+    if(p<.5){const t=p/.5,ease=t<.5?2*t*t:-1+(4-2*t)*t;enemyLungeAnim.offsetX=(enemyLungeAnim.targetX-enemyLungeAnim.startX)*ease*.35;enemyLungeAnim.offsetY=(enemyLungeAnim.targetY-enemyLungeAnim.startY)*ease*.2;}
+    else{const t=(p-.5)/.5,ease=t<.5?2*t*t:-1+(4-2*t)*t;enemyLungeAnim.offsetX=(enemyLungeAnim.targetX-enemyLungeAnim.startX)*.35*(1-ease);enemyLungeAnim.offsetY=(enemyLungeAnim.targetY-enemyLungeAnim.startY)*.2*(1-ease);}
+    if(enemyLungeAnim.progress>=1){enemyLungeAnim=null;}
+  }
   if(enemyShake.timer>0){enemyShake.timer--;enemyShake.x=(Math.random()-.5)*8*(enemyShake.timer/12);enemyShake.y=(Math.random()-.5)*6*(enemyShake.timer/12);}else{enemyShake.x=0;enemyShake.y=0;}
   if(enemyFlash>0)enemyFlash-=.1;if(playerFlash>0)playerFlash-=.08;
   particles=particles.filter(p=>{
     if(p.delay>0){p.delay-=16;return true;}
     p.life-=p.decay;if(p.life<=0)return false;
+    if(p.type==='arrow'){
+      if(!p.landed) {
+        p.x = p.startX + (p.endX - p.startX) * p.progress;
+        p.y = p.startY + (p.endY - p.startY) * p.progress;
+        p.progress = Math.min(1, p.progress + p.speed);
+        const angle = Math.atan2(p.endY - p.startY, p.endX - p.startX);
+        const len = 18;
+        ctx.strokeStyle = '#e8d090';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(p.x - Math.cos(angle)*len, p.y - Math.sin(angle)*len);
+        ctx.lineTo(p.x + Math.cos(angle)*4,   p.y + Math.sin(angle)*4);
+        ctx.stroke();
+        ctx.fillStyle = '#c0a060';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+        ctx.fill();
+        if(p.progress >= 1 && !p.landed) {
+          p.landed = true;
+          spawnImpactBurst(p.x, p.y, 'physical');
+          triggerEnemyShake();
+          enemyFlash = 0.7;
+          spawnDamageNumber(p.x+(Math.random()-.5)*20, p.y-30, p.dmg, p.isCrit, p.isSE, p.color);
+          p.life = 0;
+        }
+      }
+      ctx.restore();
+      return;
+    }
     if(p.type==='orb'){p.progress=Math.min(1,p.progress+p.speed);const t=p.progress,mt=1-t;p.x=mt*mt*p.startX+2*mt*t*p.cp1x+t*t*p.endX;p.y=mt*mt*p.startY+2*mt*t*p.cp1y+t*t*p.endY;p.trail.push({x:p.x,y:p.y});if(p.trail.length>10)p.trail.shift();if(p.progress>=1&&!p.landed){p.landed=true;spawnImpactBurst(p.x,p.y,p.element);triggerEnemyShake();enemyFlash=.8;p.life=0;}}
     else if(['burst','ember','drop'].includes(p.type)){p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.vx*=.96;}
     else if(p.type==='shockwave')p.radius+=(p.maxRadius-p.radius)*.2;
@@ -3448,7 +3574,7 @@ function animLoop(ts){
   });
   damageNumbers=damageNumbers.filter(d=>{d.y+=d.vy;d.vy*=.92;d.life-=d.decay;return d.life>0;});
   drawArena();
-  if(particles.length>0||damageNumbers.length>0||lungeAnim||enemyShake.timer>0||enemyFlash>0||playerFlash>0){requestAnimationFrame(animLoop);}else{animLoopRunning=false;}
+  if(particles.length>0||damageNumbers.length>0||lungeAnim||enemyLungeAnim||enemyShake.timer>0||enemyFlash>0||playerFlash>0){requestAnimationFrame(animLoop);}else{animLoopRunning=false;}
 }
 
 function resizeCanvas(){
@@ -3475,7 +3601,7 @@ function drawArena(){
     ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
   }
   const px=W*.25+playerOffset.x,py=H*.62+playerOffset.y;
-  const ex=W*.72+enemyShake.x,ey=H*.60+enemyShake.y;
+  const ex=W*.72+enemyShake.x+(enemyLungeAnim?enemyLungeAnim.offsetX:0),ey=H*.60+enemyShake.y+(enemyLungeAnim?enemyLungeAnim.offsetY:0);
   ctx.fillStyle='rgba(0,0,0,0.3)';
   ctx.beginPath();ctx.ellipse(px,py+2,18,5,0,0,Math.PI*2);ctx.fill();
   if(G.enemy)ctx.beginPath(),ctx.ellipse(ex,ey+2,G.inBoss?30:22,7,0,0,Math.PI*2),ctx.fill();
@@ -4935,10 +5061,10 @@ function awardXP(amount) {
   updateXPBar();
   while (G.xp >= G.xpToNext) {
     G.xp -= G.xpToNext;
-    G.xpToNext = Math.floor(G.xpToNext * 1.18);
+    G.playerLevel = (G.playerLevel||1) + 1;
+    G.xpToNext = G.playerLevel * 80; // always ~7 wave-appropriate kills per level
     G.skillPoints++;
     G.passivePoints++;
-    G.playerLevel = (G.playerLevel||1) + 1;
     spPending++;       // one skill investment per level
     passivePending++;  // one passive investment per level
   }
