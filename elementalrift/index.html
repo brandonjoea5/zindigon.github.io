@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.2.0</title>
+<title>Elemental Rift v2.2.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.2.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -767,7 +767,7 @@ let sbProfile = null; // players row
 
     <!-- Wave control buttons (hidden until needed) -->
     <div style="display:flex;gap:6px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
-      <button class="action-btn btn-next hidden" id="next-btn" onclick="toggleAutoWave()" style="flex:1;"><span class="btn-icon">▶</span>Next Wave</button>
+      <button class="action-btn btn-next" id="next-btn" onclick="toggleAutoWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss hidden" id="boss-btn" onclick="startBossAttempt()" style="flex:1;"><span class="btn-icon">💀</span>Boss Attempt</button>
       <button class="action-btn hidden" id="potion-btn" onclick="buyPotion()" style="flex:1;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
@@ -1427,7 +1427,7 @@ function onSegmentWaveComplete() {
     }
   } else {
     log(`<span class="log-sys">Wave ${MAP.currentSegWave}${isInfinite ? '' : '/'+MAP.totalWaves} complete.</span>`);
-    document.getElementById('next-btn').classList.remove('hidden');
+    setNextBtnActive(true);
     showPotionBtn();
     if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
     if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
@@ -1677,12 +1677,14 @@ function spawnEnemy() {
     setTimeout(startAbilityTutorial, 800);
   }
   if(IS_MOBILE()) mobileTab('arena');
-  document.getElementById('next-btn').classList.add('hidden');
+  setNextBtnActive(false);
   document.getElementById('boss-btn').classList.add('hidden');
   safeHide('spawn-btn');
   hidePotionBtn();
   drawArena();
   startEnemyAutoAttack();
+  // Restore auto-slots for idle play — short delay so ability CDs are initialized
+  setTimeout(restoreAutoSlots, 400);
 }
 
 function startEnemyAutoAttack() {
@@ -1786,7 +1788,7 @@ function startBossAttempt() {
   G.bossName = BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
   G.enemy = rollBoss(1, true); // infinite HP leaderboard boss
   G.combatActive = true;
-  document.getElementById('next-btn').classList.add('hidden');
+  setNextBtnActive(false);
   document.getElementById('boss-btn').classList.add('hidden');
   document.getElementById('boss-timer-wrap').style.display = 'block';
   document.getElementById('boss-level-badge').style.display = 'block';
@@ -1845,7 +1847,7 @@ function onBossPhaseKill() {
     G.combatActive=false; G.enemy=null;
     updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena(); saveGame();
     // Always let player initiate next enemy
-  document.getElementById('next-btn').classList.remove('hidden');
+  setNextBtnActive(true);
   showPotionBtn();
   if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
     return;
@@ -1955,7 +1957,7 @@ function closeBossResults() {
   updateHpBar();
   renderIngameLB();
   // Show next wave button — let player initiate, don't auto-spawn
-  document.getElementById('next-btn').classList.remove('hidden');
+  setNextBtnActive(true);
   if(G.wave >= 3) document.getElementById('boss-btn').classList.remove('hidden');
   showPotionBtn();
   G.combatActive = false;
@@ -2292,11 +2294,26 @@ function startCDBarAnimation(slotIdx, ab) {
   requestAnimationFrame(tick);
 }
 
-function stopAllAutoSlots() {
+function stopAllAutoSlots(save=false) {
+  if(save) {
+    // Remember which slots were active so we can restore after vendor/popup
+    G.savedAutoSlots = Object.keys(G.autoSlots).map(Number);
+    G.healWasAuto = !!G.autoSlots['heal'];
+  }
   Object.values(G.autoSlots).forEach(id=>clearInterval(id));
   G.autoSlots = {};
   updateLoadoutUI();
   updateHealSlotUI();
+}
+
+function restoreAutoSlots() {
+  if(!G.savedAutoSlots || !G.combatActive || !G.enemy) return;
+  G.savedAutoSlots.forEach(slotIdx => {
+    if(!G.autoSlots[slotIdx]) activateAbility(slotIdx);
+  });
+  if(G.healWasAuto && !G.autoSlots['heal']) activateHeal();
+  G.savedAutoSlots = null;
+  G.healWasAuto = false;
 }
 
 // ── CLASS XP ──
@@ -2749,7 +2766,7 @@ function onEnemyDeath() {
   G._enemyDeathInProgress = true;
   G.combatActive = false;
   stopEnemyAutoAttack();
-  stopAllAutoSlots();
+  stopAllAutoSlots(true); // save=true so we can restore after wave
   stopStatusTick();
   // Capture enemy data before nulling
   const enemyGold = G.enemy.gold;
@@ -2899,7 +2916,7 @@ function emergencySpawn() {
   // Safety net — if no enemy present, force spawn
   if(!G.enemy || G.enemy.hp <= 0) {
     safeHide('spawn-btn');
-    document.getElementById('next-btn').classList.add('hidden');
+    setNextBtnActive(false);
     hidePotionBtn();
     if(!MAP.difficulty) {
       // No difficulty selected — show map
@@ -2916,24 +2933,42 @@ function safeShow(id) { const el=document.getElementById(id); if(el) el.classLis
 
 let autoWaveEnabled = false;
 
+function setNextBtnActive(active) {
+  const btn = document.getElementById('next-btn');
+  if(!btn) return;
+  btn.style.opacity = active ? '1' : '0.35';
+  btn.style.pointerEvents = active ? 'auto' : 'none';
+}
+
 function toggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
+  updateAutoWaveBtn();
+  if(autoWaveEnabled) {
+    // If next wave is available right now, fire it
+    const btn = document.getElementById('next-btn');
+    if(btn.style.pointerEvents !== 'none') nextWave();
+  }
+}
+
+function updateAutoWaveBtn() {
   const btn = document.getElementById('next-btn');
+  if(!btn) return;
   if(autoWaveEnabled) {
     btn.style.background = 'rgba(58,204,122,0.15)';
     btn.style.boxShadow = '0 0 10px rgba(58,204,122,0.4)';
+    btn.style.borderColor = 'var(--green)';
     btn.innerHTML = '<span class="btn-icon">▶</span>Auto ON';
-    nextWave();
   } else {
     btn.style.background = '';
     btn.style.boxShadow = '';
+    btn.style.borderColor = '';
     btn.innerHTML = '<span class="btn-icon">▶</span>Next Wave';
   }
 }
 
 function nextWave() {
-  stopAllAutoSlots();
-  document.getElementById('next-btn').classList.add('hidden');
+  stopAllAutoSlots(true); // save=true so slots restore on next enemy
+  setNextBtnActive(false);
   document.getElementById('boss-btn').classList.add('hidden');
   G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.1));
   updateHpBar();
@@ -3270,7 +3305,7 @@ function showItemModal(item, context){
   // Pause combat while inspecting gear
   if(G.combatActive && G.enemy) {
     stopEnemyAutoAttack();
-    stopAllAutoSlots();
+    stopAllAutoSlots(true);
   }
   const t = item.tier||item.rarity;
   const upgLv = item.upgradeLv || 0;
@@ -3501,6 +3536,7 @@ function closeItemModal(){
   }
   if(G.combatActive && G.enemy && G.enemy.hp > 0 && !G.enemyAttackInterval) {
     startEnemyAutoAttack();
+    setTimeout(restoreAutoSlots, 200);
   }
 }
 
@@ -3511,7 +3547,7 @@ const VENDOR_RESET_BASE_COST = 30;
 
 function openVendor(){
   stopEnemyAutoAttack();
-  stopAllAutoSlots();
+  stopAllAutoSlots(true);
   G.combatActive = false;
   vendorResetCount = 0;
   vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
@@ -3616,16 +3652,18 @@ function closeVendor(){
     MAP.segmentComplete = false;
     showMapScreen(false);
   } else if(MAP.difficulty === 'infinite') {
-    // In infinite mode, vendor closes and next wave begins
-    document.getElementById('next-btn').classList.remove('hidden');
+    setNextBtnActive(true);
     showPotionBtn();
+    if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
   } else {
     if(G.enemy && G.enemy.hp > 0){
       G.combatActive = true;
       startEnemyAutoAttack();
+      setTimeout(restoreAutoSlots, 200);
     } else {
-      document.getElementById('next-btn').classList.remove('hidden');
+      setNextBtnActive(true);
       if(G.wave>=3) document.getElementById('boss-btn').classList.remove('hidden');
+      if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
     }
   }
 }
@@ -5695,7 +5733,10 @@ function closeSPPopup() {
     spPhase = 'skill';
     setTimeout(() => triggerLevelUpPopup(), 300);
   } else {
-    if(G.combatActive && G.enemy && G.enemy.hp > 0) startEnemyAutoAttack();
+    if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+      startEnemyAutoAttack();
+      setTimeout(restoreAutoSlots, 200);
+    }
     saveGame();
   }
 }
