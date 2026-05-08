@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.0.5</title>
+<title>Elemental Rift v2.0.6</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -421,7 +421,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.5 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.0.6 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -2527,9 +2527,8 @@ function onEnemyDeath() {
     updateClassXPPanel();
     updateResourceBar();
     log(`<span style="color:#8888ff">🔮 Passive Skill Point earned! (${G.passivePoints} available)</span>`);
-
   }
-  log(`<span class="log-gold">💰 +${G.enemy.gold}g  ✨ +${xpGain} XP</span>`);
+  log(`<span class="log-gold">💰 +${enemyGold}g  ✨ +${xpGain} XP</span>`);
 
   // Loot drop on kill
   const dropChance = {easy:0.12,medium:0.18,hard:0.28}[MAP.difficulty||'easy']||0.15;
@@ -2542,7 +2541,6 @@ function onEnemyDeath() {
       setTimeout(()=>showItemModal(dropItem,'vendor_buy'),600);
     }
   }
-  G._enemyDeathInProgress = false;
   playSound('enemy_death');
   triggerScreenShake(5, 0.3);
   updateEnemyUI();
@@ -2555,7 +2553,7 @@ function onEnemyDeath() {
   syncMobileLog();
   drawArena();
   saveGame();
-
+  G._enemyDeathInProgress = false;
   onSegmentWaveComplete();
 }
 
