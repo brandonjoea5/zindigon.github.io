@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.3.2</title>
+<title>Elemental Rift v2.4.0</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -462,7 +462,7 @@ let sbProfile = null; // players row
 
     <!-- Version -->
     <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;
-      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.3.2</p>
+      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.4.0</p>
   </div>
 </div>
 
@@ -500,7 +500,7 @@ let sbProfile = null; // players row
   <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
   <div style="display:flex;gap:8px;width:100%;max-width:340px;">
     <button id="start-btn" onclick="startGame()" style="flex:2;">Begin Journey</button>
-    <button onclick="openTrinityShop()" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:12px 8px;border-radius:10px;border:1px solid #8855ff;background:rgba(136,85,255,0.1);color:#8855ff;cursor:pointer;">⚡ Trinity</button>
+    <button onclick="openTrinityShop()" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:12px 8px;border-radius:10px;border:1px solid #8855ff;background:rgba(136,85,255,0.1);color:#8855ff;cursor:pointer;">⚡ Cosmic</button>
   </div>
   <div style="width:100%;max-width:340px;margin-top:4px;">
     <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--muted);letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-transform:uppercase;">🏆 Top Scores</div>
@@ -511,7 +511,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.3.2 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.4.0 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -523,10 +523,21 @@ let sbProfile = null; // players row
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:480px;" id="class-cards"></div>
 </div>
 
-<!-- SKILL POINT POPUP -->
-<div id="sp-popup" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:180;display:flex;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#151a28;border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+<!-- LEVEL UP POPUP — batch invest mode -->
+<div id="sp-popup" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:180;display:flex;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#0d1018;border:1px solid #e8b84b44;border-radius:16px;padding:20px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;">
+    <!-- Points summary bar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+      <div style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--gold);">⬆ Level Up!</div>
+      <div style="display:flex;gap:10px;font-family:'Cinzel',serif;font-size:11px;">
+        <span id="sp-skill-count" style="color:#e8b84b;"></span>
+        <span id="sp-passive-count" style="color:#8888ff;"></span>
+      </div>
+    </div>
     <div id="sp-popup-content"></div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);text-align:center;">
+      <button onclick="closeSPPopup()" style="font-family:'Cinzel',serif;font-size:12px;padding:8px 24px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;">Close</button>
+    </div>
   </div>
 </div>
 
@@ -554,11 +565,11 @@ let sbProfile = null; // players row
       <div class="diff-loot" style="color:#ff4d1a;">Exquisite–Ancient loot</div>
       <div style="font-size:20px;margin-top:6px;">💀</div>
     </div>
-    <div class="diff-card" style="border-color:#8855ff;flex:1;min-width:130px;max-width:160px;" onclick="selectDifficulty('infinite')">
-      <div class="diff-title" style="color:#8855ff;">Infinite</div>
-      <div class="diff-waves" style="color:#aa77ff;">∞ Waves</div>
-      <div class="diff-loot" style="color:#aa77ff;">All tiers · Boss every wave</div>
-      <div style="font-size:20px;margin-top:6px;">⚡</div>
+    <div class="diff-card" style="border-color:#ff2266;flex:1;min-width:130px;max-width:160px;" onclick="selectDifficulty('extreme')">
+      <div class="diff-title" style="color:#ff2266;">Extreme</div>
+      <div class="diff-waves" style="color:#ff6688;">25 Waves</div>
+      <div class="diff-loot" style="color:#ff6688;">All tiers · Boss every 5 waves</div>
+      <div style="font-size:20px;margin-top:6px;">💀</div>
     </div>
   </div>
   <div style="font-size:12px;color:var(--muted);text-align:center;max-width:320px;">Final wave of each path has a chance to spawn a Boss with bonus rewards</div>
@@ -658,31 +669,9 @@ let sbProfile = null; // players row
   <button onclick="document.getElementById('account-menu').classList.add('hidden')" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;margin-top:6px;">Close</button>
 </div>
 
-<!-- TRINITY FORCE SHOP -->
+<!-- COSMIC ALIGNMENT / TRINITY FORCE MODAL -->
 <div id="trinity-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;">
-  <div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:#e8b84b;">⚡ Trinity Force</div>
-      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:12px;">✕ Close</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Permanent artifacts that empower every run. Only changeable from this menu.</div>
-
-    <!-- Orbs display -->
-    <div style="display:flex;align-items:center;justify-content:space-between;background:#0d1018;border-radius:8px;padding:8px 14px;margin-bottom:14px;">
-      <span style="font-family:'Cinzel',serif;font-size:12px;color:var(--muted);">Your Orbs</span>
-      <span style="font-family:'Cinzel',serif;font-size:18px;color:#8855ff;" id="trinity-orb-count">0 ✦</span>
-    </div>
-
-    <!-- Trinity slots -->
-    <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Your Trinity (3 slots)</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;" id="trinity-slots"></div>
-
-    <!-- Shop -->
-    <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">
-      Artifact Shop — Trinity Level <span id="trinity-level-display">0</span>
-    </div>
-    <div id="trinity-shop-items"></div>
-  </div>
+  <div id="trinity-modal-inner" style="background:#0d0f18;border:1px solid #e8b84b33;border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;"></div>
 </div>
 
 <!-- MAIN GAME -->
@@ -986,7 +975,7 @@ const STAT_LABELS = {
   freezeDuration:'Freeze Dur', electricDot:'Elec DOT', slowStrength:'Slow %'
 };
 const BASE_STATS = {
-  attack:18, atkSpeed:1.0, critChance:0, critDmg:150,
+  attack:18, atkSpeed:2.0, critChance:0, critDmg:150,
   defense:8, health:200, lifeSteal:0, spellVamp:0,
   cdr:0, mana:100, manaRegen:3,
   dotDamage:0, burnDuration:3, poisonDuration:4,
@@ -1214,6 +1203,7 @@ let G = {
   abilityLevels:{}, abilityCDs:{},
   loadout: [null, null, null, null],
   autoSlots: {},
+  lastManualFire: {}, // slotIdx -> timestamp of last manual fire
 };
 
 // ── TITLE SYSTEM ──
@@ -1337,7 +1327,7 @@ const DIFF_CONFIG = {
   easy:     { min:3,  max:3,  bossChance:0.3,  lootCap:'Great',     waveBonus:1.0 },
   medium:   { min:7,  max:7,  bossChance:0.55, lootCap:'Exquisite', waveBonus:1.4 },
   hard:     { min:15, max:15, bossChance:0.8,  lootCap:'Ancient',   waveBonus:2.0 },
-  infinite: { min:999, max:999, bossChance:1.0, lootCap:'Cosmic',   waveBonus:3.0 },
+  extreme:  { min:25,  max:25,  bossChance:1.0, lootCap:'Cosmic',   waveBonus:4.0, elitesOnly:true, bossEvery:5 },
 };
 
 let MAP = {
@@ -1368,7 +1358,7 @@ function showMapScreen(isFirst=false) {
 function selectDifficulty(diff) {
   const cfg = DIFF_CONFIG[diff];
   MAP.difficulty = diff;
-  MAP.totalWaves = diff === 'infinite' ? 999 : cfg.min;
+  MAP.totalWaves = cfg.min;
   MAP.currentSegWave = 0;
   MAP.isBossWave = false;
   MAP.segmentComplete = false;
@@ -1384,7 +1374,7 @@ function selectDifficulty(diff) {
       resizeCanvas();
       renderWaveTimeline();
       initUI();
-      const label = diff === 'infinite' ? '⚡ INFINITE mode — waves never end. Vendor every 5 waves.' : `${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.`;
+      const label = diff === 'extreme' ? '💀 EXTREME mode — 25 waves, elites only, boss every 5 waves!' : `${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.`;
       log(`<span class="log-sys">${label}</span>`);
       spawnNextSegmentWave();
     });
@@ -1395,22 +1385,21 @@ function renderWaveTimeline() {
   const tl = document.getElementById('wave-timeline');
   if(!tl) return;
   const diff = MAP.difficulty||'easy';
-  const diffColor = {easy:'#3acc7a',medium:'#e8b84b',hard:'#ff4d1a',infinite:'#8855ff'}[diff]||'#8855ff';
+  const diffColor = {easy:'#3acc7a',medium:'#e8b84b',hard:'#ff4d1a',extreme:'#ff2266'}[diff]||'#ff2266';
 
-  if(diff === 'infinite') {
-    // Show a rolling window of 8 waves around current position
+  if(diff === 'extreme') {
+    // Show extreme with boss markers every 5 waves
     const cur = MAP.currentSegWave;
-    const start = Math.max(1, cur - 3);
-    const end = start + 7;
-    let html = `<span class="wt-diff-label" style="color:${diffColor}">∞ WAVE ${cur}</span>`;
-    for(let i=start;i<=end;i++){
+    const total = MAP.totalWaves;
+    let html = `<span class="wt-diff-label" style="color:${diffColor}">EXTREME</span>`;
+    for(let i=1;i<=total;i++){
       const isBoss = i % 5 === 0;
       const isDone = i < cur;
       const isCurrent = i === cur;
       const nodeClass = `wt-node${isBoss?' boss-node':''}${isDone?' done':''}${isCurrent?' current':''}`;
       const label = isBoss ? '💀' : i;
       html += `<div class="${nodeClass}">${label}</div>`;
-      if(i<end) html += `<div class="wt-connector${isDone?' done':''}"></div>`;
+      if(i<total) html += `<div class="wt-connector${isDone?' done':''}"></div>`;
     }
     tl.innerHTML = html;
     return;
@@ -1434,8 +1423,8 @@ function renderWaveTimeline() {
 function spawnNextSegmentWave() {
   MAP.currentSegWave++;
   G.wave = MAP.currentSegWave;
-  MAP.isBossWave = MAP.difficulty === 'infinite'
-    ? (MAP.currentSegWave % 5 === 0) // every 5th wave in infinite
+  MAP.isBossWave = MAP.difficulty === 'extreme'
+    ? (MAP.currentSegWave % 5 === 0)
     : MAP.currentSegWave === MAP.totalWaves;
   renderWaveTimeline();
 
@@ -1502,24 +1491,22 @@ function skipWaveBoss() {
 }
 
 function onSegmentWaveComplete() {
-  const isInfinite = MAP.difficulty === 'infinite';
-  const pathDone = !isInfinite && MAP.currentSegWave >= MAP.totalWaves;
-  const infiniteVendor = isInfinite && MAP.currentSegWave % 5 === 0;
+  const isExtreme = MAP.difficulty === 'extreme';
+  const pathDone = MAP.currentSegWave >= MAP.totalWaves;
+  const extremeVendor = isExtreme && MAP.currentSegWave % 5 === 0 && !pathDone;
 
-  if(pathDone || infiniteVendor) {
-    MAP.segmentComplete = !isInfinite;
+  if(pathDone || extremeVendor) {
+    MAP.segmentComplete = pathDone;
     if(MAP.pendingBoss) {
       MAP.pendingBoss = false;
       showWaveBossPrompt();
     } else {
-      const msg = isInfinite
-        ? `✅ Wave ${MAP.currentSegWave} complete! Merchant incoming...`
-        : `✅ ${MAP.difficulty} path complete! Vendor incoming...`;
+      const msg = `✅ ${MAP.difficulty} path ${pathDone ? 'complete' : `wave ${MAP.currentSegWave}`}! Vendor incoming...`;
       log(`<span class="log-sys">${msg}</span>`);
       setTimeout(()=>{ openVendor(); }, 500);
     }
   } else {
-    log(`<span class="log-sys">Wave ${MAP.currentSegWave}${isInfinite ? '' : '/'+MAP.totalWaves} complete.</span>`);
+    log(`<span class="log-sys">Wave ${MAP.currentSegWave}${MAP.difficulty==='extreme'?'':'/'+MAP.totalWaves} complete.</span>`);
     setNextBtnActive(true);
     showPotionBtn();
     if(G.wave >= 3) setBossBtnActive(true);
@@ -1646,9 +1633,22 @@ function resumeFromSave() {
 function getStats() {
   let s = {...G.baseStats};
 
-  // Trinity artifact bonuses
-  const trinityBonuses = getArtifactBonuses();
-  Object.entries(trinityBonuses).forEach(([k,v]) => { s[k] = (s[k]||0) + v; });
+  // Trinity Force bonuses
+  const tb = getTrinityBonuses();
+  // Flat stat bonuses
+  const flatKeys = Object.keys(tb).filter(k => !k.startsWith('_'));
+  flatKeys.forEach(k => { s[k] = (s[k]||0) + tb[k]; });
+  // Percentage bonuses per stat
+  if(tb._pct) Object.entries(tb._pct).forEach(([k,pct]) => { s[k] = (s[k]||0) * (1 + pct); });
+  // All-stats percentage
+  if(tb._allPct) Object.keys(s).forEach(k => { if(typeof s[k]==='number') s[k] *= (1 + tb._allPct); });
+  // Stat multipliers (e.g. spellVamp 2x)
+  if(tb._mult) Object.entries(tb._mult).forEach(([k,m]) => { s[k] = (s[k]||0) * m; });
+  // Resonance bonus — +15% all stats if class+imbue match alignment
+  const align = TRINITY_ALIGNMENTS[trinityData.alignment];
+  if(align && align.resonance && G.playerClass === align.resonance.class && G.playerImbue === align.resonance.imbue) {
+    Object.keys(s).forEach(k => { if(typeof s[k]==='number') s[k] *= 1.15; });
+  }
 
   // Equipment bonuses
   Object.values(G.equipment).forEach(item => {
@@ -1670,7 +1670,7 @@ function getStats() {
     s.health  = (s.health||200) + (G.classLv['warrior']||0) * 8;
   }
   if(G.playerClass === 'rogue') {
-    s.atkSpeed = (s.atkSpeed||1.0) + (G.classLv['rogue']||0) * 0.03;
+    s.atkSpeed = (s.atkSpeed||2.0) + (G.classLv['rogue']||0) * 0.05;
   }
   if(G.playerClass === 'mage') {
     s.spellVamp = (s.spellVamp||0) + (G.classLv['mage']||0) * 0.2;
@@ -2184,7 +2184,8 @@ function fireAbility(ab) {
   const seMult = getSEMultiplier(ab.imbue||ab.class, G.enemy);
   const isCrit = Math.random()*100 < (st.critChance + (ab.bonusCrit||0));
   const critMult = isCrit ? st.critDmg/100 : 1.0;
-  const defenseReduction = Math.min(0.70, (G.enemy.defense||0) * 0.008);
+  const baseDR = Math.min(getDRCap(), (G.enemy.defense||0) * 0.008);
+  const defenseReduction = baseDR;
   const armorPen = ab.armorPen||0;
   const hits = ab.hits||1;
 
@@ -2208,7 +2209,7 @@ function fireAbility(ab) {
   let healAmt = stealPct>0 ? Math.max(1,Math.ceil(totalDmg*stealPct/100)) : 0;
   if(ab.healPct) healAmt += Math.max(1, Math.ceil(totalDmg * ab.healPct/100));
   if(ab.flatHeal) healAmt += ab.flatHeal;
-  if(healAmt>0){ G.hp=Math.min(G.maxHp,G.hp+healAmt); updateHpBar(); }
+  if(healAmt>0){ const hpCap=G.maxHp*(1+getOverhealCap()); G.hp=Math.min(hpCap,G.hp+healAmt); updateHpBar(); }
 
   // Set cooldown
   if(ab.type!=='basic'){
@@ -2320,11 +2321,65 @@ function fireAbility(ab) {
   // Track run stats
   G.runStats.totalDmg += totalDmg;
   if(totalDmg > G.runStats.bestHit) G.runStats.bestHit = totalDmg;
+  trinityEarnXP(totalDmg);
   G.runStats.imbueUses[G.playerImbue||ab.class] = (G.runStats.imbueUses[G.playerImbue||ab.class]||0) + 1;
+
+  // Shadow Clone attack (Rogue Trinity node)
+  if(G.playerClass === 'rogue') {
+    const cloneConfig = getCloneConfig();
+    if(cloneConfig && G.enemy && G.enemy.hp > 0) {
+      const cloneCount = cloneConfig.count || 1;
+      for(let c = 0; c < cloneCount; c++) {
+        const cloneCrit = cloneConfig.canCrit && Math.random()*100 < (st.critChance||0);
+        const cloneMult = cloneConfig.dmgPct * (cloneCrit ? st.critDmg/100 : 1.0);
+        const cloneDmg = Math.max(1, Math.floor(totalDmg * cloneMult));
+        G.enemy.hp -= cloneDmg;
+        if(G.inBoss) G.bossDmgDealt += cloneDmg;
+        // Clone DOT
+        if(cloneConfig.canDot && G.enemy.hp > 0 && ab.applyEffect) {
+          applyImbueEffect(G.enemy, ab.applyEffect, st, 1);
+        }
+        // Clone visual — shaded version offset
+        const cloneOffsetX = (c === 0 ? 40 : 70);
+        spawnDamageNumber(
+          canvas.width*0.25 - cloneOffsetX + (Math.random()-.5)*15,
+          canvas.height*0.62 - 30 - c*20,
+          cloneDmg, cloneCrit, false, '#8855ff'
+        );
+        combatLog(`👤 Clone ${cloneDmg}${cloneCrit?' CRIT':''}`, 'dmg-out');
+      }
+    }
+  }
+
+  // Mutations
+  if(hasMutation('fireball_split') && ab.imbue === 'fire' && G.enemy && G.enemy.hp > 0) {
+    const splitDmg = Math.floor(totalDmg * 0.50);
+    G.enemy.hp -= splitDmg;
+    if(G.inBoss) G.bossDmgDealt += splitDmg;
+    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-50, splitDmg, false, false, '#ff6633');
+  }
+  if(hasMutation('arcane_echo') && ab.isMagic && Math.random() < 0.15 && G.enemy && G.enemy.hp > 0) {
+    const echoDmg = Math.floor(totalDmg * 0.60);
+    G.enemy.hp -= echoDmg;
+    if(G.inBoss) G.bossDmgDealt += echoDmg;
+    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-55, echoDmg, false, false, '#aa77ff');
+    combatLog(`🔮 Echo ${echoDmg}`, 'se');
+  }
+  if(hasMutation('wild_magic') && Math.random() < 0.10 && G.enemy && G.enemy.hp > 0) {
+    const wildDmg = Math.floor(totalDmg * 3);
+    G.enemy.hp -= wildDmg;
+    if(G.inBoss) G.bossDmgDealt += wildDmg;
+    spawnDamageNumber(ex+(Math.random()-.5)*25, ey-60, wildDmg, true, false, '#e8b84b');
+    combatLog(`🎲 Wild Magic ${wildDmg}!`, 'crit');
+  }
+  if(hasMutation('execute') && G.enemy && G.enemy.hp > 0 && G.enemy.hp < G.enemy.maxHp * 0.20) {
+    const execBonus = Math.floor(totalDmg * 0.50);
+    G.enemy.hp -= execBonus;
+    if(G.inBoss) G.bossDmgDealt += execBonus;
+  }
 
   if(G.enemy.hp<=0){
     if(G.inBoss){
-      // Leaderboard boss — infinite HP, never dies
       G.enemy.hp = G.enemy.maxHp;
       updateEnemyUI();
     } else if(G.enemy.type==='boss'){
@@ -2354,35 +2409,52 @@ function activateAbility(slotIdx) {
 
   // ALL slots toggle — tap to activate auto, tap again to deactivate
   if(G.autoSlots[slotIdx]){
-    // Turn OFF
-    clearInterval(G.autoSlots[slotIdx]);
+    // Turn OFF auto
+    const handle = G.autoSlots[slotIdx];
+    if(handle && handle !== true) { clearInterval(handle); clearTimeout(handle); }
     delete G.autoSlots[slotIdx];
     updateLoadoutUI();
     return;
   }
 
   // Turn ON — fire immediately if ready, then loop
+  // For basic attacks: rate-limit the initial fire to atkSpeed interval
   if(isAbilityReady(ab)) {
-    fireAbility(ab);
-    if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+    if(ab.type === 'basic') {
+      // Rate-limit manual taps to same speed as auto — no advantage from spamming
+      const now = Date.now();
+      const ms = Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0)));
+      const last = G.lastManualFire[slotIdx] || 0;
+      if(now - last >= ms) {
+        G.lastManualFire[slotIdx] = now;
+        fireAbility(ab);
+      }
+    } else {
+      fireAbility(ab);
+      startCDBarAnimation(slotIdx, ab);
+    }
   }
 
   if(ab.type === 'basic') {
     // Self-scheduling setTimeout — recalculates attack speed on every hit
     function scheduleNextBasic() {
       if(!G.autoSlots[slotIdx]) return;
-      const ms = Math.max(150, Math.floor(1000 / (getStats().atkSpeed || 1.0)));
+      const ms = Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0)));
+      // Schedule next tick first — fire() latency won't stack onto the interval
       G.autoSlots[slotIdx] = setTimeout(() => {
+        scheduleNextBasic(); // schedule next BEFORE firing
         if(!G.combatActive || !G.enemy) {
+          clearTimeout(G.autoSlots[slotIdx]);
           delete G.autoSlots[slotIdx];
           updateLoadoutUI();
           return;
         }
         fireAbility(ab);
-        scheduleNextBasic();
       }, ms);
     }
-    G.autoSlots[slotIdx] = true; // mark slot as active
+    G.autoSlots[slotIdx] = true;
+    // Fire immediately on activation, then start the loop
+    if(G.combatActive && G.enemy) fireAbility(ab);
     scheduleNextBasic();
   } else {
     // Skills/ults poll every 250ms — CD system handles their timing
@@ -2458,14 +2530,15 @@ function restoreAutoSlots() {
     if(ab.type === 'basic') {
       function scheduleRestoreBasic() {
         if(!G.autoSlots[slotIdx]) return;
-        const ms = Math.max(150, Math.floor(1000 / (getStats().atkSpeed || 1.0)));
+        const ms = Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0)));
         G.autoSlots[slotIdx] = setTimeout(() => {
+          scheduleRestoreBasic();
           if(!G.combatActive || !G.enemy){ delete G.autoSlots[slotIdx]; updateLoadoutUI(); return; }
           fireAbility(ab);
-          scheduleRestoreBasic();
         }, ms);
       }
       G.autoSlots[slotIdx] = true;
+      if(G.combatActive && G.enemy) fireAbility(ab);
       scheduleRestoreBasic();
     } else {
       startCDBarAnimation(slotIdx, ab);
@@ -2786,67 +2859,156 @@ const BOSS_MILESTONES = [
 
 
 // ═══════════════════════════════════════════════
-// TRINITY FORCE SYSTEM
+// TRINITY FORCE — COSMIC ALIGNMENT SYSTEM
 // ═══════════════════════════════════════════════
-const TRINITY_TIER_UNLOCK = { Basic:0, Great:3, Exquisite:8, Ancient:15, Cosmic:25 };
 
-const ARTIFACT_STAT_POOLS = [
-  { key:'attack',      label:'Attack',       icon:'⚔️',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
-  { key:'defense',     label:'Defense',      icon:'🛡️',  per:{ Basic:2, Great:4, Exquisite:7, Ancient:12, Cosmic:20 } },
-  { key:'dotDamage',   label:'DOT Damage',   icon:'☠️',  per:{ Basic:1, Great:2, Exquisite:4, Ancient:7,  Cosmic:12  } },
-  { key:'health',      label:'Max HP',       icon:'❤️',  per:{ Basic:8, Great:18, Exquisite:35, Ancient:60, Cosmic:100 } },
-  { key:'mana',        label:'Max Mana',     icon:'💧',  per:{ Basic:5, Great:12, Exquisite:22, Ancient:40, Cosmic:70 } },
-  { key:'critChance',  label:'Crit Chance',  icon:'🎯',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
-  { key:'critDmg',     label:'Crit Damage',  icon:'💥',  per:{ Basic:5, Great:10, Exquisite:18, Ancient:30, Cosmic:50 } },
-  { key:'armor',       label:'Armor',        icon:'🛡️',  per:{ Basic:2, Great:4, Exquisite:8, Ancient:14, Cosmic:22 } },
-  { key:'lifeSteal',   label:'Life Steal',   icon:'🩸',  per:{ Basic:0.1, Great:0.3, Exquisite:0.6, Ancient:1.0, Cosmic:1.8 } },
-  { key:'manaRegen',   label:'Mana Regen',   icon:'💦',  per:{ Basic:0.5, Great:1.0, Exquisite:1.8, Ancient:3.0, Cosmic:5.0 } },
-  { key:'cdr',         label:'CDR',          icon:'⏱️',  per:{ Basic:1, Great:2, Exquisite:4, Ancient:7, Cosmic:12 } },
+const TRINITY_ALIGNMENTS = {
+  inferno: { id:'inferno', name:'Inferno', icon:'🔥', color:'#ff4d1a', desc:'Masters of fire and destruction. Amplifies Mage fire builds.', resonance:{ class:'mage', imbue:'fire' } },
+  storm:   { id:'storm',   name:'Storm',   icon:'⚡', color:'#ffdd00', desc:'Lightning speed and chain damage. Amplifies Rogue electric builds.', resonance:{ class:'rogue', imbue:'electric' } },
+  void:    { id:'void',    name:'Void',    icon:'💀', color:'#aa55ff', desc:'Poison and shadow. Amplifies Rogue poison builds.', resonance:{ class:'rogue', imbue:'poison' } },
+  nature:  { id:'nature',  name:'Nature',  icon:'🌿', color:'#3dcc5a', desc:'Life and growth. Amplifies Grass Mage builds.', resonance:{ class:'mage', imbue:'grass' } },
+  order:   { id:'order',   name:'Order',   icon:'❄️', color:'#88eeff', desc:'Ice and defense. Amplifies Warrior ice builds.', resonance:{ class:'warrior', imbue:'ice' } },
+  chaos:   { id:'chaos',   name:'Chaos',   icon:'🌀', color:'#e8b84b', desc:'Unpredictable power. Bonuses apply to ALL classes.', resonance:null },
+};
+
+const TRINITY_NODES = {
+  // MAGE PATH A — Grey/White/Apex Wizard progression
+  mage_path_a1: { id:'mage_path_a1', name:'Arcane Surge',    icon:'✨', cost:5,  classPath:'mage', path:'A', desc:'All mage spells deal +12% damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.12 } },
+  mage_path_a2: { id:'mage_path_a2', name:'Grey Wizard I',   icon:'🌫️', cost:10, classPath:'mage', path:'A', desc:'Unlock Grey Wizard. +20% damage, mana costs -15%.', effect:{ type:'tier', tier:'grey_wizard' }, requires:'mage_path_a1' },
+  mage_path_a3: { id:'mage_path_a3', name:'Grey Wizard II',  icon:'🌫️', cost:15, classPath:'mage', path:'A', desc:'+25% damage. Overheal up to 10% max HP.', effect:{ type:'overheal', cap:0.10 }, requires:'mage_path_a2' },
+  mage_path_a4: { id:'mage_path_a4', name:'White Wizard I',  icon:'⭐', cost:22, classPath:'mage', path:'A', desc:'Ascend to White Wizard. +40% damage, overheal 50%.', effect:{ type:'overheal', cap:0.50 }, requires:'mage_path_a3' },
+  mage_path_a5: { id:'mage_path_a5', name:'White Wizard II', icon:'💫', cost:30, classPath:'mage', path:'A', desc:'+60% damage, overheal 150%. Spells can echo.', effect:{ type:'overheal', cap:1.50 }, requires:'mage_path_a4' },
+  mage_path_a6: { id:'mage_path_a6', name:'Apex Wizard',     icon:'🌟', cost:40, classPath:'mage', path:'A', desc:'+80% damage, overheal 300%. Ultimates free.', effect:{ type:'overheal', cap:3.00 }, requires:'mage_path_a5' },
+  // MAGE PATH B — Spell Echo / Mana mastery
+  mage_path_b1: { id:'mage_path_b1', name:'Vamp Mastery',    icon:'💜', cost:5,  classPath:'mage', path:'B', desc:'Spell vamp 50% more effective.', effect:{ type:'stat_mult', stat:'spellVamp', mult:1.5 } },
+  mage_path_b2: { id:'mage_path_b2', name:'Mana Overflow',   icon:'💧', cost:10, classPath:'mage', path:'B', desc:'+50 mana, mana regen doubles.', effect:{ type:'stat_flat', stats:{ mana:50, manaRegen:5 } }, requires:'mage_path_b1' },
+  mage_path_b3: { id:'mage_path_b3', name:'Arcane Echo',     icon:'🔮', cost:15, classPath:'mage', path:'B', desc:'15% chance any spell fires twice at 50% power.', effect:{ type:'mutation_node', id:'arcane_echo' }, requires:'mage_path_b2' },
+  mage_path_b4: { id:'mage_path_b4', name:'Chain Spell',     icon:'⛓️', cost:22, classPath:'mage', path:'B', desc:'Ultimates chain — deal 40% damage again.', effect:{ type:'mutation_node', id:'chain_spell' }, requires:'mage_path_b3' },
+  // WARRIOR PATH A — Thorns / Tank
+  warr_path_a1: { id:'warr_path_a1', name:'Iron Skin',       icon:'🛡️', cost:5,  classPath:'warrior', path:'A', desc:'+15% defense permanently.', effect:{ type:'stat_pct', stat:'defense', pct:0.15 } },
+  warr_path_a2: { id:'warr_path_a2', name:'Thorns I',        icon:'🌵', cost:10, classPath:'warrior', path:'A', desc:'Reflect 15% incoming damage back.', effect:{ type:'thorns', pct:0.15 }, requires:'warr_path_a1' },
+  warr_path_a3: { id:'warr_path_a3', name:'Thorns II',       icon:'🌵', cost:15, classPath:'warrior', path:'A', desc:'Thorns 25%, +25% defense.', effect:{ type:'thorns', pct:0.25 }, requires:'warr_path_a2' },
+  warr_path_a4: { id:'warr_path_a4', name:'Fortress',        icon:'🏰', cost:22, classPath:'warrior', path:'A', desc:'DR cap raised to 80%. Thorns 40%.', effect:{ type:'thorns', pct:0.40, dr_cap:0.80 }, requires:'warr_path_a3' },
+  warr_path_a5: { id:'warr_path_a5', name:'Colossus',        icon:'🗿', cost:30, classPath:'warrior', path:'A', desc:'+100HP, DR cap 85%, Thorns 50%.', effect:{ type:'thorns', pct:0.50, dr_cap:0.85 }, requires:'warr_path_a4' },
+  warr_path_a6: { id:'warr_path_a6', name:'Undying',         icon:'☠️', cost:40, classPath:'warrior', path:'A', desc:'Survive 1 killing blow per run at 1HP. Thorns 60%, DR 90%.', effect:{ type:'thorns', pct:0.60, dr_cap:0.90, undying:true }, requires:'warr_path_a5' },
+  // WARRIOR PATH B — Shockwave / Berserker
+  warr_path_b1: { id:'warr_path_b1', name:'Warlord',         icon:'⚔️', cost:5,  classPath:'warrior', path:'B', desc:'+15% attack. Life steal +1%.', effect:{ type:'stat_flat', stats:{ lifeSteal:1 }, pct:{ attack:0.15 } } },
+  warr_path_b2: { id:'warr_path_b2', name:'Shockwave',       icon:'💥', cost:10, classPath:'warrior', path:'B', desc:'Every 5th hit releases a 200% damage shockwave.', effect:{ type:'mutation_node', id:'shockwave', every:5 }, requires:'warr_path_b1' },
+  warr_path_b3: { id:'warr_path_b3', name:'Battle Hardened', icon:'🩸', cost:15, classPath:'warrior', path:'B', desc:'Life steal 2x effective. +10% attack.', effect:{ type:'stat_mult', stat:'lifeSteal', mult:2.0 }, requires:'warr_path_b2' },
+  warr_path_b4: { id:'warr_path_b4', name:'Berserker',       icon:'🔥', cost:22, classPath:'warrior', path:'B', desc:'Below 30% HP: +50% attack speed, +30% damage.', effect:{ type:'mutation_node', id:'berserker' }, requires:'warr_path_b3' },
+  // ROGUE PATH A — Shadow Clone
+  rogue_path_a1: { id:'rogue_path_a1', name:'Shadow Step',   icon:'👤', cost:5,  classPath:'rogue', path:'A', desc:'+20% attack speed. +5% crit.', effect:{ type:'stat_flat', stats:{ atkSpeed:0.4, critChance:5 } } },
+  rogue_path_a2: { id:'rogue_path_a2', name:'Clone I',       icon:'🌑', cost:10, classPath:'rogue', path:'A', desc:'Shadow Clone deals 30% damage. No crit/DOT yet.', effect:{ type:'clone', dmgPct:0.30, canCrit:false, canDot:false, count:1 }, requires:'rogue_path_a1' },
+  rogue_path_a3: { id:'rogue_path_a3', name:'Clone: Crit',   icon:'🌑', cost:15, classPath:'rogue', path:'A', desc:'Clone can now crit. Damage 50%.', effect:{ type:'clone', dmgPct:0.50, canCrit:true, canDot:false, count:1 }, requires:'rogue_path_a2' },
+  rogue_path_a4: { id:'rogue_path_a4', name:'Clone: DOT',    icon:'🌑', cost:22, classPath:'rogue', path:'A', desc:'Clone applies imbue DOTs. Damage 65%.', effect:{ type:'clone', dmgPct:0.65, canCrit:true, canDot:true, count:1 }, requires:'rogue_path_a3' },
+  rogue_path_a5: { id:'rogue_path_a5', name:'Twin Clones',   icon:'👥', cost:30, classPath:'rogue', path:'A', desc:'Second Clone. Both at 65%. Combined +130% DPS.', effect:{ type:'clone', dmgPct:0.65, canCrit:true, canDot:true, count:2 }, requires:'rogue_path_a4' },
+  rogue_path_a6: { id:'rogue_path_a6', name:'Clone Mastery', icon:'👥', cost:40, classPath:'rogue', path:'A', desc:'Both clones reach 85%. Clones match your attack speed.', effect:{ type:'clone', dmgPct:0.85, canCrit:true, canDot:true, count:2, matchSpeed:true }, requires:'rogue_path_a5' },
+  // ROGUE PATH B — Assassin / Execute
+  rogue_path_b1: { id:'rogue_path_b1', name:'Assassin',      icon:'🗡️', cost:5,  classPath:'rogue', path:'B', desc:'+10% crit damage, +8% crit chance.', effect:{ type:'stat_flat', stats:{ critDmg:10, critChance:8 } } },
+  rogue_path_b2: { id:'rogue_path_b2', name:'Execute',       icon:'💀', cost:10, classPath:'rogue', path:'B', desc:'Enemies <20% HP take 50% more damage.', effect:{ type:'mutation_node', id:'execute' }, requires:'rogue_path_b1' },
+  rogue_path_b3: { id:'rogue_path_b3', name:'Hemorrhage',    icon:'🩸', cost:15, classPath:'rogue', path:'B', desc:'Crits apply Hemorrhage — enemy takes +20% damage for 4s.', effect:{ type:'mutation_node', id:'hemorrhage' }, requires:'rogue_path_b2' },
+  rogue_path_b4: { id:'rogue_path_b4', name:'One Shot',      icon:'⚡', cost:22, classPath:'rogue', path:'B', desc:'+25% crit damage. 10% chance crits deal 5x damage.', effect:{ type:'mutation_node', id:'one_shot', chance:0.10, mult:5 }, requires:'rogue_path_b3' },
+  // CHAOS PATHS (any class)
+  chaos_1: { id:'chaos_1', name:'Chaotic Power', icon:'🌀', cost:5,  classPath:'chaos', path:'C', desc:'+8% ALL stats.', effect:{ type:'all_stats_pct', pct:0.08 } },
+  chaos_2: { id:'chaos_2', name:'Wild Magic',    icon:'🎲', cost:10, classPath:'chaos', path:'C', desc:'10% chance on hit to deal 3x damage.', effect:{ type:'mutation_node', id:'wild_magic', chance:0.10, mult:3 }, requires:'chaos_1' },
+  chaos_3: { id:'chaos_3', name:'Entropy',       icon:'💫', cost:15, classPath:'chaos', path:'C', desc:'+15% all stats. 15% crit chance to reset all CDs.', effect:{ type:'mutation_node', id:'entropy', all_stats_pct:0.15 }, requires:'chaos_2' },
+  chaos_4: { id:'chaos_4', name:'Singularity',   icon:'⚫', cost:25, classPath:'chaos', path:'C', desc:'First hit on each enemy is guaranteed crit. +20% all stats.', effect:{ type:'mutation_node', id:'singularity', all_stats_pct:0.20 }, requires:'chaos_3' },
+};
+
+const TRINITY_MUTATIONS = [
+  { id:'fireball_split',    name:'Fireball Split',  icon:'🔥', desc:'Fire spells split, dealing 50% damage again on impact.' },
+  { id:'poison_spread',     name:'Plague Vector',   icon:'☠️', desc:'Poisoned enemy death spreads full Poison stacks to next enemy.' },
+  { id:'ice_shatter',       name:'Ice Shatter',     icon:'❄️', desc:'Killing a frozen enemy explodes them for 200% max HP as AOE.' },
+  { id:'shockwave',         name:'Earthshaker',     icon:'💥', desc:'Every 5th warrior auto releases a 200% damage shockwave.' },
+  { id:'arcane_echo',       name:'Arcane Echo',     icon:'🔮', desc:'15% chance any mage spell fires again at 60% power.' },
+  { id:'chain_lightning',   name:'Chain Lightning', icon:'⚡', desc:'Electric hits chain to deal 50% damage to a second target.' },
+  { id:'execute',           name:'Execute',         icon:'💀', desc:'Enemies below 20% HP take 50% more damage from you.' },
+  { id:'wild_magic',        name:'Wild Magic',      icon:'🎲', desc:'10% chance each hit deals 3x damage.' },
 ];
 
-const ARTIFACT_TIER_COLORS = {
-  Basic:'#aaaaaa', Great:'#3acc7a', Exquisite:'#2196f3', Ancient:'#ff4444', Cosmic:'#e8b84b'
-};
-
-const ARTIFACT_ORB_COST = { Basic:10, Great:30, Exquisite:80, Ancient:200, Cosmic:500 };
-
-// Trinity state (loaded from Supabase)
+// ── TRINITY STATE ──
 let trinityData = {
-  orbs: 0,
-  trinity_level: 0,
-  slot1: null,
-  slot2: null,
-  slot3: null
+  rank: 0,
+  rankXP: 0,
+  alignment: null,
+  classEnhancement: null,
+  unlockedNodes: [],
+  mutations: [],
+  ascensionCount: 0,
+  totalDmgDealt: 0,
+  ascensionBoosts: [],   // accumulated per-season stat boosts from ascensions
 };
 
-function rollArtifact(tierName) {
-  const pool = [...ARTIFACT_STAT_POOLS];
-  // Shuffle
-  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
-  // Pick 1-2 stats based on tier
-  const count = tierName === 'Basic' ? 1 : tierName === 'Great' ? 1 : tierName === 'Exquisite' ? 2 : tierName === 'Ancient' ? 2 : 3;
-  const stats = {};
-  for(let i=0;i<Math.min(count,pool.length);i++) {
-    const s = pool[i];
-    stats[s.key] = s.per[tierName];
+const TRINITY_RANK_XP_PER_LEVEL = 50000;
+const TRINITY_ORB_THRESHOLD = 10000;
+
+// ── TRINITY NODE BONUSES → feed into getStats() ──
+function getTrinityBonuses() {
+  const bonuses = {};
+  if(!trinityData.unlockedNodes) return bonuses;
+
+  trinityData.unlockedNodes.forEach(nodeId => {
+    const node = TRINITY_NODES[nodeId];
+    if(!node) return;
+    const e = node.effect;
+    if(e.type === 'stat_flat' && e.stats) {
+      Object.entries(e.stats).forEach(([k,v]) => { bonuses[k] = (bonuses[k]||0) + v; });
+    }
+    if(e.type === 'stat_pct' && e.stat) {
+      // Percentage bonuses stored separately, applied in getStats
+      if(!bonuses._pct) bonuses._pct = {};
+      bonuses._pct[e.stat] = (bonuses._pct[e.stat]||0) + e.pct;
+    }
+    if(e.type === 'all_stats_pct') {
+      if(!bonuses._allPct) bonuses._allPct = 0;
+      bonuses._allPct += e.pct;
+    }
+    if(e.type === 'stat_mult' && e.stat) {
+      if(!bonuses._mult) bonuses._mult = {};
+      bonuses._mult[e.stat] = (bonuses._mult[e.stat]||1) * e.mult;
+    }
+    if(e.type === 'thorns') {
+      bonuses._thorns = Math.max(bonuses._thorns||0, e.pct);
+      if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap);
+    }
+    if(e.type === 'overheal') {
+      bonuses._overhealCap = Math.max(bonuses._overhealCap||0, e.cap);
+    }
+  });
+
+  // Ascension boosts (permanent for this season)
+  if(trinityData.ascensionBoosts) {
+    trinityData.ascensionBoosts.forEach(boost => {
+      bonuses[boost.stat] = (bonuses[boost.stat]||0) + boost.amount;
+    });
   }
-  return {
-    tier: tierName,
-    color: ARTIFACT_TIER_COLORS[tierName],
-    stats,
-    id: Date.now() + '_' + Math.random().toString(36).substr(2,6)
-  };
+
+  return bonuses;
 }
 
-function getArtifactBonuses() {
-  const bonuses = {};
-  [trinityData.slot1, trinityData.slot2, trinityData.slot3].forEach(art => {
-    if(!art || !art.stats) return;
-    Object.entries(art.stats).forEach(([k,v]) => {
-      bonuses[k] = (bonuses[k]||0) + v;
-    });
-  });
-  return bonuses;
+// Shorthand to check if a node effect is active
+function hasTrinityNode(nodeId) {
+  return trinityData.unlockedNodes && trinityData.unlockedNodes.includes(nodeId);
+}
+function getCloneConfig() {
+  // Find highest clone node unlocked
+  const cloneNodes = ['rogue_path_a6','rogue_path_a5','rogue_path_a4','rogue_path_a3','rogue_path_a2'];
+  for(const id of cloneNodes) {
+    if(hasTrinityNode(id)) return TRINITY_NODES[id].effect;
+  }
+  return null;
+}
+function getThorns() {
+  const b = getTrinityBonuses();
+  return b._thorns || 0;
+}
+function getOverhealCap() {
+  const b = getTrinityBonuses();
+  return b._overhealCap || 0;
+}
+function getDRCap() {
+  const b = getTrinityBonuses();
+  return b._dr_cap || 0.70;
 }
 
 // ── MANA COSTS ──
@@ -2913,6 +3075,30 @@ function enemyAttack() {
   const finalDmg = rawDmg * (1 - warriorDR);
   const dmg = Math.max(1, Math.floor(finalDmg + (Math.random()*3-1.5)));
   G.hp-=dmg;
+  // Thorns — reflect damage back
+  const thornsPct = getThorns();
+  if(thornsPct > 0 && G.enemy && G.enemy.hp > 0) {
+    const thornsDmg = Math.floor(dmg * thornsPct);
+    G.enemy.hp -= thornsDmg;
+    if(thornsDmg > 0) spawnDamageNumber(
+      canvas.width*0.72+(Math.random()-.5)*15, canvas.height*0.60-30,
+      thornsDmg, false, false, '#88cc00'
+    );
+  }
+  // Berserker mutation — below 30% HP bonus
+  if(hasMutation('berserker') && G.hp < G.maxHp * 0.30) {
+    if(!G.berserkerActive) {
+      G.berserkerActive = true;
+      applyBuff('berserker', 'attack', 0, 999999, '🔥', 'Berserker');
+      applyBuff('berserker_spd', 'atkSpeed', 0, 999999, '🔥', '');
+      const st2 = getStats();
+      G.buffs['berserker'] = { stat:'attack', amount: Math.floor(st2.attack*0.30), expiresAt: Date.now()+999999, icon:'🔥', label:'Berserker' };
+      G.buffs['berserker_spd'] = { stat:'atkSpeed', amount: st2.atkSpeed*0.50, expiresAt: Date.now()+999999, icon:'🔥', label:'' };
+    }
+  } else if(G.berserkerActive && G.hp >= G.maxHp * 0.30) {
+    G.berserkerActive = false;
+    delete G.buffs['berserker']; delete G.buffs['berserker_spd'];
+  }
   log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
   combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
   const W=canvas.width,H=canvas.height;
@@ -3005,13 +3191,9 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
-  // Award orbs based on wave reached
-  const orbsEarned = sbUser ? Math.max(1, Math.floor(G.wave * 1.5)) : 0;
-  if(sbUser && orbsEarned > 0) {
-    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
-    saveTrinity().catch(e => console.warn('Orb save failed:', e));
-  }
-  const orbTotal = trinityData.orbs||0;
+  // Trinity rank display
+  const orbsEarned = 0; // orbs replaced by Trinity Rank system
+  const orbTotal = trinityData.rank||0;
 
   // Find most used element
   const uses = G.runStats.imbueUses;
@@ -3057,16 +3239,16 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
       ${sbUser ? `
       <div style="background:#0d1018;border:1px solid #8855ff44;border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <div style="font-size:10px;color:#8855ff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">⚡ Orbs Earned This Run</div>
-          <div style="font-family:'Cinzel',serif;font-size:22px;color:#8855ff;">+${orbsEarned} ✦</div>
+          <div style="font-size:10px;color:#8855ff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">⚡ Trinity Rank</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#8855ff;">+${trinityRank}</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Total Orbs</div>
-          <div style="font-family:'Cinzel',serif;font-size:22px;color:#aa77ff;">${orbTotal} ✦</div>
+          <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Total Rank</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#aa77ff;">${trinityRank} Rank</div>
         </div>
       </div>` : `
       <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;text-align:center;font-size:12px;color:#5a6080;">
-        Sign in to earn Orbs for the Trinity Force shop
+        Sign in to track Trinity Force progress
       </div>`}
 
       <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;">
@@ -3261,7 +3443,7 @@ function rollTier(vendorCap=false) {
   };
 
   let pool = TIERS.map(t => ({ ...t, weight: weights[t.name] }));
-  if(vendorCap && MAP.difficulty !== 'infinite') {
+  if(vendorCap && MAP.difficulty !== 'extreme') {
     // Cap vendor loot based on difficulty
     const cap = DIFF_CONFIG[MAP.difficulty]?.lootCap || 'Exquisite';
     const capIdx = TIERS.findIndex(t => t.name === cap);
@@ -3848,10 +4030,6 @@ function closeVendor(){
   if(MAP.segmentComplete){
     MAP.segmentComplete = false;
     showMapScreen(false);
-  } else if(MAP.difficulty === 'infinite') {
-    setNextBtnActive(true);
-    showPotionBtn();
-    if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
   } else {
     if(G.enemy && G.enemy.hp > 0){
       G.combatActive = true;
@@ -3869,8 +4047,23 @@ function closeVendor(){
 // UI PANELS
 // ═══════════════════════════════════════════════
 function updateHpBar(){
-  document.getElementById('hp-bar').style.width=Math.max(0,(G.hp/G.maxHp)*100)+'%';
-  document.getElementById('hp-nums').textContent=`${Math.max(0,Math.floor(G.hp))}/${G.maxHp}`;
+  const overhealCap = getOverhealCap(); // from trinity nodes
+  const maxDisplay = G.maxHp; // base max
+  const pct = Math.max(0, (G.hp / G.maxHp) * 100);
+
+  // Color zones: normal=red, 101-200%=blue, 201-300%=gold
+  let barColor = 'linear-gradient(90deg,#cc2222,#ff5555)';
+  if(G.hp > G.maxHp * 2) barColor = 'linear-gradient(90deg,#e8b84b,#ffdd00)';
+  else if(G.hp > G.maxHp) barColor = 'linear-gradient(90deg,#1a6bff,#63b3ff)';
+
+  // Bar shows up to max possible HP (including overheal cap)
+  const totalMax = G.maxHp * (1 + overhealCap);
+  const displayPct = Math.min(100, (G.hp / totalMax) * 100);
+
+  const bar = document.getElementById('hp-bar');
+  const nums = document.getElementById('hp-nums');
+  if(bar){ bar.style.width = displayPct + '%'; bar.style.background = barColor; }
+  if(nums){ nums.textContent = `${Math.max(0,Math.floor(G.hp))}/${G.maxHp}${G.hp > G.maxHp ? ' ⚡':''}`; }
 }
 
 function updateResourceBar(){
@@ -4197,6 +4390,36 @@ function drawArena(){
   ctx.beginPath();ctx.ellipse(px,py+2,18,5,0,0,Math.PI*2);ctx.fill();
   if(G.enemy)ctx.beginPath(),ctx.ellipse(ex,ey+2,G.inBoss?30:22,7,0,0,Math.PI*2),ctx.fill();
   drawParticlesLayer('back');
+  // Shadow Clone(s) — draw before player so player renders on top
+  const cloneConf = getCloneConfig();
+  if(cloneConf && G.playerClass === 'rogue' && G.combatActive) {
+    const cloneCount = cloneConf.count || 1;
+    for(let c = 0; c < cloneCount; c++) {
+      const cx = px - 45 - c * 35;
+      const cy = py + 5;
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = '#3a1a6a';
+      ctx.beginPath(); ctx.arc(cx, cy-22, 20, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#5a2a9a';
+      ctx.beginPath(); ctx.arc(cx, cy-22, 15, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#7040bb';
+      ctx.beginPath(); ctx.arc(cx, cy-27, 7, 0, Math.PI*2); ctx.fill();
+      // Clone dagger
+      ctx.strokeStyle = '#9060dd';
+      ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx+10, cy-28); ctx.lineTo(cx+26, cy-8);
+      ctx.stroke();
+      // Clone label
+      ctx.font = "9px 'Cinzel',serif";
+      ctx.fillStyle = '#aa77ff';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(cloneConf.dmgPct*100)}%`, cx, cy+8);
+      ctx.restore();
+    }
+  }
+
   // Player
   ctx.save();
   const pg=ctx.createRadialGradient(px,py-22,4,px,py-22,44);
@@ -4689,7 +4912,9 @@ function doHeal(ab) {
   }
 
   if (!ab.hot && healAmt > 0) {
-    G.hp = Math.min(G.maxHp, G.hp + healAmt);
+    const overhealCap = getOverhealCap();
+    const hpCap = G.maxHp * (1 + overhealCap);
+    G.hp = Math.min(hpCap, G.hp + healAmt);
     updateHpBar();
     spawnHealNumber(
       canvas.width * 0.25 + (Math.random() - 0.5) * 20,
@@ -5171,12 +5396,8 @@ window.wipeLeaderboard = async function() {
 
 // ── SIGN OUT ──
 function honorableDeath() {
-  const orbsEarned = sbUser ? Math.max(1, Math.floor(G.wave * 1.5)) : 0;
-  // Add orbs now so the total shown is accurate
-  if(sbUser && orbsEarned > 0) {
-    trinityData.orbs = (trinityData.orbs||0) + orbsEarned;
-  }
-  const orbTotal = trinityData.orbs||0;
+  const orbsEarned = 0;
+  const orbTotal = trinityData.rank||0;
   const overlay = document.createElement('div');
   overlay.id = 'honorable-death-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -5194,11 +5415,11 @@ function honorableDeath() {
           <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${G.kills}</div>
           ${sbUser ? `
           <div style="font-size:12px;color:var(--muted);">Orbs Earned</div>
-          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855ff;">+${orbsEarned} ✦</div>
-          <div style="font-size:12px;color:var(--muted);">Total Orbs</div>
-          <div style="font-family:'Cinzel',serif;font-size:14px;color:#aa77ff;">${orbTotal} ✦</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855ff;">+${trinityRank}</div>
+          <div style="font-size:12px;color:var(--muted);">Total Rank</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#aa77ff;">${trinityRank} Rank</div>
           ` : `
-          <div style="font-size:12px;color:var(--muted);grid-column:1/-1;color:#e83a3a;margin-top:4px;">Sign in to earn Orbs</div>
+          <div style="font-size:12px;color:var(--muted);grid-column:1/-1;color:#e83a3a;margin-top:4px;">Sign in to earn Trinity Rank</div>
           `}
         </div>
       </div>
@@ -5247,13 +5468,12 @@ async function loadTrinity() {
     .eq('player_id', sbUser.id)
     .single();
   if(data) {
-    trinityData = {
-      orbs: data.orbs||0,
-      trinity_level: data.trinity_level||0,
-      slot1: data.slot1||null,
-      slot2: data.slot2||null,
-      slot3: data.slot3||null
-    };
+    if(data.trinity_data) {
+      try {
+        const saved = JSON.parse(data.trinity_data);
+        trinityData = { ...trinityData, ...saved };
+      } catch(e) {}
+    }
   }
 }
 
@@ -5261,11 +5481,8 @@ async function saveTrinity() {
   if(!sbUser) return;
   const payload = {
     player_id: sbUser.id,
-    orbs: trinityData.orbs||0,
-    trinity_level: trinityData.trinity_level||0,
-    slot1: trinityData.slot1||null,
-    slot2: trinityData.slot2||null,
-    slot3: trinityData.slot3||null,
+    trinity_data: JSON.stringify(trinityData),
+    rank: trinityData.rank||0,
     updated_at: new Date().toISOString()
   };
   await sb.from('player_trinity').upsert(payload, { onConflict: 'player_id' });
@@ -5630,6 +5847,7 @@ function awardXP(amount) {
     passivePending++;  // one passive investment per level
   }
   if(spPending > 0 && !spPopupOpen) {
+    G.combatActive = false; // pause combat fully while popup is pending
     stopEnemyAutoAttack();
     stopAllAutoSlots(true);
     setTimeout(() => {
@@ -5649,12 +5867,8 @@ function triggerLevelUpPopup() {
     return;
   }
   if(spPopupOpen) return;
-  // Set phase based on what's pending — passive takes priority if skill already done
-  if(spPending > 0) spPhase = 'skill';
-  else spPhase = 'passive';
   spPopupOpen = true;
-  spStep = 1;
-  spChosenClass = null;
+  playSound('level_up');
   renderSPPopup();
   document.getElementById('sp-popup').classList.remove('hidden');
 }
@@ -5679,229 +5893,159 @@ function showSPPopup() {
 
 function renderSPPopup() {
   const el = document.getElementById('sp-popup-content');
-  if (spPhase === 'passive') {
-    const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
-    let ph = '<div style="font-family:Cinzel,serif;font-size:14px;font-weight:700;color:#8888ff;text-align:center;margin-bottom:4px;">🔮 Passive Skill Point</div>';
-    ph += '<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Permanently boost a passive stat</div>';
-    Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
-      const color = CLASS_COLORS[elKey]||'#88aacc';
-      ph += '<div class="skill-section">';
-      ph += '<div class="skill-element-title" style="color:'+color+'">'+(elEmoji[elKey]||'⚡')+' '+elKey.charAt(0).toUpperCase()+elKey.slice(1)+'</div>';
-      skills.forEach((sk, i) => {
-        const key = elKey+'_'+i;
-        const lvl = G.skillLevels[key]||0;
-        ph += '<div class="skill-row" onclick="spSpendPassive(&quot;'+elKey+'&quot;,'+i+')" style="cursor:pointer;border-radius:6px;padding:4px;" onmouseover="this.style.background=&quot;#ffffff10&quot;" onmouseout="this.style.background=&quot;transparent&quot;">';
-        ph += '<div><div class="skill-name">'+sk.name+'</div>';
-        ph += '<div class="skill-pts">Lv'+lvl+' · Upgrade gives: +'+(sk.per).toFixed(sk.per<1?1:0)+' '+(STAT_LABELS[sk.stat]||sk.stat)+' (total: +'+(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)+')</div></div>';
-        ph += '<button class="skill-btn" style="pointer-events:none;">+</button></div>';
-      });
-      ph += '</div>';
-    });
-    el.innerHTML = ph;
-    return;
-  }
-  if (spStep === 1) {
-    // Only show the player's actual class (not all classes)
-    const cls = G.playerClass || 'mage';
+  if(!el) return;
+
+  // Update counters
+  const skillEl = document.getElementById('sp-skill-count');
+  const passEl = document.getElementById('sp-passive-count');
+  if(skillEl) skillEl.textContent = spPending > 0 ? `${spPending} skill pt${spPending>1?'s':''}` : '';
+  if(passEl) passEl.textContent = passivePending > 0 ? `${passivePending} passive pt${passivePending>1?'s':''}` : '';
+
+  let html = '';
+
+  // ── CLASS LEVEL-UP (if skill points pending) ──
+  if(spPending > 0 && G.playerClass) {
+    const cls = G.playerClass;
     const color = CLASS_COLORS[cls];
     const lv = G.classLv[cls]||0;
-    el.innerHTML = `
-      <div style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">⬆ Level Up!</div>
-      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;">Invest in your class to unlock and upgrade abilities</div>
-      <div onclick="spPickClass('${cls}')" style="background:#0d1018;border:1px solid ${color}44;border-radius:12px;padding:16px;cursor:pointer;text-align:center;max-width:200px;margin:0 auto;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}44'">
-        <div style="font-size:32px;">${CLASS_ICONS[cls]}</div>
-        <div style="font-family:'Cinzel',serif;font-size:13px;color:${color};margin-top:6px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
-        <div style="font-size:10px;color:var(--muted);">Level ${lv} → ${lv+1}</div>
-        <div style="font-size:10px;color:#3acc7a;margin-top:4px;">Tap to invest</div>
+    const imbueColor = IMBUE_COLORS[G.playerImbue||'']||color;
+
+    html += `<div style="margin-bottom:14px;">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:${color};margin-bottom:8px;letter-spacing:0.08em;">
+        ${CLASS_ICONS[cls]} ${cls.toUpperCase()} — Level ${lv}
+        ${G.playerImbue?`<span style="color:${imbueColor};font-size:10px;margin-left:6px;">${IMBUE_ICONS[G.playerImbue]||''} ${G.playerImbue}</span>`:''}
       </div>`;
-  } else if (spStep === 2) {
-    const cls = spChosenClass || G.playerClass;
-    const imbue = G.playerImbue;
-    const color = CLASS_COLORS[cls];
-    const lv = G.classLv[cls]||0;
-    // Show abilities for this class+imbue combo
+
+    // Stat boosts — tap any to spend 1 skill point
+    html += `<div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Tap a stat to invest 1 skill point (${spPending} remaining — tap multiple times)</div>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;">`;
+    STAT_BOOST_OPTIONS.forEach(opt => {
+      html += `<div onclick="spBoostStat('${opt.key}')" style="background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:border-color 0.15s;"
+        onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:16px;">${opt.icon}</span>
+        <div>
+          <div style="font-size:11px;color:var(--text);">${opt.label}</div>
+          <div style="font-family:'Cinzel',serif;font-size:12px;color:#3acc7a;">${opt.display}</div>
+          <div style="font-size:9px;color:var(--muted);">Current: ${typeof G.baseStats[opt.key]==='number'?G.baseStats[opt.key].toFixed(opt.amount<1?1:0):0}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div></div>';
+
+    // Ability upgrades (if any points unlocked)
     const classAbilities = Object.values(ABILITIES).filter(ab =>
       ab.class === cls && ab.type !== 'heal' &&
-      (ab.imbue === imbue || ab.imbue === null || ab.type === 'basic')
+      (ab.imbue === G.playerImbue || ab.imbue === null || ab.type === 'basic') &&
+      isAbilityUnlocked(ab.id)
     );
-    const unlockedAbs = classAbilities.filter(ab => isAbilityUnlocked(ab.id));
-
-    let abHTML = '';
-    classAbilities.forEach(ab => {
-      const unlocked = isAbilityUnlocked(ab.id);
-      const abLv = G.abilityLevels[ab.id]||0;
-      const cost = Math.max(1, abLv);
-      const cp = G.classCP[cls]||0;
-      const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
-
-      if (unlocked) {
-        abHTML += `<div onclick="spUpgradeAbility('${ab.id}')" style="background:#0d1018;border:1px solid ${color}33;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}33'">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:16px;">${ab.icon}</span>
-            <div style="flex:1;">
-              <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">${ab.name} <span style="color:${typeColor};font-size:9px;border:1px solid ${typeColor};border-radius:6px;padding:1px 4px;">${ab.type}</span></div>
-              <div style="font-size:10px;color:var(--muted);margin-top:2px;">
-                ${ab.type==='heal'
-                  ? `Healing: ${abLv*10}% → <span style="color:#3acc7a;font-weight:700;">+${(abLv+1)*10}%</span>`
-                  : `Dmg: ${Math.floor(ab.dmgMult*(1+abLv*0.15)*100)}% → <span style="color:#3acc7a;font-weight:700;">${Math.floor(ab.dmgMult*(1+(abLv+1)*0.15)*100)}%</span>`
-                }
-              </div>
-            </div>
-            <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--gold);">⬆ Upgrade</div>
+    if(classAbilities.length > 0) {
+      html += `<div style="font-size:10px;color:var(--muted);margin:10px 0 6px;">Or upgrade an ability (costs class points):</div>`;
+      html += `<div style="display:flex;flex-direction:column;gap:4px;">`;
+      classAbilities.forEach(ab => {
+        const abLv = G.abilityLevels[ab.id]||0;
+        const cp = G.classCP[cls]||0;
+        const cost = Math.max(1, abLv);
+        const canUp = cp >= cost;
+        html += `<div onclick="${canUp?`spUpgradeAbility('${ab.id}')`:''}" style="background:#0d1018;border:1px solid ${canUp?'#e8b84b33':'var(--border)'};border-radius:8px;padding:7px 10px;cursor:${canUp?'pointer':'not-allowed'};display:flex;align-items:center;gap:8px;opacity:${canUp?1:0.5};">
+          <span style="font-size:14px;">${ab.icon}</span>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:${CLASS_COLORS[cls]};font-family:'Cinzel',serif;">${ab.name}</div>
+            <div style="font-size:9px;color:var(--muted);">Lv${abLv} · ${ab.type==='heal'?`+${(abLv+1)*10}% heal`:`+${Math.floor(ab.dmgMult*15)}% dmg`} · ${cost}pt</div>
           </div>
+          ${canUp?`<span style="font-size:10px;color:#e8b84b;font-family:'Cinzel',serif;">⬆ ${cost}pt</span>`:`<span style="font-size:10px;color:var(--muted);">${cp}/${cost}cp</span>`}
         </div>`;
-      } else {
-        // Can unlock if class level is high enough and it's next tier
-        const needed = ab.type==='basic'?1:ab.type==='ultimate'?8:
-          ab.id.endsWith('_reg5')?8:ab.id.endsWith('_reg4')?7:ab.id.endsWith('_reg3')?6:ab.id.endsWith('_reg2')?5:3;
-        const canUnlock = lv >= needed;
-        if (canUnlock) {
-          abHTML += `<div onclick="spUnlockAbility('${ab.id}')" style="background:#0d1018;border:1px solid ${color}55;border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='${color}55'">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:16px;">${ab.icon}</span>
-              <div style="flex:1;">
-                <div style="font-family:'Cinzel',serif;font-size:11px;color:${color};">🔓 Unlock ${ab.name}</div>
-                <div style="font-size:10px;color:var(--muted);">${ab.desc}</div>
-                <div style="font-size:10px;color:#3acc7a;margin-top:2px;">
-                  ${ab.type==='heal' ? 'Base healing: unlocked at 10%' : `Base dmg: <span style="color:#3acc7a;font-weight:700;">${Math.floor(ab.dmgMult*100)}%</span>`}
-                </div>
-              </div>
-              <div style="font-family:'Cinzel',serif;font-size:10px;color:#3acc7a;">NEW</div>
-            </div>
-          </div>`;
-        }
-      }
-    });
-
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <button onclick="spStep=1;renderSPPopup()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:12px;">← Back</button>
-        <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:${color};">${CLASS_ICONS[cls]} ${cls.charAt(0).toUpperCase()+cls.slice(1)} — Level ${lv}</div>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Choose what to improve:</div>
-      ${abHTML || `<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px;">No abilities to upgrade yet. Level up more first.</div>`}
-    `;
-  } else if (spStep === 3) {
-    el.innerHTML = `
-      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;">📈 Boost a Base Stat</div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px;">Choose one permanent upgrade — then your passive point awaits</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
-        ${STAT_BOOST_OPTIONS.map(opt => `
-          <div onclick="spBoostStat('${opt.key}')" style="background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-            <span style="font-size:16px;">${opt.icon}</span>
-            <div>
-              <div style="font-size:11px;color:var(--text);">${opt.label}</div>
-              <div style="font-family:'Cinzel',serif;font-size:12px;color:#3acc7a;">${opt.display}</div>
-            </div>
-          </div>`).join('')}
-      </div>`;
+      });
+      html += '</div>';
+    }
   }
+
+  // ── PASSIVE SKILLS (if passive points pending) ──
+  if(passivePending > 0) {
+    const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
+    html += `<div style="${spPending>0?'margin-top:16px;padding-top:14px;border-top:1px solid var(--border);':''}">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:#8888ff;margin-bottom:8px;letter-spacing:0.08em;">🔮 Passive Skills — ${passivePending} point${passivePending>1?'s':''} to invest</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Tap any skill to invest 1 passive point</div>`;
+    Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
+      const color = {offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'}[elKey]||'#aaa';
+      html += `<div style="margin-bottom:8px;"><div style="font-size:10px;color:${color};font-family:'Cinzel',serif;letter-spacing:0.08em;margin-bottom:4px;">${elEmoji[elKey]||'⚡'} ${elKey.toUpperCase()}</div>`;
+      skills.forEach((sk,i) => {
+        const key=`${elKey}_${i}`;
+        const lvl=G.skillLevels[key]||0;
+        const canUp = passivePending >= 1 && lvl < 10;
+        html += `<div onclick="${canUp?`spSpendPassive('${elKey}',${i})`:''}" style="background:#0d1018;border:1px solid var(--border);border-radius:7px;padding:7px 10px;margin-bottom:3px;cursor:${canUp?'pointer':'default'};display:flex;justify-content:space-between;align-items:center;opacity:${canUp?1:0.5};"
+          ${canUp?`onmouseover="this.style.borderColor='#8888ff'" onmouseout="this.style.borderColor='var(--border)'"`:''}>
+          <div>
+            <div style="font-size:11px;color:var(--text);">${sk.name}</div>
+            <div style="font-size:9px;color:var(--muted);">Lv${lvl} · +${(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div>
+          </div>
+          ${canUp?`<span style="font-size:12px;color:#8888ff;">+</span>`:`<span style="font-size:9px;color:var(--muted);">${lvl>=10?'MAX':''}</span>`}
+        </div>`;
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  if(!html) {
+    html = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px;">All points invested!</div>';
+  }
+
+  el.innerHTML = html;
 }
 
-function spPickClass(cls) {
-  spChosenClass = cls;
-  spPending = Math.max(0, spPending - 1);
+
+function spBoostStat(key) {
+  if(spPending <= 0) return;
+  const opt = STAT_BOOST_OPTIONS.find(o => o.key === key);
+  if(!opt) return;
+  spPending--;
   G.skillPoints = Math.max(0, G.skillPoints - 1);
-  G.classLv[cls] = (G.classLv[cls]||0) + 1;
-  const lv = G.classLv[cls];
-  const color = CLASS_COLORS[cls];
-  // Stat boosts on level up
-  G.baseStats.health = (G.baseStats.health||200) + (cls==='warrior'?15:10);
-  G.baseStats.mana = (G.baseStats.mana||100) + 5;
-  if(cls==='warrior') G.baseStats.defense = (G.baseStats.defense||8) + 1;
-  if(cls==='rogue')   G.baseStats.atkSpeed = Math.min(3.0, (G.baseStats.atkSpeed||1.0) + 0.02);
-  if(cls==='mage')    G.baseStats.spellVamp = (G.baseStats.spellVamp||0) + 0.3;
+  G.baseStats[key] = (G.baseStats[key]||0) + opt.amount;
   const st = getStats();
-  const oldMax = G.maxHp;
-  G.maxHp = st.maxHp;
-  G.hp += (G.maxHp - oldMax);
-  G.hp = Math.min(G.hp, G.maxHp);
-  G.maxMana = st.mana||100;
-  updateHpBar(); updateManaBar();
-  if(lv === 3) log(`<span style="color:${color}">🔓 First skill unlocked!</span>`);
-  if(lv === 5) log(`<span style="color:${color}">🔓 Skill 2 slot unlocked!</span>`);
-  if(lv === 6) log(`<span style="color:${color}">🔓 Skill 3 unlocked!</span>`);
-  if(lv === 7) log(`<span style="color:${color}">🔓 Skill 4 unlocked!</span>`);
-  if(lv === 8) log(`<span style="color:${color}">🔓 Skill 5 + Ultimate unlocked!</span>`);
-  spStep = 2;
+  if(key === 'health') {
+    const oldMax = G.maxHp; G.maxHp = st.maxHp;
+    G.hp += (G.maxHp - oldMax); G.hp = Math.min(G.hp, G.maxHp);
+    updateHpBar();
+  }
+  if(key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
+  log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
+  updateStatsPanel(); updateClassXPPanel(); updateResourceBar();
+  if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
   renderSPPopup();
 }
 
 function spUpgradeAbility(abId) {
   const ab = ABILITIES[abId];
-  if (!ab) return;
+  if(!ab || !canUpgradeAbility(abId)) return;
+  const cost = getAbilityUpgradeCost(abId);
+  G.classCP[ab.class] -= cost;
   G.abilityLevels[abId] = (G.abilityLevels[abId]||0) + 1;
-  log(`<span style="color:${CLASS_COLORS[ab.class]}">⬆ ${ab.icon} ${ab.name} → Lv${G.abilityLevels[abId]}</span>`);
+  const newLv = G.abilityLevels[abId];
+  log(`<span style="color:${CLASS_COLORS[ab.class]}">⬆ ${ab.icon} ${ab.name} → Lv${newLv}</span>`);
   playSound('level_up');
-  spStep = 3;
+  saveGame(); updateClassXPPanel(); refreshMobilePanel();
   renderSPPopup();
-}
-
-function spUnlockAbility(abId) {
-  const ab = ABILITIES[abId];
-  if (!ab) return;
-  G.abilityLevels[abId] = 1;
-  log(`<span style="color:${CLASS_COLORS[ab.class]}">🔓 Unlocked ${ab.icon} ${ab.name}!</span>`);
-  playSound('level_up');
-  // Auto-slot if applicable
-  const ab_type = ab.type;
-  if (ab_type === 'regular') {
-    if (!G.loadout[1]) G.loadout[1] = abId;
-    else if (!G.loadout[2]) G.loadout[2] = abId;
-  } else if (ab_type === 'ultimate' && !G.loadout[3]) {
-    G.loadout[3] = abId;
-  }
-  updateLoadoutUI();
-  spStep = 3;
-  renderSPPopup();
-}
-
-function spBoostStat(key) {
-  const opt = STAT_BOOST_OPTIONS.find(o => o.key === key);
-  if (!opt) return;
-  G.baseStats[key] = (G.baseStats[key]||0) + opt.amount;
-  const st = getStats();
-  if (key === 'health') {
-    const oldMax = G.maxHp; G.maxHp = st.maxHp;
-    G.hp += (G.maxHp - oldMax); G.hp = Math.min(G.hp, G.maxHp);
-    updateHpBar();
-  }
-  if (key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
-  log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
-  updateStatsPanel();
-  updateClassXPPanel();
-  saveGame();
-  closeSPPopup();
 }
 
 function spSpendPassive(el, idx) {
+  if(passivePending <= 0) return;
   const before = G.passivePoints;
-  upgradeSkill(el, idx); // already decrements G.passivePoints
-  // Only consume pending if upgrade actually happened
-  if(G.passivePoints < before) {
-    passivePending = Math.max(0, passivePending - 1);
-  }
-  closeSPPopup();
+  upgradeSkill(el, idx);
+  if(G.passivePoints < before) passivePending = Math.max(0, passivePending - 1);
+  if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
+  renderSPPopup();
 }
 
 function closeSPPopup() {
   document.getElementById('sp-popup').classList.add('hidden');
-  spStep = 1; spChosenClass = null;
   spPopupOpen = false;
   updateXPBar();
-  // If passive still pending, show that next
-  if(passivePending > 0) {
-    spPhase = 'passive';
-    setTimeout(() => triggerLevelUpPopup(), 300);
-  } else if(spPending > 0) {
-    spPhase = 'skill';
-    setTimeout(() => triggerLevelUpPopup(), 300);
-  } else {
-    if(G.combatActive && G.enemy && G.enemy.hp > 0) {
-      startEnemyAutoAttack();
-      setTimeout(restoreAutoSlots, 200);
-    }
-    saveGame();
+  saveGame();
+  // Restore combat
+  if(G.enemy && G.enemy.hp > 0) {
+    G.combatActive = true;
+    startEnemyAutoAttack();
+    setTimeout(restoreAutoSlots, 200);
   }
 }
 
@@ -6198,23 +6342,14 @@ function resetTutorial() {
 // ═══════════════════════════════════════════════
 // TRINITY FORCE — SHOP UI
 // ═══════════════════════════════════════════════
-let trinityShopStock = []; // 6 random artifacts shown in shop
+// ═══════════════════════════════════════════════
+// TRINITY FORCE — COSMIC ALIGNMENT SYSTEM UI
+// ═══════════════════════════════════════════════
 
 async function openTrinityShop() {
-  if(!sbUser) {
-    alert('Sign in to access the Trinity Force shop.');
-    return;
-  }
-  // Always reload from DB to get current orb count
+  if(!sbUser) { alert('Sign in to access Trinity Force.'); return; }
   await loadTrinity().catch(()=>{});
-  trinityShopStock = [];
-  const tiers = ['Basic','Basic','Great','Great','Exquisite','Exquisite'];
-  const lv = trinityData.trinity_level||0;
-  if(lv >= TRINITY_TIER_UNLOCK.Ancient) tiers.push('Ancient');
-  if(lv >= TRINITY_TIER_UNLOCK.Cosmic) tiers.push('Cosmic');
-  tiers.forEach(t => trinityShopStock.push(rollArtifact(t)));
-
-  renderTrinityShop();
+  renderTrinityModal();
   document.getElementById('trinity-modal').classList.remove('hidden');
 }
 
@@ -6222,114 +6357,419 @@ function closeTrinityShop() {
   document.getElementById('trinity-modal').classList.add('hidden');
 }
 
-function renderTrinityShop() {
-  // Orbs
-  document.getElementById('trinity-orb-count').textContent = (trinityData.orbs||0) + ' ✦';
-  document.getElementById('trinity-level-display').textContent = trinityData.trinity_level||0;
+function renderTrinityModal() {
+  const modal = document.getElementById('trinity-modal');
+  if(!modal) return;
+  const td = trinityData;
+  const align = td.alignment ? TRINITY_ALIGNMENTS[td.alignment] : null;
+  const rankXPNeeded = TRINITY_RANK_XP_PER_LEVEL;
+  const rankPct = Math.min(100, Math.floor((td.rankXP||0) / rankXPNeeded * 100));
 
-  // Slots
-  const slotsEl = document.getElementById('trinity-slots');
-  slotsEl.innerHTML = ['slot1','slot2','slot3'].map((slot,i) => {
-    const art = trinityData[slot];
-    if(!art) return `<div onclick="selectTrinitySlot(${i})" style="background:#0d1018;border:2px dashed #8855ff44;border-radius:10px;padding:12px;text-align:center;cursor:pointer;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-      <div style="font-size:20px;margin-bottom:4px;">✦</div>
-      <div style="font-family:'Cinzel',serif;font-size:9px;color:#8855ff;">Empty Slot ${i+1}</div>
-    </div>`;
-    return `<div style="background:#0d1018;border:1px solid ${art.color}44;border-radius:10px;padding:10px;cursor:pointer;position:relative;" onclick="selectTrinitySlot(${i})">
-      <div style="font-family:'Cinzel',serif;font-size:9px;color:${art.color};margin-bottom:4px;">${art.tier}</div>
-      ${Object.entries(art.stats).map(([k,v]) => {
-        const s = ARTIFACT_STAT_POOLS.find(p=>p.key===k);
-        return `<div style="font-size:10px;color:#3acc7a;">+${v} ${s?s.label:k}</div>`;
-      }).join('')}
-      <div style="font-size:9px;color:var(--muted);margin-top:4px;">Tap to swap</div>
-    </div>`;
-  }).join('');
-
-  // Shop items
-  const shopEl = document.getElementById('trinity-shop-items');
-  shopEl.innerHTML = trinityShopStock.map((art, i) => {
-    const cost = ARTIFACT_ORB_COST[art.tier];
-    const canAfford = (trinityData.orbs||0) >= cost;
-    const tierLvReq = TRINITY_TIER_UNLOCK[art.tier];
-    const canUnlock = (trinityData.trinity_level||0) >= tierLvReq;
-    return `<div style="background:#0d1018;border:1px solid ${art.color}33;border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;opacity:${canUnlock?1:0.4};">
-      <div style="flex:1;">
-        <div style="font-family:'Cinzel',serif;font-size:12px;color:${art.color};margin-bottom:4px;">${art.tier} Artifact</div>
-        ${Object.entries(art.stats).map(([k,v]) => {
-          const s = ARTIFACT_STAT_POOLS.find(p=>p.key===k);
-          return `<div style="font-size:11px;color:#3acc7a;">${s?s.icon:''} +${v} ${s?s.label:k}</div>`;
-        }).join('')}
-        ${!canUnlock ? `<div style="font-size:10px;color:#e83a3a;margin-top:4px;">Requires Trinity Level ${tierLvReq}</div>` : ''}
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:#e8b84b;">
+        ⚡ Trinity Force
       </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-family:'Cinzel',serif;font-size:13px;color:${canAfford&&canUnlock?'#8855ff':'var(--muted)'};">${cost} ✦</div>
-        <button onclick="buyArtifact(${i})" ${canAfford&&canUnlock?'':'disabled'}
-          style="margin-top:6px;font-family:'Cinzel',serif;font-size:11px;padding:6px 12px;border-radius:6px;border:1px solid ${canAfford&&canUnlock?'#8855ff':'var(--border)'};color:${canAfford&&canUnlock?'#8855ff':'var(--muted)'};background:${canAfford&&canUnlock?'rgba(136,85,255,0.1)':'transparent'};cursor:${canAfford&&canUnlock?'pointer':'not-allowed'};">
-          Buy
-        </button>
+      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:12px;">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Permanent cosmic progression. Resets each season. Titles carry over.</div>
+
+    <!-- Rank Bar -->
+    <div style="background:#0d1018;border:1px solid #e8b84b33;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-family:'Cinzel',serif;font-size:13px;color:#e8b84b;">Trinity Rank ${td.rank||0}</span>
+        <span style="font-family:'Cinzel',serif;font-size:11px;color:var(--muted);">${numberWithCommas(td.rankXP||0)} / ${numberWithCommas(rankXPNeeded)} dmg</span>
       </div>
+      <div style="height:6px;background:#1a1f2e;border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${rankPct}%;background:linear-gradient(90deg,#e8b84b,#ffdd00);border-radius:3px;transition:width 0.4s;"></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;">Earned from total enemy damage dealt per run · ${td.ascensionCount||0} Ascensions this season</div>
     </div>`;
-  }).join('');
-}
 
-let trinitySelectMode = false; // waiting for slot selection
-let pendingArtifact = null;
-
-function buyArtifact(shopIdx) {
-  const art = trinityShopStock[shopIdx];
-  if(!art) return;
-  const cost = ARTIFACT_ORB_COST[art.tier];
-  if((trinityData.orbs||0) < cost) return;
-  trinityData.orbs -= cost;
-  trinityData.trinity_level = (trinityData.trinity_level||0) + 1;
-  trinityShopStock.splice(shopIdx, 1);
-  // Place in first empty slot, or prompt to choose
-  const emptySlot = ['slot1','slot2','slot3'].find(s => !trinityData[s]);
-  if(emptySlot) {
-    trinityData[emptySlot] = art;
-    saveTrinity().catch(()=>{});
-    renderTrinityShop();
+  if(!align) {
+    // No alignment chosen yet — show alignment selection
+    html += `
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:#e8b84b;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Choose Your Cosmic Alignment</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
+        ${Object.values(TRINITY_ALIGNMENTS).map(a => `
+          <div onclick="chooseTrinityAlignment('${a.id}')" style="background:#0d1018;border:1px solid ${a.color}44;border-radius:10px;padding:12px;cursor:pointer;transition:all 0.2s;"
+            onmouseover="this.style.background='${a.color}11'" onmouseout="this.style.background='#0d1018'">
+            <div style="font-size:20px;margin-bottom:4px;">${a.icon}</div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;color:${a.color};">${a.name}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;line-height:1.4;">${a.desc}</div>
+          </div>`).join('')}
+      </div>`;
   } else {
-    // All slots full — pick which to replace
-    pendingArtifact = art;
-    showTrinityReplacePrompt(art);
+    // Alignment chosen — show node tree + ascension + simulate
+    html += renderTrinityNodeTree(align);
+    html += renderTrinityAscension(align);
+    html += renderTrinitySimulate();
+    html += renderTrinityMutations();
   }
+
+  const inner = modal.querySelector('.trinity-inner');
+  if(inner) inner.innerHTML = html;
+  else modal.innerHTML = `<div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;" class="trinity-inner">${html}</div>`;
 }
 
-function showTrinityReplacePrompt(art) {
-  const slotsEl = document.getElementById('trinity-slots');
-  slotsEl.innerHTML = `<div style="grid-column:1/-1;font-family:'Cinzel',serif;font-size:11px;color:var(--gold);text-align:center;padding:8px;">All slots full — tap a slot to replace it</div>`;
-  slotsEl.innerHTML += ['slot1','slot2','slot3'].map((slot,i) => {
-    const existing = trinityData[slot];
-    return `<div onclick="replaceTrinitySlot('${slot}')" style="background:#0d1018;border:2px solid #e8b84b55;border-radius:10px;padding:10px;cursor:pointer;">
-      <div style="font-family:'Cinzel',serif;font-size:9px;color:${existing.color};margin-bottom:4px;">${existing.tier}</div>
-      ${Object.entries(existing.stats).map(([k,v]) => {
-        const s = ARTIFACT_STAT_POOLS.find(p=>p.key===k);
-        return `<div style="font-size:10px;color:#e83a3a;">-${v} ${s?s.label:k}</div>`;
-      }).join('')}
-      <div style="font-size:9px;color:var(--muted);margin-top:4px;">Replace this?</div>
-    </div>`;
-  }).join('');
-}
-
-function replaceTrinitySlot(slot) {
-  if(!pendingArtifact) return;
-  trinityData[slot] = pendingArtifact;
-  pendingArtifact = null;
+function chooseTrinityAlignment(alignId) {
+  if(trinityData.alignment) {
+    if(!confirm('Changing alignment resets all nodes and mutations. Continue?')) return;
+  }
+  trinityData.alignment = alignId;
+  trinityData.classEnhancement = null;
+  trinityData.unlockedNodes = [];
+  trinityData.mutations = [];
   saveTrinity().catch(()=>{});
-  renderTrinityShop();
+  renderTrinityModal();
 }
 
-function selectTrinitySlot(idx) {
-  // Open a confirmation to remove the artifact
-  const slotKey = ['slot1','slot2','slot3'][idx];
-  const art = trinityData[slotKey];
-  if(!art) return;
-  if(confirm(`Remove this ${art.tier} artifact from slot ${idx+1}? You will not get orbs back.`)) {
-    trinityData[slotKey] = null;
-    saveTrinity().catch(()=>{});
-    renderTrinityShop();
+function renderTrinityNodeTree(align) {
+  const td = trinityData;
+  const rank = td.rank || 0;
+
+  // If no class chosen, show class picker
+  if(!td.classEnhancement) {
+    return `
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:${align.color};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
+        ${align.icon} ${align.name} — Choose Class to Enhance
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+        ${['mage','warrior','rogue'].map(cls => `
+          <div onclick="chooseTrinityClass('${cls}')" style="background:#0d1018;border:1px solid ${CLASS_COLORS[cls]}44;border-radius:10px;padding:12px;cursor:pointer;text-align:center;"
+            onmouseover="this.style.borderColor='${CLASS_COLORS[cls]}'" onmouseout="this.style.borderColor='${CLASS_COLORS[cls]}44'">
+            <div style="font-size:24px;">${CLASS_ICONS[cls]}</div>
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:${CLASS_COLORS[cls]};margin-top:4px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
+          </div>`).join('')}
+        <div onclick="chooseTrinityClass('chaos')" style="background:#0d1018;border:1px solid #e8b84b44;border-radius:10px;padding:12px;cursor:pointer;text-align:center;grid-column:span 3;"
+          onmouseover="this.style.borderColor='#e8b84b'" onmouseout="this.style.borderColor='#e8b84b44'">
+          <div style="font-size:24px;">🌀</div>
+          <div style="font-family:'Cinzel',serif;font-size:11px;color:#e8b84b;margin-top:4px;">Chaos — Works with any class</div>
+        </div>
+      </div>`;
   }
+
+  // Show node tree for chosen class
+  const cls = td.classEnhancement;
+  const clsColor = cls === 'chaos' ? '#e8b84b' : (CLASS_COLORS[cls]||'#aaa');
+  const pathNodes = (cls === 'chaos')
+    ? [['C', Object.values(TRINITY_NODES).filter(n => n.classPath === 'chaos')]]
+    : [
+        ['A', Object.values(TRINITY_NODES).filter(n => n.classPath === cls && n.path === 'A')],
+        ['B', Object.values(TRINITY_NODES).filter(n => n.classPath === cls && n.path === 'B')],
+        ['C', Object.values(TRINITY_NODES).filter(n => n.classPath === 'chaos')],
+      ];
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:${align.color};letter-spacing:0.1em;text-transform:uppercase;">
+        ${align.icon} ${align.name} · ${cls === 'chaos' ? '🌀 Chaos' : (CLASS_ICONS[cls]+' '+cls.charAt(0).toUpperCase()+cls.slice(1))} Enhancement
+      </div>
+      <button onclick="trinityData.classEnhancement=null;renderTrinityModal()" style="font-family:'Cinzel',serif;font-size:10px;background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:5px;cursor:pointer;">↩ Change</button>
+    </div>`;
+
+  pathNodes.forEach(([pathLetter, nodes]) => {
+    if(!nodes.length) return;
+    const pathLabel = pathLetter === 'A' ? 'Path A' : pathLetter === 'B' ? 'Path B' : '🌀 Chaos Path';
+    html += `<div style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;letter-spacing:0.08em;text-transform:uppercase;margin:8px 0 5px;">${pathLabel}</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">`;
+    nodes.forEach(node => {
+      const unlocked = td.unlockedNodes.includes(node.id);
+      const canUnlock = !unlocked && rank >= node.cost &&
+        (!node.requires || td.unlockedNodes.includes(node.requires));
+      const locked = !unlocked && !canUnlock;
+      const nodeColor = unlocked ? '#3acc7a' : canUnlock ? clsColor : 'var(--muted)';
+      html += `
+        <div onclick="${canUnlock ? `unlockTrinityNode('${node.id}')` : ''}"
+          style="background:#0d1018;border:1px solid ${unlocked?'#3acc7a44':canUnlock?clsColor+'44':'var(--border)'};border-radius:8px;padding:8px 10px;cursor:${canUnlock?'pointer':'default'};display:flex;align-items:center;gap:8px;opacity:${locked?0.45:1};"
+          ${canUnlock ? `onmouseover="this.style.background='${clsColor}11'" onmouseout="this.style.background='#0d1018'"` : ''}>
+          <span style="font-size:16px;">${node.icon}</span>
+          <div style="flex:1;">
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:${nodeColor};">${node.name}${unlocked?' ✓':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px;">${node.desc}</div>
+          </div>
+          <div style="font-family:'Cinzel',serif;font-size:10px;color:${rank>=node.cost?'#e8b84b':'#cc4444'};flex-shrink:0;">${unlocked?'✓':rank+'/'+node.cost}</div>
+        </div>`;
+      if(node.requires && !td.unlockedNodes.includes(node.requires)) {
+        const reqNode = TRINITY_NODES[node.requires];
+        if(reqNode) html += `<div style="font-size:9px;color:var(--muted);padding-left:34px;margin-top:-2px;">Requires: ${reqNode.name}</div>`;
+      }
+    });
+    html += '</div>';
+  });
+
+  return html;
+}
+
+function chooseTrinityClass(cls) {
+  trinityData.classEnhancement = cls;
+  trinityData.unlockedNodes = [];
+  saveTrinity().catch(()=>{});
+  renderTrinityModal();
+}
+
+function unlockTrinityNode(nodeId) {
+  const node = TRINITY_NODES[nodeId];
+  if(!node) return;
+  const rank = trinityData.rank || 0;
+  if(rank < node.cost) { log('<span style="color:#cc4444">Not enough Trinity Rank!</span>'); return; }
+  if(node.requires && !trinityData.unlockedNodes.includes(node.requires)) return;
+  if(trinityData.unlockedNodes.includes(nodeId)) return;
+  trinityData.unlockedNodes.push(nodeId);
+  saveTrinity().catch(()=>{});
+  log(`<span style="color:#e8b84b">⚡ Trinity Node unlocked: ${node.name}!</span>`);
+  playSound('level_up');
+  renderTrinityModal();
+}
+
+function renderTrinityAscension(align) {
+  const td = trinityData;
+  const rank = td.rank || 0;
+  if(rank < 1) return '<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px;margin-bottom:8px;">Reach Trinity Rank 1 to unlock Ascension</div>';
+
+  // Calculate boost amounts based on current rank
+  const boostMult = 1 + (td.ascensionCount||0) * 0.1; // each ascension 10% better
+  const boosts = [
+    { stat:'Attack', amount: Math.floor(rank * 2 * boostMult) },
+    { stat:'Health', amount: Math.floor(rank * 10 * boostMult) },
+    { stat:'Atk Speed', amount: parseFloat((rank * 0.02 * boostMult).toFixed(2)) },
+    { stat:'Mana', amount: Math.floor(rank * 5 * boostMult) },
+  ];
+
+  return `
+    <div style="background:#0d1018;border:1px solid #ff226644;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:#ff4444;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">
+        ⬆ Ascension ${td.ascensionCount > 0 ? `(#${td.ascensionCount+1})` : ''}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Reset Trinity Rank to 0 and all nodes/mutations for a permanent stat boost this season. Higher rank = bigger boost.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;">
+        ${boosts.map(b => `
+          <div style="background:#0a0c12;border:1px solid #ff226622;border-radius:6px;padding:6px 8px;font-size:11px;">
+            <span style="color:var(--muted);">${b.stat}</span>
+            <span style="color:#3acc7a;font-family:'Cinzel',serif;float:right;">+${b.amount}</span>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:10px;color:#ff4444;margin-bottom:8px;">⚠ Rank resets to 0. All nodes and mutations lost. Stat boosts are permanent for this season.</div>
+      <button onclick="triggerAscension()" style="width:100%;font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #ff2266;background:rgba(255,34,102,0.08);color:#ff4444;cursor:pointer;">
+        ⬆ Ascend (Rank ${rank} → 0)
+      </button>
+    </div>`;
+}
+
+function triggerAscension() {
+  const td = trinityData;
+  const rank = td.rank || 0;
+  if(rank < 1) return;
+  if(!confirm(`Ascend? Your Trinity Rank (${rank}), all nodes, and mutations will reset. Your stat boosts will be permanently added for this season.`)) return;
+
+  const boostMult = 1 + (td.ascensionCount||0) * 0.1;
+  const newBoosts = [
+    { stat:'attack',   amount: Math.floor(rank * 2 * boostMult) },
+    { stat:'health',   amount: Math.floor(rank * 10 * boostMult) },
+    { stat:'atkSpeed', amount: parseFloat((rank * 0.02 * boostMult).toFixed(2)) },
+    { stat:'mana',     amount: Math.floor(rank * 5 * boostMult) },
+  ];
+
+  // Add to permanent boosts
+  if(!td.ascensionBoosts) td.ascensionBoosts = [];
+  newBoosts.forEach(b => td.ascensionBoosts.push(b));
+
+  // Apply to base stats immediately
+  newBoosts.forEach(b => {
+    G.baseStats[b.stat] = (G.baseStats[b.stat]||0) + b.amount;
+  });
+
+  td.ascensionCount = (td.ascensionCount||0) + 1;
+  td.rank = 0;
+  td.rankXP = 0;
+  td.unlockedNodes = [];
+  td.mutations = [];
+  td.classEnhancement = null;
+
+  const st = getStats();
+  G.maxHp = st.maxHp;
+  G.hp = Math.min(G.hp + newBoosts.find(b=>b.stat==='health')?.amount||0, G.maxHp);
+  G.maxMana = st.mana||100;
+  updateHpBar(); updateManaBar(); updateStatsPanel(); updateResourceBar();
+  saveTrinity().catch(()=>{});
+  saveGame();
+  log(`<span style="color:#ff4444">⬆ ASCENDED! Permanent stat boosts applied for this season!</span>`);
+  renderTrinityModal();
+}
+
+function renderTrinityMutations() {
+  const td = trinityData;
+  const rank = td.rank || 0;
+  const nextMutationRank = Math.ceil((td.mutations.length + 1) * 10);
+  if(rank < 10) return `<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px;">Mutations unlock at Trinity Rank 10, 20, 30...</div>`;
+
+  const available = rank >= nextMutationRank && td.mutations.length < Math.floor(rank/10);
+  let html = `<div style="font-family:'Cinzel',serif;font-size:11px;color:#aa77ff;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">🧬 Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
+
+  if(td.mutations.length > 0) {
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
+    td.mutations.forEach(mid => {
+      const m = TRINITY_MUTATIONS.find(x => x.id === mid);
+      if(!m) return;
+      html += `<div style="padding:4px 8px;border-radius:6px;border:1px solid #aa77ff44;background:#aa77ff11;font-size:10px;color:#aa77ff;">${m.icon} ${m.name}</div>`;
+    });
+    html += '</div>';
+  }
+
+  if(available) {
+    html += `<div style="font-size:11px;color:#3acc7a;margin-bottom:6px;">Choose a mutation for Rank ${nextMutationRank}:</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:5px;">`;
+    TRINITY_MUTATIONS.filter(m => !td.mutations.includes(m.id)).slice(0,4).forEach(m => {
+      html += `<div onclick="chooseMutation('${m.id}')" style="background:#0d1018;border:1px solid #aa77ff44;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        onmouseover="this.style.background='#aa77ff11'" onmouseout="this.style.background='#0d1018'">
+        <span style="font-size:16px;">${m.icon}</span>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:11px;color:#aa77ff;">${m.name}</div>
+          <div style="font-size:10px;color:var(--muted);">${m.desc}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  } else {
+    html += `<div style="font-size:10px;color:var(--muted);">Next mutation at Rank ${nextMutationRank} · Current rank: ${rank}</div>`;
+  }
+  return html;
+}
+
+function chooseMutation(mutationId) {
+  if(trinityData.mutations.includes(mutationId)) return;
+  trinityData.mutations.push(mutationId);
+  saveTrinity().catch(()=>{});
+  const m = TRINITY_MUTATIONS.find(x => x.id === mutationId);
+  log(`<span style="color:#aa77ff">🧬 Mutation chosen: ${m?.name}!</span>`);
+  renderTrinityModal();
+}
+
+function renderTrinitySimulate() {
+  return `
+    <div style="background:#0d1018;border:1px solid #3acc7a44;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:#3acc7a;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
+        ⚡ Simulate Waves
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Instantly simulate waves using your exact current stats. Results apply immediately.</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+        <input type="number" id="simulate-count" value="10" min="1" max="500" style="width:80px;background:#0a0c12;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;font-family:'Cinzel',serif;outline:none;">
+        <span style="font-size:11px;color:var(--muted);">waves to simulate</span>
+      </div>
+      <button onclick="simulateWaves()" style="width:100%;font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #3acc7a;background:rgba(58,204,122,0.08);color:#3acc7a;cursor:pointer;">
+        ▶ Simulate Now
+      </button>
+      <div id="simulate-results" style="margin-top:8px;"></div>
+    </div>`;
+}
+
+function simulateWaves() {
+  const count = parseInt(document.getElementById('simulate-count').value) || 10;
+  const results = document.getElementById('simulate-results');
+  if(results) results.innerHTML = '<div style="color:var(--muted);font-size:11px;text-align:center;">Simulating...</div>';
+
+  setTimeout(() => {
+    const st = getStats();
+    let totalGold = 0;
+    let totalXP = 0;
+    let lootFound = [];
+    let totalDmg = 0;
+
+    for(let w = 0; w < count; w++) {
+      const wave = (MAP.currentSegWave||G.wave||1) + w;
+      const enemy = rollEnemy(wave);
+      const playerLv = G.playerLevel || 1;
+
+      // Estimate kills needed (avg 1.2 enemies per wave for simplicity)
+      const enemiesPerWave = 1;
+      for(let e = 0; e < enemiesPerWave; e++) {
+        // Simulate damage until enemy dies
+        let enemyHp = enemy.hp;
+        const avgHit = Math.floor(st.attack * 0.85 * 1.0); // basic attack avg
+        const hitsNeeded = Math.ceil(enemyHp / Math.max(1, avgHit));
+        const dmgDealt = enemyHp;
+        totalDmg += dmgDealt;
+
+        // Gold + XP
+        totalGold += enemy.gold;
+        const xpGain = wave * 12;
+        totalXP += xpGain;
+
+        // Loot drop chance
+        const dropChance = {easy:0.12,medium:0.18,hard:0.28,extreme:0.40}[MAP.difficulty||'easy']||0.15;
+        if(Math.random() < dropChance + wave * 0.004) {
+          const slot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
+          const item = rollItem(slot, wave, false);
+          // Auto-equip if better
+          const existing = G.equipment[slot];
+          const newScore = Object.values(item.stats||{}).reduce((a,b)=>a+b,0);
+          const eqScore = existing ? Object.values(existing.stats||{}).reduce((a,b)=>a+b,0) : 0;
+          if(newScore > eqScore) {
+            if(existing) totalGold += existing.sellVal;
+            G.equipment[slot] = item;
+            lootFound.push(item);
+          } else {
+            totalGold += item.sellVal;
+          }
+        }
+      }
+    }
+
+    // Apply results
+    G.gold += totalGold;
+    awardXP(totalXP);
+    trinityEarnXP(totalDmg);
+
+    // Update HP/mana with new gear
+    const newSt = getStats();
+    G.maxHp = newSt.maxHp;
+    G.hp = Math.min(G.hp, G.maxHp);
+    G.maxMana = newSt.mana||100;
+    updateHpBar(); updateManaBar(); updateResourceBar(); updateStatsPanel(); updateEquipUI();
+    saveGame();
+
+    if(results) results.innerHTML = `
+      <div style="background:#0a0c12;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+          <span style="color:var(--muted);">Waves</span><span style="color:var(--text);font-family:'Cinzel',serif;">${count}</span>
+          <span style="color:var(--muted);">Gold earned</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">+${numberWithCommas(totalGold)}</span>
+          <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Cinzel',serif;">+${numberWithCommas(totalXP)}</span>
+          <span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Cinzel',serif;">${lootFound.length} pieces</span>
+          <span style="color:var(--muted);">Trinity XP</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">+${numberWithCommas(Math.floor(totalDmg))}</span>
+        </div>
+        ${lootFound.length>0?`<div style="margin-top:6px;font-size:10px;color:var(--muted);">Auto-equipped: ${lootFound.map(i=>`<span style="color:${(i.tier||i.rarity).color}">${i.name}</span>`).join(', ')}</div>`:''}
+      </div>`;
+  }, 50);
+}
+
+// ── TRINITY XP EARN ──
+function trinityEarnXP(dmgDealt) {
+  if(!sbUser || !trinityData) return;
+  trinityData.totalDmgDealt = (trinityData.totalDmgDealt||0) + dmgDealt;
+
+  // Only earn rank XP if above threshold (prevents early farming)
+  if(trinityData.totalDmgDealt < TRINITY_ORB_THRESHOLD) return;
+
+  const prevRank = trinityData.rank || 0;
+  trinityData.rankXP = (trinityData.rankXP||0) + dmgDealt;
+  while(trinityData.rankXP >= TRINITY_RANK_XP_PER_LEVEL) {
+    trinityData.rankXP -= TRINITY_RANK_XP_PER_LEVEL;
+    trinityData.rank = (trinityData.rank||0) + 1;
+    log(`<span style="color:#e8b84b">⚡ Trinity Rank ${trinityData.rank}!</span>`);
+    // Check mutation availability
+    if(trinityData.rank % 10 === 0) {
+      log(`<span style="color:#aa77ff">🧬 Mutation available! Open Trinity Force to choose.</span>`);
+    }
+  }
+  // Auto-save every 5 ranks
+  if(Math.floor((trinityData.rank||0)/5) > Math.floor(prevRank/5)) {
+    saveTrinity().catch(()=>{});
+  }
+}
+
+// ── APPLY TRINITY MUTATIONS IN COMBAT ──
+function hasMutation(id) {
+  return trinityData.mutations && trinityData.mutations.includes(id);
 }
 
 // ═══════════════════════════════════════════════
