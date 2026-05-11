@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.4.2</title>
+<title>Elemental Rift v2.4.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -462,7 +462,7 @@ let sbProfile = null; // players row
 
     <!-- Version -->
     <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;
-      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.4.2</p>
+      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.4.3</p>
   </div>
 </div>
 
@@ -511,7 +511,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.4.2 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.4.3 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -5411,8 +5411,9 @@ window.wipeLeaderboard = async function() {
 
 // ── SIGN OUT ──
 function honorableDeath() {
-  const orbsEarned = 0;
-  const orbTotal = trinityData.rank||0;
+  const trinityRank = trinityData.rank||0;
+  const orbsEarned = 0; // kept for signature compat
+  const orbTotal = trinityRank;
   const overlay = document.createElement('div');
   overlay.id = 'honorable-death-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
