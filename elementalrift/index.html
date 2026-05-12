@@ -3617,7 +3617,13 @@ function onEnemyDeath() {
   drawArena();
   saveGame();
     G._enemyDeathInProgress = false;
-    onSegmentWaveComplete();
+    // If a level-up popup is about to open (or is already open), defer wave completion
+    // until the player dismisses it — otherwise the next spawn gets skipped entirely.
+    if(spPopupOpen || spPending > 0 || passivePending > 0) {
+      G._pendingWaveComplete = true;
+    } else {
+      onSegmentWaveComplete();
+    }
   } catch(e) {
     console.error('onEnemyDeath error:', e);
     G._enemyDeathInProgress = false;
@@ -6240,6 +6246,7 @@ function selectImbue(imbue) {
 
   G._deathInProgress = false;
   G._enemyDeathInProgress = false;
+  G._pendingWaveComplete = false;
   G.buffs = {};
   G.loadout[0] = basicId;
   G.loadout[1] = skill1Id;
@@ -6488,6 +6495,12 @@ function closeSPPopup() {
   spPopupOpen = false;
   updateXPBar();
   saveGame();
+  // Resume deferred wave completion (enemy died while level-up popup was pending)
+  if(G._pendingWaveComplete) {
+    G._pendingWaveComplete = false;
+    onSegmentWaveComplete();
+    return;
+  }
   // Restore combat
   if(G.enemy && G.enemy.hp > 0) {
     G.combatActive = true;
