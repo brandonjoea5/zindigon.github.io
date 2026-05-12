@@ -53,6 +53,275 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #arena{flex:1;position:relative;overflow:hidden;min-height:0;}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;transform-origin:center center;}
 
+/* ══════════════════════════════════════════
+   ACTIVE ARENA MODE
+   ══════════════════════════════════════════ */
+
+/* Full-screen overlay */
+#active-arena-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:300;
+  display:none;flex-direction:column;
+  font-family:'Crimson Pro',serif;
+}
+#active-arena-screen.open{display:flex;}
+
+/* Top bar */
+.aa-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;background:#0d1018;border-bottom:1px solid var(--border);
+  flex-shrink:0;gap:8px;
+}
+.aa-topbar-left{display:flex;flex-direction:column;gap:1px;}
+.aa-round-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;}
+.aa-round-val{font-family:'Cinzel',serif;font-size:16px;font-weight:900;color:var(--gold);line-height:1;}
+.aa-hp-col{display:flex;flex-direction:column;gap:3px;flex:1;max-width:160px;}
+.aa-bar-row{display:flex;align-items:center;gap:5px;}
+.aa-bar-lbl{font-size:9px;color:var(--muted);width:30px;text-align:right;flex-shrink:0;}
+.aa-bar-track{flex:1;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;}
+.aa-bar-fill{height:100%;border-radius:4px;transition:width 0.25s;}
+.aa-bar-fill.player{background:linear-gradient(90deg,#cc2222,#ff5555);}
+.aa-bar-fill.boss{background:linear-gradient(90deg,#8b0000,#ff2266);}
+.aa-bar-nums{font-size:9px;color:var(--muted);min-width:36px;text-align:right;}
+.aa-topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.aa-trinity-label{font-size:9px;color:#8855ff;text-transform:uppercase;letter-spacing:0.1em;}
+.aa-trinity-val{font-family:'Cinzel',serif;font-size:13px;color:#aa77ff;}
+
+/* Arena viewport */
+.aa-arena{
+  flex:1;position:relative;overflow:hidden;min-height:0;
+  background:radial-gradient(ellipse at 50% 40%,#1a0a20 0%,#0a0c12 70%);
+}
+
+/* Boss area — top 55% */
+.aa-boss-zone{
+  position:absolute;top:0;left:0;right:0;height:58%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;
+}
+.aa-boss-name{font-family:'Cinzel',serif;font-size:12px;color:#ff2266;letter-spacing:0.1em;}
+.aa-boss-sprite{font-size:52px;line-height:1;transition:transform 0.12s;}
+.aa-boss-sprite.lunge{transform:translateY(12px) scale(1.08);}
+
+/* Phase + timer display */
+.aa-phase-display{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.12em;
+  color:var(--muted);text-transform:uppercase;white-space:nowrap;
+}
+.aa-timer-ring{
+  position:absolute;top:6px;right:10px;
+  display:flex;flex-direction:column;align-items:center;
+}
+.aa-timer-lbl{font-size:8px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+.aa-timer-num{
+  font-family:'Cinzel',serif;font-size:24px;font-weight:900;line-height:1;
+  transition:color 0.2s;
+}
+
+/* Telegraph zones — covers lower half of arena */
+.aa-lanes{
+  position:absolute;bottom:0;left:0;right:0;height:42%;
+  display:flex;
+}
+.aa-lane{
+  flex:1;border-right:1px solid #1a1f2e;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:9px;color:#2a2f45;letter-spacing:0.1em;
+  transition:background 0.18s,border-color 0.18s;
+  position:relative;
+}
+.aa-lane:last-child{border-right:none;}
+.aa-lane.danger{background:rgba(232,58,58,0.18);border-color:rgba(232,58,58,0.3);}
+.aa-lane.danger::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(232,58,58,0.08) 0%,rgba(232,58,58,0.22) 100%);
+}
+.aa-lane.safe{background:rgba(58,204,122,0.07);}
+.aa-lane.sweep-danger{background:rgba(255,34,102,0.2);border-color:rgba(255,34,102,0.4);}
+
+/* Player character in lane area */
+.aa-player{
+  position:absolute;bottom:0;height:42%;
+  display:flex;align-items:center;justify-content:center;
+  transition:left 0.13s ease,right 0.13s ease;
+  width:33.33%;pointer-events:none;
+}
+.aa-player-inner{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.aa-player-sprite{font-size:28px;line-height:1;}
+.aa-player-indicator{
+  width:8px;height:8px;border-radius:50%;
+  background:#3acc7a;box-shadow:0 0 6px rgba(58,204,122,0.6);
+}
+
+/* Flash / hit overlay */
+.aa-flash{
+  position:absolute;inset:0;pointer-events:none;opacity:0;
+  transition:opacity 0.1s;
+}
+.aa-flash.hit-flash{background:rgba(232,58,58,0.25);}
+.aa-flash.dodge-flash{background:rgba(58,204,122,0.12);}
+.aa-flash.parry-flash{background:rgba(255,221,0,0.18);}
+.aa-flash.show{opacity:1;}
+
+/* Floating result text */
+.aa-result-pop{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-family:'Cinzel',serif;font-size:18px;font-weight:900;
+  pointer-events:none;opacity:0;
+  white-space:nowrap;
+  transition:none;
+}
+.aa-result-pop.show{
+  animation:aa-pop 0.85s ease-out forwards;
+}
+@keyframes aa-pop{
+  0%{opacity:1;top:45%;transform:translateX(-50%) scale(1.2);}
+  60%{opacity:1;top:35%;transform:translateX(-50%) scale(1);}
+  100%{opacity:0;top:25%;transform:translateX(-50%) scale(0.9);}
+}
+
+/* Controls area */
+.aa-controls{
+  flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);
+  padding:8px 10px 10px;
+  display:flex;flex-direction:column;gap:6px;
+}
+.aa-ctrl-section-label{
+  font-family:'Cinzel',serif;font-size:9px;color:var(--muted);
+  letter-spacing:0.14em;text-transform:uppercase;margin-bottom:3px;
+}
+/* Move buttons — 2 large side-by-side */
+.aa-move-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.aa-btn-move{
+  font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:0.06em;
+  padding:0;border-radius:10px;border:1px solid #3a4060;cursor:pointer;
+  background:rgba(0,0,0,0.35);color:#7080bb;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;height:64px;transition:all 0.1s;
+  position:relative;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.aa-btn-move .mv-arrow{font-size:22px;line-height:1;}
+.aa-btn-move .mv-label{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;}
+.aa-btn-move:active{transform:scale(0.94);opacity:0.8;}
+.aa-btn-move.here{
+  border-color:#3acc7a;color:#3acc7a;
+  background:rgba(58,204,122,0.1);
+  box-shadow:0 0 10px rgba(58,204,122,0.2);
+}
+
+/* Circular action buttons — float over bottom-right of arena */
+.aa-action-cluster{
+  position:absolute;
+  bottom:10px;right:10px;
+  display:flex;flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+  z-index:5;
+}
+.aa-action-row{display:flex;gap:8px;align-items:center;}
+.aa-btn-circ{
+  width:52px;height:52px;
+  border-radius:50%;
+  border:2px solid;
+  cursor:pointer;
+  background:rgba(10,12,18,0.82);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:1px;
+  position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+  transition:transform 0.1s,opacity 0.1s;
+  backdrop-filter:blur(4px);
+}
+.aa-btn-circ:active{transform:scale(0.88);}
+.aa-btn-circ.disabled{opacity:0.28;pointer-events:none;}
+.aa-btn-circ .ci-icon{font-size:18px;line-height:1;}
+.aa-btn-circ .ci-label{font-family:'Cinzel',serif;font-size:7px;letter-spacing:0.08em;color:inherit;opacity:0.85;}
+.aa-btn-circ .ci-cd{
+  position:absolute;top:2px;left:50%;transform:translateX(-50%);
+  font-family:'Cinzel',serif;font-size:7px;color:rgba(255,255,255,0.65);
+  pointer-events:none;
+}
+/* Circular CD ring — SVG overlay */
+.aa-btn-circ .ci-ring{
+  position:absolute;inset:0;border-radius:50%;
+  pointer-events:none;
+}
+/* Color variants */
+.aa-btn-circ.c-attack{border-color:#e83a3a;color:#e83a3a;}
+.aa-btn-circ.c-block {border-color:#88aaff;color:#88aaff;}
+.aa-btn-circ.c-parry {border-color:#ffdd00;color:#ffdd00;}
+
+/* Combat mini-log at bottom */
+.aa-log{
+  flex-shrink:0;height:46px;overflow:hidden;
+  padding:4px 12px;
+  display:flex;flex-direction:column-reverse;gap:1px;
+  background:#0a0c12;border-top:1px solid #1a1f2e;
+}
+.aa-log-line{font-size:11px;line-height:1.4;color:var(--muted);}
+.aa-log-line.l-hit{color:#ff7777;}
+.aa-log-line.l-dodge{color:#3acc7a;}
+.aa-log-line.l-parry{color:#ffdd00;}
+.aa-log-line.l-block{color:#88aaff;}
+.aa-log-line.l-dmg{color:#ff4d1a;}
+.aa-log-line.l-round{color:#aa77ff;font-weight:600;}
+
+/* LOBBY & DEATH overlays (inside arena screen) */
+.aa-overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0.88);
+  z-index:10;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px 20px;gap:14px;
+}
+.aa-overlay.hidden{display:none;}
+.aa-ov-title{font-family:'Cinzel',serif;font-size:22px;font-weight:900;text-align:center;}
+.aa-ov-sub{font-size:13px;color:var(--muted);text-align:center;max-width:320px;line-height:1.6;}
+.aa-rules-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  background:#111520;border:1px solid var(--border);border-radius:10px;
+  padding:14px;width:100%;max-width:400px;
+}
+.aa-rule-blk{display:flex;flex-direction:column;gap:3px;}
+.aa-rule-lbl{font-family:'Cinzel',serif;font-size:8px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2px;}
+.aa-rule-item{font-size:11px;color:var(--text);line-height:1.5;}
+.aa-rule-item b{color:var(--gold);}
+.aa-start-btn{
+  font-family:'Cinzel',serif;font-size:15px;font-weight:700;
+  padding:14px 36px;border-radius:10px;
+  border:1px solid var(--gold);background:rgba(232,184,75,0.1);color:var(--gold);
+  cursor:pointer;letter-spacing:0.08em;width:100%;max-width:320px;
+  transition:background 0.15s;
+}
+.aa-start-btn:active{background:rgba(232,184,75,0.2);}
+.aa-back-btn{
+  font-family:'Cinzel',serif;font-size:11px;
+  padding:8px 20px;border-radius:8px;
+  border:1px solid var(--border);background:transparent;color:var(--muted);
+  cursor:pointer;width:100%;max-width:320px;
+}
+/* Stats grid on death screen */
+.aa-stat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  background:#111520;border:1px solid var(--border);border-radius:10px;
+  padding:14px;width:100%;max-width:360px;
+}
+.aa-sg-label{font-size:11px;color:var(--muted);}
+.aa-sg-val{font-family:'Cinzel',serif;font-size:14px;color:var(--gold);text-align:right;}
+.aa-reward-box{
+  background:#0d1018;border:1px solid #8855ff44;border-radius:10px;
+  padding:12px 16px;width:100%;max-width:360px;
+}
+.aa-reward-title{font-family:'Cinzel',serif;font-size:9px;color:#aa77ff;letter-spacing:0.14em;text-transform:uppercase;text-align:center;margin-bottom:8px;}
+.aa-reward-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0;}
+
 /* ── MUTE BUTTON ── */
 #mute-btn{position:absolute;top:10px;right:14px;background:rgba(0,0,0,0.45);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:13px;cursor:pointer;z-index:6;color:var(--muted);font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.05em;transition:border-color 0.15s;}
 #mute-btn:hover{border-color:var(--gold);}
@@ -579,6 +848,13 @@ let sbProfile = null; // players row
     <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compete for the leaderboard · Earn milestone rewards</div>
   </div>
 
+  <!-- ACTIVE ARENA ENTRY -->
+  <div style="width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:2px;text-align:center;">
+    <div style="font-family:'Cinzel',serif;font-size:11px;color:#ff6644;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">⚔️ Rift Gauntlet</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Skill-based arena mode — dodge, block, and parry the boss. Earns Trinity Rank XP. Separate leaderboard.</div>
+    <button onclick="aaOpen()" style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px 28px;border-radius:10px;border:1px solid #ff6644;background:rgba(255,102,68,0.08);color:#ff6644;cursor:pointer;width:100%;max-width:320px;">⚔️ Enter Rift Gauntlet</button>
+  </div>
+
   <!-- SIMULATE WAVES — available after first run -->
   <div id="map-simulate-section" style="width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:2px;">
     <div style="font-family:'Cinzel',serif;font-size:11px;color:#3acc7a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;text-align:center;">⚡ Simulate Waves</div>
@@ -595,6 +871,161 @@ let sbProfile = null; // players row
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════
+     ACTIVE ARENA SCREEN
+     ══════════════════════════════════════════ -->
+<div id="active-arena-screen">
+
+  <!-- TOP BAR -->
+  <div class="aa-topbar">
+    <div class="aa-topbar-left">
+      <div class="aa-round-label">Round</div>
+      <div class="aa-round-val" id="aa-round">1</div>
+    </div>
+    <div class="aa-hp-col">
+      <div class="aa-bar-row">
+        <span class="aa-bar-lbl">You</span>
+        <div class="aa-bar-track"><div class="aa-bar-fill player" id="aa-player-hp-bar" style="width:100%"></div></div>
+        <span class="aa-bar-nums" id="aa-player-hp-text">100/100</span>
+      </div>
+      <div class="aa-bar-row">
+        <span class="aa-bar-lbl" style="color:#ff2266;">Boss</span>
+        <div class="aa-bar-track"><div class="aa-bar-fill boss" id="aa-boss-hp-bar" style="width:100%"></div></div>
+        <span class="aa-bar-nums" id="aa-boss-hp-text">100/100</span>
+      </div>
+    </div>
+    <div class="aa-topbar-right">
+      <div class="aa-trinity-label">⚡ Trinity XP</div>
+      <div class="aa-trinity-val" id="aa-trinity-earned">+0</div>
+    </div>
+  </div>
+
+  <!-- ARENA VIEWPORT -->
+  <div class="aa-arena" id="aa-arena">
+
+    <!-- Phase label -->
+    <div class="aa-phase-display" id="aa-phase-label">Waiting...</div>
+
+    <!-- Countdown timer -->
+    <div class="aa-timer-ring">
+      <div class="aa-timer-lbl">React</div>
+      <div class="aa-timer-num" id="aa-timer" style="color:#3acc7a;">–</div>
+    </div>
+
+    <!-- Boss -->
+    <div class="aa-boss-zone">
+      <div class="aa-boss-name" id="aa-boss-name">THE RIFT WARDEN</div>
+      <div class="aa-boss-sprite" id="aa-boss-sprite">👹</div>
+    </div>
+
+    <!-- Lane telegraph zones -->
+    <div class="aa-lanes">
+      <div class="aa-lane" id="aa-lane-left">LEFT</div>
+      <div class="aa-lane" id="aa-lane-mid">MID</div>
+      <div class="aa-lane" id="aa-lane-right">RIGHT</div>
+    </div>
+
+    <!-- Player -->
+    <div class="aa-player" id="aa-player" style="left:33.33%;">
+      <div class="aa-player-inner">
+        <div class="aa-player-sprite" id="aa-player-sprite">🧙</div>
+        <div class="aa-player-indicator"></div>
+      </div>
+    </div>
+
+    <!-- Flash overlays -->
+    <div class="aa-flash hit-flash"   id="aa-flash-hit"></div>
+    <div class="aa-flash dodge-flash" id="aa-flash-dodge"></div>
+    <div class="aa-flash parry-flash" id="aa-flash-parry"></div>
+
+    <!-- Floating result popup -->
+    <div class="aa-result-pop" id="aa-result-pop"></div>
+
+    <!-- LOBBY OVERLAY -->
+    <div class="aa-overlay" id="aa-lobby">
+      <div style="font-size:42px;">⚔️</div>
+      <div class="aa-ov-title" style="color:var(--gold);">Rift Gauntlet</div>
+      <div class="aa-ov-sub">A pure skill test. Read the boss's attack, move to safety, then strike. Every round the boss gets faster and harder.</div>
+      <div class="aa-rules-grid">
+        <div class="aa-rule-blk">
+          <div class="aa-rule-lbl">Actions</div>
+          <div class="aa-rule-item"><b>Attack</b> — deal damage (2s CD)</div>
+          <div class="aa-rule-item"><b>Block</b> — absorb next hit (6s CD)</div>
+          <div class="aa-rule-item"><b>Parry</b> — reflect if timed right (4s CD)</div>
+        </div>
+        <div class="aa-rule-blk">
+          <div class="aa-rule-lbl">Survival</div>
+          <div class="aa-rule-item"><b>Left / Right</b> — dodge the attack zone before time runs out. No middle lane — commit to a side.</div>
+          <div class="aa-rule-item"><b>Sweep</b> — full arena hit. Block or Parry to survive.</div>
+        </div>
+        <div class="aa-rule-blk" style="grid-column:span 2;border-top:1px solid var(--border);padding-top:10px;margin-top:2px;">
+          <div class="aa-rule-lbl">Rewards</div>
+          <div class="aa-rule-item">Earn <b>Trinity Rank XP</b> based on total damage dealt. Rounds survived also posted to the Arena Leaderboard.</div>
+        </div>
+      </div>
+      <button class="aa-start-btn" id="aa-start-btn" onclick="aaBegin()">Enter the Gauntlet</button>
+      <button class="aa-back-btn" onclick="aaClose()">← Back to Main</button>
+    </div>
+
+    <!-- DEATH OVERLAY -->
+    <div class="aa-overlay hidden" id="aa-death">
+      <div style="font-size:42px;">💀</div>
+      <div class="aa-ov-title" style="color:#e83a3a;">Fallen</div>
+      <div class="aa-ov-sub" id="aa-death-sub">You reached round 1</div>
+      <div class="aa-stat-grid" id="aa-death-stats"></div>
+      <div class="aa-reward-box" id="aa-reward-box">
+        <div class="aa-reward-title">Session Rewards</div>
+        <div id="aa-reward-rows"></div>
+      </div>
+      <button class="aa-start-btn" onclick="aaBegin()">Try Again</button>
+      <button class="aa-back-btn" onclick="aaClose()">← Back to Main</button>
+    </div>
+
+  <!-- Circular action buttons — float over bottom-right of arena -->
+  <div class="aa-action-cluster">
+    <div class="aa-action-row">
+      <button class="aa-btn-circ c-parry" id="aa-btn-parry" onclick="aaBtnAction('parry')">
+        <span class="ci-icon">✨</span>
+        <span class="ci-label">Parry</span>
+        <span class="ci-cd" id="aa-cd-parry"></span>
+        <svg class="ci-ring" id="aa-ring-parry" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="#ffdd00" stroke-width="2" stroke-dasharray="150.8" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 26 26)" style="transition:stroke-dashoffset linear;opacity:0.5"/></svg>
+      </button>
+      <button class="aa-btn-circ c-block" id="aa-btn-block" onclick="aaBtnAction('block')">
+        <span class="ci-icon">🛡️</span>
+        <span class="ci-label">Block</span>
+        <span class="ci-cd" id="aa-cd-block"></span>
+        <svg class="ci-ring" id="aa-ring-block" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="#88aaff" stroke-width="2" stroke-dasharray="150.8" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 26 26)" style="transition:stroke-dashoffset linear;opacity:0.5"/></svg>
+      </button>
+      <button class="aa-btn-circ c-attack" id="aa-btn-attack" onclick="aaBtnAction('attack')">
+        <span class="ci-icon">⚔️</span>
+        <span class="ci-label">Attack</span>
+        <span class="ci-cd" id="aa-cd-attack"></span>
+        <svg class="ci-ring" id="aa-ring-attack" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="#e83a3a" stroke-width="2" stroke-dasharray="150.8" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 26 26)" style="transition:stroke-dashoffset linear;opacity:0.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  </div><!-- end aa-arena -->
+
+  <!-- CONTROLS — move only -->
+  <div class="aa-controls" style="padding:8px 10px 12px;">
+    <div class="aa-move-row">
+      <button class="aa-btn-move" id="aa-btn-left" onclick="aaMove('left')">
+        <span class="mv-arrow">◀</span>
+        <span class="mv-label">Left</span>
+      </button>
+      <button class="aa-btn-move" id="aa-btn-right" onclick="aaMove('right')">
+        <span class="mv-arrow">▶</span>
+        <span class="mv-label">Right</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MINI LOG -->
+  <div class="aa-log" id="aa-log"></div>
+
+</div><!-- end active-arena-screen -->
 
 <!-- AUTH MODAL -->
 <div id="auth-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;">
@@ -7139,6 +7570,476 @@ function syncMobileLog() {
 // IDLE LOOP
 // ═══════════════════════════════════════════════
 function idlePulse(){applyScreenShake();drawArena();requestAnimationFrame(idlePulse);}
+
+// ═══════════════════════════════════════════════
+// RIFT GAUNTLET — ACTIVE ARENA MODE
+// ═══════════════════════════════════════════════
+
+const AA_BOSS_NAMES  = ['THE RIFT WARDEN','VOID HERALD','CHAOS TITAN','OBLIVION KING','THE ETERNAL','DREAD SOVEREIGN','ABYSS HERALD'];
+const AA_BOSS_SPRITES= ['👹','👾','🐲','💀','☠️','🔮','👁️'];
+const AA_CLASS_SPRITES = { mage:'🧙', warrior:'🛡️', rogue:'🗡️' };
+
+// Reaction window: generous early, tightens each round, floor at 750ms
+function aaReactMs(round) { return Math.max(750, 2800 - (round - 1) * 90); }
+// Telegraph pre-delay before countdown starts
+function aaTelegraphMs(round) { return Math.max(400, 900 - (round - 1) * 25); }
+
+const AA = {
+  open: false,
+  round: 1,
+  phase: 'lobby',   // lobby | telegraph | window | resolve | between | dead
+  playerPos: 'left', // left | right
+  playerHp: 0, playerMaxHp: 0,
+  bossHp: 0, bossMaxHp: 0, bossDmg: 0,
+  totalTrinityXP: 0,
+  totalDmgDealt: 0,
+  roundsComplete: 0,
+  dodges: 0, hits: 0, blocks: 0, parries: 0,
+  cds: { attack: 0, block: 0, parry: 0 },
+  cdTimers: {},
+  blockArmed: false,
+  parryArmed: false,
+  currentAtk: null,
+  phaseTimer: null,
+  countdownTimer: null,
+  countdownVal: 0,
+};
+
+function aaOpen() {
+  document.getElementById('map-screen').classList.add('hidden');
+  document.getElementById('active-arena-screen').classList.add('open');
+  AA.open = true;
+  aaShowLobby();
+}
+
+function aaClose() {
+  document.getElementById('active-arena-screen').classList.remove('open');
+  AA.open = false;
+  aaClearTimers();
+  showMapScreen(false);
+}
+
+function aaShowLobby() {
+  AA.phase = 'lobby';
+  document.getElementById('aa-lobby').classList.remove('hidden');
+  document.getElementById('aa-death').classList.add('hidden');
+  // Set player sprite based on class
+  const spr = AA_CLASS_SPRITES[G.playerClass] || '🧙';
+  document.getElementById('aa-player-sprite').textContent = spr;
+  aaSetPhaseLabel('');
+  aaSetTimer(null);
+}
+
+function aaBegin() {
+  // Reset state
+  AA.round = 1;
+  AA.phase = 'between';
+  AA.playerPos = 'left';
+  AA.playerHp = 100;
+  AA.playerMaxHp = 100;
+  AA.bossHp = 0;
+  AA.totalTrinityXP = 0;
+  AA.totalDmgDealt = 0;
+  AA.roundsComplete = 0;
+  AA.dodges = 0; AA.hits = 0; AA.blocks = 0; AA.parries = 0;
+  AA.cds = { attack: 0, block: 0, parry: 0 };
+  AA.blockArmed = false;
+  AA.parryArmed = false;
+  aaClearTimers();
+
+  document.getElementById('aa-lobby').classList.add('hidden');
+  document.getElementById('aa-death').classList.add('hidden');
+  document.getElementById('aa-log').innerHTML = '';
+  ['attack','block','parry'].forEach(a => {
+    const btn = document.getElementById('aa-btn-'+a);
+    if (btn) btn.classList.remove('disabled');
+    const lbl = document.getElementById('aa-cd-'+a);
+    if (lbl) lbl.textContent = '';
+    const ring = document.getElementById('aa-ring-'+a);
+    if (ring) {
+      const circle = ring.querySelector('circle');
+      if (circle) { circle.style.transition='none'; circle.style.strokeDashoffset='0'; }
+    }
+  });
+  aaUpdatePos();
+  aaNextRound();
+}
+
+function aaNextRound() {
+  aaClearTimers();
+  AA.bossMaxHp = Math.floor(100 * Math.pow(1.35, AA.round - 1));
+  AA.bossHp    = AA.bossMaxHp;
+  AA.bossDmg   = Math.floor(18 * Math.pow(1.18, AA.round - 1));
+  // Partial heal between rounds (25% max HP)
+  if (AA.round > 1) {
+    AA.playerHp = Math.min(AA.playerMaxHp, AA.playerHp + Math.floor(AA.playerMaxHp * 0.25));
+  }
+  // Update boss sprite
+  const bossIdx = Math.floor((AA.round - 1) / 3) % AA_BOSS_NAMES.length;
+  document.getElementById('aa-boss-name').textContent   = AA_BOSS_NAMES[bossIdx];
+  document.getElementById('aa-boss-sprite').textContent = AA_BOSS_SPRITES[bossIdx];
+  document.getElementById('aa-round').textContent = AA.round;
+  aaUpdateHpBars();
+  aaUpdateTrinityDisplay();
+  aaLog(`━ Round ${AA.round} — Boss HP: ${AA.bossMaxHp} · Dmg: ${AA.bossDmg} · React: ${(aaReactMs(AA.round)/1000).toFixed(1)}s ━`, 'l-round');
+  aaSetPhaseLabel('Round ' + AA.round + ' — Prepare!');
+  // Brief pause then start first attack sequence
+  AA.phaseTimer = setTimeout(() => aaTelegraphAttack(), 900);
+}
+
+function aaTelegraphAttack() {
+  if (AA.phase === 'dead') return;
+  AA.blockArmed = false;
+  AA.parryArmed = false;
+
+  // Pick attack type — only left or right now (no mid lane), sweep still possible
+  const sweepChance = Math.min(0.22, 0.08 + (AA.round - 1) * 0.012);
+  const r = Math.random();
+  let atk;
+  if (r < sweepChance)   { atk = 'sweep'; }
+  else if (r < sweepChance + 0.50) { atk = 'left'; }
+  else                             { atk = 'right'; }
+
+  AA.currentAtk = atk;
+  AA.phase = 'telegraph';
+
+  // Show telegraph
+  aaShowTelegraph(atk);
+  const verb = atk === 'sweep' ? 'SWEEP — full arena!' : `Attacking ${atk.toUpperCase()}`;
+  aaSetPhaseLabel('⚠️ ' + verb);
+  aaLog(`Boss: ${verb}`, 'l-hit');
+
+  // Brief telegraph pre-show, then start countdown
+  const preDelay = aaTelegraphMs(AA.round);
+  AA.phaseTimer = setTimeout(() => aaStartCountdown(atk), preDelay);
+}
+
+function aaStartCountdown(atk) {
+  if (AA.phase === 'dead') return;
+  AA.phase = 'window';
+  const totalMs = aaReactMs(AA.round);
+  const steps   = Math.ceil(totalMs / 1000);
+  AA.countdownVal = steps;
+  aaSetTimer(steps);
+
+  let elapsed = 0;
+  AA.countdownTimer = setInterval(() => {
+    elapsed += 1000;
+    const remaining = Math.ceil((totalMs - elapsed) / 1000);
+    AA.countdownVal = remaining;
+    aaSetTimer(Math.max(0, remaining));
+    if (elapsed >= totalMs) {
+      clearInterval(AA.countdownTimer);
+      AA.countdownTimer = null;
+      aaResolveAttack();
+    }
+  }, 1000);
+}
+
+function aaResolveAttack() {
+  if (AA.phase === 'dead') return;
+  AA.phase = 'resolve';
+  aaClearTelegraph();
+  aaSetTimer(null);
+  aaSetPhaseLabel('');
+
+  const atk = AA.currentAtk;
+  const safePos = { left:['right'], right:['left'], sweep:[] };
+  const isSafe  = safePos[atk].includes(AA.playerPos);
+
+  if (AA.blockArmed) {
+    // Block absorbs the hit entirely
+    AA.blocks++;
+    aaFlash('dodge');
+    aaPopResult('BLOCKED!', '#88aaff');
+    aaLog('🛡️ Block absorbed the hit!', 'l-block');
+    playSound('level_up');
+    AA.blockArmed = false;
+  } else if (AA.parryArmed) {
+    // Parry — reflects damage to boss
+    const reflectDmg = Math.floor(AA.bossDmg * 0.8);
+    AA.bossHp = Math.max(0, AA.bossHp - reflectDmg);
+    AA.totalDmgDealt += reflectDmg;
+    AA.parries++;
+    aaFlash('parry');
+    aaPopResult('PARRY! +' + reflectDmg, '#ffdd00');
+    aaLog(`✨ Parry! Reflected ${reflectDmg} dmg to boss`, 'l-parry');
+    aaUpdateHpBars();
+    AA.parryArmed = false;
+    if (AA.bossHp <= 0) { setTimeout(aaBossDefeated, 350); return; }
+  } else if (isSafe) {
+    AA.dodges++;
+    aaFlash('dodge');
+    aaPopResult('DODGED!', '#3acc7a');
+    aaLog(`✓ Dodged ${atk.toUpperCase()} attack`, 'l-dodge');
+    playSound('hit_physical');
+  } else {
+    // Player takes damage
+    const dmg = Math.floor(AA.bossDmg * (0.85 + Math.random() * 0.3));
+    AA.playerHp = Math.max(0, AA.playerHp - dmg);
+    AA.hits++;
+    aaFlash('hit');
+    aaPopResult('-' + dmg, '#ff4444');
+    aaLog(`💥 Hit for ${dmg} HP`, 'l-hit');
+    aaUpdateHpBars();
+    triggerScreenShake(4, 0.2);
+    if (AA.playerHp <= 0) { setTimeout(aaDeath, 400); return; }
+  }
+
+  // Continue — brief pause then boss may counter or next telegraph
+  AA.phaseTimer = setTimeout(() => {
+    if (AA.bossHp <= 0) { aaBossDefeated(); return; }
+    // Alternate: small chance boss does an immediate second hit at higher rounds
+    AA.phaseTimer = setTimeout(() => aaTelegraphAttack(), 650);
+  }, 450);
+}
+
+function aaBossDefeated() {
+  if (AA.phase === 'dead') return;
+  AA.roundsComplete++;
+  aaLog(`💥 Boss defeated! Round ${AA.round} complete.`, 'l-parry');
+  aaSetPhaseLabel('Round ' + AA.round + ' Clear!');
+  aaPopResult('ROUND ' + AA.round + ' CLEAR!', '#e8b84b');
+  // Award Trinity XP for the round: total dmg dealt * a small multiplier
+  const roundXP = Math.floor(AA.totalDmgDealt * 0.4 + AA.round * 500);
+  AA.totalTrinityXP += roundXP;
+  aaLog(`⚡ +${roundXP.toLocaleString()} Trinity XP this round`, 'l-round');
+  aaUpdateTrinityDisplay();
+  AA.round++;
+  AA.phase = 'between';
+  AA.phaseTimer = setTimeout(() => aaNextRound(), 1200);
+}
+
+function aaDeath() {
+  if (AA.phase === 'dead') return;
+  AA.phase = 'dead';
+  aaClearTimers();
+  aaClearTelegraph();
+  aaSetTimer(null);
+
+  // Push Trinity XP to main game
+  if (AA.totalTrinityXP > 0) {
+    trinityEarnXP(AA.totalTrinityXP);
+    saveTrinity().catch(() => {});
+    log(`<span style="color:#aa77ff">⚡ Rift Gauntlet: +${AA.totalTrinityXP.toLocaleString()} Trinity XP earned!</span>`);
+  }
+
+  // Build death screen
+  const survived = AA.round - 1;
+  document.getElementById('aa-death-sub').textContent =
+    `Reached Round ${AA.round} · ${AA.totalDmgDealt.toLocaleString()} total damage`;
+
+  document.getElementById('aa-death-stats').innerHTML = `
+    <div class="aa-sg-label">Rounds survived</div><div class="aa-sg-val">${survived}</div>
+    <div class="aa-sg-label">Damage dealt</div><div class="aa-sg-val">${AA.totalDmgDealt.toLocaleString()}</div>
+    <div class="aa-sg-label">Dodges</div><div class="aa-sg-val">${AA.dodges}</div>
+    <div class="aa-sg-label">Blocks</div><div class="aa-sg-val">${AA.blocks}</div>
+    <div class="aa-sg-label">Parries</div><div class="aa-sg-val">${AA.parries}</div>
+    <div class="aa-sg-label">Times hit</div><div class="aa-sg-val">${AA.hits}</div>
+  `;
+
+  document.getElementById('aa-reward-rows').innerHTML = `
+    <div class="aa-reward-row">
+      <span style="color:var(--muted);">Trinity Rank XP</span>
+      <span style="color:#aa77ff;font-family:'Cinzel',serif;">+${AA.totalTrinityXP.toLocaleString()}</span>
+    </div>
+    ${survived >= 3 ? `<div class="aa-reward-row"><span style="color:var(--muted);">Arena Title Eligible</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">✓</span></div>` : ''}
+  `;
+
+  document.getElementById('aa-death').classList.remove('hidden');
+}
+
+// ── Player movement ──
+function aaMove(pos) {
+  if (AA.phase === 'lobby' || AA.phase === 'dead') return;
+  AA.playerPos = pos;
+  aaUpdatePos();
+}
+
+// ── Action buttons ──
+function aaBtnAction(type) {
+  if (AA.phase === 'lobby' || AA.phase === 'dead') return;
+  if (AA.cds[type] > 0) return;
+
+  if (type === 'attack') {
+    if (AA.phase !== 'telegraph' && AA.phase !== 'window' && AA.phase !== 'between') return;
+    const dmg = Math.floor((10 + AA.round * 5) * (0.8 + Math.random() * 0.4));
+    AA.bossHp = Math.max(0, AA.bossHp - dmg);
+    AA.totalDmgDealt += dmg;
+    aaLog(`⚔ Attack! -${dmg} to boss`, 'l-dodge');
+    aaPopResult('⚔ ' + dmg, '#e8b84b');
+    // Lunge animation on boss
+    const spr = document.getElementById('aa-boss-sprite');
+    spr.classList.add('lunge');
+    setTimeout(() => spr.classList.remove('lunge'), 180);
+    aaUpdateHpBars();
+    aaStartCD('attack', 2000);
+    playSound('hit_fire');
+    if (AA.bossHp <= 0) { setTimeout(aaBossDefeated, 300); }
+
+  } else if (type === 'block') {
+    AA.blockArmed = true;
+    aaLog('🛡️ Blocking next hit...', 'l-block');
+    aaStartCD('block', 6000);
+
+  } else if (type === 'parry') {
+    // Parry arms a window — if it's during the window phase it fires on resolve
+    if (AA.phase === 'window') {
+      AA.parryArmed = true;
+      aaLog('✨ Parry armed!', 'l-parry');
+    } else {
+      aaLog('✨ Parry — wait for the attack window', 'l-parry');
+      AA.parryArmed = true; // arm anyway in case telegraph fires first
+    }
+    aaStartCD('parry', 4000);
+  }
+}
+
+// ── CD management ──
+function aaStartCD(action, ms) {
+  AA.cds[action] = ms;
+  const btn  = document.getElementById('aa-btn-'+action);
+  const lbl  = document.getElementById('aa-cd-'+action);
+  const ring = document.getElementById('aa-ring-'+action);
+  btn.classList.add('disabled');
+
+  // Animate SVG ring — circumference 150.8
+  const circ = 150.8;
+  if (ring) {
+    const circle = ring.querySelector('circle');
+    if (circle) {
+      circle.style.transition = 'none';
+      circle.style.strokeDashoffset = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        circle.style.transition = 'stroke-dashoffset ' + (ms/1000) + 's linear';
+        circle.style.strokeDashoffset = circ;
+      }));
+    }
+  }
+
+  const start = Date.now();
+  const tick = setInterval(() => {
+    const rem = Math.max(0, ms - (Date.now() - start));
+    lbl.textContent = rem > 50 ? (rem / 1000).toFixed(1) + 's' : '';
+    if (rem <= 0) {
+      clearInterval(tick);
+      AA.cds[action] = 0;
+      btn.classList.remove('disabled');
+      lbl.textContent = '';
+      // Reset ring
+      if (ring) {
+        const circle = ring.querySelector('circle');
+        if (circle) {
+          circle.style.transition = 'none';
+          circle.style.strokeDashoffset = '0';
+        }
+      }
+    }
+  }, 100);
+  AA.cdTimers[action] = tick;
+}
+
+// ── Visual helpers ──
+function aaUpdatePos() {
+  // Only left and right — left = left third, right = right third
+  const posMap = { left: 0, right: 66.66 };
+  document.getElementById('aa-player').style.left = posMap[AA.playerPos] + '%';
+  ['left','right'].forEach(p => {
+    const b = document.getElementById('aa-btn-'+p);
+    if (b) b.classList.toggle('here', p === AA.playerPos);
+  });
+}
+
+function aaUpdateHpBars() {
+  const pp = Math.max(0, AA.playerHp / AA.playerMaxHp * 100);
+  const bp = Math.max(0, AA.bossHp / AA.bossMaxHp * 100);
+  document.getElementById('aa-player-hp-bar').style.width = pp + '%';
+  document.getElementById('aa-boss-hp-bar').style.width = bp + '%';
+  document.getElementById('aa-player-hp-text').textContent = Math.max(0, AA.playerHp) + '/' + AA.playerMaxHp;
+  document.getElementById('aa-boss-hp-text').textContent = Math.max(0, AA.bossHp) + '/' + AA.bossMaxHp;
+  document.getElementById('aa-player-hp-bar').style.background =
+    pp > 50 ? 'linear-gradient(90deg,#22aa44,#3acc7a)' :
+    pp > 25 ? 'linear-gradient(90deg,#cc8800,#ffaa00)' :
+              'linear-gradient(90deg,#cc2222,#ff5555)';
+}
+
+function aaUpdateTrinityDisplay() {
+  document.getElementById('aa-trinity-earned').textContent = '+' + AA.totalTrinityXP.toLocaleString();
+}
+
+function aaShowTelegraph(atk) {
+  ['left','mid','right'].forEach(l => {
+    const lane = document.getElementById('aa-lane-'+l);
+    lane.classList.remove('danger','safe','sweep-danger');
+    if (atk === 'sweep') {
+      lane.classList.add('sweep-danger');
+    } else if (l === atk) {
+      lane.classList.add('danger');
+    } else {
+      // mid lane is never a safe dodge position — it's just neutral
+      if (l !== 'mid') lane.classList.add('safe');
+    }
+  });
+}
+
+function aaClearTelegraph() {
+  ['left','mid','right'].forEach(l => {
+    const lane = document.getElementById('aa-lane-'+l);
+    lane.classList.remove('danger','safe','sweep-danger');
+  });
+}
+
+function aaFlash(type) {
+  const el = document.getElementById('aa-flash-'+type);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 280);
+}
+
+function aaPopResult(text, color) {
+  const el = document.getElementById('aa-result-pop');
+  el.className = 'aa-result-pop';
+  el.textContent = text;
+  el.style.color = color;
+  void el.offsetWidth;
+  el.classList.add('show');
+}
+
+function aaSetPhaseLabel(text) {
+  document.getElementById('aa-phase-label').textContent = text;
+}
+
+function aaSetTimer(val) {
+  const el = document.getElementById('aa-timer');
+  el.textContent = val === null ? '–' : val;
+  el.style.color = val === null ? '#5a6080' : val <= 1 ? '#e83a3a' : val <= 2 ? '#ffaa00' : '#3acc7a';
+}
+
+function aaLog(msg, cls = '') {
+  const log = document.getElementById('aa-log');
+  const line = document.createElement('div');
+  line.className = 'aa-log-line ' + cls;
+  line.textContent = msg;
+  log.insertBefore(line, log.firstChild);
+  while (log.children.length > 6) log.removeChild(log.lastChild);
+}
+
+function aaClearTimers() {
+  if (AA.phaseTimer)    { clearTimeout(AA.phaseTimer);  AA.phaseTimer = null; }
+  if (AA.countdownTimer){ clearInterval(AA.countdownTimer); AA.countdownTimer = null; }
+  Object.values(AA.cdTimers).forEach(t => clearInterval(t));
+  AA.cdTimers = {};
+}
+
+// Keyboard support for desktop
+document.addEventListener('keydown', e => {
+  if (!AA.open || AA.phase === 'lobby' || AA.phase === 'dead') return;
+  if (e.key === 'ArrowLeft')  aaMove('left');
+  if (e.key === 'ArrowRight') aaMove('right');
+  if (e.key === 'a' || e.key === 'A') aaBtnAction('attack');
+  if (e.key === 'b' || e.key === 'B') aaBtnAction('block');
+  if (e.key === 'p' || e.key === 'P') aaBtnAction('parry');
+});
 
 // ═══════════════════════════════════════════════
 // INIT
