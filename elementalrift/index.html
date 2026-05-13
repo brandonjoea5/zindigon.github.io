@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.4.5</title>
+<title>Elemental Rift v2.5.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
   --fire:#ff4d1a; --water:#1ab3ff; --grass:#3dcc5a;
   --poison:#88cc00; --electric:#ffdd00; --ice:#88eeff;
+  --rock:#cc9944; --wind:#99ddff;
   --bg:#0a0c12; --panel:#111520; --border:#2a2f45; --text:#c8d0e8; --muted:#5a6080;
   --gold:#e8b84b; --red:#e83a3a; --green:#3acc7a; --boss:#ff2266;
   --mage:#1ab3ff; --warrior:#e8b84b; --rogue:#3dcc5a;
@@ -731,7 +732,7 @@ let sbProfile = null; // players row
 
     <!-- Version -->
     <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;
-      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.4.5</p>
+      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.5.1</p>
   </div>
 </div>
 
@@ -780,7 +781,7 @@ let sbProfile = null; // players row
       More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.4.5 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.5.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 
 <!-- CLASS SELECTION SCREEN -->
@@ -848,11 +849,13 @@ let sbProfile = null; // players row
     <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compete for the leaderboard · Earn milestone rewards</div>
   </div>
 
-  <!-- ACTIVE ARENA ENTRY -->
+  <!-- RIFT GAUNTLET NOTE — now merged into main combat -->
   <div style="width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:2px;text-align:center;">
-    <div style="font-family:'Cinzel',serif;font-size:11px;color:#ff6644;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">⚔️ Rift Gauntlet</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Skill-based arena mode — dodge, block, and parry the boss. Earns Trinity Rank XP. Separate leaderboard.</div>
-    <button onclick="aaOpen()" style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px 28px;border-radius:10px;border:1px solid #ff6644;background:rgba(255,102,68,0.08);color:#ff6644;cursor:pointer;width:100%;max-width:320px;">⚔️ Enter Rift Gauntlet</button>
+    <div style="font-family:'Cinzel',serif;font-size:11px;color:#ff6644;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">⚔️ Combat System</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.7;max-width:380px;margin:0 auto;">
+      Enemy attacks are telegraphed — <span style="color:#ffaa00;">move to the safe side</span> to dodge, or press <span style="color:#88aaff;">Block</span> to absorb the hit.<br>
+      Use <span style="color:#3acc7a;">Q / E</span> to roll on desktop. Rogues can attack during rolls.
+    </div>
   </div>
 
   <!-- SIMULATE WAVES — available after first run -->
@@ -1226,11 +1229,11 @@ let sbProfile = null; // players row
       </div>
       <div id="combat-tooltip" onclick="dismissTooltip()" class="hidden">
         <h3>⚔️ How to Play</h3>
-        <div class="tip-row"><span class="tip-icon">👆</span><div class="tip-text"><strong>Tap Attack</strong> to toggle auto-attack. Tap again to stop.</div></div>
-        <div class="tip-row"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Skill 1 &amp; 2</strong> are manual abilities with cooldowns. Tap when ready.</div></div>
-        <div class="tip-row"><span class="tip-icon">💥</span><div class="tip-text"><strong>Ultimate</strong> is your most powerful ability. Unlocks at class level 10.</div></div>
-        <div class="tip-row"><span class="tip-icon">💚</span><div class="tip-text"><strong>Heal</strong> restores HP and costs 30 mana. Use it when low.</div></div>
-        <div class="tip-row"><span class="tip-icon">🔮</span><div class="tip-text"><strong>Loadout button</strong> lets you swap any ability.</div></div>
+        <div class="tip-row"><span class="tip-icon">⚠️</span><div class="tip-text"><strong>Enemy Telegraph</strong> — when an attack is coming, colored zones show danger. Move to the <strong>safe side</strong> to dodge it.</div></div>
+        <div class="tip-row"><span class="tip-icon">🛡️</span><div class="tip-text"><strong>Block</strong> — press the shield button during a telegraph to absorb the hit completely. Keyboard: <strong>F</strong></div></div>
+        <div class="tip-row"><span class="tip-icon">◀▶</span><div class="tip-text"><strong>Dodge / Roll</strong> — use the arrow buttons to roll. Rogues can attack during rolls. Keyboard: <strong>Q / E</strong></div></div>
+        <div class="tip-row"><span class="tip-icon">👆</span><div class="tip-text"><strong>Move</strong> — drag left side of arena to move your character. WASD on desktop.</div></div>
+        <div class="tip-row"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Skills &amp; Ult</strong> — tap Skill 1, 2, and Ultimate. Activate Attack to toggle auto-combat.</div></div>
         <div class="dismiss">Tap anywhere to start</div>
       </div>
       <div id="enemy-info">
@@ -1292,7 +1295,7 @@ let sbProfile = null; // players row
       <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">💀</span>Boss</button>
       <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
-      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:#554422;color:#887755;"><span class="btn-icon">⚔️</span>Retire</button>
+      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:#aa7722;color:#e8b84b;background:rgba(232,184,75,0.06);" title="Reset your run for maximum Trinity Force XP"><span class="btn-icon">⚔️</span>Honor</button>
     </div>
   </div>
 
@@ -1404,12 +1407,12 @@ const CLASS_ICONS  = { mage:'🧙', warrior:'⚔️', rogue:'🗡️' };
 const CLASS_XP_TO_LEVEL = [0, 30, 80, 160, 280, 440, 650, 920, 1250, 1650, 2100];
 
 // ── IMBUE CHOICES ──
-// Mage picks one of: fire, water, grass
-// Warrior/Rogue pick one of: poison, electric, ice
-const MAGE_IMBUES   = ['fire','water','grass'];
-const PHYS_IMBUES   = ['poison','electric','ice'];
-const IMBUE_COLORS  = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', poison:'#88cc00', electric:'#ffdd00', ice:'#88eeff' };
-const IMBUE_ICONS   = { fire:'🔥', water:'💧', grass:'🌿', poison:'☠️', electric:'⚡', ice:'❄️' };
+// Mage picks one of: fire, water, grass, rock, wind
+// Warrior/Rogue pick one of: poison, electric, ice, rock, wind
+const MAGE_IMBUES   = ['fire','water','grass','rock','wind'];
+const PHYS_IMBUES   = ['poison','electric','ice','rock','wind'];
+const IMBUE_COLORS  = { fire:'#ff4d1a', water:'#1ab3ff', grass:'#3dcc5a', poison:'#88cc00', electric:'#ffdd00', ice:'#88eeff', rock:'#aa8855', wind:'#99ddff' };
+const IMBUE_ICONS   = { fire:'🔥', water:'💧', grass:'🌿', poison:'☠️', electric:'⚡', ice:'❄️', rock:'🪨', wind:'💨' };
 
 // ── STATS ──
 const STAT_KEYS = ['attack','atkSpeed','critChance','critDmg','defense','health','lifeSteal','spellVamp','cdr','mana','manaRegen','dotDamage','burnDuration','poisonDuration','freezeDuration','electricDot','slowStrength'];
@@ -1610,6 +1613,44 @@ const ABILITIES = {
   rogue_ice_reg5: { id:'rogue_ice_reg5', class:'rogue', imbue:'ice', type:'regular', name:"Winter's Edge",  icon:'❄️', cd:9000,  desc:'Channel winter into your blade — +40% attack speed and every hit applies Ice slow for 5s.', dmgMult:0.8, isMagic:false, applyEffect:'ice', buff:{ id:'ri_winter', stat:'atkSpeed', amount:0, pct:0.40, duration:5000, icon:'❄️', label:"Winter's Edge" }, unlockLv:7 },
   rogue_ice_ult2: { id:'rogue_ice_ult2', class:'rogue', imbue:'ice', type:'ultimate', name:'Frozen Fangs',   icon:'🐍', cd:18000, desc:'Strike with frozen fangs 6 times — each hit applies Ice and the final hit guarantees Freeze. +50% attack speed for 5s after.', dmgMult:1.5, isMagic:false, applyEffect:'ice', hits:6, buff:{ id:'ri_fangs', stat:'atkSpeed', amount:0, pct:0.50, duration:5000, icon:'🐍', label:'Frozen Fangs' }, unlockLv:10 },
   rogue_ice_ult3: { id:'rogue_ice_ult3', class:'rogue', imbue:'ice', type:'ultimate', name:'Absolute Zero',  icon:'🌡️', cd:26000, desc:'Drop to absolute zero — freeze enemy for maximum duration, deal catastrophic damage, then gain +70% attack speed and +40% crit for 6s.', dmgMult:6.0, isMagic:false, applyEffect:'ice', buff:{ id:'ri_absZero', stat:'atkSpeed', amount:0, pct:0.70, duration:6000, icon:'🌡️', label:'Absolute Zero' }, unlockLv:10 },
+
+  // ══════════════════════════════════════════════════════
+  // ROCK ELEMENT — Mage basic + skills + ults
+  // Rock: high defense shred, stun chance, armor-imbued thorns
+  // ══════════════════════════════════════════════════════
+  mage_basic_rock: { id:'mage_basic_rock', class:'mage', imbue:'rock', type:'basic', name:'Stone Bolt', icon:'🪨', cd:0, desc:'Hurl shards of stone. Attack speed scales this. Chance to reduce enemy defense. Toggles auto.', dmgMult:0.90, isMagic:true },
+  rock_reg1: { id:'rock_reg1', class:'mage', imbue:'rock', type:'regular', name:'Quake Strike', icon:'🌋', cd:3500, desc:'A tremor-infused blow dealing heavy damage. Reduces enemy defense by 20% for 4s.', dmgMult:2.2, isMagic:true, buff:{id:'rock_quake',stat:'bonusArmorPen',amount:0.20,duration:4000,icon:'🌋',label:'Shattered'}, unlockLv:3 },
+  rock_reg2: { id:'rock_reg2', class:'mage', imbue:'rock', type:'regular', name:'Boulder Crush', icon:'💥', cd:5000, desc:'Massive stone slam. Heavy damage and stuns the enemy briefly — they cannot attack for 1.5s.', dmgMult:2.8, isMagic:true, buff:{id:'rock_crush',stat:'enemyStun',amount:1,duration:1500,icon:'💥',label:'Stunned'}, unlockLv:6 },
+  rock_ult:  { id:'rock_ult',  class:'mage', imbue:'rock', type:'ultimate', name:'Avalanche',  icon:'⛰️', cd:20000, desc:'Call down a cascade of boulders. Devastating damage and guarantee stun for 3s.', dmgMult:6.0, isMagic:true, buff:{id:'rock_ava',stat:'enemyStun',amount:1,duration:3000,icon:'⛰️',label:'Crushed'}, unlockLv:10 },
+
+  // Warrior rock
+  warrior_rock_reg1: { id:'warrior_rock_reg1', class:'warrior', imbue:'rock', type:'regular', name:'Granite Slam', icon:'🪨', cd:3000, desc:'Slam the enemy with stone-imbued force. Heavy damage and stuns for 1s.', dmgMult:2.0, isMagic:false, buff:{id:'wr_graniteSlam',stat:'enemyStun',amount:1,duration:1000,icon:'🪨',label:'Dazed'}, unlockLv:3 },
+  warrior_rock_reg2: { id:'warrior_rock_reg2', class:'warrior', imbue:'rock', type:'regular', name:'Stone Wall',   icon:'🧱', cd:5000, desc:'Raise a stone wall — gain +50% defense for 5s and reflect 20% of incoming damage.', dmgMult:0.6, isMagic:false, buff:{id:'wr_stonewall',stat:'defense',amount:24,duration:5000,icon:'🧱',label:'Stone Wall'}, unlockLv:6 },
+  warrior_rock_ult:  { id:'warrior_rock_ult',  class:'warrior', imbue:'rock', type:'ultimate', name:'Golem Form', icon:'🗿', cd:18000, desc:'Transform into a golem — gain +80% defense for 6s, immune to stuns, and deal massive earth damage.', dmgMult:5.5, isMagic:false, buff:{id:'wr_golem',stat:'defense',amount:40,duration:6000,icon:'🗿',label:'Golem Form'}, unlockLv:10 },
+
+  // Rogue rock
+  rogue_rock_reg1: { id:'rogue_rock_reg1', class:'rogue', imbue:'rock', type:'regular', name:'Pebble Shot', icon:'🪨', cd:2800, desc:'Rapid-fire rock pellets hitting 3 times. Each hit has a stun chance.', dmgMult:0.9, isMagic:false, hits:3, unlockLv:3 },
+  rogue_rock_reg2: { id:'rogue_rock_reg2', class:'rogue', imbue:'rock', type:'regular', name:'Seismic Stab', icon:'💥', cd:4000, desc:'Strike with earth-infused blades — deals massive damage and shreds enemy defense by 30% for 5s.', dmgMult:2.4, isMagic:false, buff:{id:'rr_seismic',stat:'bonusArmorPen',amount:0.30,duration:5000,icon:'💥',label:'Shredded'}, unlockLv:6 },
+  rogue_rock_ult:  { id:'rogue_rock_ult',  class:'rogue', imbue:'rock', type:'ultimate', name:'Landslide',   icon:'⛰️', cd:16000, desc:'Bury the enemy in an avalanche of stone — massive damage, guaranteed 2s stun, and +50% attack speed after.', dmgMult:5.0, isMagic:false, buff:{id:'rr_landslide',stat:'atkSpeed',amount:0,pct:0.50,duration:5000,icon:'⛰️',label:'Landslide Rush'}, unlockLv:10 },
+
+  // ══════════════════════════════════════════════════════
+  // WIND ELEMENT — Mage basic + skills + ults
+  // Wind: high speed, dodge buff, bleed-through damage, mobility
+  // ══════════════════════════════════════════════════════
+  mage_basic_wind: { id:'mage_basic_wind', class:'mage', imbue:'wind', type:'basic', name:'Gale Strike', icon:'💨', cd:0, desc:'Razor-sharp wind slashes. Fast attack speed. Each hit has a chance to grant brief evasion. Toggles auto.', dmgMult:0.80, isMagic:true },
+  wind_reg1: { id:'wind_reg1', class:'mage', imbue:'wind', type:'regular', name:'Cyclone',     icon:'🌀', cd:3500, desc:'Spinning vortex dealing moderate damage 4 times. Each hit adds attack speed for 3s.', dmgMult:1.0, isMagic:true, hits:4, buff:{id:'wind_cyclone',stat:'atkSpeed',amount:0,pct:0.15,duration:3000,icon:'🌀',label:'Wind Haste'}, unlockLv:3 },
+  wind_reg2: { id:'wind_reg2', class:'mage', imbue:'wind', type:'regular', name:'Tailwind',    icon:'💨', cd:5000, desc:'Channel the wind — gain +50% attack speed and +20% dodge for 5s.', dmgMult:0.8, isMagic:true, buff:{id:'wind_tail',stat:'atkSpeed',amount:0,pct:0.50,duration:5000,icon:'💨',label:'Tailwind'}, unlockLv:6 },
+  wind_ult:  { id:'wind_ult',  class:'mage', imbue:'wind', type:'ultimate', name:'Tempest',    icon:'🌪️', cd:20000, desc:'Unleash a tempest — deal massive multi-hit damage and gain +70% attack speed for 7s.', dmgMult:1.8, isMagic:true, hits:5, buff:{id:'wind_tempest',stat:'atkSpeed',amount:0,pct:0.70,duration:7000,icon:'🌪️',label:'Tempest'}, unlockLv:10 },
+
+  // Warrior wind
+  warrior_wind_reg1: { id:'warrior_wind_reg1', class:'warrior', imbue:'wind', type:'regular', name:'Wind Slash',  icon:'💨', cd:3000, desc:'A swift wind-imbued strike dealing moderate damage and granting +30% attack speed for 3s.', dmgMult:1.8, isMagic:false, buff:{id:'ww_windSlash',stat:'atkSpeed',amount:0,pct:0.30,duration:3000,icon:'💨',label:'Wind Slash'}, unlockLv:3 },
+  warrior_wind_reg2: { id:'warrior_wind_reg2', class:'warrior', imbue:'wind', type:'regular', name:'Gale Shield', icon:'🌀', cd:5000, desc:'Wrap yourself in wind — reduce enemy hit chance, gain +25% defense for 5s, and deal AOE on next hit.', dmgMult:1.0, isMagic:false, buff:{id:'ww_galeShield',stat:'defense',amount:14,duration:5000,icon:'🌀',label:'Gale Shield'}, unlockLv:6 },
+  warrior_wind_ult:  { id:'warrior_wind_ult',  class:'warrior', imbue:'wind', type:'ultimate', name:'Whirlwind',  icon:'🌪️', cd:18000, desc:'Spin with devastating force — deal massive AOE damage, gain +60% attack speed for 6s.', dmgMult:5.0, isMagic:false, hits:3, buff:{id:'ww_whirlwind',stat:'atkSpeed',amount:0,pct:0.60,duration:6000,icon:'🌪️',label:'Whirlwind'}, unlockLv:10 },
+
+  // Rogue wind
+  rogue_wind_reg1: { id:'rogue_wind_reg1', class:'rogue', imbue:'wind', type:'regular', name:'Swift Cut',   icon:'💨', cd:2500, desc:'Blistering wind-infused strike — extremely fast, deals damage twice and grants +20% attack speed for 3s.', dmgMult:1.2, isMagic:false, hits:2, buff:{id:'rw_swiftCut',stat:'atkSpeed',amount:0,pct:0.20,duration:3000,icon:'💨',label:'Swift Cut'}, unlockLv:3 },
+  rogue_wind_reg2: { id:'rogue_wind_reg2', class:'rogue', imbue:'wind', type:'regular', name:'Gale Step',   icon:'🌀', cd:4000, desc:'Become the wind — +80% attack speed for 3s, all hits deal wind damage, and you evade the next attack.', dmgMult:1.0, isMagic:false, buff:{id:'rw_galeStep',stat:'atkSpeed',amount:0,pct:0.80,duration:3000,icon:'🌀',label:'Gale Step'}, unlockLv:6 },
+  rogue_wind_ult:  { id:'rogue_wind_ult',  class:'rogue', imbue:'wind', type:'ultimate', name:'Razor Storm', icon:'🌪️', cd:15000, desc:'Unleash a razor storm — hit 8 times at blinding speed. +60% attack speed for 6s after.', dmgMult:1.3, isMagic:false, hits:8, buff:{id:'rw_razorStorm',stat:'atkSpeed',amount:0,pct:0.60,duration:6000,icon:'🌪️',label:'Razor Storm'}, unlockLv:10 },
 };
 
 // JSONBin config — leaderboard storage
@@ -3510,65 +3551,329 @@ function toggleAutoAttack(element) {} // stub — no longer used
 function attack(element) {} // stub — no longer used
 
 
-function enemyAttack() {
-  if (!G.enemy||!G.combatActive||G.hp<=0||G._deathInProgress) return;
-  const st=getStats();
-  // Check if frozen — frozen enemies can't attack
-  if(G.enemy.frozenUntil && Date.now() < G.enemy.frozenUntil) return;
-  const rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008));
-  // Warrior passive damage reduction
+// ── TELEGRAPH SYSTEM — enemy attacks are telegraphed and dodgeable ──
+const TELEGRAPH = {
+  active: false,
+  attackDir: null,   // 'left' | 'right' | 'sweep'
+  phase: 'idle',     // 'idle' | 'warning' | 'window' | 'resolving'
+  warningEl: null,
+  countdownTimer: null,
+  phaseTimer: null,
+  blockArmed: false,
+  pendingDmg: 0,
+  pendingEnemy: null,
+};
+
+function telegraphEnemyAttack(rawDmg) {
+  if (!G.enemy || !G.combatActive || TELEGRAPH.active) return;
+  TELEGRAPH.active = true;
+  TELEGRAPH.pendingDmg = rawDmg;
+  TELEGRAPH.blockArmed = false;
+
+  // Pick direction — bosses use sweep more often
+  const sweepChance = G.inBoss ? 0.25 : 0.12;
+  const r = Math.random();
+  if (r < sweepChance) {
+    TELEGRAPH.attackDir = 'sweep';
+  } else if (r < sweepChance + 0.48) {
+    TELEGRAPH.attackDir = 'left';
+  } else {
+    TELEGRAPH.attackDir = 'right';
+  }
+
+  // Show warning banner
+  showAttackWarning(TELEGRAPH.attackDir);
+
+  // React window: 2s normal enemies, 1.4s bosses, faster at high waves
+  const waveScale = Math.max(0.6, 1 - (G.wave || 1) * 0.008);
+  const windowMs = G.inBoss
+    ? Math.max(900, 1400 * waveScale)
+    : Math.max(1100, 2000 * waveScale);
+
+  // Countdown display
+  let remaining = Math.ceil(windowMs / 1000);
+  updateTelegraphCountdown(remaining);
+  TELEGRAPH.countdownTimer = setInterval(() => {
+    remaining--;
+    updateTelegraphCountdown(remaining);
+    if (remaining <= 0) {
+      clearInterval(TELEGRAPH.countdownTimer);
+      TELEGRAPH.countdownTimer = null;
+    }
+  }, 1000);
+
+  TELEGRAPH.phaseTimer = setTimeout(() => resolveEnemyAttack(), windowMs);
+}
+
+function showAttackWarning(dir) {
+  // Remove any existing warning
+  const old = document.getElementById('attack-warning');
+  if (old) old.remove();
+
+  const arena = document.getElementById('arena');
+  if (!arena) return;
+
+  const isSweep = dir === 'sweep';
+  const color = isSweep ? '#ff2266' : '#ffaa00';
+  const arrow = dir === 'left' ? '◀◀' : dir === 'right' ? '▶▶' : '↔';
+  const label = isSweep ? '⚠ SWEEP — Dodge or Block!' : `⚠ Attack ${dir.toUpperCase()} — move ${dir === 'left' ? 'RIGHT' : 'LEFT'}!`;
+
+  const warn = document.createElement('div');
+  warn.id = 'attack-warning';
+  warn.style.cssText = `
+    position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:8;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  `;
+
+  // Direction zones
+  const leftZone = document.createElement('div');
+  leftZone.style.cssText = `
+    position:absolute;top:0;left:0;bottom:0;width:50%;
+    background:${dir==='left'||isSweep ? `rgba(255,34,102,0.18)` : 'rgba(58,204,122,0.06)'};
+    border-right:2px solid ${dir==='left'||isSweep ? '#ff2266' : '#3acc7a'};
+    transition:background 0.15s;
+  `;
+  const rightZone = document.createElement('div');
+  rightZone.style.cssText = `
+    position:absolute;top:0;right:0;bottom:0;width:50%;
+    background:${dir==='right'||isSweep ? `rgba(255,34,102,0.18)` : 'rgba(58,204,122,0.06)'};
+    border-left:2px solid ${dir==='right'||isSweep ? '#ff2266' : '#3acc7a'};
+    transition:background 0.15s;
+  `;
+
+  warn.appendChild(leftZone);
+  warn.appendChild(rightZone);
+
+  // Label
+  const lbl = document.createElement('div');
+  lbl.style.cssText = `
+    position:relative;z-index:1;
+    font-family:'Cinzel',serif;font-size:clamp(11px,3vw,15px);
+    color:${color};font-weight:700;letter-spacing:0.08em;
+    background:rgba(0,0,0,0.7);padding:5px 14px;border-radius:20px;
+    border:1px solid ${color}66;
+    animation:warnPulse 0.5s ease-in-out infinite alternate;
+  `;
+  lbl.textContent = label;
+  warn.appendChild(lbl);
+
+  // Countdown badge
+  const cd = document.createElement('div');
+  cd.id = 'telegraph-cd';
+  cd.style.cssText = `
+    position:absolute;top:6px;left:50%;transform:translateX(-50%);
+    font-family:'Cinzel',serif;font-size:22px;font-weight:900;
+    color:${color};text-shadow:0 0 10px ${color};
+    transition:color 0.2s;
+  `;
+  cd.textContent = '2';
+  warn.appendChild(cd);
+
+  // Safe side label
+  if (!isSweep) {
+    const safeLbl = document.createElement('div');
+    const safeDir = dir === 'left' ? 'RIGHT' : 'LEFT';
+    safeLbl.style.cssText = `
+      position:absolute;${dir==='left'?'right':'left'}:8px;bottom:8px;
+      font-family:'Cinzel',serif;font-size:10px;color:#3acc7a;
+      background:rgba(58,204,122,0.12);padding:3px 8px;border-radius:10px;
+    `;
+    safeLbl.textContent = `✓ SAFE: ${safeDir}`;
+    warn.appendChild(safeLbl);
+  }
+
+  arena.appendChild(warn);
+
+  // Pulse animation
+  if (!document.getElementById('telegraph-style')) {
+    const s = document.createElement('style');
+    s.id = 'telegraph-style';
+    s.textContent = `
+      @keyframes warnPulse { from { opacity:0.75; } to { opacity:1; } }
+      @keyframes dodgeFlash { 0%{background:rgba(58,204,122,0.3)} 100%{background:transparent} }
+      @keyframes hitFlash   { 0%{background:rgba(255,50,50,0.35)} 100%{background:transparent} }
+    `;
+    document.head.appendChild(s);
+  }
+}
+
+function updateTelegraphCountdown(val) {
+  const el = document.getElementById('telegraph-cd');
+  if (!el) return;
+  el.textContent = Math.max(0, val);
+  el.style.color = val <= 1 ? '#e83a3a' : '#ffaa00';
+}
+
+function clearAttackWarning() {
+  const w = document.getElementById('attack-warning');
+  if (w) w.remove();
+  if (TELEGRAPH.countdownTimer) { clearInterval(TELEGRAPH.countdownTimer); TELEGRAPH.countdownTimer = null; }
+}
+
+function resolveEnemyAttack() {
+  if (!TELEGRAPH.active) return;
+  TELEGRAPH.active = false;
+  clearAttackWarning();
+
+  if (!G.enemy || !G.combatActive || G.hp <= 0) return;
+
+  const dir = TELEGRAPH.attackDir;
+  const isSweep = dir === 'sweep';
+  const rawDmg = TELEGRAPH.pendingDmg;
+
+  // Determine if player is on safe side
+  // Player position: < 0.4 = left side, >= 0.4 = right side
+  const playerSide = MOVE.px < 0.40 ? 'left' : 'right';
+  const safeSide = dir === 'left' ? 'right' : 'left';
+  const isDodged = !isSweep && playerSide === safeSide && !TELEGRAPH.blockArmed;
+  const isBlocked = TELEGRAPH.blockArmed;
+  const isDodgeIframe = G._dodgeiframe;
+
+  const st = getStats();
   const warriorDR = G.playerClass === 'warrior' ? 0.10 : 0;
-  const finalDmg = rawDmg * (1 - warriorDR);
-  const dmg = Math.max(1, Math.floor(finalDmg + (Math.random()*3-1.5)));
-  G.hp-=dmg;
-  // Thorns — reflect damage back
+  const dmg = Math.max(1, Math.floor(rawDmg * (1 - warriorDR) + (Math.random()*3-1.5)));
+
+  const W = canvas.width, H = canvas.height;
+  const ex = W * ENEMY_POS.px, ey = H * ENEMY_POS.py;
+  const px = W * MOVE.px, py = H * MOVE.py;
+
+  if (isDodgeIframe) {
+    // Full dodge via roll
+    combatLog('✦ Rolled through attack!', 'dmg-heal');
+    spawnDamageNumber(px, py - 40, 'ROLL DODGE', false, false, '#3acc7a');
+    startAnimLoop();
+    playSound('hit_physical');
+    restartEnemyAttackCycle();
+    return;
+  }
+
+  if (isBlocked) {
+    combatLog('🛡️ Blocked!', 'dmg-heal');
+    spawnDamageNumber(px, py - 40, 'BLOCKED', false, false, '#88aaff');
+    TELEGRAPH.blockArmed = false;
+    startAnimLoop();
+    playSound('level_up');
+    restartEnemyAttackCycle();
+    return;
+  }
+
+  if (isDodged) {
+    combatLog(`✓ Dodged ${dir.toUpperCase()}!`, 'dmg-heal');
+    spawnDamageNumber(px, py - 40, 'DODGED!', false, false, '#3acc7a');
+    // Flash safe side
+    const arena = document.getElementById('arena');
+    if (arena) {
+      const flash = document.createElement('div');
+      flash.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:7;animation:dodgeFlash 0.4s ease-out forwards;';
+      arena.appendChild(flash);
+      setTimeout(() => flash.remove(), 400);
+    }
+    playSound('hit_physical');
+    startAnimLoop();
+    restartEnemyAttackCycle();
+    return;
+  }
+
+  // Hit lands
+  G.hp -= dmg;
+
+  // Thorns
   const thornsPct = getThorns();
-  if(thornsPct > 0 && G.enemy && G.enemy.hp > 0) {
+  if (thornsPct > 0 && G.enemy && G.enemy.hp > 0) {
     const thornsDmg = Math.floor(dmg * thornsPct);
     G.enemy.hp -= thornsDmg;
-    if(thornsDmg > 0) spawnDamageNumber(
-      canvas.width*0.72+(Math.random()-.5)*15, canvas.height*0.60-30,
-      thornsDmg, false, false, '#88cc00'
-    );
+    if (thornsDmg > 0) spawnDamageNumber(ex + (Math.random()-.5)*15, ey - 30, thornsDmg, false, false, '#88cc00');
   }
-  // Berserker mutation — below 30% HP bonus
-  if(hasMutation('berserker') && G.hp < G.maxHp * 0.30) {
-    if(!G.berserkerActive) {
+
+  // Berserker mutation
+  if (hasMutation('berserker') && G.hp < G.maxHp * 0.30) {
+    if (!G.berserkerActive) {
       G.berserkerActive = true;
-      applyBuff('berserker', 'attack', 0, 999999, '🔥', 'Berserker');
-      applyBuff('berserker_spd', 'atkSpeed', 0, 999999, '🔥', '');
       const st2 = getStats();
-      G.buffs['berserker'] = { stat:'attack', amount: Math.floor(st2.attack*0.30), expiresAt: Date.now()+999999, icon:'🔥', label:'Berserker' };
-      G.buffs['berserker_spd'] = { stat:'atkSpeed', amount: st2.atkSpeed*0.50, expiresAt: Date.now()+999999, icon:'🔥', label:'' };
+      G.buffs['berserker']     = { stat:'attack',   amount: Math.floor(st2.attack*0.30),  expiresAt: Date.now()+999999, icon:'🔥', label:'Berserker' };
+      G.buffs['berserker_spd'] = { stat:'atkSpeed',  amount: st2.atkSpeed*0.50,            expiresAt: Date.now()+999999, icon:'🔥', label:'' };
     }
-  } else if(G.berserkerActive && G.hp >= G.maxHp * 0.30) {
+  } else if (G.berserkerActive && G.hp >= G.maxHp * 0.30) {
     G.berserkerActive = false;
     delete G.buffs['berserker']; delete G.buffs['berserker_spd'];
   }
-  log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>`);
-  combatLog(`◀ ${G.enemy.name} -${dmg}`, 'dmg-in');
-  const W=canvas.width,H=canvas.height;
-  const ex=W*0.72, ey=H*0.60, px=W*0.25, py=H*0.62;
-  // Enemy lunge animation toward player
+
+  log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>${isSweep?' (SWEEP)':''}`);
+  combatLog(`◀ ${G.enemy.name} -${dmg}${isSweep?' SWEEP':''}`, 'dmg-in');
+
   triggerEnemyLunge(ex, ey, px, py);
-  setTimeout(()=>{
+  setTimeout(() => {
     spawnEnemyAttackParticles(ex, ey, px, py);
-    spawnDamageNumber(px+(Math.random()-.5)*15, py-35, dmg, false, false, '#ff4444');
-    playerFlash=0.9;
+    spawnDamageNumber(px + (Math.random()-.5)*15, py - 35, dmg, false, false, '#ff4444');
+    playerFlash = 0.9;
     startAnimLoop();
+    // Red flash overlay
+    const arena = document.getElementById('arena');
+    if (arena) {
+      const flash = document.createElement('div');
+      flash.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:7;animation:hitFlash 0.4s ease-out forwards;';
+      arena.appendChild(flash);
+      setTimeout(() => flash.remove(), 400);
+    }
   }, 140);
+
   playSound('take_damage');
   triggerScreenShake(4, 0.2);
-  if (G.hp<=0) { G.hp=0; onDeath(); return; }
+
+  if (G.hp <= 0) { G.hp = 0; onDeath(); return; }
   updateHpBar();
   updateEnemyUI();
   saveGame();
+  restartEnemyAttackCycle();
+}
+
+function restartEnemyAttackCycle() {
+  // Schedule next attack after a pause
+  if (!G.combatActive || !G.enemy) return;
+  const delay = G.inBoss
+    ? 1200 + Math.random() * 600
+    : 1800 + Math.random() * 1200;
+  setTimeout(() => {
+    if (G.combatActive && G.enemy && G.hp > 0 && !G._deathInProgress) {
+      enemyAttack();
+    }
+  }, delay);
+}
+
+// Block action — can be triggered from ability or new block button
+function activateBlock() {
+  if (!G.combatActive || !TELEGRAPH.active) {
+    combatLog('Nothing to block yet', 'l-block');
+    return;
+  }
+  TELEGRAPH.blockArmed = true;
+  combatLog('🛡️ Block armed!', 'l-block');
+  spawnDamageNumber(canvas.width*MOVE.px, canvas.height*MOVE.py - 50, 'BLOCK ▲', false, false, '#88aaff');
+  startAnimLoop();
+}
+
+function enemyAttack() {
+  if (!G.enemy || !G.combatActive || G.hp<=0 || G._deathInProgress) return;
+  if (G.enemy.frozenUntil && Date.now() < G.enemy.frozenUntil) {
+    // Frozen — reschedule
+    setTimeout(() => { if(G.combatActive && G.enemy) enemyAttack(); }, 800);
+    return;
+  }
+  if (TELEGRAPH.active) return; // already telegraphing
+
+  const st = getStats();
+  const rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008));
+  telegraphEnemyAttack(rawDmg);
 }
 
 function onEnemyDeath() {
   if(!G.enemy || G._enemyDeathInProgress) return;
   G._enemyDeathInProgress = true;
   G.combatActive = false;
+  // Clear any active telegraph
+  if (TELEGRAPH.phaseTimer) { clearTimeout(TELEGRAPH.phaseTimer); TELEGRAPH.phaseTimer = null; }
+  TELEGRAPH.active = false;
+  clearAttackWarning();
   stopEnemyAutoAttack();
   stopAllAutoSlots(true);
   stopStatusTick();
@@ -3634,14 +3939,20 @@ function onEnemyDeath() {
 }
 
 function onDeath() {
-  if(G._deathInProgress) return; // prevent double death
+  if(G._deathInProgress) return;
   G._deathInProgress = true;
   G.combatActive=false;
   G.enemy=null;
+  // Clear any active telegraph
+  if (TELEGRAPH.phaseTimer) { clearTimeout(TELEGRAPH.phaseTimer); TELEGRAPH.phaseTimer = null; }
+  TELEGRAPH.active = false;
+  clearAttackWarning();
   stopEnemyAutoAttack();
   stopAllAutoSlots();
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
+  // Drop essence cache
+  dropEssenceCache();
   localStorage.removeItem('elementalRift_v3');
   // Trinity rank display
   const orbsEarned = 0; // orbs replaced by Trinity Rank system
@@ -4724,8 +5035,8 @@ function spawnEnemyAttackParticles(fromX,fromY,toX,toY){
   for(let i=0;i<6;i++){const a=(Math.random()-.5)*.8+Math.atan2(toY-fromY,toX-fromX),speed=4+Math.random()*3;particles.push({type:'burst',x:fromX,y:fromY,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,life:1,decay:.05,size:4+Math.random()*6,color:'#cc4422',element:'physical',delay:i*20});}
 }
 
-function elementParticleColor(el){return{fire:'#ff6633',water:'#44ccff',grass:'#55ee66',dark:'#bb66ff',light:'#ffee44',physical:'#ffffff',poison:'#88cc00',electric:'#ffdd00',ice:'#88eeff',mage:'#4488ff',warrior:'#e8b84b',rogue:'#3dcc5a'}[el]||'#aaaaff';}
-function elementTrailColor(el){return{fire:'#ff220080',water:'#0088ff60',grass:'#00cc3360',dark:'#6600cc60',light:'#ffcc0060',physical:'#ffffff40',poison:'#88cc0060',electric:'#ffdd0060',ice:'#88eeff60',mage:'#4488ff60',warrior:'#e8b84b60',rogue:'#3dcc5a60'}[el]||'#aaaaff40';}
+function elementParticleColor(el){return{fire:'#ff6633',water:'#44ccff',grass:'#55ee66',dark:'#bb66ff',light:'#ffee44',physical:'#ffffff',poison:'#88cc00',electric:'#ffdd00',ice:'#88eeff',mage:'#4488ff',warrior:'#e8b84b',rogue:'#3dcc5a',rock:'#cc9944',wind:'#aaddff'}[el]||'#aaaaff';}
+function elementTrailColor(el){return{fire:'#ff220080',water:'#0088ff60',grass:'#00cc3360',dark:'#6600cc60',light:'#ffcc0060',physical:'#ffffff40',poison:'#88cc0060',electric:'#ffdd0060',ice:'#88eeff60',mage:'#4488ff60',warrior:'#e8b84b60',rogue:'#3dcc5a60',rock:'#cc994460',wind:'#aaddff60'}[el]||'#aaaaff40';}
 
 function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){damageNumbers.push({x,y:y-10,vy:-2.2-Math.random(),text:isCrit?`${dmg}!`:`${dmg}`,life:1,decay:.022,size:isCrit?22:(isSE?18:15),color:isCrit?'#ffcc00':(isSE?'#ff9900':color),bold:isCrit||isSE});}
 function spawnHealNumber(x,y,amt){
@@ -8077,6 +8388,578 @@ idlePulse();
 initGState();
   // name-input focus removed
 renderNameScreenLB();
+
+// ═══════════════════════════════════════════════════════════════
+// MOVEMENT SYSTEM — Real-time character movement on canvas
+// Player position tracked, auto-attack fires when in range
+// ═══════════════════════════════════════════════════════════════
+const MOVE = {
+  // Player position as fraction of canvas (0-1)
+  px: 0.25, py: 0.62,
+  // Movement keys held
+  keys: { left:false, right:false, up:false, down:false },
+  speed: 0.0028,
+  // Auto-attack range (fraction of canvas width)
+  attackRange: 0.55,
+  // Dodge state
+  dodging: false,
+  dodgeCooldown: 0,
+  dodgeDuration: 320,
+  dodgeDir: 0,
+  dodgeStart: 0,
+  // Touch joystick
+  joystick: null,
+  joystickActive: false,
+  joystickOrigin: null,
+  joystickDelta: { x:0, y:0 },
+  // Movement loop
+  loopId: null,
+};
+
+const ENEMY_POS = { px: 0.72, py: 0.58 };
+
+// Override drawArena player position with MOVE.px/py
+const _origDrawArena = drawArena;
+drawArena = function() {
+  const canvas = document.getElementById('canvas');
+  const W = canvas ? canvas.width : 1;
+  const H = canvas ? canvas.height : 1;
+  // Patch playerOffset to reflect MOVE position relative to default
+  playerOffset.x = (MOVE.px - 0.25) * W;
+  playerOffset.y = (MOVE.py - 0.62) * H;
+  _origDrawArena();
+};
+
+function startMovementLoop() {
+  if (MOVE.loopId) return;
+  MOVE.loopId = setInterval(tickMovement, 16);
+}
+
+function stopMovementLoop() {
+  if (MOVE.loopId) { clearInterval(MOVE.loopId); MOVE.loopId = null; }
+}
+
+function tickMovement() {
+  if (!G.combatActive && !G.enemy) return;
+  const canvas = document.getElementById('canvas');
+  if (!canvas) return;
+  const W = canvas.width, H = canvas.height;
+
+  let dx = 0, dy = 0;
+
+  // Keyboard
+  if (MOVE.keys.left)  dx -= MOVE.speed;
+  if (MOVE.keys.right) dx += MOVE.speed;
+  if (MOVE.keys.up)    dy -= MOVE.speed;
+  if (MOVE.keys.down)  dy += MOVE.speed;
+
+  // Touch joystick
+  if (MOVE.joystickActive && MOVE.joystick) {
+    dx += MOVE.joystick.x * MOVE.speed * 1.4;
+    dy += MOVE.joystick.y * MOVE.speed * 1.4;
+  }
+
+  // Dodge momentum
+  if (MOVE.dodging) {
+    const elapsed = Date.now() - MOVE.dodgeStart;
+    if (elapsed < MOVE.dodgeDuration) {
+      const t = elapsed / MOVE.dodgeDuration;
+      const ease = 1 - t * t;
+      dx += MOVE.dodgeDir * 0.012 * ease;
+    } else {
+      MOVE.dodging = false;
+    }
+  }
+
+  if (dx !== 0 || dy !== 0) {
+    MOVE.px = Math.max(0.05, Math.min(0.55, MOVE.px + dx));
+    MOVE.py = Math.max(0.25, Math.min(0.82, MOVE.py + dy));
+    startAnimLoop();
+  }
+
+  // Range-based auto-attack check
+  checkRangeAutoAttack(W);
+}
+
+function checkRangeAutoAttack(W) {
+  if (!G.combatActive || !G.enemy) return;
+  const dist = Math.abs(MOVE.px - ENEMY_POS.px);
+  const inRange = dist <= MOVE.attackRange;
+  // If player moved into range and auto attack is enabled, ensure it stays active
+  const hasBasicAuto = G.autoSlots && Object.keys(G.autoSlots).some(k => k.startsWith('auto_0'));
+  if (inRange && !hasBasicAuto && G.loadout && G.loadout[0]) {
+    // Visual hint that player is in range
+    const canvas = document.getElementById('canvas');
+    if (canvas) {
+      // Draw range indicator briefly
+      if (!MOVE._rangeFlash) {
+        MOVE._rangeFlash = true;
+        setTimeout(() => { MOVE._rangeFlash = false; }, 500);
+      }
+    }
+  }
+}
+
+// Dodge / Roll mechanic
+function performDodge(direction) {
+  const now = Date.now();
+  if (now < MOVE.dodgeCooldown) {
+    const remaining = ((MOVE.dodgeCooldown - now) / 1000).toFixed(1);
+    combatLog(`Roll on CD (${remaining}s)`, 'l-dodge');
+    return;
+  }
+
+  MOVE.dodging = true;
+  MOVE.dodgeDir = direction; // -1 left, 1 right
+  MOVE.dodgeStart = Date.now();
+  // Rogue gets shorter cooldown and can attack during roll
+  const isRogue = G.playerClass === 'rogue';
+  MOVE.dodgeCooldown = now + (isRogue ? 2200 : 3500);
+
+  // Brief iframe window (dodge invincibility)
+  G._dodgeiframe = true;
+  setTimeout(() => { G._dodgeframe = false; G._dodgeiframe = false; }, isRogue ? 240 : 180);
+
+  // Rogue with upgrades: deal damage during roll
+  if (isRogue && G.abilityLevels && (G.abilityLevels['roll_attack'] || 0) > 0) {
+    if (G.enemy && G.combatActive) {
+      const st = getStats();
+      const rollDmg = Math.floor(st.attack * 0.5);
+      G.enemy.hp = Math.max(0, G.enemy.hp - rollDmg);
+      updateEnemyUI();
+      const px = canvas.width * MOVE.px;
+      const py = canvas.height * MOVE.py;
+      spawnDamageNumber(px, py - 30, rollDmg, false, false, '#3dcc5a');
+      combatLog(`🗡️ Roll attack ${rollDmg}`, 'l-dodge');
+      startAnimLoop();
+    }
+  }
+
+  playSound('heal'); // reuse swoosh sound
+  combatLog(`${direction < 0 ? '◀' : '▶'} Rolled!`, 'l-dodge');
+  startAnimLoop();
+}
+
+// Override enemy attack to check dodge iframe
+const _origEnemyAttack = window.enemyAttackTick;
+if (typeof enemyAttackPlayer !== 'undefined') {
+  const _origEAP = enemyAttackPlayer;
+  window.enemyAttackPlayer = function(...args) {
+    if (G._dodgeiframe) {
+      combatLog('✦ Dodged!', 'l-dodge');
+      spawnDamageNumber(
+        canvas.width * MOVE.px,
+        canvas.height * MOVE.py - 40,
+        'DODGE', false, false, '#3acc7a'
+      );
+      startAnimLoop();
+      return;
+    }
+    _origEAP.apply(this, args);
+  };
+}
+
+// Keyboard movement + dodge
+document.addEventListener('keydown', e => {
+  // Don't capture keys when typing in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  switch(e.key) {
+    case 'ArrowLeft':  case 'a': case 'A': MOVE.keys.left  = true; break;
+    case 'ArrowRight': case 'd': case 'D': MOVE.keys.right = true; break;
+    case 'ArrowUp':    case 'w': case 'W': MOVE.keys.up    = true; break;
+    case 'ArrowDown':  case 's': case 'S': MOVE.keys.down  = true; break;
+    case 'q': case 'Q': performDodge(-1); break;
+    case 'e': case 'E': performDodge(1);  break;
+    case 'f': case 'F': activateBlock();  break;
+  }
+  if (!AA.open) startMovementLoop();
+});
+
+document.addEventListener('keyup', e => {
+  switch(e.key) {
+    case 'ArrowLeft':  case 'a': case 'A': MOVE.keys.left  = false; break;
+    case 'ArrowRight': case 'd': case 'D': MOVE.keys.right = false; break;
+    case 'ArrowUp':    case 'w': case 'W': MOVE.keys.up    = false; break;
+    case 'ArrowDown':  case 's': case 'S': MOVE.keys.down  = false; break;
+  }
+});
+
+// Touch joystick on arena canvas
+(function setupTouchMovement() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const arenaEl = document.getElementById('arena');
+    if (!arenaEl) return;
+
+    let touchId = null;
+    let originX = 0, originY = 0;
+
+    arenaEl.addEventListener('touchstart', e => {
+      if (AA.open) return;
+      // Only handle single touch in left half of arena for movement
+      const touch = e.changedTouches[0];
+      const rect = arenaEl.getBoundingClientRect();
+      const relX = touch.clientX - rect.left;
+      if (relX > rect.width * 0.6) return; // right side reserved for abilities
+      touchId = touch.identifier;
+      originX = relX;
+      originY = touch.clientY - rect.top;
+      MOVE.joystickActive = true;
+      MOVE.joystick = { x: 0, y: 0 };
+      startMovementLoop();
+      e.preventDefault();
+    }, { passive: false });
+
+    arenaEl.addEventListener('touchmove', e => {
+      if (!MOVE.joystickActive || touchId === null) return;
+      for (const touch of e.changedTouches) {
+        if (touch.identifier !== touchId) continue;
+        const rect = arenaEl.getBoundingClientRect();
+        const dx = (touch.clientX - rect.left - originX) / rect.width;
+        const dy = (touch.clientY - rect.top  - originY) / rect.height;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        const maxLen = 0.15;
+        if (len > 0) {
+          MOVE.joystick = {
+            x: (dx / len) * Math.min(len / maxLen, 1),
+            y: (dy / len) * Math.min(len / maxLen, 1),
+          };
+        }
+        // Double-tap right side of joystick area = dodge right, left = dodge left
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    arenaEl.addEventListener('touchend', e => {
+      for (const touch of e.changedTouches) {
+        if (touch.identifier === touchId) {
+          touchId = null;
+          MOVE.joystickActive = false;
+          MOVE.joystick = { x: 0, y: 0 };
+        }
+      }
+    });
+  });
+})();
+
+// Start movement loop when combat begins
+const _origSpawnEnemy = window.spawnEnemy;
+if (typeof spawnEnemy !== 'undefined') {
+  const _origSE = spawnEnemy;
+  window.spawnEnemy = function(...args) {
+    startMovementLoop();
+    return _origSE.apply(this, args);
+  };
+}
+
+// Add dodge buttons to the arena overlay
+document.addEventListener('DOMContentLoaded', () => {
+  const arena = document.getElementById('arena');
+  if (!arena) return;
+
+  // Dodge button overlay — bottom left of arena
+  const dodgeWrap = document.createElement('div');
+  dodgeWrap.id = 'dodge-controls';
+  dodgeWrap.style.cssText = 'position:absolute;bottom:10px;left:10px;display:flex;gap:8px;z-index:6;';
+  dodgeWrap.innerHTML = `
+    <button onclick="performDodge(-1)" id="dodge-left-btn" style="
+      width:48px;height:48px;border-radius:50%;border:2px solid #3acc7a;
+      background:rgba(10,12,18,0.82);color:#3acc7a;font-size:20px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
+      -webkit-tap-highlight-color:transparent;user-select:none;" title="Dodge Left (Q)">◀</button>
+    <button onclick="activateBlock()" id="block-btn" style="
+      width:48px;height:48px;border-radius:50%;border:2px solid #88aaff;
+      background:rgba(10,12,18,0.82);color:#88aaff;font-size:16px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+      backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
+      -webkit-tap-highlight-color:transparent;user-select:none;" title="Block incoming attack (F)">🛡️<span style="font-size:7px;font-family:'Cinzel',serif;letter-spacing:0.05em;">BLOCK</span></button>
+    <button onclick="performDodge(1)" id="dodge-right-btn" style="
+      width:48px;height:48px;border-radius:50%;border:2px solid #3acc7a;
+      background:rgba(10,12,18,0.82);color:#3acc7a;font-size:20px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
+      -webkit-tap-highlight-color:transparent;user-select:none;" title="Dodge Right (E)">▶</button>`;
+  arena.appendChild(dodgeWrap);
+
+  // Dodge cooldown visual update
+  setInterval(() => {
+    const now = Date.now();
+    const ready = now >= MOVE.dodgeCooldown;
+    const dodgeBtns = [document.getElementById('dodge-left-btn'), document.getElementById('dodge-right-btn')];
+    dodgeBtns.forEach(btn => {
+      if (!btn) return;
+      btn.style.opacity = ready ? '1' : '0.35';
+      btn.style.borderColor = ready ? '#3acc7a' : '#2a4a3a';
+    });
+    // Block button — highlights when telegraph is active
+    const blockBtn = document.getElementById('block-btn');
+    if (blockBtn) {
+      if (TELEGRAPH.active && !TELEGRAPH.blockArmed) {
+        blockBtn.style.opacity = '1';
+        blockBtn.style.borderColor = '#aaccff';
+        blockBtn.style.boxShadow = '0 0 12px 2px #88aaff66';
+      } else if (TELEGRAPH.blockArmed) {
+        blockBtn.style.borderColor = '#ffdd00';
+        blockBtn.style.boxShadow = '0 0 12px 2px #ffdd0088';
+      } else {
+        blockBtn.style.opacity = TELEGRAPH.active ? '1' : '0.4';
+        blockBtn.style.borderColor = '#88aaff';
+        blockBtn.style.boxShadow = '';
+      }
+    }
+  }, 150);
+});
+
+// Range indicator in drawArena — draw a subtle arc showing attack range
+const _drawArenaWithRange = drawArena;
+drawArena = function() {
+  _drawArenaWithRange();
+  const canvas = document.getElementById('canvas');
+  if (!canvas || !G.combatActive || !G.enemy) return;
+  const ctx2 = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const px = MOVE.px * W, py = MOVE.py * H;
+  const rangeW = MOVE.attackRange * W;
+  // Draw subtle range circle
+  ctx2.save();
+  ctx2.globalAlpha = 0.07;
+  ctx2.strokeStyle = '#aaccff';
+  ctx2.lineWidth = 1;
+  ctx2.setLineDash([4, 8]);
+  ctx2.beginPath();
+  ctx2.arc(px, py - 22, rangeW * 0.85, 0, Math.PI * 2);
+  ctx2.stroke();
+  ctx2.setLineDash([]);
+  // In-range glow
+  const dist = Math.abs(MOVE.px - ENEMY_POS.px);
+  if (dist <= MOVE.attackRange) {
+    ctx2.globalAlpha = 0.12;
+    ctx2.fillStyle = '#88ccff';
+    ctx2.beginPath();
+    ctx2.arc(px, py - 22, 28, 0, Math.PI * 2);
+    ctx2.fill();
+  }
+  ctx2.restore();
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ESSENCE SPHERE CACHE — drop on non-Honorable death
+// ═══════════════════════════════════════════════════════════════
+let essenceCache = null;
+const CACHE_DURATION = 30000; // 30 seconds
+
+function dropEssenceCache() {
+  const xpVal = G.xp || 0;
+  const goldVal = Math.floor((G.gold || 0) * 0.5); // drops half current gold
+  if (xpVal <= 0 && goldVal <= 0) return;
+
+  essenceCache = {
+    xp: xpVal,
+    gold: goldVal,
+    droppedAt: Date.now(),
+    x: MOVE.px,
+    y: MOVE.py,
+  };
+
+  // Draw cache on canvas
+  startAnimLoop();
+
+  // Show cache notification
+  const notif = document.createElement('div');
+  notif.id = 'cache-notif';
+  notif.style.cssText = `
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:#0d1018;border:1px solid #8855ff44;border-radius:12px;
+    padding:16px 20px;z-index:500;text-align:center;
+    font-family:'Cinzel',serif;max-width:300px;
+    animation:cacheAppear 0.4s ease-out;
+  `;
+  notif.innerHTML = `
+    <div style="font-size:28px;margin-bottom:6px;">💎</div>
+    <div style="font-size:13px;color:#aa77ff;font-weight:700;margin-bottom:4px;">Essence Sphere Cache Dropped</div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.6;">
+      Contains <span style="color:#8888ff;">${xpVal.toLocaleString()} XP</span>
+      and <span style="color:var(--gold);">${goldVal} gold</span>.<br>
+      Fades in <span style="color:#e83a3a;">30 seconds</span>.
+    </div>
+    <div style="font-size:10px;color:#554466;margin-top:8px;">In multiplayer, allies can recover this for you.</div>`;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 5000);
+
+  // Auto-clear after 30s
+  setTimeout(() => { essenceCache = null; }, CACHE_DURATION);
+
+  // Log it
+  if (typeof log === 'function') {
+    log(`<span style="color:#aa77ff;">💎 Essence Sphere Cache dropped — ${xpVal} XP, ${goldVal} gold. Fades in 30s.</span>`);
+  }
+}
+
+// Draw cache on canvas if present
+const _drawArenaFinal = drawArena;
+drawArena = function() {
+  _drawArenaFinal();
+  if (!essenceCache) return;
+  const canvas = document.getElementById('canvas');
+  if (!canvas) return;
+  const ctx2 = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = essenceCache.x * W;
+  const cy = essenceCache.y * H;
+  const age = (Date.now() - essenceCache.droppedAt) / CACHE_DURATION;
+  const alpha = Math.max(0.2, 1 - age * 0.7);
+  const pulse = 0.8 + 0.2 * Math.sin(Date.now() / 300);
+
+  ctx2.save();
+  ctx2.globalAlpha = alpha;
+  // Glow
+  const cg = ctx2.createRadialGradient(cx, cy, 2, cx, cy, 22 * pulse);
+  cg.addColorStop(0, '#aa77ffcc');
+  cg.addColorStop(1, '#aa77ff00');
+  ctx2.fillStyle = cg;
+  ctx2.beginPath();
+  ctx2.arc(cx, cy, 22 * pulse, 0, Math.PI * 2);
+  ctx2.fill();
+  // Orb
+  ctx2.fillStyle = '#6633aa';
+  ctx2.beginPath();
+  ctx2.arc(cx, cy, 8 * pulse, 0, Math.PI * 2);
+  ctx2.fill();
+  ctx2.fillStyle = '#cc99ff';
+  ctx2.beginPath();
+  ctx2.arc(cx - 3, cy - 3, 3, 0, Math.PI * 2);
+  ctx2.fill();
+  // Label
+  ctx2.font = "9px 'Cinzel',serif";
+  ctx2.fillStyle = '#aa77ff';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('CACHE', cx, cy + 20);
+  ctx2.restore();
+};
+
+// Hook into player death to drop cache instead of immediate reset
+// Patch honorableDeath to show XP diff vs dying
+const _origHonorableDeath = honorableDeath;
+window.honorableDeath = function() {
+  // Calculate Trinity XP at current level vs dying penalty
+  const currentLv = G.playerLevel || 1;
+  const xpBonus = Math.floor(currentLv * currentLv * 150);
+  const overlay = document.createElement('div');
+  overlay.id = 'honorable-death-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;">⚔️</div>
+      <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:#e8b84b;margin-bottom:4px;">Honorable Death</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;">End your run with honor. No cache dropped. Maximum Trinity Force XP earned. Come back stronger.</div>
+      <div style="background:#0d1018;border:1px solid #8855ff33;border-radius:10px;padding:14px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div style="color:var(--muted);">Level Reached</div>
+          <div style="font-family:'Cinzel',serif;color:var(--text);">${currentLv}</div>
+          <div style="color:var(--muted);">Wave</div>
+          <div style="font-family:'Cinzel',serif;color:var(--text);">${G.wave}</div>
+          <div style="color:var(--muted);">Kills</div>
+          <div style="font-family:'Cinzel',serif;color:var(--text);">${G.kills}</div>
+          <div style="color:var(--muted);">Trinity Force XP</div>
+          <div style="font-family:'Cinzel',serif;color:#aa77ff;">+${xpBonus.toLocaleString()}</div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a2f45;font-size:11px;color:#3acc7a;">
+          ✓ No cache dropped &nbsp;·&nbsp; ✓ Full XP reward &nbsp;·&nbsp; ✓ Season tier preserved
+        </div>
+      </div>
+      <div style="font-size:11px;color:#aa7722;background:rgba(232,184,75,0.08);border-radius:8px;padding:8px;margin-bottom:16px;">
+        💡 Dying in a dungeon at this level would only earn ~${Math.floor(xpBonus * 0.2).toLocaleString()} Trinity Force XP
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('honorable-death-overlay').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:12px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;">Cancel</button>
+        <button onclick="executeHonorableDeath(0)" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px;border-radius:8px;border:1px solid #e8b84b;background:rgba(232,184,75,0.1);color:#e8b84b;cursor:pointer;">⚔️ Accept Honorable Death</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+};
+
+// Hook into player death (non-honorable) to drop cache
+const _checkPlayerDeath = window.checkPlayerDeath;
+document.addEventListener('DOMContentLoaded', () => {
+  // Patch the death screen if it exists
+  const origOnPlayerDeath = window.onPlayerDeath;
+  if (typeof origOnPlayerDeath === 'function') {
+    window.onPlayerDeath = function(...args) {
+      dropEssenceCache();
+      return origOnPlayerDeath.apply(this, args);
+    };
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// WORLD SECTIONS — 4-tier world structure on map screen
+// ═══════════════════════════════════════════════════════════════
+const WORLD_SECTIONS = [
+  { id: 1, name: 'Verdant Lowlands',   levels: '1–35',   color: '#3acc7a', icon: '🌿', desc: 'Bright meadows invaded by corrupted creatures. Your journey begins here.',   unlockLv: 1  },
+  { id: 2, name: 'Shattered Highlands', levels: '36–70',  color: '#e8b84b', icon: '⛰️', desc: 'Rocky peaks where ancient elemental wars left the land fractured.',         unlockLv: 35 },
+  { id: 3, name: 'Abyssal Reaches',    levels: '71–150',  color: '#aa77ff', icon: '🌑', desc: 'A realm that looks peaceful from afar but seethes with ancient darkness.',   unlockLv: 70 },
+  { id: 4, name: 'The Rift Eternal',   levels: '151+',    color: '#ff2266', icon: '💀', desc: 'No ceiling. No mercy. The Rift itself has broken through.',                 unlockLv: 150 },
+];
+
+function injectWorldSections() {
+  const mapScreen = document.getElementById('map-screen');
+  if (!mapScreen) return;
+  // Only inject once
+  if (document.getElementById('world-sections-panel')) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'world-sections-panel';
+  panel.style.cssText = 'width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;';
+
+  const playerLv = G.playerLevel || 1;
+  const activeSection = WORLD_SECTIONS.slice().reverse().find(s => playerLv >= s.unlockLv) || WORLD_SECTIONS[0];
+
+  panel.innerHTML = `
+    <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin-bottom:10px;">⚔️ World Sections</div>
+    ${WORLD_SECTIONS.map(s => {
+      const locked = playerLv < s.unlockLv;
+      const active = s.id === activeSection.id;
+      return `<div style="
+        display:flex;align-items:center;gap:10px;
+        background:${active ? `rgba(${s.color.replace('#','').match(/../g).map(x=>parseInt(x,16)).join(',')},0.08)` : '#0d1018'};
+        border:1px solid ${active ? s.color + '55' : 'var(--border)'};
+        border-radius:8px;padding:8px 12px;margin-bottom:6px;
+        opacity:${locked ? '0.4' : '1'};
+      ">
+        <span style="font-size:18px;">${s.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'Cinzel',serif;font-size:12px;color:${s.color};">${s.name}</span>
+            <span style="font-size:10px;color:var(--muted);font-family:'Cinzel',serif;">Lv ${s.levels}</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4;">${locked ? `🔒 Unlocks at level ${s.unlockLv}` : s.desc}</div>
+        </div>
+        ${active ? `<span style="font-size:9px;font-family:'Cinzel',serif;color:${s.color};background:${s.color}22;padding:2px 6px;border-radius:10px;white-space:nowrap;">ACTIVE</span>` : ''}
+      </div>`;
+    }).join('')}
+  `;
+
+  mapScreen.appendChild(panel);
+}
+
+// Inject world sections when map screen shows
+const _origShowMapScreen = showMapScreen;
+showMapScreen = function(...args) {
+  _origShowMapScreen.apply(this, args);
+  setTimeout(injectWorldSections, 50);
+};
+
+// CSS for cache animation
+const cacheStyle = document.createElement('style');
+cacheStyle.textContent = `
+@keyframes cacheAppear {
+  from { opacity:0; transform:translate(-50%,-50%) scale(0.8); }
+  to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+}
+#dodge-controls button:active { transform:scale(0.88); opacity:0.8; }
+`;
+document.head.appendChild(cacheStyle);
+
 </script>
 </body>
 </html>
