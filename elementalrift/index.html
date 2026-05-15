@@ -850,6 +850,13 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 #arena::after{right:0;background-position:right center;transform:scaleX(-1);}
 .panel-title{position:relative;}
 .panel-title::before{content:'';position:absolute;left:0;top:0;bottom:0;width:14px;background-image:url("https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Vine_Border.png");background-size:14px 100%;background-repeat:no-repeat;opacity:0.5;mix-blend-mode:screen;pointer-events:none;}
+
+#wave-choice-overlay button:hover {
+  filter: brightness(1.2);
+}
+#side-menu::-webkit-scrollbar { width: 4px; }
+#side-menu::-webkit-scrollbar-track { background: transparent; }
+#side-menu::-webkit-scrollbar-thumb { background: var(--metal-edge); }
 </style>
 
 <!-- Supabase -->
@@ -1441,7 +1448,86 @@ let sbProfile = null; // players row
 <div id="game" class="hidden">
 
   <!-- Resource + HP bars — always visible on both mobile and desktop -->
+  <!-- HAMBURGER MENU PANEL (slide-in from left) -->
+  <div id="side-menu" style="
+    position:fixed;top:0;left:-280px;width:280px;height:100%;
+    background:linear-gradient(180deg,#0e1016 0%,#090b0f 100%);
+    border-right:1px solid var(--metal-edge);
+    z-index:500;transition:left 0.25s ease;
+    overflow-y:auto;padding:16px 0 80px 0;
+    box-shadow:4px 0 20px rgba(0,0,0,0.6);
+  ">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 14px;border-bottom:1px solid var(--metal-edge);">
+      <span style="font-family:'Cinzel',serif;font-size:14px;color:var(--gold);letter-spacing:0.1em;">MENU</span>
+      <div onclick="closeMenu()" style="cursor:pointer;color:var(--muted);font-size:20px;line-height:1;">✕</div>
+    </div>
+    <!-- Auto Wave toggle -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--metal-edge);">
+      <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Combat</div>
+      <button id="menu-auto-wave" onclick="menuToggleAutoWave()" style="
+        width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;
+        border:1px solid rgba(46,158,88,0.4);color:#2e9e58;
+        background:rgba(46,158,88,0.06);cursor:pointer;letter-spacing:0.06em;
+        clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+      ">▶ Auto Wave: OFF</button>
+    </div>
+    <!-- Loadout manager -->
+    <div style="padding:12px 16px;border-bottom:1px solid var(--metal-edge);">
+      <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Abilities</div>
+      <button onclick="openSlotSelector();closeMenu();" style="
+        width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;
+        border:1px solid rgba(100,80,200,0.4);color:#8855cc;
+        background:rgba(100,80,200,0.06);cursor:pointer;letter-spacing:0.06em;
+        clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+      ">⚡ Manage Loadout</button>
+    </div>
+    <!-- Panels -->
+    <div style="padding:12px 16px;">
+      <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">View</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button onclick="openMenuPanel('gear')" style="width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;border:1px solid var(--metal-edge);color:var(--text);background:transparent;cursor:pointer;text-align:left;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">🛡️  Gear</button>
+        <button onclick="openMenuPanel('stats')" style="width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;border:1px solid var(--metal-edge);color:var(--text);background:transparent;cursor:pointer;text-align:left;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">📊  Stats</button>
+        <button onclick="openMenuPanel('ranks')" style="width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;border:1px solid var(--metal-edge);color:var(--text);background:transparent;cursor:pointer;text-align:left;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">🏆  Ranks</button>
+        <button onclick="openMenuPanel('log')" style="width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;border:1px solid var(--metal-edge);color:var(--text);background:transparent;cursor:pointer;text-align:left;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">📜  Combat Log</button>
+      </div>
+    </div>
+    <!-- FX + Sound -->
+    <div style="padding:12px 16px;border-top:1px solid var(--metal-edge);margin-top:8px;">
+      <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">Settings</div>
+      <div style="display:flex;gap:6px;">
+        <button id="menu-mute-btn" onclick="toggleMute()" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:9px;border:1px solid var(--metal-edge);color:var(--muted);background:transparent;cursor:pointer;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">🔊 SFX</button>
+        <button id="menu-fx-btn" onclick="cycleFxLevel()" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:9px;border:1px solid rgba(212,165,53,0.4);color:#d4a535;background:transparent;cursor:pointer;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">⚖ Balanced</button>
+      </div>
+    </div>
+    <!-- Trinity -->
+    <div style="padding:12px 16px;border-top:1px solid var(--metal-edge);">
+      <button onclick="openTrinityShop();closeMenu();" style="width:100%;font-family:'Cinzel',serif;font-size:12px;padding:10px;border:1px solid rgba(100,60,180,0.4);color:#7744bb;background:rgba(80,40,140,0.06);cursor:pointer;letter-spacing:0.06em;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);">⚡ Cosmic / Trinity</button>
+    </div>
+  </div>
+  <!-- Backdrop -->
+  <div id="menu-backdrop" onclick="closeMenu()" style="display:none;position:fixed;inset:0;z-index:499;background:rgba(0,0,0,0.5);"></div>
+
+  <!-- MENU PANEL (slides in below resource bar, full screen) -->
+  <div id="menu-panel" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:450;background:linear-gradient(180deg,#080a0e 0%,#0a0c10 100%);overflow-y:auto;padding-bottom:60px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--metal-edge);position:sticky;top:0;background:#080a0e;z-index:1;">
+      <div onclick="closeMenuPanel()" style="cursor:pointer;color:var(--muted);font-size:18px;">←</div>
+      <span id="menu-panel-title" style="font-family:'Cinzel',serif;font-size:14px;color:var(--gold);letter-spacing:0.1em;"></span>
+    </div>
+    <div id="menu-panel-content" style="padding:0;"></div>
+  </div>
+
   <div id="resource-bar" class="vine-left vine-right vine-sm">
+    <div onclick="openMenu()" style="
+      cursor:pointer;padding:4px 8px;
+      border:1px solid var(--metal-edge);
+      clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+      display:flex;flex-direction:column;gap:3px;justify-content:center;
+      background:rgba(255,255,255,0.03);flex-shrink:0;
+    " title="Menu">
+      <div style="width:16px;height:2px;background:var(--gold);"></div>
+      <div style="width:12px;height:2px;background:var(--gold);"></div>
+      <div style="width:16px;height:2px;background:var(--gold);"></div>
+    </div>
     <div class="res-group">
       <div class="res-item"><span class="res-label">Wave</span><span class="res-val" id="wave-num">1</span></div>
       <div class="res-item"><span class="res-label">Gold</span><span class="res-val" id="gold-val">0</span></div>
@@ -1473,21 +1559,6 @@ let sbProfile = null; // players row
   </div>
 
   <!-- ═══ MOBILE LAYOUT ═══ -->
-  <!-- Mobile top tabs -->
-  <div id="mobile-top-tabs">
-    <div class="mob-tab active" id="mtab-arena" onclick="mobileTab('arena')">
-      <span class="mob-tab-icon">⚔️</span>Arena
-    </div>
-    <div class="mob-tab" id="mtab-gear" onclick="mobileTab('gear')">
-      <span class="mob-tab-icon">🛡️</span>Gear
-    </div>
-    <div class="mob-tab" id="mtab-stats" onclick="mobileTab('stats')">
-      <span class="mob-tab-icon">📊</span>Stats
-    </div>
-    <div class="mob-tab" id="mtab-ranks" onclick="mobileTab('ranks')">
-      <span class="mob-tab-icon">🏆</span>Ranks
-    </div>
-  </div>
 
   <!-- Mobile content area -->
   <div id="mobile-content">
@@ -1523,8 +1594,8 @@ let sbProfile = null; // players row
     <div id="arena">
       <canvas id="canvas"></canvas>
       <div id="combat-log-overlay"></div>
-      <div id="mute-btn" onclick="toggleMute()">🔊 SFX</div>
-      <div id="fx-btn" onclick="cycleFxLevel()" style="position:absolute;top:10px;right:74px;background:rgba(0,0,0,0.45);border:1px solid rgba(212,165,53,0.5);border-radius:20px;padding:3px 10px;font-size:10px;cursor:pointer;z-index:6;color:#d4a535;font-family:'Cinzel',serif;letter-spacing:0.05em;transition:all 0.15s;">⚖ Balanced</div>
+      <div id="mute-btn" style="display:none;"></div>
+      <div id="fx-btn" style="display:none;"></div>
       <!-- Wave status banner -->
       <div id="wave-status-banner" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-family:'Cinzel',serif;font-size:11px;color:var(--text);letter-spacing:0.06em;white-space:nowrap;z-index:5;display:none;"></div>
 
@@ -1603,14 +1674,42 @@ let sbProfile = null; // players row
     </div>
 
 
-    <!-- Bottom action bar — always fully visible -->
-    <div style="display:flex;gap:4px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
-      <button class="action-btn btn-next" id="next-btn" onclick="nextWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
-      <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">💀</span>Boss</button>
-      <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
-      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:rgba(232,184,75,0.5);color:#e8b84b;background:linear-gradient(170deg,rgba(232,184,75,0.06) 0%,#080a0e 100%);" title="End your run with honor for maximum Trinity Force XP"><span class="btn-icon">⚔️</span>Honor</button>
-      <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
-      
+    <!-- Hidden wave buttons bar (kept for JS compat) -->
+    <div id="wave-btns" style="display:none;">
+      <button class="action-btn btn-next" id="next-btn" onclick="nextWave()" style="opacity:0.35;pointer-events:none;"></button>
+      <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="opacity:0.35;pointer-events:none;"></button>
+      <button class="action-btn" id="potion-btn" style="display:none;"></button>
+    </div>
+
+    <!-- BETWEEN-WAVE FULL SCREEN OVERLAY -->
+    <div id="wave-choice-overlay" style="
+      display:none;position:absolute;inset:0;z-index:20;
+      background:rgba(5,7,12,0.88);
+      backdrop-filter:blur(2px);
+      flex-direction:column;align-items:center;justify-content:center;
+      gap:14px;padding:24px;
+    ">
+      <div id="wave-choice-title" style="font-family:'Cinzel',serif;font-size:18px;color:var(--gold);letter-spacing:0.12em;text-align:center;margin-bottom:6px;"></div>
+      <button id="wc-next" onclick="hideWaveChoice();nextWave();" style="
+        width:100%;max-width:320px;font-family:'Cinzel',serif;font-size:15px;font-weight:700;
+        padding:18px;border:1px solid rgba(46,158,88,0.7);color:#2e9e58;
+        background:rgba(46,158,88,0.1);cursor:pointer;letter-spacing:0.08em;
+        clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0% 100%,0% 5px);
+        transition:background 0.15s;
+      ">▶ Next Wave</button>
+      <button id="wc-boss" onclick="hideWaveChoice();startBossAttempt();" style="
+        width:100%;max-width:320px;font-family:'Cinzel',serif;font-size:15px;font-weight:700;
+        padding:18px;border:1px solid rgba(204,26,68,0.7);color:#cc1a44;
+        background:rgba(204,26,68,0.08);cursor:pointer;letter-spacing:0.08em;
+        clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0% 100%,0% 5px);
+        display:none;
+      ">💀 Challenge Boss</button>
+      <button id="wc-honor" onclick="hideWaveChoice();honorableDeath();" style="
+        width:100%;max-width:320px;font-family:'Cinzel',serif;font-size:14px;
+        padding:14px;border:1px solid rgba(232,184,75,0.4);color:#e8b84b;
+        background:rgba(232,184,75,0.05);cursor:pointer;letter-spacing:0.06em;
+        clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0% 100%,0% 5px);
+      ">⚔️ Honorable Death</button>
     </div>
   </div>
 
@@ -8538,14 +8637,10 @@ function initMobileLayout() {
     mav.appendChild(arenaEl);
   }
 
-  // Move loadout-area, heal-row and wave-btns into mobile-bottom
+  // Move loadout-area into mobile-bottom (wave-btns now hidden)
   const loadout = document.getElementById('loadout-area');
-  const healRow = null; // heal is now floating on arena
-  const waveBtns = document.getElementById('wave-btns');
   const mbot = document.getElementById('mobile-bottom');
   if (loadout && mbot && loadout.parentElement !== mbot) mbot.appendChild(loadout);
-  // healRow is floating — no move needed
-  if (waveBtns && mbot && waveBtns.parentElement !== mbot) mbot.appendChild(waveBtns);
 
   // Move resource-bar and bars-row to top of center-col (already there, just make sure)
   resizeCanvas();
@@ -8554,41 +8649,8 @@ function initMobileLayout() {
 let currentMobileTab = 'arena';
 
 function mobileTab(tab) {
-  if (!IS_MOBILE()) return;
-  currentMobileTab = tab;
-
-  // Update tab highlights
-  document.querySelectorAll('.mob-tab').forEach(t => t.classList.remove('active'));
-  const activeTab = document.getElementById('mtab-' + tab);
-  if (activeTab) activeTab.classList.add('active');
-
-  const arenaView = document.getElementById('mobile-arena-view');
-  const panelView = document.getElementById('mobile-panel-view');
-
-  if (tab === 'arena') {
-    arenaView.style.display = 'flex';
-    panelView.classList.remove('active');
-    resizeCanvas();
-    return;
-  }
-
-  // Hide arena, show panel
-  arenaView.style.display = 'none';
-  panelView.classList.add('active');
-
-  const content = document.getElementById('mobile-panel-content');
-  if (!content) return;
-
-  if (tab === 'gear') {
-    content.innerHTML = buildGearPanelHTML();
-  } else if (tab === 'stats') {
-    content.innerHTML = buildStatsPanelHTML();
-  } else if (tab === 'ranks') {
-    content.innerHTML = '<div class="panel-title" style="position:static;margin-bottom:8px;">🏆 Boss Damage Leaderboard</div><div style="padding:8px;color:var(--muted);font-size:12px;text-align:center;">Loading...</div>';
-    fetchLeaderboard().then(lb => {
-      content.innerHTML = '<div class="panel-title" style="position:static;margin-bottom:8px;">🏆 Boss Damage Leaderboard</div>' + buildLBHtml(lb, G.playerName, 20);
-    });
-  }
+  // Tab strip removed — delegate to menu panel
+  if(tab !== 'arena') openMenuPanel(tab);
 }
 
 function buildGearPanelHTML() {
@@ -9595,6 +9657,102 @@ drawArena = function() {
   ctx2.restore();
 };
 */
+// ── HAMBURGER MENU ──
+function openMenu() {
+  document.getElementById('side-menu').style.left = '0';
+  document.getElementById('menu-backdrop').style.display = 'block';
+}
+function closeMenu() {
+  document.getElementById('side-menu').style.left = '-280px';
+  document.getElementById('menu-backdrop').style.display = 'none';
+}
+
+function openMenuPanel(tab) {
+  const panel = document.getElementById('menu-panel');
+  const title = document.getElementById('menu-panel-title');
+  const content = document.getElementById('menu-panel-content');
+  const labels = {gear:'🛡️ Gear', stats:'📊 Stats', ranks:'🏆 Ranks', log:'📜 Combat Log'};
+  title.textContent = labels[tab] || tab;
+  if(tab === 'gear')       content.innerHTML = buildGearPanelHTML();
+  else if(tab === 'stats') content.innerHTML = buildStatsPanelHTML();
+  else if(tab === 'ranks') {
+    content.innerHTML = '<div style="padding:16px;color:var(--muted);text-align:center;">Loading...</div>';
+    fetchLeaderboard().then(lb => {
+      content.innerHTML = buildLBHtml(lb, G.playerName, 20);
+    });
+  } else if(tab === 'log') {
+    const lines = document.getElementById('log-lines');
+    content.innerHTML = '<div style="padding:12px;font-size:13px;line-height:1.7;">' + (lines ? lines.innerHTML : '') + '</div>';
+  }
+  panel.style.display = 'flex';
+  panel.style.flexDirection = 'column';
+  closeMenu();
+}
+function closeMenuPanel() {
+  document.getElementById('menu-panel').style.display = 'none';
+}
+
+function menuToggleAutoWave() {
+  autoWaveEnabled = !autoWaveEnabled;
+  const btn = document.getElementById('menu-auto-wave');
+  if(btn) btn.textContent = '▶ Auto Wave: ' + (autoWaveEnabled ? 'ON' : 'OFF');
+  if(btn) btn.style.color = autoWaveEnabled ? '#2e9e58' : '#4e5468';
+  if(btn) btn.style.borderColor = autoWaveEnabled ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
+  // If toggled on and between waves, fire immediately
+  if(autoWaveEnabled && !G.enemy && !G.combatActive && !G._enemyDeathInProgress) {
+    const next = document.getElementById('next-btn');
+    if(next && next.style.pointerEvents !== 'none') {
+      hideWaveChoice();
+      nextWave();
+    }
+  }
+}
+
+// ── BETWEEN-WAVE CHOICE OVERLAY ──
+function showWaveChoice(title, showBoss) {
+  const overlay = document.getElementById('wave-choice-overlay');
+  const titleEl = document.getElementById('wave-choice-title');
+  const bossBtn = document.getElementById('wc-boss');
+  if(!overlay) return;
+  titleEl.textContent = title || 'What will you do?';
+  bossBtn.style.display = showBoss ? 'block' : 'none';
+  overlay.style.display = 'flex';
+}
+function hideWaveChoice() {
+  const overlay = document.getElementById('wave-choice-overlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
+// Override setNextBtnActive to show/hide wave choice overlay instead
+const _origSetNextBtnActive = setNextBtnActive;
+function setNextBtnActive(active) {
+  _origSetNextBtnActive(active);
+  if(active) {
+    const showBoss = G.wave >= 3;
+    showWaveChoice('Wave ' + (G.wave) + ' cleared!', showBoss);
+    if(autoWaveEnabled) {
+      setTimeout(() => { if(autoWaveEnabled && !G.combatActive) { hideWaveChoice(); nextWave(); } }, 600);
+    }
+  } else {
+    hideWaveChoice();
+  }
+}
+
+// Sync old mute/fx buttons with menu versions
+const _origToggleMute = toggleMute;
+function toggleMute() {
+  _origToggleMute();
+  const btn = document.getElementById('menu-mute-btn');
+  if(btn) btn.textContent = isMuted ? '🔇 SFX' : '🔊 SFX';
+}
+const _origUpdateFxBtn = updateFxBtn;
+function updateFxBtn() {
+  _origUpdateFxBtn();
+  const btn = document.getElementById('menu-fx-btn');
+  if(btn) { btn.textContent = FX.labels[G_fxLevel]; btn.style.color = FX.colors[G_fxLevel]; }
+}
+
+
 </script>
 </body>
 </html>
