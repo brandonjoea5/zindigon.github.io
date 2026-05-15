@@ -4153,10 +4153,14 @@ function resolveEnemyAttack() {
   restartEnemyAttackCycle();
 }
 
-function restartEnemyAttackCycle() { /* folded into enemyAttack() */ }
+function restartEnemyAttackCycle() {
+  // folded into enemyAttack()
+}
 
 // activateBlock — disabled (telegraph system removed)
-function activateBlock() { /* no-op: telegraph system removed */ }
+function activateBlock() {
+  // no-op: telegraph system removed
+}
 
 */
 function enemyAttack() {
@@ -9210,45 +9214,8 @@ function triggerPoisonFog(duration, stacks) {
   spawnFogLayer('poison-fog-layer', cfg.url, opacity, cfg.speed, cfg.yPos, size, cfg.direction, duration);
 }
 
-
-  const arena = document.getElementById('arena');
-  if(!arena) return;
-  const existing = document.getElementById('poison-fog-layer');
-  if(existing) existing.remove();
-  const opacity = Math.min(0.8, 0.35 + (stacks - 1) * 0.12);
-  const fog = document.createElement('div');
-  fog.id = 'poison-fog-layer';
-  fog.style.cssText = `
-    position:absolute;inset:0;pointer-events:none;z-index:6;
-    background-image:url('${POISON_FOG_URL}');
-    background-size:${Math.min(100, 50 + stacks * 8)}% auto;
-    background-repeat:repeat-x;
-    background-position:110% 70%;
-    opacity:0;
-    mix-blend-mode:screen;
-    transition:opacity 0.4s ease;
-  `;
-  arena.appendChild(fog);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    fog.style.opacity = String(opacity);
-  }));
-  let posX = 110;
-  let animId;
-  (function drift() {
-    posX -= 0.03;
-    fog.style.backgroundPositionX = posX + '%';
-    if(posX > -130) animId = requestAnimationFrame(drift);
-  })();
-  setTimeout(() => {
-    fog.style.transition = 'opacity 0.8s ease';
-    fog.style.opacity = '0';
-  }, Math.max(200, duration - 900));
-  setTimeout(() => { cancelAnimationFrame(animId); fog.remove(); }, duration + 400);
-}
-
 // ICE FOG
 
-
-
+</script>
 </body>
 </html>
