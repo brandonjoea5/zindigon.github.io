@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.6.3</title>
+<title>Elemental Rift v2.6.4</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1083,7 +1083,7 @@ let sbProfile = null; // players row
       More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.3 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.4 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 (function(){
@@ -2613,7 +2613,7 @@ function loadFromData(data) {
   } catch(e) { console.error('loadFromData error:', e); return false; }
 }
 
-
+function resumeFromSave() {
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
   updateResourceBar();
   // If we have a segment in progress use segment system, else spawn directly
