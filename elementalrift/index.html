@@ -2447,10 +2447,10 @@ function loadGame(name) {
 function continueGame() {
   try {
     const raw = localStorage.getItem('elementalRift_v3');
-    const save = JSON.parse(raw);
-    // name-input removed
+    if(!raw) { startGame(); return; }
+    JSON.parse(raw); // validate — throws if corrupt, caught below
     startGame();
-  } catch(e){ console.error('continueGame error:', e); }
+  } catch(e){ console.error('continueGame error:', e); startGame(); }
 }
 
 function startGame() {
@@ -2467,7 +2467,7 @@ function startGame() {
   requestAnimationFrame(() => { requestAnimationFrame(() => {
     resizeCanvas();
     requestAnimationFrame(() => resizeCanvas()); // second pass after layout
-    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${G.playerName}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
+    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${escHtml(G.playerName)}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
     if (!loaded) {
       showClassSelection();
     } else {
@@ -5381,6 +5381,11 @@ function combatLog(text, type) {
   setTimeout(() => { if(entry.parentNode) entry.parentNode.removeChild(entry); }, 4000);
 }
 
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function log(msg){
   const lines=document.getElementById('log-lines');
   if(!lines)return;
@@ -5396,7 +5401,8 @@ let currentTab='arena';
 function switchTab(tab){
   currentTab=tab;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
+  const tabEl = document.getElementById('tab-'+tab);
+  if(tabEl) tabEl.classList.add('active');
   ['stats','skills','log','lb'].forEach(t=>{
     const el=document.getElementById('mobile-panel-'+t);
     if(!el)return;
@@ -6439,16 +6445,8 @@ function activateHeal() {
   G.autoSlots['heal'] = 'master';
   _tick.heal = 0;
   if(!_tick.running) startMasterTick();
-  // Legacy no-op block kept for syntax — master tick handles execution
-  if(false) {
-    if(!G.combatActive||!G.enemy){ delete G.autoSlots['heal']; updateHealSlotUI(); return; }
-    if(!isHealReady()) return;
-    if(G.mana < MANA_COSTS.heal) return;
-    if(G.hp >= G.maxHp * 0.8) return; // only heal when below 80% hp
-    doHeal(ab);
-  }, 300);
   updateHealSlotUI();
-  return; // early return — doHeal handles the actual heal
+  return;
 }
 
 function doHeal(ab) {
@@ -8736,7 +8734,18 @@ function syncMobileLog() {
 // ═══════════════════════════════════════════════
 // IDLE LOOP
 // ═══════════════════════════════════════════════
-function idlePulse(){applyScreenShake();drawArena();requestAnimationFrame(idlePulse);}
+function idlePulse(){
+  // Only keep running if there's something to animate
+  if(shakeAmount > 0 || _zoomScale !== 1.0 || _enemyWindup > 0) {
+    applyScreenShake();
+    drawArena();
+    requestAnimationFrame(idlePulse);
+  } else {
+    // Nothing to animate — stop loop, do one final draw to settle
+    applyScreenShake();
+    drawArena();
+  }
+}
 
 // ═══════════════════════════════════════════════
 // RIFT GAUNTLET — ACTIVE ARENA MODE
@@ -9211,7 +9220,7 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-window.addEventListener('resize',()=>{resizeCanvas();initUI();initMobileLayout();});
+window.addEventListener('resize',()=>{resizeCanvas();initMobileLayout();drawArena();});
 
 // ResizeObserver keeps canvas in sync if layout shifts (e.g. keyboard on mobile)
 if(typeof ResizeObserver !== 'undefined') {
