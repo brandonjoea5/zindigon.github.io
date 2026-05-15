@@ -1514,6 +1514,7 @@ let sbProfile = null; // players row
       <canvas id="canvas"></canvas>
       <div id="combat-log-overlay"></div>
       <div id="mute-btn" onclick="toggleMute()">🔊 SFX</div>
+      <div id="fx-btn" onclick="cycleFxLevel()" style="position:absolute;top:10px;right:74px;background:rgba(0,0,0,0.45);border:1px solid rgba(212,165,53,0.5);border-radius:20px;padding:3px 10px;font-size:10px;cursor:pointer;z-index:6;color:#d4a535;font-family:'Cinzel',serif;letter-spacing:0.05em;transition:all 0.15s;">⚖ Balanced</div>
       <!-- Wave status banner -->
       <div id="wave-status-banner" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-family:'Cinzel',serif;font-size:11px;color:var(--text);letter-spacing:0.06em;white-space:nowrap;z-index:5;display:none;"></div>
 
@@ -3344,7 +3345,7 @@ function restoreAutoSlots() {
         const ms = Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0)));
         G.autoSlots[slotIdx] = setTimeout(() => {
           scheduleRestoreBasic();
-          if(!G.combatActive || !G.enemy){ delete G.autoSlots[slotIdx]; updateLoadoutUI(); return; }
+          if(!G.combatActive || !G.enemy){ delete G.autoSlots[slotIdx]; markDirty(['loadout']); return; }
           fireAbility(ab);
         }, ms);
       }
@@ -3354,7 +3355,7 @@ function restoreAutoSlots() {
     } else {
       startCDBarAnimation(slotIdx, ab);
       G.autoSlots[slotIdx] = setInterval(() => {
-        if(!G.combatActive || !G.enemy){ clearInterval(G.autoSlots[slotIdx]); delete G.autoSlots[slotIdx]; updateLoadoutUI(); return; }
+        if(!G.combatActive || !G.enemy){ clearInterval(G.autoSlots[slotIdx]); delete G.autoSlots[slotIdx]; markDirty(['loadout']); return; }
         if(!isAbilityReady(ab)) return;
         const manaCost = MANA_COSTS[ab.type]||0;
         if(manaCost > 0 && G.mana < manaCost) return;
@@ -4146,9 +4147,7 @@ function resolveEnemyAttack() {
   triggerScreenShake(4, 0.2);
 
   if (G.hp <= 0) { G.hp = 0; onDeath(); return; }
-  updateHpBar();
-  updateEnemyUI();
-  saveGame();
+  markDirty(['hp', 'enemy']);
   restartEnemyAttackCycle();
 }
 
@@ -4220,9 +4219,7 @@ function enemyAttack() {
   triggerScreenShake(4, 0.2);
 
   if (G.hp <= 0) { G.hp = 0; onDeath(); return; }
-  updateHpBar();
-  updateEnemyUI();
-  saveGame();
+  markDirty(['hp', 'enemy']);
 }
 
 function onEnemyDeath() {
@@ -4407,6 +4404,90 @@ function emergencySpawn() {
 
 function safeHide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
 function safeShow(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
+
+
+
+// ── PERFORMANCE / FX MODES ──
+// 0 = Performance, 1 = Balanced, 2 = High FX
+const FX = {
+  PERF: 0, BAL: 1, HIGH: 2,
+  labels: ['⚡ Perf', '⚖ Balanced', '✨ High FX'],
+  colors: ['#cc2a2a', '#d4a535', '#2e9e58'],
+};
+let G_fxLevel = parseInt(localStorage.getItem('er_fxLevel') ?? '1');
+
+function setFxLevel(level) {
+  G_fxLevel = level;
+  localStorage.setItem('er_fxLevel', level);
+  updateFxBtn();
+}
+
+function cycleFxLevel() {
+  setFxLevel((G_fxLevel + 1) % 3);
+}
+
+function updateFxBtn() {
+  const btn = document.getElementById('fx-btn');
+  if(!btn) return;
+  btn.textContent = FX.labels[G_fxLevel];
+  btn.style.color = FX.colors[G_fxLevel];
+  btn.style.borderColor = FX.colors[G_fxLevel] + '88';
+}
+
+// Particle multiplier per mode
+function fxParticleCount(base) {
+  if(G_fxLevel === FX.PERF) return Math.max(1, Math.floor(base * 0.25));
+  if(G_fxLevel === FX.BAL)  return Math.max(2, Math.floor(base * 0.6));
+  return base;
+}
+
+// Screen shake multiplier
+function fxShakeScale() {
+  if(G_fxLevel === FX.PERF) return 0;
+  if(G_fxLevel === FX.BAL)  return 0.5;
+  return 1.0;
+}
+
+// ── UI DIRTY FLAG SYSTEM ──
+// Set flags instead of calling update functions directly during combat.
+// flushUI() is called from requestAnimationFrame and debounced functions.
+const _dirty = {
+  hp: false, mana: false, enemy: false, resource: false,
+  stats: false, loadout: false, classXP: false, equip: false,
+  mobilePanel: false, log: false, healSlot: false,
+};
+let _flushScheduled = false;
+
+function markDirty(flags) {
+  for(const f of flags) _dirty[f] = true;
+  if(!_flushScheduled) {
+    _flushScheduled = true;
+    requestAnimationFrame(flushUI);
+  }
+}
+
+function flushUI() {
+  _flushScheduled = false;
+  if(_dirty.hp)          { updateHpBar();          _dirty.hp = false; }
+  if(_dirty.mana)        { updateManaBar();         _dirty.mana = false; }
+  if(_dirty.enemy)       { updateEnemyUI();         _dirty.enemy = false; }
+  if(_dirty.resource)    { updateResourceBar();     _dirty.resource = false; }
+  if(_dirty.stats)       { updateStatsPanel();      _dirty.stats = false; }
+  if(_dirty.loadout)     { updateLoadoutUI();       _dirty.loadout = false; }
+  if(_dirty.healSlot)    { updateHealSlotUI();      _dirty.healSlot = false; }
+  if(_dirty.classXP)     { updateClassXPPanel();    _dirty.classXP = false; }
+  if(_dirty.equip)       { updateEquipUI();         _dirty.equip = false; }
+  if(_dirty.mobilePanel) { refreshMobilePanel();    _dirty.mobilePanel = false; }
+  if(_dirty.log)         { syncMobileLog();         _dirty.log = false; }
+}
+
+// Debounced heavy flush — non-critical panels wait 250ms
+let _heavyFlushTimer = null;
+function markDirtyHeavy(flags) {
+  for(const f of flags) _dirty[f] = true;
+  clearTimeout(_heavyFlushTimer);
+  _heavyFlushTimer = setTimeout(flushUI, 250);
+}
 
 let autoWaveEnabled = false;
 
@@ -5253,8 +5334,11 @@ function upgradeSkill(el,idx){
 function updateEquipUI(){updateStatsPanel();}
 
 // ── COMBAT LOG OVERLAY ──
-const MAX_CLOG = 6;
+const MAX_CLOG_BY_FX = [2, 4, 6]; // perf/balanced/high
+let MAX_CLOG = 4;
 function combatLog(text, type) {
+  if(G_fxLevel === FX.PERF) return; // perf mode: no combat log overlay
+  MAX_CLOG = MAX_CLOG_BY_FX[G_fxLevel];
   const overlay = document.getElementById('combat-log-overlay');
   if (!overlay) return;
   const entry = document.createElement('div');
@@ -5294,6 +5378,7 @@ function switchTab(tab){
 }
 
 function initUI(){
+  updateFxBtn();
   updateStatsPanel();
   updateClassXPPanel();
   updateHpBar();
@@ -5345,7 +5430,7 @@ const ctx=canvas.getContext('2d');
 let particles=[],damageNumbers=[],playerOffset={x:0,y:0},enemyShake={x:0,y:0,timer:0},enemyFlash=0,playerFlash=0,lungeAnim=null,enemyLungeAnim=null,animLoopRunning=false,lastTime=0;
 
 function spawnParticles(element,fromX,fromY,toX,toY){
-  const count=element==='physical'?8:22;
+  const count=fxParticleCount(element==='physical'?8:22);
   for(let i=0;i<count;i++){
     const delay=i*12;
     if(element==='physical'){
@@ -5360,7 +5445,8 @@ function spawnParticles(element,fromX,fromY,toX,toY){
 }
 
 function spawnImpactBurst(x,y,element){
-  const color=elementParticleColor(element),count=18;
+  if(G_fxLevel === FX.PERF) return;
+  const color=elementParticleColor(element),count=fxParticleCount(18);
   for(let i=0;i<count;i++){const angle=(Math.PI*2*i/count)+Math.random()*.3,speed=2+Math.random()*4;particles.push({type:'burst',x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-1,life:1,decay:.04+Math.random()*.04,size:2+Math.random()*5,color,element,delay:0});}
   if(element==='fire'){for(let i=0;i<12;i++)particles.push({type:'ember',x,y,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:1,decay:.025+Math.random()*.02,size:4+Math.random()*8,color:Math.random()<.5?'#ff4d1a':'#ffaa00',delay:i*15});particles.push({type:'shockwave',x,y,radius:5,maxRadius:60,life:1,decay:.05,color:'#ff4d1a',delay:0});}
   if(element==='water'){for(let i=0;i<10;i++){const a=Math.PI+(Math.random()-.5)*1.2;particles.push({type:'drop',x,y,vx:Math.cos(a)*(2+Math.random()*4),vy:Math.sin(a)*(2+Math.random()*4)-2,life:1,decay:.03,size:3+Math.random()*5,color:'#1ab3ff',delay:i*8});}particles.push({type:'shockwave',x,y,radius:5,maxRadius:55,life:1,decay:.06,color:'#1ab3ff',delay:0});}
@@ -5391,7 +5477,9 @@ function spawnEnemyAttackParticles(fromX,fromY,toX,toY){
 function elementParticleColor(el){return{fire:'#ff6633',water:'#44ccff',grass:'#55ee66',dark:'#bb66ff',light:'#ffee44',physical:'#ffffff',poison:'#88cc00',electric:'#ffdd00',ice:'#88eeff',mage:'#4488ff',warrior:'#e8b84b',rogue:'#3dcc5a',rock:'#cc9944',wind:'#aaddff'}[el]||'#aaaaff';}
 function elementTrailColor(el){return{fire:'#ff220080',water:'#0088ff60',grass:'#00cc3360',dark:'#6600cc60',light:'#ffcc0060',physical:'#ffffff40',poison:'#88cc0060',electric:'#ffdd0060',ice:'#88eeff60',mage:'#4488ff60',warrior:'#e8b84b60',rogue:'#3dcc5a60',rock:'#cc994460',wind:'#aaddff60'}[el]||'#aaaaff40';}
 
-function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){damageNumbers.push({x,y:y-10,vy:-2.2-Math.random(),text:isCrit?`${dmg}!`:`${dmg}`,life:1,decay:.022,size:isCrit?22:(isSE?18:15),color:isCrit?'#ffcc00':(isSE?'#ff9900':color),bold:isCrit||isSE});}
+function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){
+  if(G_fxLevel === FX.PERF && !isCrit) return; // perf: only show crits
+  damageNumbers.push({x,y:y-10,vy:-2.2-Math.random(),text:isCrit?`${dmg}!`:`${dmg}`,life:1,decay:.022,size:isCrit?22:(isSE?18:15),color:isCrit?'#ffcc00':(isSE?'#ff9900':color),bold:isCrit||isSE});}
 function spawnHealNumber(x,y,amt){
   damageNumbers.push({
     x, y, vy:-2.0,
@@ -5898,8 +5986,10 @@ let shakeAmount = 0;
 let shakeDecay = 0;
 
 function triggerScreenShake(intensity=4, duration=0.3) {
-  shakeAmount = intensity;
-  shakeDecay = intensity / (duration * 60);
+  const scaled = intensity * fxShakeScale();
+  if(scaled <= 0) return;
+  shakeAmount = scaled;
+  shakeDecay = scaled / (duration * 60);
 }
 
 function applyScreenShake() {
