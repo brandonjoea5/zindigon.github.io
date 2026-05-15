@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.6.5</title>
+<title>Elemental Rift v2.6.6</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1083,7 +1083,7 @@ let sbProfile = null; // players row
       More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.5 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.6 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 (function(){
@@ -2555,39 +2555,37 @@ function continueGame() {
 }
 
 function startGame() {
-  // name comes from auth — already set in G.playerName
   if(!G.playerName){ const n=Math.floor(Math.random()*9000)+1000; G.playerName=`Guest#${n}`; }
-  // Clear class state so a stale initGame cloud-load can't skip class selection
+
+  // Always clear stale state before attempting load
   G.playerClass = null;
   G.playerImbue = null;
+  G.loadout = [null, null, null, null];
+
   const loaded = loadGame(G.playerName);
-  if(loaded && (!G.playerClass || !G.playerImbue || !G.loadout || !G.loadout[0])) {
-    localStorage.removeItem('elementalRift_v3');
-    G.playerClass = null; G.playerImbue = null;
-    G.loadout = [null, null, null, null];
-    document.getElementById('name-screen').classList.add('hidden');
-    document.getElementById('game').classList.remove('hidden');
-    initUI();
-    requestAnimationFrame(() => requestAnimationFrame(() => { resizeCanvas(); showClassSelection(); }));
-    return;
-  }
-  document.getElementById('name-screen').classList.add('hidden');
-  document.getElementById('game').classList.remove('hidden');
-  updateNameDisplay();
-  // Show game div first so canvas can size
+
+  // Extra guard — if load succeeded but state is incomplete, treat as new
+  const validLoad = loaded && G.playerClass && G.playerImbue && G.loadout && G.loadout[0];
+
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
   initUI();
-  requestAnimationFrame(() => { requestAnimationFrame(() => {
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
     resizeCanvas();
-    requestAnimationFrame(() => resizeCanvas()); // second pass after layout
-    log(`<span class="log-sys">Welcome${loaded?' back':''}, ${escHtml(G.playerName)}! ${loaded?'Progress loaded.':'Your journey begins.'}</span>`);
-    if (!loaded) {
+    requestAnimationFrame(() => resizeCanvas());
+    if(!validLoad) {
+      // Fresh start — clear any corrupt save and show class selection
+      if(!loaded) localStorage.removeItem('elementalRift_v3');
+      G.playerClass = null; G.playerImbue = null;
+      G.loadout = [null, null, null, null];
+      log(`<span class="log-sys">Welcome, ${escHtml(G.playerName)}! Your journey begins.</span>`);
       showClassSelection();
     } else {
+      log(`<span class="log-sys">Welcome back, ${escHtml(G.playerName)}! Progress loaded.</span>`);
       resumeFromSave();
     }
-  });});
+  }));
 }
 
 function loadFromData(data) {
