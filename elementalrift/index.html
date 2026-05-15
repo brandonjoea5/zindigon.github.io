@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.5.1</title>
+<title>Elemental Rift v2.6.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1083,7 +1083,7 @@ let sbProfile = null; // players row
       More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.5.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 (function(){
@@ -1854,10 +1854,13 @@ function _onAssetProgress(label) {
 
 function _tryDismiss() {
   if(_assetsReady && _authReady) {
+    if(_tryDismiss._done) return;
+    _tryDismiss._done = true;
     dismissLoader();
     initGame();
   }
 }
+_tryDismiss._done = false;
 
 // Preload all critical assets
 (function() {
@@ -6967,8 +6970,8 @@ function onAuthReady() {
       });
     }
   }
-  dismissLoader();
-  initGame();
+  // Don't call dismissLoader/initGame here — _tryDismiss handles it
+  // to prevent double-init when auth and assets both resolve
 }
 
 // Called when both auth AND assets are ready
