@@ -1594,7 +1594,7 @@ let sbProfile = null; // players row
 
     <!-- Bottom action bar — always fully visible -->
     <div style="display:flex;gap:4px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
-      <button class="action-btn btn-next" id="next-btn" onclick="toggleAutoWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
+      <button class="action-btn btn-next" id="next-btn" onclick="nextWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">💀</span>Boss</button>
       <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
@@ -1715,8 +1715,8 @@ ARROW_IMG.src = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/publ
 (function() {
   const urls = {
     mage:    'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/WizardTBG.png',
-    warrior: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Warrior.png',
-    rogue:   'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Rogue.png',
+    warrior: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/warrior_transparent_optimized.png',
+    rogue:   'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/rogue_transparent_optimized.png',
   };
   for(const [cls, url] of Object.entries(urls)) {
     const img = new Image();
@@ -2597,12 +2597,14 @@ function spawnEnemy() {
 
 function startEnemyAutoAttack() {
   stopEnemyAutoAttack();
-  // Enemy attacks every 2-3 seconds automatically, regardless of player input
-  const interval = 2000 + Math.random() * 1000;
+  if(!G.enemy || !G.combatActive) return;
+  const interval = G.inBoss
+    ? 1200 + Math.random() * 600
+    : 1800 + Math.random() * 1200;
   G.enemyAttackInterval = setInterval(() => {
-    if (G.combatActive && G.enemy && G.hp > 0 && !G._deathInProgress) {
+    if (G.combatActive && G.enemy && G.enemy.hp > 0 && G.hp > 0 && !G._deathInProgress && !G._enemyDeathInProgress) {
       enemyAttack();
-    } else {
+    } else if (!G.combatActive || !G.enemy) {
       stopEnemyAutoAttack();
     }
   }, interval);
@@ -4224,11 +4226,6 @@ function enemyAttack() {
   updateHpBar();
   updateEnemyUI();
   saveGame();
-  // Schedule next attack
-  const delay = G.inBoss ? 1200 + Math.random()*600 : 1800 + Math.random()*1200;
-  setTimeout(() => {
-    if (G.combatActive && G.enemy && G.hp > 0 && !G._deathInProgress) enemyAttack();
-  }, delay);
 }
 
 function onEnemyDeath() {
@@ -4440,10 +4437,10 @@ function setPotionBtnActive(active, label='') {
 function toggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
   updateAutoWaveBtn();
-  if(autoWaveEnabled) {
-    // If next wave is available right now, fire it
+  // Only fire nextWave if we're genuinely between waves (no active enemy, combat stopped)
+  if(autoWaveEnabled && !G.enemy && !G.combatActive && !G._enemyDeathInProgress) {
     const btn = document.getElementById('next-btn');
-    if(btn.style.pointerEvents !== 'none') nextWave();
+    if(btn && btn.style.pointerEvents !== 'none') nextWave();
   }
 }
 
@@ -9127,31 +9124,38 @@ drawArena = function() {
 };
 */
 
-const ICE_FOG_URL     = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Ice_Fog.png';
-const POISON_FOG_URL  = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Poison_Fog.png';
-const FIRE_FOG_URL    = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Fire_Fog.png';
-const ELECTRIC_FOG_URL= 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Electric_Fog.png';
-const WATER_FOG_URL   = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Water_Fog.png';
-const GRASS_FOG_URL   = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Grass_Fog.png';
-const ROCK_FOG_URL    = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Rock_Fog.png';
-const WIND_FOG_URL    = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Wind_Fog.png';
-
+// Fog images — loaded on first use, not at startup
 const FOG_CONFIG = {
-  fire:     { url: FIRE_FOG_URL,     opacity: 0.55, speed: 0.09, yPos: '65%', size: '65%', direction: -1 },
-  water:    { url: WATER_FOG_URL,    opacity: 0.25, speed: 0.05, yPos: '60%', size: '70%', direction: -1 },
-  grass:    { url: GRASS_FOG_URL,    opacity: 0.50, speed: 0.04, yPos: '70%', size: '60%', direction: -1 },
-  electric: { url: ELECTRIC_FOG_URL, opacity: 0.60, speed: 0.11, yPos: '55%', size: '75%', direction:  1 },
-  rock:     { url: ROCK_FOG_URL,     opacity: 0.45, speed: 0.03, yPos: '75%', size: '55%', direction: -1 },
-  wind:     { url: WIND_FOG_URL,     opacity: 0.40, speed: 0.13, yPos: '50%', size: '80%', direction:  1 },
-  ice:      { url: ICE_FOG_URL,      opacity: 0.45, speed: 0.06, yPos: '60%', size: '60%', direction: -1 },
-  poison:   { url: POISON_FOG_URL,   opacity: 0.45, speed: 0.03, yPos: '70%', size: '60%', direction: -1 },
+  fire:     { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Fire_Fog.png',     opacity: 0.55, speed: 0.09, yPos: '65%', size: '65%', direction: -1 },
+  water:    { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Water_Fog.png',    opacity: 0.25, speed: 0.05, yPos: '60%', size: '70%', direction: -1 },
+  grass:    { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Grass_Fog.png',    opacity: 0.50, speed: 0.04, yPos: '70%', size: '60%', direction: -1 },
+  electric: { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Electric_Fog.png', opacity: 0.60, speed: 0.11, yPos: '55%', size: '75%', direction:  1 },
+  rock:     { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Rock_Fog.png',     opacity: 0.45, speed: 0.03, yPos: '75%', size: '55%', direction: -1 },
+  wind:     { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Wind_Fog.png',     opacity: 0.40, speed: 0.13, yPos: '50%', size: '80%', direction:  1 },
+  ice:      { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Ice_Fog.png',      opacity: 0.45, speed: 0.06, yPos: '60%', size: '60%', direction: -1 },
+  poison:   { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Poison_Fog.png',   opacity: 0.45, speed: 0.03, yPos: '70%', size: '60%', direction: -1 },
 };
+const FOG_IMAGE_CACHE = {};
 
-function spawnFogLayer(id, url, opacity, speed, yPos, size, direction, duration) {
+function getFogImage(imbue) {
+  if(FOG_IMAGE_CACHE[imbue]) return FOG_IMAGE_CACHE[imbue];
+  const cfg = FOG_CONFIG[imbue];
+  if(!cfg) return null;
+  const img = new Image();
+  img.src = cfg.url;
+  FOG_IMAGE_CACHE[imbue] = img;
+  return img;
+}
+
+function spawnFogLayer(id, imbue, opacity, speed, yPos, size, direction, duration) {
   const arena = document.getElementById('arena');
   if(!arena) return;
   const existing = document.getElementById(id);
   if(existing) existing.remove();
+
+  // Lazy-load the image — fetch only on first use
+  const img = getFogImage(imbue);
+  const url = FOG_CONFIG[imbue].url;
 
   const startX = direction > 0 ? -20 : 110;
   const fog = document.createElement('div');
@@ -9192,12 +9196,12 @@ function spawnFogLayer(id, url, opacity, speed, yPos, size, direction, duration)
 function triggerImbueFog(imbue, duration) {
   const cfg = FOG_CONFIG[imbue];
   if(!cfg) return;
-  spawnFogLayer(`${imbue}-fog-layer`, cfg.url, cfg.opacity, cfg.speed, cfg.yPos, cfg.size, cfg.direction, duration);
+  spawnFogLayer(`${imbue}-fog-layer`, imbue, cfg.opacity, cfg.speed, cfg.yPos, cfg.size, cfg.direction, duration);
 }
 
 function triggerIceFog(duration, isFreeze) {
   const cfg = FOG_CONFIG.ice;
-  spawnFogLayer('ice-fog-layer', cfg.url,
+  spawnFogLayer('ice-fog-layer', 'ice',
     isFreeze ? 0.75 : cfg.opacity,
     isFreeze ? 0.04 : cfg.speed,
     cfg.yPos,
@@ -9211,7 +9215,7 @@ function triggerPoisonFog(duration, stacks) {
   const cfg = FOG_CONFIG.poison;
   const opacity = Math.min(0.8, cfg.opacity + (stacks - 1) * 0.12);
   const size = Math.min(100, 50 + stacks * 8) + '%';
-  spawnFogLayer('poison-fog-layer', cfg.url, opacity, cfg.speed, cfg.yPos, size, cfg.direction, duration);
+  spawnFogLayer('poison-fog-layer', 'poison', opacity, cfg.speed, cfg.yPos, size, cfg.direction, duration);
 }
 
 // ICE FOG
