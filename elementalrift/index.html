@@ -10,53 +10,126 @@
   --fire:#ff4d1a; --water:#1ab3ff; --grass:#3dcc5a;
   --poison:#88cc00; --electric:#ffdd00; --ice:#88eeff;
   --rock:#cc9944; --wind:#99ddff;
-  --bg:#0a0c12; --panel:#111520; --border:#2a2f45; --text:#c8d0e8; --muted:#5a6080;
-  --gold:#e8b84b; --red:#e83a3a; --green:#3acc7a; --boss:#ff2266;
-  --mage:#1ab3ff; --warrior:#e8b84b; --rogue:#3dcc5a;
+  /* Stone/forge palette */
+  --bg:#080a0e; --panel:#0e1018; --border:#252830; --text:#c4c8d4; --muted:#4e5468;
+  --gold:#d4a535; --gold-bright:#e8c060; --red:#cc2a2a; --green:#2e9e58; --boss:#cc1a44;
+  --stone-dark:#0c0e14; --stone-mid:#161820; --stone-light:#1e2128;
+  --metal:#1a1c22; --metal-edge:#30333d;
+  --dark:#9955dd; --light:#ddcc55;
+  --mage:#1ab3ff; --warrior:#d4a535; --rogue:#2e9e58;
+  /* Rune corners use clip-path so we need consistent bevel size */
+  --bevel:4px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font-size:15px;touch-action:manipulation;}
 
-/* ── NAME SCREEN ── */
-#name-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px;}
-#name-screen h1{font-family:'Cinzel',serif;font-size:clamp(26px,6vw,48px);font-weight:900;color:var(--gold);text-align:center;letter-spacing:0.05em;text-shadow:0 0 40px rgba(232,184,75,0.4);}
-#name-screen p{color:var(--muted);font-size:14px;text-align:center;max-width:320px;}
-#name-input{width:100%;max-width:340px;background:#0d1018;border:1px solid var(--border);border-radius:10px;padding:14px 18px;font-family:'Cinzel',serif;font-size:16px;color:var(--text);outline:none;text-align:center;}
-#name-input:focus{border-color:var(--gold);}
-#start-btn{width:100%;max-width:340px;background:linear-gradient(135deg,#c8a030,#e8c050);color:#0a0c12;font-family:'Cinzel',serif;font-size:16px;font-weight:700;padding:16px;border-radius:10px;border:none;cursor:pointer;letter-spacing:0.08em;}
-.element-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
-.el-badge{padding:4px 12px;border-radius:20px;font-size:12px;border:1px solid;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='stoneNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23stoneNoise)' opacity='1'/%3E%3C/svg%3E");
+}
 
-/* ── MAIN LAYOUT ── */
+/* forge panel — base class */
+.forge-panel{
+  background:linear-gradient(160deg,var(--stone-mid) 0%,var(--stone-dark) 100%);
+  border:1px solid var(--metal-edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),inset 0 -1px 0 rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.5);
+  clip-path:polygon(var(--bevel) 0%,100% 0%,100% calc(100% - var(--bevel)),calc(100% - var(--bevel)) 100%,0% 100%,0% var(--bevel));
+}
+
+#name-screen{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:18px;overflow:hidden;}
+/* cracked stone floor bg */
+#name-screen::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 100%,rgba(20,14,8,0.9) 0%,transparent 60%),
+    radial-gradient(ellipse 80% 50% at 50% 50%,rgba(10,8,4,0.6) 0%,transparent 70%),
+    linear-gradient(180deg,#050608 0%,#0a0c10 40%,#0c0e0a 100%);
+  z-index:-1;
+}
+#name-screen h1{
+  font-family:'Cinzel',serif;font-size:clamp(32px,7vw,64px);font-weight:900;
+  color:var(--gold-bright);text-align:center;letter-spacing:0.06em;line-height:0.9;
+  text-shadow:0 0 60px rgba(212,165,53,0.6),0 2px 0 rgba(0,0,0,0.8),0 -1px 0 rgba(255,220,100,0.3);
+  position:relative;
+}
+#name-screen p{color:var(--muted);font-size:13px;text-align:center;max-width:300px;letter-spacing:0.02em;}
+#name-input{
+  width:100%;max-width:340px;
+  background:linear-gradient(180deg,#080a0e 0%,#0c0e12 100%);
+  border:1px solid var(--metal-edge);
+  border-top-color:rgba(255,255,255,0.06);
+  padding:13px 18px;
+  font-family:'Cinzel',serif;font-size:15px;color:var(--text);outline:none;text-align:center;
+  clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,0.6);
+}
+#name-input:focus{border-color:var(--gold);border-top-color:var(--gold-bright);}
+#start-btn{
+  width:100%;max-width:340px;
+  background:linear-gradient(180deg,#c49020 0%,#9a6e10 100%);
+  color:#0a0800;font-family:'Cinzel',serif;font-size:15px;font-weight:700;
+  padding:15px;border:none;cursor:pointer;letter-spacing:0.1em;
+  clip-path:polygon(4px 0%,100% 0%,100% calc(100% - 4px),calc(100% - 4px) 100%,0% 100%,0% 4px);
+  box-shadow:0 4px 16px rgba(180,130,20,0.3),inset 0 1px 0 rgba(255,220,100,0.3);
+  transition:all 0.15s;
+}
+#start-btn:active{background:linear-gradient(180deg,#a87a18 0%,#7a5210 100%);}
+.element-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.el-badge{
+  padding:3px 10px;font-size:11px;border:1px solid;
+  clip-path:polygon(2px 0%,100% 0%,100% calc(100% - 2px),calc(100% - 2px) 100%,0% 100%,0% 2px);
+  letter-spacing:0.04em;
+}
+
 #game{display:flex;flex-direction:column;height:100vh;height:100dvh;}
 
-/* ── TOP RESOURCE BAR ── */
-#resource-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#0d1018;border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;flex-wrap:wrap;}
+#resource-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 14px;
+  background:linear-gradient(180deg,#0e1016 0%,#090b0f 100%);
+  border-bottom:1px solid var(--metal-edge);
+  box-shadow:0 1px 0 rgba(255,255,255,0.03),0 2px 8px rgba(0,0,0,0.5);
+  flex-shrink:0;gap:8px;flex-wrap:wrap;position:relative;z-index:1;
+}
+/* forge rivets on resource bar */
+#resource-bar::before,#resource-bar::after{
+  content:'';position:absolute;top:50%;transform:translateY(-50%);
+  width:5px;height:5px;border-radius:50%;
+  background:radial-gradient(circle,#3a3c44 30%,#1a1c22 100%);
+  border:1px solid #2a2c34;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);
+}
+#resource-bar::before{left:5px;}
+#resource-bar::after{right:5px;}
 .res-group{display:flex;gap:10px;align-items:center;}
 .res-item{display:flex;flex-direction:column;align-items:center;gap:1px;}
-.res-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.res-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
 .res-val{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--gold);}
 .res-val.red{color:var(--red);}
-.res-val.blue{color:#8888ff;}
-#player-name-display{font-family:'Cinzel',serif;font-size:12px;color:var(--text);opacity:0.7;}
+.res-val.blue{color:#6688cc;}
+#player-name-display{font-family:'Cinzel',serif;font-size:11px;color:var(--text);opacity:0.6;letter-spacing:0.04em;}
 
-/* ── HP/ENERGY BARS ── */
-#bars-row{padding:5px 14px;background:#0d1018;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:4px;}
+#bars-row{
+  padding:5px 14px;
+  background:linear-gradient(180deg,#0c0e12 0%,#080a0e 100%);
+  border-bottom:1px solid var(--metal-edge);
+  flex-shrink:0;display:flex;flex-direction:column;gap:4px;
+}
 .bar-wrap{display:flex;align-items:center;gap:8px;}
-.bar-label{font-size:10px;color:var(--muted);width:36px;text-align:right;flex-shrink:0;}
-.bar-track{flex:1;height:8px;background:#1a1f2e;border-radius:4px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:4px;transition:width 0.3s;}
-.bar-fill.hp{background:linear-gradient(90deg,#cc2222,#ff5555);}
-.bar-fill.mp{background:linear-gradient(90deg,#1a6bff,#63b3ff);}
+.bar-label{font-size:10px;color:var(--muted);width:36px;text-align:right;flex-shrink:0;letter-spacing:0.06em;}
+.bar-track{
+  flex:1;height:7px;
+  background:#040506;
+  border:1px solid #161820;
+  clip-path:polygon(2px 0%,100% 0%,100% calc(100% - 2px),calc(100% - 2px) 100%,0% 100%,0% 2px);
+  overflow:hidden;
+}
+.bar-fill{height:100%;transition:width 0.3s;}
+.bar-fill.hp{background:linear-gradient(90deg,#8b1010,#cc2222,#dd3333);}
+.bar-fill.mp{background:linear-gradient(90deg,#0f3080,#1a4dcc,#2255dd);}
 .bar-nums{font-size:10px;color:var(--muted);width:60px;text-align:right;flex-shrink:0;}
 
-/* ── ARENA ── */
 #arena{flex:1;position:relative;overflow:hidden;min-height:0;}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;transform-origin:center center;}
-
-/* ══════════════════════════════════════════
-   ACTIVE ARENA MODE
-   ══════════════════════════════════════════ */
 
 /* Full-screen overlay */
 #active-arena-screen{
@@ -69,28 +142,37 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 /* Top bar */
 .aa-topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:8px 14px;background:#0d1018;border-bottom:1px solid var(--border);
+  padding:7px 14px;
+  background:linear-gradient(180deg,#0e1016 0%,#090b0f 100%);
+  border-bottom:1px solid var(--metal-edge);
+  box-shadow:0 2px 10px rgba(0,0,0,0.6);
   flex-shrink:0;gap:8px;
 }
 .aa-topbar-left{display:flex;flex-direction:column;gap:1px;}
-.aa-round-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;}
+.aa-round-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;}
 .aa-round-val{font-family:'Cinzel',serif;font-size:16px;font-weight:900;color:var(--gold);line-height:1;}
-.aa-hp-col{display:flex;flex-direction:column;gap:3px;flex:1;max-width:160px;}
+.aa-hp-col{display:flex;flex-direction:column;gap:4px;flex:1;max-width:160px;}
 .aa-bar-row{display:flex;align-items:center;gap:5px;}
-.aa-bar-lbl{font-size:9px;color:var(--muted);width:30px;text-align:right;flex-shrink:0;}
-.aa-bar-track{flex:1;height:7px;background:#1a1f2e;border-radius:4px;overflow:hidden;}
-.aa-bar-fill{height:100%;border-radius:4px;transition:width 0.25s;}
-.aa-bar-fill.player{background:linear-gradient(90deg,#cc2222,#ff5555);}
-.aa-bar-fill.boss{background:linear-gradient(90deg,#8b0000,#ff2266);}
+.aa-bar-lbl{font-size:8px;color:var(--muted);width:30px;text-align:right;flex-shrink:0;letter-spacing:0.06em;}
+.aa-bar-track{
+  flex:1;height:6px;
+  background:#050608;
+  border:1px solid rgba(255,255,255,0.04);
+  clip-path:polygon(2px 0%,100% 0%,100% calc(100% - 2px),calc(100% - 2px) 100%,0% 100%,0% 2px);
+  overflow:hidden;
+}
+.aa-bar-fill{height:100%;transition:width 0.25s;}
+.aa-bar-fill.player{background:linear-gradient(90deg,#8b1010,#cc2222);}
+.aa-bar-fill.boss{background:linear-gradient(90deg,#6b0010,#cc1a44);}
 .aa-bar-nums{font-size:9px;color:var(--muted);min-width:36px;text-align:right;}
 .aa-topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
-.aa-trinity-label{font-size:9px;color:#8855ff;text-transform:uppercase;letter-spacing:0.1em;}
-.aa-trinity-val{font-family:'Cinzel',serif;font-size:13px;color:#aa77ff;}
+.aa-trinity-label{font-size:8px;color:#6644aa;text-transform:uppercase;letter-spacing:0.12em;}
+.aa-trinity-val{font-family:'Cinzel',serif;font-size:13px;color:#8855cc;}
 
 /* Arena viewport */
 .aa-arena{
   flex:1;position:relative;overflow:hidden;min-height:0;
-  background:radial-gradient(ellipse at 50% 40%,#1a0a20 0%,#0a0c12 70%);
+  background:radial-gradient(ellipse at 50% 30%,#120808 0%,#080a0e 65%);
 }
 
 /* Boss area — top 55% */
@@ -99,7 +181,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:6px;
 }
-.aa-boss-name{font-family:'Cinzel',serif;font-size:12px;color:#ff2266;letter-spacing:0.1em;}
+.aa-boss-name{font-family:'Cinzel',serif;font-size:12px;color:#cc1a44;letter-spacing:0.1em;}
 .aa-boss-sprite{font-size:52px;line-height:1;transition:transform 0.12s;}
 .aa-boss-sprite.lunge{transform:translateY(12px) scale(1.08);}
 
@@ -153,7 +235,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .aa-player-sprite{font-size:28px;line-height:1;}
 .aa-player-indicator{
   width:8px;height:8px;border-radius:50%;
-  background:#3acc7a;box-shadow:0 0 6px rgba(58,204,122,0.6);
+  background:#2e9e58;box-shadow:0 0 6px rgba(58,204,122,0.6);
 }
 
 /* Flash / hit overlay */
@@ -209,7 +291,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .aa-btn-move .mv-label{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;}
 .aa-btn-move:active{transform:scale(0.94);opacity:0.8;}
 .aa-btn-move.here{
-  border-color:#3acc7a;color:#3acc7a;
+  border-color:#2e9e58;color:#2e9e58;
   background:rgba(58,204,122,0.1);
   box-shadow:0 0 10px rgba(58,204,122,0.2);
 }
@@ -254,7 +336,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   pointer-events:none;
 }
 /* Color variants */
-.aa-btn-circ.c-attack{border-color:#e83a3a;color:#e83a3a;}
+.aa-btn-circ.c-attack{border-color:#cc2a2a;color:#cc2a2a;}
 .aa-btn-circ.c-block {border-color:#88aaff;color:#88aaff;}
 .aa-btn-circ.c-parry {border-color:#ffdd00;color:#ffdd00;}
 
@@ -267,11 +349,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 }
 .aa-log-line{font-size:11px;line-height:1.4;color:var(--muted);}
 .aa-log-line.l-hit{color:#ff7777;}
-.aa-log-line.l-dodge{color:#3acc7a;}
+.aa-log-line.l-dodge{color:#2e9e58;}
 .aa-log-line.l-parry{color:#ffdd00;}
 .aa-log-line.l-block{color:#88aaff;}
 .aa-log-line.l-dmg{color:#ff4d1a;}
-.aa-log-line.l-round{color:#aa77ff;font-weight:600;}
+.aa-log-line.l-round{color:#8855cc;font-weight:600;}
 
 /* LOBBY & DEATH overlays (inside arena screen) */
 .aa-overlay{
@@ -317,17 +399,15 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .aa-sg-label{font-size:11px;color:var(--muted);}
 .aa-sg-val{font-family:'Cinzel',serif;font-size:14px;color:var(--gold);text-align:right;}
 .aa-reward-box{
-  background:#0d1018;border:1px solid #8855ff44;border-radius:10px;
+  background:#0d1018;border:1px solid #6644aa44;border-radius:10px;
   padding:12px 16px;width:100%;max-width:360px;
 }
-.aa-reward-title{font-family:'Cinzel',serif;font-size:9px;color:#aa77ff;letter-spacing:0.14em;text-transform:uppercase;text-align:center;margin-bottom:8px;}
+.aa-reward-title{font-family:'Cinzel',serif;font-size:9px;color:#8855cc;letter-spacing:0.14em;text-transform:uppercase;text-align:center;margin-bottom:8px;}
 .aa-reward-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0;}
 
-/* ── MUTE BUTTON ── */
 #mute-btn{position:absolute;top:10px;right:14px;background:rgba(0,0,0,0.45);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:13px;cursor:pointer;z-index:6;color:var(--muted);font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.05em;transition:border-color 0.15s;}
 #mute-btn:hover{border-color:var(--gold);}
 
-/* ── COMBAT LOG OVERLAY ── */
 #combat-log-overlay{
   position:absolute;bottom:10px;left:10px;width:170px;
   pointer-events:none;z-index:5;
@@ -349,9 +429,9 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   max-width:170px;
 }
 .clog-entry.fade{opacity:0;}
-.clog-dmg-out{border-color:#e83a3a;color:#ffaaaa;}
+.clog-dmg-out{border-color:#cc2a2a;color:#ffaaaa;}
 .clog-dmg-in{border-color:#ff6600;color:#ffcc88;}
-.clog-heal{border-color:#3acc7a;color:#88ffbb;}
+.clog-heal{border-color:#2e9e58;color:#88ffbb;}
 .clog-se{border-color:#ff9900;color:#ffdd88;}
 .clog-crit{border-color:#ffcc00;color:#ffee88;}
 #enemy-info{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;min-width:180px;}
@@ -360,11 +440,10 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 #enemy-hp-fill{height:100%;background:linear-gradient(90deg,#cc2222,#ff5555);border-radius:4px;transition:width 0.25s;}
 #enemy-type-badge{font-size:10px;margin-top:2px;}
 #boss-timer-wrap{display:none;position:absolute;top:10px;right:14px;text-align:center;background:rgba(255,34,102,0.1);border:1px solid rgba(255,34,102,0.3);border-radius:8px;padding:6px 12px;}
-#boss-timer{font-family:'Cinzel',serif;font-size:28px;font-weight:900;color:var(--boss);line-height:1;}
+#boss-timer{font-family:'Cinzel',serif;font-size:28px;font-weight:900;color:#cc1a44;line-height:1;}
 #boss-dmg-display{font-size:10px;color:var(--muted);}
-#boss-level-badge{position:absolute;top:10px;left:14px;font-family:'Cinzel',serif;font-size:11px;color:var(--boss);background:rgba(255,34,102,0.1);border:1px solid rgba(255,34,102,0.3);border-radius:6px;padding:3px 8px;display:none;}
+#boss-level-badge{position:absolute;top:10px;left:14px;font-family:'Cinzel',serif;font-size:11px;color:#cc1a44;background:rgba(255,34,102,0.1);border:1px solid rgba(255,34,102,0.3);border-radius:6px;padding:3px 8px;display:none;}
 
-/* ── ATTACK BUTTONS ── */
 #attack-area{flex-shrink:0;padding:8px 10px;background:var(--panel);border-top:1px solid var(--border);}
 .attack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;}
 .attack-grid.row2{grid-template-columns:repeat(4,1fr);}
@@ -378,24 +457,132 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .btn-light{border-color:var(--light);color:var(--light);}
 .btn-physical{border-color:#888;color:#aaa;}
 .btn-next{border-color:var(--green);color:var(--green);background:rgba(58,204,122,0.08);}
-.btn-boss{border-color:var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);animation:bossPulse 2s ease-in-out infinite;}
+.btn-boss{border-color:#cc1a44;color:#cc1a44;background:rgba(255,34,102,0.08);animation:bossPulse 2s ease-in-out infinite;}
 @keyframes bossPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,34,102,0);}50%{box-shadow:0 0 12px 2px rgba(255,34,102,0.3);}}
 .btn-disabled{opacity:0.35;pointer-events:none;}
 .action-btn.active-attack{box-shadow:0 0 12px 2px currentColor;opacity:1;transform:scale(1.04);}
 .action-btn.active-attack::after{content:'●';position:absolute;top:4px;right:6px;font-size:8px;opacity:0.8;}
 .action-btn{position:relative;}
 
-/* ── BOTTOM NAV ── */
-#bottom-nav{display:flex;background:#0a0c12;border-top:1px solid var(--border);flex-shrink:0;}
-.nav-tab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.06em;color:var(--muted);border-top:2px solid transparent;transition:all 0.15s;user-select:none;}
-.nav-tab.active{color:var(--gold);border-top-color:var(--gold);}
-.nav-tab-icon{font-size:16px;display:block;margin-bottom:2px;}
+.class-xp-section{padding:8px 10px;}
+.class-xp-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.cxp-icon{font-size:14px;flex-shrink:0;}
+.cxp-info{flex:1;min-width:0;}
+.cxp-name{font-size:11px;color:var(--text);font-family:'Cinzel',serif;display:flex;justify-content:space-between;}
+.cxp-bar-track{height:4px;background:#050608;border:1px solid rgba(255,255,255,0.03);overflow:hidden;margin-top:2px;}
+.cxp-bar-fill{height:100%;transition:width 0.4s;}
+.cxp-pts{font-size:10px;color:#6644aa;flex-shrink:0;min-width:20px;text-align:right;}
 
-/* ── SIDE PANELS (desktop only — mobile uses own system) ── */
-#panel-stats,#panel-skills,#panel-log{display:none;background:var(--panel);overflow-y:auto;padding-bottom:60px;}
+#loadout-area{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px 7px;
+  background:linear-gradient(180deg,#0c0e12 0%,#080a0e 100%);
+  border-top:1px solid var(--metal-edge);flex-shrink:0;
+}
+.ability-slot{
+  background:#070910;
+  border:1px solid #1e2028;
+  border-bottom-color:#2a2d38;
+  padding:5px 3px;text-align:center;cursor:pointer;min-height:50px;position:relative;
+  transition:all 0.15s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.ability-slot:active{transform:scale(0.93);}
+.ability-slot.active-ability{box-shadow:0 0 10px 1px currentColor;}
+.ability-slot.on-cooldown{opacity:0.55;}
+.ab-slot-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;}
+.ab-icon{font-size:17px;line-height:1;}
+.ab-name{font-size:8px;font-family:'Cinzel',serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.ab-cd-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,0.1);}
+.ab-cd-fill{height:100%;transition:width 0.1s linear;}
+.ab-empty{color:var(--muted);font-size:17px;}
+.ab-locked{opacity:0.35;}
+.ab-upgrade-badge{position:absolute;top:2px;right:3px;font-size:8px;color:#6644aa;font-family:'Cinzel',serif;}
+
+#ability-picker-modal .modal{max-height:80vh;}
+.ability-pick-card{
+  background:linear-gradient(170deg,#0e1016 0%,#080a0c 100%);
+  border:1px solid var(--metal-edge);
+  clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+  padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color 0.15s;
+}
+.ability-pick-card:hover{border-color:var(--gold);}
+.ability-pick-card.locked{opacity:0.35;cursor:not-allowed;}
+.apc-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.apc-icon{font-size:18px;}
+.apc-name{font-family:'Cinzel',serif;font-size:13px;font-weight:700;}
+.apc-type{font-size:10px;padding:1px 6px;border:1px solid;margin-left:auto;letter-spacing:0.04em;}
+.apc-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+.apc-unlock{font-size:10px;color:#cc3333;margin-top:3px;}
+
+.hidden{display:none!important;}
+
+#ability-tutorial{position:fixed;inset:0;z-index:300;pointer-events:none;}
+#ability-tutorial.active{pointer-events:all;}
+.tut-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.8);}
+.tut-spotlight{
+  position:absolute;
+  box-shadow:0 0 0 9999px rgba(0,0,0,0.8);
+  border:2px solid var(--gold);
+  clip-path:polygon(4px 0%,100% 0%,100% calc(100% - 4px),calc(100% - 4px) 100%,0% 100%,0% 4px);
+  transition:all 0.4s cubic-bezier(0.4,0,0.2,1);pointer-events:none;
+}
+.tut-bubble{
+  position:absolute;
+  background:linear-gradient(160deg,#0e1016 0%,#090b0f 100%);
+  border:1px solid var(--gold);
+  clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);
+  padding:14px 18px;max-width:240px;pointer-events:all;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.tut-bubble h4{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.tut-bubble p{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:10px;}
+.tut-arrow-svg{position:absolute;pointer-events:none;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);}
+.tut-tap-hint{font-family:'Cinzel',serif;font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.1em;}
+@keyframes tutBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.tut-bounce{animation:tutBounce 1s ease-in-out infinite;}
+@keyframes tutPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.tut-pulse{animation:tutPulse 1s ease-in-out infinite;}
+
+#combat-tooltip{position:absolute;inset:0;background:rgba(0,0,0,0.82);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;cursor:pointer;}
+#combat-tooltip h3{font-family:'Cinzel',serif;font-size:18px;color:var(--gold);text-align:center;}
+.tip-row{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--metal-edge);
+  clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+  padding:10px 16px;width:100%;max-width:320px;
+}
+.tip-icon{font-size:24px;flex-shrink:0;}
+.tip-text{font-size:13px;color:var(--text);line-height:1.4;}
+.tip-text strong{color:var(--gold);}
+#combat-tooltip .dismiss{font-family:'Cinzel',serif;font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:0.1em;}
+
+@media(min-width:700px){
+  #map-screen{padding:40px;}
+  .difficulty-cards{gap:14px;}
+  .diff-card{min-width:140px;}
+  #game{flex-direction:column;height:100vh;height:100dvh;}
+  #resource-bar,#bars-row{flex-shrink:0;width:100%;}
+  #top-row{display:flex;flex:1;min-height:0;overflow:hidden;width:100%;}
+  #left-col{width:210px;min-width:210px;flex-shrink:0;border-right:1px solid var(--metal-edge);overflow-y:auto;display:block;}
+  #center-col{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+  #right-col{width:210px;min-width:210px;flex-shrink:0;border-left:1px solid var(--metal-edge);overflow-y:auto;display:block;}
+  #bottom-nav{display:none!important;}
+  #center-col #panel-stats,#center-col #panel-skills,#center-col #panel-log{display:none!important;}
+  #left-col #panel-stats{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;height:auto;}
+  #right-col #panel-skills{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;height:auto;}
+  #arena{flex:1;min-height:0;}
+  #attack-area{flex-shrink:0;}
+  .modal-overlay{align-items:center;padding:16px;}
+}
+#bottom-nav{display:flex;background:linear-gradient(180deg,#0c0e12 0%,#080a0e 100%);border-top:1px solid var(--metal-edge);flex-shrink:0;}
+.nav-tab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.08em;color:var(--muted);border-top:2px solid transparent;transition:all 0.15s;user-select:none;}
+.nav-tab.active{color:var(--gold);border-top-color:var(--gold);}
+.nav-tab-icon{font-size:15px;display:block;margin-bottom:2px;}
+
+#panel-stats,#panel-skills,#panel-log{display:none;background:var(--stone-dark);overflow-y:auto;padding-bottom:60px;}
 #panel-stats.active,#panel-skills.active,#panel-log.active{display:block;position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;}
 
-/* ── MOBILE LAYOUT ── */
 @media(max-width:699px){
   /* Hide desktop elements */
   #top-row,#left-col,#right-col,#bottom-nav{display:none!important;}
@@ -404,8 +591,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   #center-col{display:flex!important;flex-direction:column;flex:1;min-height:0;position:relative;}
 
   /* Mobile top tabs */
-  #mobile-top-tabs{display:flex;background:#0a0c14;border-bottom:1px solid var(--border);flex-shrink:0;}
-  .mob-tab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.05em;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.15s;user-select:none;}
+  #mobile-top-tabs{display:flex;background:linear-gradient(180deg,#0c0e12 0%,#080a0e 100%);border-bottom:1px solid var(--metal-edge);flex-shrink:0;}
+  .mob-tab{flex:1;padding:8px 4px;text-align:center;cursor:pointer;font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.06em;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.15s;user-select:none;}
   .mob-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
   .mob-tab-icon{font-size:15px;display:block;margin-bottom:1px;}
 
@@ -417,11 +604,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   #mobile-arena-view #arena{flex:1;min-height:0;}
 
   /* Panel views */
-  #mobile-panel-view{position:absolute;inset:0;background:var(--panel);overflow-y:auto;padding-bottom:8px;display:none;}
+  #mobile-panel-view{position:absolute;inset:0;background:var(--stone-dark);overflow-y:auto;padding-bottom:8px;display:none;}
   #mobile-panel-view.active{display:block;}
 
   /* Mobile bottom — abilities always visible */
-  #mobile-bottom{flex-shrink:0;background:var(--panel);border-top:1px solid var(--border);}
+  #mobile-bottom{flex-shrink:0;background:var(--stone-dark);border-top:1px solid var(--metal-edge);}
   #loadout-area{border-top:none;}
 
   /* Hide mobile overlay panels — replaced by new system */
@@ -465,7 +652,6 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .skill-btn:disabled{opacity:0.3;}
 .sp-display{font-family:'Cinzel',serif;font-size:12px;color:#8888ff;text-align:center;padding:6px;}
 
-/* ── ABILITY UPGRADE CARDS ── */
 .ab-upgrade-section{padding:6px 10px;}
 .ab-upgrade-card{background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
 .ab-upgrade-card.can-upgrade{border-color:rgba(232,184,75,0.3);}
@@ -487,7 +673,6 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .log-dmg{color:var(--red);} .log-heal{color:var(--green);} .log-gold{color:var(--gold);}
 .log-se{color:#ff9900;font-weight:600;} .log-sys{color:var(--muted);font-style:italic;}
 
-/* ── MODALS ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:0;}
 .modal-overlay.centered{align-items:center;padding:16px;}
 .modal{background:#151a28;border:1px solid var(--border);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;}
@@ -498,7 +683,6 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .item-stat{font-size:13px;}
 .item-stat span{color:var(--green);font-weight:600;}
 
-/* ── GEAR COMPARISON ── */
 .compare-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
 .compare-col{background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:10px;}
 .compare-col.new-item{border-color:rgba(232,184,75,0.3);}
@@ -507,12 +691,12 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .compare-stat-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.03);}
 .compare-stat-label{color:var(--muted);font-size:11px;}
 .compare-stat-val{font-weight:600;}
-.compare-stat-val.positive{color:#3acc7a;}
-.compare-stat-val.negative{color:#e83a3a;}
+.compare-stat-val.positive{color:#2e9e58;}
+.compare-stat-val.negative{color:#cc2a2a;}
 .compare-stat-val.neutral{color:var(--text);}
 .compare-delta{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;}
-.delta-up{color:#3acc7a;background:rgba(58,204,122,0.12);}
-.delta-down{color:#e83a3a;background:rgba(232,58,58,0.12);}
+.delta-up{color:#2e9e58;background:rgba(58,204,122,0.12);}
+.delta-down{color:#cc2a2a;background:rgba(232,58,58,0.12);}
 .compare-empty{color:var(--muted);font-style:italic;font-size:12px;text-align:center;padding:8px 0;}
 .modal-btns{display:flex;gap:8px;margin-top:16px;}
 .modal-btns button{flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid;background:transparent;}
@@ -526,129 +710,128 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .vendor-slot{font-size:13px;color:var(--muted);}
 .vendor-cost{font-family:'Cinzel',serif;color:var(--gold);font-size:13px;}
 
-/* ── BOSS RESULTS ── */
 #boss-results-modal .modal{border-radius:16px;}
-.boss-result-score{font-family:'Cinzel',serif;font-size:36px;font-weight:900;color:var(--boss);text-align:center;margin:12px 0;text-shadow:0 0 20px rgba(255,34,102,0.5);}
+.boss-result-score{font-family:'Cinzel',serif;font-size:36px;font-weight:900;color:#cc1a44;text-align:center;margin:12px 0;text-shadow:0 0 20px rgba(255,34,102,0.5);}
 .leaderboard-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;margin-bottom:4px;background:#0d1018;}
 .lb-rank{font-family:'Cinzel',serif;font-size:14px;font-weight:700;width:28px;text-align:center;}
 .lb-name{flex:1;font-size:14px;}
-.lb-score{font-family:'Cinzel',serif;font-size:13px;color:var(--boss);}
+.lb-score{font-family:'Cinzel',serif;font-size:13px;color:#cc1a44;}
 .lb-rank.first{color:var(--gold);} .lb-rank.second{color:#aaa;} .lb-rank.third{color:#cd7f32;}
 .lb-row-highlight{border:1px solid rgba(255,34,102,0.3);background:rgba(255,34,102,0.06);}
 
-
-/* ── MAP SCREEN ── */
-#map-screen{position:fixed;inset:0;background:var(--bg);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:18px;}
-#map-screen h2{font-family:'Cinzel',serif;font-size:22px;font-weight:900;color:var(--gold);letter-spacing:0.08em;}
-#map-screen p{font-size:13px;color:var(--muted);text-align:center;}
-.difficulty-cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%;max-width:500px;}
-.diff-card{flex:1;min-width:130px;max-width:160px;background:#0d1018;border:1px solid var(--border);border-radius:12px;padding:16px 12px;cursor:pointer;transition:all 0.2s;text-align:center;}
-.diff-card:hover,.diff-card:active{transform:translateY(-3px);}
-.diff-card.easy{border-color:#3acc7a;} .diff-card.easy:hover{background:rgba(58,204,122,0.08);}
-.diff-card.medium{border-color:#e8b84b;} .diff-card.medium:hover{background:rgba(232,184,75,0.08);}
-.diff-card.hard{border-color:#ff4d1a;} .diff-card.hard:hover{background:rgba(255,77,26,0.08);}
-.diff-title{font-family:'Cinzel',serif;font-size:15px;font-weight:700;margin-bottom:6px;}
-.diff-waves{font-size:12px;color:var(--muted);margin-bottom:6px;}
-.diff-loot{font-size:11px;margin-top:4px;}
-.easy .diff-title{color:#3acc7a;} .medium .diff-title{color:#e8b84b;} .hard .diff-title{color:#ff4d1a;}
-
-/* ── WAVE TIMELINE ── */
-#wave-timeline{display:flex;align-items:center;gap:0;padding:4px 14px;background:#0a0c14;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
-#wave-timeline::-webkit-scrollbar{display:none;}
-.wt-node{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:#0d1018;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Cinzel',serif;color:var(--muted);transition:all 0.3s;position:relative;}
-.wt-node.done{background:#1a2a1a;border-color:#3acc7a;color:#3acc7a;}
-.wt-node.current{background:rgba(232,184,75,0.15);border-color:var(--gold);color:var(--gold);box-shadow:0 0 8px rgba(232,184,75,0.3);}
-.wt-node.boss-node{border-color:#ff2266;color:#ff2266;}
-.wt-node.boss-node.current{background:rgba(255,34,102,0.15);box-shadow:0 0 8px rgba(255,34,102,0.4);}
-.wt-connector{height:2px;flex:1;min-width:8px;background:var(--border);}
-.wt-connector.done{background:#3acc7a;}
-.wt-diff-label{font-family:'Cinzel',serif;font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-right:8px;flex-shrink:0;}
-
-/* ── CLASS XP PANEL ── */
-.class-xp-section{padding:8px 10px;}
-.class-xp-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
-.cxp-icon{font-size:14px;flex-shrink:0;}
-.cxp-info{flex:1;min-width:0;}
-.cxp-name{font-size:11px;color:var(--text);font-family:'Cinzel',serif;display:flex;justify-content:space-between;}
-.cxp-bar-track{height:5px;background:#1a1f2e;border-radius:3px;overflow:hidden;margin-top:2px;}
-.cxp-bar-fill{height:100%;border-radius:3px;transition:width 0.4s;}
-.cxp-pts{font-size:10px;color:#8888ff;flex-shrink:0;min-width:20px;text-align:right;}
-
-/* ── ABILITY LOADOUT ── */
-#loadout-area{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:6px 8px;background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;}
-.ability-slot{background:#0a0c14;border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer;min-height:52px;position:relative;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
-.ability-slot:active{transform:scale(0.94);}
-.ability-slot.active-ability{box-shadow:0 0 10px 1px currentColor;}
-.ability-slot.on-cooldown{opacity:0.6;}
-.ab-slot-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
-.ab-icon{font-size:18px;line-height:1;}
-.ab-name{font-size:9px;font-family:'Cinzel',serif;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.ab-cd-bar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 8px 8px;background:rgba(255,255,255,0.15);}
-.ab-cd-fill{height:100%;border-radius:0 0 8px 8px;transition:width 0.1s linear;}
-.ab-empty{color:var(--muted);font-size:18px;}
-.ab-locked{opacity:0.4;}
-.ab-upgrade-badge{position:absolute;top:2px;right:3px;font-size:8px;color:#8888ff;font-family:'Cinzel',serif;}
-
-/* ── ABILITY PICKER MODAL ── */
-#ability-picker-modal .modal{max-height:80vh;}
-.ability-pick-card{background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color 0.15s;}
-.ability-pick-card:hover{border-color:var(--gold);}
-.ability-pick-card.locked{opacity:0.4;cursor:not-allowed;}
-.apc-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
-.apc-icon{font-size:18px;}
-.apc-name{font-family:'Cinzel',serif;font-size:13px;font-weight:700;}
-.apc-type{font-size:10px;padding:1px 6px;border-radius:10px;border:1px solid;margin-left:auto;}
-.apc-desc{font-size:12px;color:var(--muted);line-height:1.4;}
-.apc-unlock{font-size:10px;color:#ff4444;margin-top:3px;}
-
-.hidden{display:none!important;}
-
-/* ── ABILITY TUTORIAL ── */
-#ability-tutorial{position:fixed;inset:0;z-index:300;pointer-events:none;}
-#ability-tutorial.active{pointer-events:all;}
-.tut-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.75);}
-.tut-spotlight{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.75);border:2px solid var(--gold);transition:all 0.4s cubic-bezier(0.4,0,0.2,1);pointer-events:none;}
-.tut-bubble{position:absolute;background:#151a28;border:1px solid var(--gold);border-radius:14px;padding:14px 18px;max-width:240px;pointer-events:all;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);}
-.tut-bubble h4{font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;}
-.tut-bubble p{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:10px;}
-.tut-arrow-svg{position:absolute;pointer-events:none;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);}
-.tut-tap-hint{font-family:'Cinzel',serif;font-size:10px;color:var(--muted);text-align:center;letter-spacing:0.08em;}
-@keyframes tutBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-.tut-bounce{animation:tutBounce 1s ease-in-out infinite;}
-@keyframes tutPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
-.tut-pulse{animation:tutPulse 1s ease-in-out infinite;}
-
-/* ── FIRST TIME TOOLTIP ── */
-#combat-tooltip{position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;cursor:pointer;}
-#combat-tooltip h3{font-family:'Cinzel',serif;font-size:18px;color:var(--gold);text-align:center;}
-.tip-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.05);border-radius:10px;padding:10px 16px;width:100%;max-width:320px;}
-.tip-icon{font-size:24px;flex-shrink:0;}
-.tip-text{font-size:13px;color:var(--text);line-height:1.4;}
-.tip-text strong{color:var(--gold);}
-#combat-tooltip .dismiss{font-family:'Cinzel',serif;font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:0.08em;}
-
-/* ── DESKTOP overrides ── */
-@media(min-width:700px){
-  #map-screen{padding:40px;}
-  .difficulty-cards{gap:16px;}
-  .diff-card{min-width:150px;}
-  #game{flex-direction:column;height:100vh;height:100dvh;}
-  #resource-bar,#bars-row{flex-shrink:0;width:100%;}
-  #top-row{display:flex;flex:1;min-height:0;overflow:hidden;width:100%;}
-  #left-col{width:210px;min-width:210px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;display:block;}
-  #center-col{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden;}
-  #right-col{width:210px;min-width:210px;flex-shrink:0;border-left:1px solid var(--border);overflow-y:auto;display:block;}
-  #bottom-nav{display:none!important;}
-  /* On desktop the mobile panels inside center-col stay hidden */
-  #center-col #panel-stats,#center-col #panel-skills,#center-col #panel-log{display:none!important;}
-  /* Desktop side panels are always shown and NOT absolute */
-  #left-col #panel-stats{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;height:auto;}
-  #right-col #panel-skills{display:block!important;position:static!important;background:transparent;z-index:auto;overflow-y:visible;padding-bottom:0;height:auto;}
-  #arena{flex:1;min-height:0;}
-  #attack-area{flex-shrink:0;}
-  .modal{border-radius:16px;}
-  .modal-overlay{align-items:center;padding:16px;}
+#map-screen{
+  position:fixed;inset:0;
+  background:linear-gradient(180deg,#070809 0%,#0a0c0e 50%,#080a0a 100%);
+  z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;
+  overflow-y:auto;
 }
+/* subtle cracked stone bg on map */
+#map-screen::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='mapNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23mapNoise)' opacity='0.04'/%3E%3C/svg%3E");
+  z-index:0;
+}
+#map-screen>*{position:relative;z-index:1;}
+#map-screen h2{
+  font-family:'Cinzel',serif;font-size:20px;font-weight:900;
+  color:var(--gold);letter-spacing:0.1em;
+  text-shadow:0 0 30px rgba(212,165,53,0.4),0 1px 0 rgba(0,0,0,0.8);
+}
+#map-screen p{font-size:12px;color:var(--muted);text-align:center;letter-spacing:0.02em;}
+.difficulty-cards{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;max-width:500px;}
+.diff-card{
+  flex:1;min-width:120px;max-width:155px;
+  background:linear-gradient(170deg,#0e1016 0%,#080a0c 100%);
+  border:1px solid var(--metal-edge);
+  padding:14px 10px;cursor:pointer;transition:all 0.2s;text-align:center;
+  clip-path:polygon(4px 0%,100% 0%,100% calc(100% - 4px),calc(100% - 4px) 100%,0% 100%,0% 4px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 2px 12px rgba(0,0,0,0.5);
+}
+.diff-card:hover,.diff-card:active{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.6);}
+.diff-card.easy{border-color:rgba(46,158,88,0.5);}
+.diff-card.easy:hover{background:linear-gradient(170deg,rgba(46,158,88,0.08) 0%,#080a0c 100%);}
+.diff-card.medium{border-color:rgba(212,165,53,0.5);}
+.diff-card.medium:hover{background:linear-gradient(170deg,rgba(212,165,53,0.08) 0%,#080a0c 100%);}
+.diff-card.hard{border-color:rgba(255,77,26,0.5);}
+.diff-card.hard:hover{background:linear-gradient(170deg,rgba(255,77,26,0.06) 0%,#080a0c 100%);}
+.diff-title{font-family:'Cinzel',serif;font-size:14px;font-weight:700;margin-bottom:5px;letter-spacing:0.06em;}
+.diff-waves{font-size:11px;color:var(--muted);margin-bottom:5px;}
+.diff-loot{font-size:10px;margin-top:3px;letter-spacing:0.02em;}
+.easy .diff-title{color:#2e9e58;} .medium .diff-title{color:var(--gold);} .hard .diff-title{color:#ff4d1a;}
+
+#wave-timeline{
+  display:flex;align-items:center;gap:0;padding:4px 14px;
+  background:linear-gradient(180deg,#0c0e12 0%,#080a0e 100%);
+  border-bottom:1px solid var(--metal-edge);
+  flex-shrink:0;overflow-x:auto;scrollbar-width:none;
+}
+#wave-timeline::-webkit-scrollbar{display:none;}
+.wt-node{
+  width:20px;height:20px;border:2px solid var(--metal-edge);
+  background:var(--stone-dark);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-family:'Cinzel',serif;color:var(--muted);
+  transition:all 0.3s;position:relative;
+  clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+}
+.wt-node.done{background:#0c1a0e;border-color:#2e9e58;color:#2e9e58;}
+.wt-node.current{background:rgba(212,165,53,0.15);border-color:var(--gold);color:var(--gold);box-shadow:0 0 8px rgba(212,165,53,0.3);}
+.wt-node.boss-node{border-color:#cc1a44;color:#cc1a44;}
+.wt-node.boss-node.current{background:rgba(204,26,68,0.15);box-shadow:0 0 8px rgba(204,26,68,0.4);}
+.wt-connector{height:2px;flex:1;min-width:6px;background:var(--metal-edge);}
+.wt-connector.done{background:#2e9e58;}
+.wt-diff-label{font-family:'Cinzel',serif;font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-right:8px;flex-shrink:0;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:0;}
+.modal-overlay.centered{align-items:center;padding:16px;}
+.modal{
+  background:#0b0d12;
+  border:1px solid #252830;
+  border-top:2px solid #2e3040;
+  padding:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
+  clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);
+  box-shadow:0 -4px 40px rgba(0,0,0,0.7);
+}
+.modal-overlay.centered .modal{clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);max-width:500px;}
+.modal-title{font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:12px;text-align:center;letter-spacing:0.06em;}
+.modal-subtitle{font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px;}
+.item-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 14px;margin:10px 0;}
+.item-stat{font-size:13px;}
+.item-stat span{color:var(--green);font-weight:600;}
+
+#attack-area{
+  flex-shrink:0;padding:7px 8px;
+  background:linear-gradient(180deg,#0c0e12 0%,#080a0e 100%);
+  border-top:1px solid var(--metal-edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);
+}
+.attack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px;}
+.attack-grid.row2{grid-template-columns:repeat(4,1fr);}
+.action-btn{
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.03em;
+  padding:9px 5px;cursor:pointer;transition:all 0.12s;
+  background:#0a0c10;
+  color:var(--text);white-space:nowrap;min-height:42px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  user-select:none;border:1px solid;
+  clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 2px 6px rgba(0,0,0,0.4);
+}
+.action-btn:active{transform:scale(0.93);opacity:0.85;}
+.btn-icon{font-size:14px;}
+.btn-fire{border-color:rgba(255,77,26,0.5);color:#ff6633;}
+.btn-water{border-color:rgba(26,179,255,0.5);color:#1ab3ff;}
+.btn-grass{border-color:rgba(46,158,88,0.5);color:#2e9e58;}
+.btn-dark{border-color:rgba(100,50,150,0.5);color:#9955dd;}
+.btn-light{border-color:rgba(220,200,100,0.5);color:#ddcc55;}
+.btn-physical{border-color:rgba(100,100,110,0.5);color:#888890;}
+.btn-next{border-color:rgba(46,158,88,0.6);color:#2e9e58;background:linear-gradient(170deg,rgba(46,158,88,0.08) 0%,#080a0e 100%);}
+.btn-boss{border-color:rgba(204,26,68,0.6);color:#cc1a44;background:linear-gradient(170deg,rgba(204,26,68,0.06) 0%,#080a0e 100%);animation:bossPulse 2s ease-in-out infinite;}
+@keyframes bossPulse{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 0 0 0 rgba(204,26,68,0);}50%{box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 0 12px 2px rgba(204,26,68,0.25);}}
+.btn-disabled{opacity:0.3;pointer-events:none;}
+.action-btn.active-attack{box-shadow:0 0 10px 1px currentColor,inset 0 1px 0 rgba(255,255,255,0.06);opacity:1;transform:scale(1.03);}
+.action-btn.active-attack::after{content:'●';position:absolute;top:3px;right:5px;font-size:7px;opacity:0.8;}
+.action-btn{position:relative;}
 </style>
 
 <!-- Supabase -->
@@ -663,126 +846,228 @@ let sbProfile = null; // players row
 </head>
 <body>
 
-<!-- ── ZINDIGON LOADING SCREEN ── -->
-<div id="zin-loader" style="
+<style>
+#zin-loader {
   position:fixed;inset:0;z-index:9999;
-  background:#0A0A0C;
+  background:#060708;
   display:grid;place-items:center;
-  font-family:'Inter Tight',ui-sans-serif,system-ui,sans-serif;
-  transition:opacity 0.5s ease, visibility 0.5s ease;
-">
-  <!-- dot grid -->
-  <div style="position:absolute;inset:-10vh -10vw;
-    background-image:radial-gradient(rgba(255,255,255,0.08) 1px,transparent 1px);
-    background-size:28px 28px;
-    mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 0%,transparent 75%);
-    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,#000 0%,transparent 75%);
-    pointer-events:none;"></div>
-  <!-- mint glow -->
-  <div style="position:absolute;top:-20vh;left:50%;transform:translateX(-50%);
-    width:80vw;height:60vh;
-    background:radial-gradient(ellipse at 50% 0%,oklch(0.85 0.15 165 / 0.10) 0%,transparent 60%);
-    pointer-events:none;"></div>
-  <!-- film grain -->
-  <div style="position:absolute;inset:0;opacity:0.035;mix-blend-mode:overlay;pointer-events:none;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");"></div>
+  transition:opacity 0.6s ease, visibility 0.6s ease;
+  overflow:hidden;
+}
+#zin-loader.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+#zin-loader .ld-stone {
+  position:absolute;inset:0;opacity:0.06;pointer-events:none;
+  background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22500%22 height=%22500%22%3E%3Cfilter id=%22riftNoise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.45%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22500%22 height=%22500%22 filter=%22url(%23riftNoise)%22/%3E%3C/svg%3E');
+}
+#zin-loader .ld-heat {
+  position:absolute;bottom:-10%;left:50%;transform:translateX(-50%);
+  width:100vw;height:55vh;pointer-events:none;
+  background:radial-gradient(ellipse 70% 100% at 50% 100%,rgba(180,60,10,0.18) 0%,rgba(100,20,5,0.08) 45%,transparent 70%);
+}
+#rift-shards, #rift-embers { position:absolute;inset:0;pointer-events:none;overflow:hidden; }
+#zin-loader .ld-content {
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  position:relative;z-index:1;padding:32px;text-align:center;
+  animation:riftReveal 1.1s ease both;
+}
+#zin-loader .ld-portal { position:relative;width:90px;height:90px;flex-shrink:0; }
+#zin-loader .ld-portal-glow {
+  position:absolute;inset:-20px;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(200,80,10,0.15) 0%,transparent 65%);
+  animation:riftGlow 1.8s ease-in-out infinite;
+}
+.ld-portal-pulse { animation:riftPulse 1.8s ease-in-out infinite; }
+#zin-loader .ld-title { display:flex;flex-direction:column;align-items:center;gap:2px; }
+#zin-loader .ld-title-main {
+  font-family:'Cinzel',serif;
+  font-size:clamp(36px,8vw,68px);font-weight:900;
+  letter-spacing:0.08em;line-height:0.88;color:#d4a535;
+  text-shadow:0 0 50px rgba(212,165,53,0.5),0 3px 0 rgba(0,0,0,0.9),0 -1px 0 rgba(255,220,100,0.2);
+  -webkit-text-stroke:0.5px rgba(255,200,80,0.2);
+}
+#zin-loader .ld-title-sub {
+  font-family:'Cinzel',serif;
+  font-size:clamp(22px,5vw,44px);font-weight:400;
+  letter-spacing:0.35em;color:#c87820;
+  text-shadow:0 0 30px rgba(200,120,32,0.6),0 2px 0 rgba(0,0,0,0.9);
+}
+#zin-loader .ld-studio {
+  display:flex;align-items:center;gap:7px;opacity:0.5;
+}
+#zin-loader .ld-studio span {
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.2em;color:#806020;text-transform:uppercase;
+}
+#zin-loader .ld-bar-wrap { width:min(280px,72vw); }
+#zin-loader .ld-bar-track {
+  height:5px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(180,120,20,0.25);
+  border-top-color:rgba(255,200,80,0.1);
+  clip-path:polygon(2px 0%,100% 0%,100% calc(100% - 2px),calc(100% - 2px) 100%,0% 100%,0% 2px);
+  overflow:hidden;
+}
+#zin-loader .ld-bar-fill {
+  height:100%;width:38%;
+  background:linear-gradient(90deg,rgba(160,90,10,0.6),rgba(220,160,30,1),rgba(160,90,10,0.6));
+  animation:forgeScan 1.6s ease-in-out infinite;
+}
+@keyframes riftReveal { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes forgeScan { 0%{transform:translateX(-180%)} 100%{transform:translateX(320%)} }
+@keyframes riftPulse { 0%,100%{opacity:0.5} 50%{opacity:0.15} }
+@keyframes riftGlow { 0%,100%{opacity:0.6} 50%{opacity:1} }
+@keyframes shardFloat { 0%,100%{transform:translateY(0) rotate(0deg);opacity:0.7} 50%{transform:translateY(-18px) rotate(8deg);opacity:1} }
+@keyframes emberRise { 0%{transform:translateY(0) translateX(0);opacity:0.9} 100%{transform:translateY(-80px) translateX(var(--ex,8px));opacity:0} }
+</style>
 
-  <div style="display:flex;flex-direction:column;align-items:center;gap:22px;
-    animation:zinFadeUp 900ms ease both;position:relative;z-index:1;text-align:center;padding:32px;">
-
-    <!-- Z mark -->
-    <div style="
-      width:72px;height:72px;
-      border:1px solid rgba(255,255,255,0.18);
-      border-radius:24px;
-      display:grid;place-items:center;
-      background:rgba(255,255,255,0.04);
-      box-shadow:0 20px 80px rgba(0,0,0,0.45);
-    ">
-      <svg width="38" height="38" viewBox="0 0 16 16" fill="none"
-        stroke="oklch(0.85 0.15 165)" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+<div id="zin-loader">
+  <div class="ld-stone"></div>
+  <div class="ld-heat"></div>
+  <div id="rift-shards"></div>
+  <div id="rift-embers"></div>
+  <div class="ld-content">
+    <div class="ld-portal">
+      <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" width="90" height="90">
+        <polygon points="10,2 80,2 88,10 88,80 80,88 10,88 2,80 2,10" fill="none" stroke="rgba(180,130,20,0.35)" stroke-width="1"/>
+        <polygon points="16,8 74,8 82,16 82,74 74,82 16,82 8,74 8,16" fill="rgba(10,8,4,0.9)" stroke="rgba(180,130,20,0.55)" stroke-width="1"/>
+        <path d="M45 20 L42 38 L50 42 L40 55 L44 70" stroke="rgba(255,100,20,0.7)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <path d="M45 20 L48 35 L56 40 L48 52" stroke="rgba(255,80,10,0.4)" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+        <path d="M38 40 L28 45 L36 50" stroke="rgba(255,120,30,0.35)" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+        <path d="M52 42 L62 44 L55 50" stroke="rgba(255,120,30,0.35)" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+        <ellipse cx="45" cy="45" rx="10" ry="14" fill="rgba(255,80,10,0.12)"/>
+        <ellipse cx="45" cy="45" rx="5" ry="8" fill="rgba(255,120,30,0.18)"/>
+        <rect x="4" y="4" width="5" height="5" fill="rgba(180,130,20,0.5)"/>
+        <rect x="81" y="4" width="5" height="5" fill="rgba(180,130,20,0.5)"/>
+        <rect x="4" y="81" width="5" height="5" fill="rgba(180,130,20,0.5)"/>
+        <rect x="81" y="81" width="5" height="5" fill="rgba(180,130,20,0.5)"/>
+        <ellipse cx="45" cy="45" rx="12" ry="16" fill="none" stroke="rgba(255,80,10,0.5)" stroke-width="1" class="ld-portal-pulse"/>
+      </svg>
+      <div class="ld-portal-glow"></div>
+    </div>
+    <div class="ld-title">
+      <div class="ld-title-main">ELEMENTAL</div>
+      <div class="ld-title-sub">RIFT</div>
+    </div>
+    <div class="ld-studio">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#c4a030" stroke-width="2" stroke-linecap="square">
         <path d="M2 3 L14 3 L2 13 L14 13"/>
       </svg>
+      <span>Zindigon</span>
     </div>
-
-    <!-- Now loading label -->
-    <p style="margin:0;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;
-      color:rgba(236,236,236,0.48);">Now Loading</p>
-
-    <!-- Title -->
-    <h1 style="margin:0;font-family:'Instrument Serif',ui-serif,Georgia,serif;
-      font-weight:400;font-size:clamp(42px,8vw,84px);line-height:0.95;
-      letter-spacing:-0.02em;color:#ECECEC;">
-      Elemental<br/><em style="font-style:italic;color:oklch(0.85 0.15 165);">Rift</em>
-    </h1>
-
-    <!-- Subtitle -->
-    <p style="margin:0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;
-      color:rgba(236,236,236,0.48);font-family:'Inter Tight',sans-serif;">
-      A Zindigon Studios Game
-    </p>
-
-    <!-- Loading bar -->
-    <div style="width:min(340px,78vw);height:6px;border-radius:999px;overflow:hidden;
-      background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.10);">
-      <div style="height:100%;width:42%;border-radius:inherit;
-        background:oklch(0.85 0.15 165);
-        animation:zinLoad 1.4s ease-in-out infinite;"></div>
+    <div class="ld-bar-wrap">
+      <div class="ld-bar-track"><div class="ld-bar-fill"></div></div>
     </div>
-
-    <!-- Version -->
-    <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;
-      font-size:11px;letter-spacing:0.08em;color:rgba(236,236,236,0.28);">v2.5.1</p>
   </div>
 </div>
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
-@keyframes zinFadeUp {
-  from { opacity:0; transform:translateY(18px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-@keyframes zinLoad {
-  0%   { transform:translateX(-120%); }
-  100% { transform:translateX(260%); }
-}
-#zin-loader.hidden {
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
-}
-</style>
+<script>
+(function(){
+  const sc=document.getElementById('rift-shards');
+  const colors=['#ff4d1a','#1ab3ff','#3dcc5a','#ffdd00','#88eeff','#cc9944'];
+  const shapes=['polygon(50% 0%,100% 50%,50% 100%,0% 50%)','polygon(50% 0%,80% 100%,20% 100%)','polygon(20% 0%,80% 0%,100% 50%,50% 100%,0% 50%)'];
+  for(let i=0;i<12;i++){
+    const el=document.createElement('div');
+    const c=colors[i%colors.length],sz=6+Math.random()*12;
+    el.style.cssText=`position:absolute;left:${5+Math.random()*90}%;top:${10+Math.random()*80}%;width:${sz}px;height:${sz}px;background:${c};clip-path:${shapes[i%shapes.length]};opacity:${0.15+Math.random()*0.35};animation:shardFloat ${2.5+Math.random()*3}s ease-in-out ${Math.random()*3}s infinite;filter:blur(0.5px) drop-shadow(0 0 4px ${c});`;
+    sc.appendChild(el);
+  }
+  const ec=document.getElementById('rift-embers');
+  function spawnEmber(){
+    const loader=document.getElementById('zin-loader');
+    if(!loader||loader.classList.contains('hidden'))return;
+    const e=document.createElement('div'),ex=(Math.random()-0.5)*30;
+    e.style.cssText=`position:absolute;left:${35+Math.random()*30}%;bottom:${10+Math.random()*20}%;width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;background:rgba(255,${80+Math.floor(Math.random()*100)},10,0.9);border-radius:50%;--ex:${ex}px;animation:emberRise ${1.2+Math.random()*1.5}s ease-out forwards;`;
+    ec.appendChild(e);
+    setTimeout(()=>e.remove(),2800);
+    setTimeout(spawnEmber,150+Math.random()*300);
+  }
+  setTimeout(spawnEmber,400);
+})();
+</script>
 
 <!-- NAME SCREEN -->
 <div id="name-screen">
-  <div style="font-size:48px;margin-bottom:-10px;">⚔️</div>
-  <h1>Elemental Rift</h1>
-  <p>Master the elements. Defeat waves of enemies. Challenge the Boss.</p>
-  <div class="element-badges">
-    <span class="el-badge" style="border-color:#1ab3ff;color:#1ab3ff;">🧙 Mage</span>
-    <span class="el-badge" style="border-color:#e8b84b;color:#e8b84b;">⚔️ Warrior</span>
-    <span class="el-badge" style="border-color:#3dcc5a;color:#3dcc5a;">🗡️ Rogue</span>
+  <!-- Animated elemental shards in bg -->
+  <div style="position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;" id="ns-shards"></div>
+  <!-- Ember/smoke rising from rift below -->
+  <div style="position:absolute;bottom:0;left:0;right:0;height:40%;pointer-events:none;
+    background:linear-gradient(0deg,rgba(15,8,3,0.8) 0%,transparent 100%);z-index:0;"></div>
+
+  <!-- Rift crack divider line -->
+  <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:1px;height:30vh;
+    background:linear-gradient(180deg,transparent 0%,rgba(212,165,53,0.3) 60%,transparent 100%);z-index:0;pointer-events:none;"></div>
+
+  <!-- Title block -->
+  <div style="position:relative;z-index:1;text-align:center;margin-bottom:4px;">
+    <!-- Rune corner frame around title -->
+    <div style="position:relative;display:inline-block;padding:16px 28px;">
+      <!-- corner runes -->
+      <div style="position:absolute;top:0;left:0;width:10px;height:10px;border-top:1px solid rgba(212,165,53,0.6);border-left:1px solid rgba(212,165,53,0.6);"></div>
+      <div style="position:absolute;top:0;right:0;width:10px;height:10px;border-top:1px solid rgba(212,165,53,0.6);border-right:1px solid rgba(212,165,53,0.6);"></div>
+      <div style="position:absolute;bottom:0;left:0;width:10px;height:10px;border-bottom:1px solid rgba(212,165,53,0.6);border-left:1px solid rgba(212,165,53,0.6);"></div>
+      <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-bottom:1px solid rgba(212,165,53,0.6);border-right:1px solid rgba(212,165,53,0.6);"></div>
+      <h1 style="font-size:clamp(28px,6.5vw,56px);line-height:0.92;">ELEMENTAL<br><span style="font-size:0.58em;letter-spacing:0.35em;color:#c87820;display:block;margin-top:2px;">RIFT</span></h1>
+    </div>
   </div>
-  <div id="welcome-back-msg" style="display:none;text-align:center;">
-    <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--gold);" id="welcome-name-text"></div>
-    <div style="font-size:12px;color:#aa77ff;margin-top:2px;" id="welcome-title-text"></div>
+
+  <p style="position:relative;z-index:1;">Master the elements. Defeat waves of enemies. Challenge the Boss.</p>
+  <div class="element-badges" style="position:relative;z-index:1;">
+    <span class="el-badge" style="border-color:rgba(26,179,255,0.5);color:#1ab3ff;">🧙 Mage</span>
+    <span class="el-badge" style="border-color:rgba(212,165,53,0.5);color:#d4a535;">⚔️ Warrior</span>
+    <span class="el-badge" style="border-color:rgba(46,158,88,0.5);color:#2e9e58;">🗡️ Rogue</span>
   </div>
-  <button id="continue-btn" class="hidden" onclick="continueGame()" style="width:100%;max-width:340px;background:transparent;color:var(--green);font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding:14px;border-radius:10px;border:1px solid var(--green);cursor:pointer;letter-spacing:0.06em;">▶ Continue as <span id="continue-name"></span></button>
-  <div style="display:flex;gap:8px;width:100%;max-width:340px;">
-    <button id="start-btn" onclick="startGame()" style="flex:2;">Begin Journey</button>
-    <button onclick="openTrinityShop()" style="flex:1;font-family:'Cinzel',serif;font-size:11px;padding:12px 8px;border-radius:10px;border:1px solid #8855ff;background:rgba(136,85,255,0.1);color:#8855ff;cursor:pointer;">⚡ Cosmic</button>
+  <div id="welcome-back-msg" style="display:none;text-align:center;position:relative;z-index:1;">
+    <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);letter-spacing:0.06em;" id="welcome-name-text"></div>
+    <div style="font-size:12px;color:#6644aa;margin-top:2px;" id="welcome-title-text"></div>
   </div>
-  <div style="width:100%;max-width:340px;margin-top:4px;">
-    <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--muted);letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-transform:uppercase;">🏆 Top Scores</div>
-    <div id="name-screen-lb" style="display:flex;flex-direction:column;gap:4px;min-height:60px;">
+  <button id="continue-btn" class="hidden" onclick="continueGame()" style="
+    width:100%;max-width:340px;
+    background:linear-gradient(170deg,rgba(46,158,88,0.12) 0%,rgba(20,60,35,0.08) 100%);
+    color:#2e9e58;font-family:'Cinzel',serif;font-size:14px;font-weight:600;
+    padding:13px;border:1px solid rgba(46,158,88,0.5);cursor:pointer;letter-spacing:0.08em;
+    clip-path:polygon(4px 0%,100% 0%,100% calc(100% - 4px),calc(100% - 4px) 100%,0% 100%,0% 4px);
+    position:relative;z-index:1;
+  ">▶ Continue as <span id="continue-name"></span></button>
+  <div style="display:flex;gap:8px;width:100%;max-width:340px;position:relative;z-index:1;">
+    <button id="start-btn" onclick="startGame()" style="flex:2;">⚔ Begin Journey</button>
+    <button onclick="openTrinityShop()" style="
+      flex:1;font-family:'Cinzel',serif;font-size:11px;padding:12px 8px;
+      border:1px solid rgba(100,60,180,0.5);
+      background:linear-gradient(170deg,rgba(80,40,140,0.15) 0%,rgba(40,20,70,0.08) 100%);
+      color:#7744bb;cursor:pointer;letter-spacing:0.04em;
+      clip-path:polygon(4px 0%,100% 0%,100% calc(100% - 4px),calc(100% - 4px) 100%,0% 100%,0% 4px);
+    ">⚡ Cosmic</button>
+  </div>
+  <!-- Leaderboard section -->
+  <div style="width:100%;max-width:340px;position:relative;z-index:1;">
+    <!-- forge-style section header -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,165,53,0.3));"></div>
+      <span style="font-family:'Cinzel',serif;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;">🏆 Top Scores</span>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,165,53,0.3),transparent);"></div>
+    </div>
+    <div id="name-screen-lb" style="display:flex;flex-direction:column;gap:3px;min-height:60px;">
       <div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">Loading...</div>
     </div>
     <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--muted);">
-      More games and projects at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
+      More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:18px;font-size:11px;color:var(--muted);letter-spacing:0.08em;">v2.5.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.5.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
+<script>
+(function(){
+  const c=document.getElementById('ns-shards');
+  if(!c)return;
+  const colors=['#ff4d1a','#1ab3ff','#3dcc5a','#ffdd00','#88eeff','#cc9944','#ff6688'];
+  const shapes=['polygon(50% 0%,100% 50%,50% 100%,0% 50%)','polygon(50% 0%,80% 100%,20% 100%)','polygon(20% 0%,80% 0%,100% 60%,50% 100%,0% 60%)'];
+  for(let i=0;i<16;i++){
+    const el=document.createElement('div');
+    const col=colors[i%colors.length];
+    const sz=4+Math.random()*10;
+    el.style.cssText=`position:absolute;left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;background:${col};clip-path:${shapes[i%shapes.length]};opacity:${0.08+Math.random()*0.18};animation:shardFloat ${3+Math.random()*4}s ease-in-out ${Math.random()*4}s infinite;filter:blur(0.3px);`;
+    c.appendChild(el);
+  }
+})();
+</script>
 
 <!-- CLASS SELECTION SCREEN -->
 <div id="class-screen" class="hidden" style="position:fixed;inset:0;background:var(--bg);z-index:160;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;">
@@ -820,7 +1105,7 @@ let sbProfile = null; // players row
     <div class="diff-card easy" onclick="selectDifficulty('easy')">
       <div class="diff-title">Easy</div>
       <div class="diff-waves">3 Waves</div>
-      <div class="diff-loot" style="color:#3acc7a;">Basic–Great loot</div>
+      <div class="diff-loot" style="color:#2e9e58;">Basic–Great loot</div>
       <div style="font-size:20px;margin-top:6px;">🌿</div>
     </div>
     <div class="diff-card medium" onclick="selectDifficulty('medium')">
@@ -835,8 +1120,8 @@ let sbProfile = null; // players row
       <div class="diff-loot" style="color:#ff4d1a;">Exquisite–Ancient loot</div>
       <div style="font-size:20px;margin-top:6px;">💀</div>
     </div>
-    <div class="diff-card" style="border-color:#ff2266;flex:1;min-width:130px;max-width:160px;" onclick="selectDifficulty('extreme')">
-      <div class="diff-title" style="color:#ff2266;">Extreme</div>
+    <div class="diff-card" style="border-color:#cc1a44;flex:1;min-width:130px;max-width:160px;" onclick="selectDifficulty('extreme')">
+      <div class="diff-title" style="color:#cc1a44;">Extreme</div>
       <div class="diff-waves" style="color:#ff6688;">25 Waves</div>
       <div class="diff-loot" style="color:#ff6688;">All tiers · Boss every 5 waves</div>
       <div style="font-size:20px;margin-top:6px;">💀</div>
@@ -845,7 +1130,7 @@ let sbProfile = null; // players row
   <div style="font-size:12px;color:var(--muted);text-align:center;max-width:320px;">Final wave of each path has a chance to spawn a Boss with bonus rewards</div>
   <div id="map-boss-section" class="hidden" style="margin-top:4px;text-align:center;">
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">— or —</div>
-    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:10px;border:1px solid var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);cursor:pointer;animation:bossPulse 2s ease-in-out infinite;">💀 Boss Attempt — 60 Second Damage Race</button>
+    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:14px 32px;border-radius:10px;border:1px solid #cc1a44;color:#cc1a44;background:rgba(255,34,102,0.08);cursor:pointer;animation:bossPulse 2s ease-in-out infinite;">💀 Boss Attempt — 60 Second Damage Race</button>
     <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compete for the leaderboard · Earn milestone rewards</div>
   </div>
 
@@ -854,13 +1139,13 @@ let sbProfile = null; // players row
     <div style="font-family:'Cinzel',serif;font-size:11px;color:#ff6644;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">⚔️ Combat System</div>
     <div style="font-size:11px;color:var(--muted);line-height:1.7;max-width:380px;margin:0 auto;">
       Enemy attacks are telegraphed — <span style="color:#ffaa00;">move to the safe side</span> to dodge, or press <span style="color:#88aaff;">Block</span> to absorb the hit.<br>
-      Use <span style="color:#3acc7a;">Q / E</span> to roll on desktop. Rogues can attack during rolls.
+      Use <span style="color:#2e9e58;">Q / E</span> to roll on desktop. Rogues can attack during rolls.
     </div>
   </div>
 
   <!-- SIMULATE WAVES — available after first run -->
   <div id="map-simulate-section" style="width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:2px;">
-    <div style="font-family:'Cinzel',serif;font-size:11px;color:#3acc7a;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;text-align:center;">⚡ Simulate Waves</div>
+    <div style="font-family:'Cinzel',serif;font-size:11px;color:#2e9e58;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;text-align:center;">⚡ Simulate Waves</div>
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;">Instantly simulate waves using your exact current stats — XP, gold and loot apply immediately.</div>
     <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;gap:6px;background:#0d1018;border:1px solid var(--border);border-radius:8px;padding:6px 10px;">
@@ -868,12 +1153,11 @@ let sbProfile = null; // players row
         <input type="number" id="map-simulate-count" value="10" min="1" max="1000"
           style="width:64px;background:transparent;border:none;color:var(--gold);font-family:'Cinzel',serif;font-size:14px;outline:none;text-align:center;">
       </div>
-      <button onclick="mapSimulateWaves()" style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px 20px;border-radius:8px;border:1px solid #3acc7a;background:rgba(58,204,122,0.08);color:#3acc7a;cursor:pointer;">▶ Simulate</button>
+      <button onclick="mapSimulateWaves()" style="font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px 20px;border-radius:8px;border:1px solid #2e9e58;background:rgba(58,204,122,0.08);color:#2e9e58;cursor:pointer;">▶ Simulate</button>
     </div>
     <div id="map-simulate-results" style="margin-top:8px;"></div>
   </div>
 </div>
-
 
 <!-- ══════════════════════════════════════════
      ACTIVE ARENA SCREEN
@@ -893,7 +1177,7 @@ let sbProfile = null; // players row
         <span class="aa-bar-nums" id="aa-player-hp-text">100/100</span>
       </div>
       <div class="aa-bar-row">
-        <span class="aa-bar-lbl" style="color:#ff2266;">Boss</span>
+        <span class="aa-bar-lbl" style="color:#cc1a44;">Boss</span>
         <div class="aa-bar-track"><div class="aa-bar-fill boss" id="aa-boss-hp-bar" style="width:100%"></div></div>
         <span class="aa-bar-nums" id="aa-boss-hp-text">100/100</span>
       </div>
@@ -913,7 +1197,7 @@ let sbProfile = null; // players row
     <!-- Countdown timer -->
     <div class="aa-timer-ring">
       <div class="aa-timer-lbl">React</div>
-      <div class="aa-timer-num" id="aa-timer" style="color:#3acc7a;">–</div>
+      <div class="aa-timer-num" id="aa-timer" style="color:#2e9e58;">–</div>
     </div>
 
     <!-- Boss -->
@@ -974,7 +1258,7 @@ let sbProfile = null; // players row
     <!-- DEATH OVERLAY -->
     <div class="aa-overlay hidden" id="aa-death">
       <div style="font-size:42px;">💀</div>
-      <div class="aa-ov-title" style="color:#e83a3a;">Fallen</div>
+      <div class="aa-ov-title" style="color:#cc2a2a;">Fallen</div>
       <div class="aa-ov-sub" id="aa-death-sub">You reached round 1</div>
       <div class="aa-stat-grid" id="aa-death-stats"></div>
       <div class="aa-reward-box" id="aa-reward-box">
@@ -1004,7 +1288,7 @@ let sbProfile = null; // players row
         <span class="ci-icon">⚔️</span>
         <span class="ci-label">Attack</span>
         <span class="ci-cd" id="aa-cd-attack"></span>
-        <svg class="ci-ring" id="aa-ring-attack" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="#e83a3a" stroke-width="2" stroke-dasharray="150.8" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 26 26)" style="transition:stroke-dashoffset linear;opacity:0.5"/></svg>
+        <svg class="ci-ring" id="aa-ring-attack" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="#cc2a2a" stroke-width="2" stroke-dasharray="150.8" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 26 26)" style="transition:stroke-dashoffset linear;opacity:0.5"/></svg>
       </button>
     </div>
   </div>
@@ -1060,7 +1344,7 @@ let sbProfile = null; // players row
         <input id="auth-password" type="password" placeholder="Min 6 characters" autocomplete="current-password"
           style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
       </div>
-      <div id="auth-error" style="font-size:11px;color:#e83a3a;text-align:center;min-height:16px;"></div>
+      <div id="auth-error" style="font-size:11px;color:#cc2a2a;text-align:center;min-height:16px;"></div>
       <button id="auth-submit-btn" onclick="authSubmit()" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:13px;border-radius:10px;border:1px solid var(--gold);background:rgba(232,184,75,0.12);color:var(--gold);cursor:pointer;width:100%;">Sign In</button>
       <div style="text-align:center;">
         <button id="forgot-pw-btn" onclick="showForgotPassword()" style="font-family:'Cinzel',serif;font-size:11px;background:transparent;border:none;color:var(--muted);cursor:pointer;text-decoration:underline;">Forgot password?</button>
@@ -1086,7 +1370,7 @@ let sbProfile = null; // players row
         <input id="reset-pw-confirm" type="password" placeholder="Repeat password"
           style="width:100%;box-sizing:border-box;background:#0d1018;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;outline:none;">
       </div>
-      <div id="reset-pw-error" style="font-size:11px;color:#e83a3a;text-align:center;min-height:16px;"></div>
+      <div id="reset-pw-error" style="font-size:11px;color:#cc2a2a;text-align:center;min-height:16px;"></div>
       <button onclick="submitPasswordReset()" style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;padding:13px;border-radius:10px;border:1px solid var(--gold);background:rgba(232,184,75,0.12);color:var(--gold);cursor:pointer;width:100%;">Set New Password</button>
     </div>
   </div>
@@ -1110,11 +1394,10 @@ let sbProfile = null; // players row
   </div>
 </div>
 
-
 <!-- ACCOUNT MENU -->
 <div id="account-menu" class="hidden" style="position:fixed;top:60px;right:10px;background:#151a28;border:1px solid var(--border);border-radius:10px;padding:12px;z-index:400;min-width:160px;">
   <div id="account-menu-name" style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold);margin-bottom:8px;text-align:center;"></div>
-  <button onclick="signOut()" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid #e83a3a;color:#e83a3a;background:transparent;cursor:pointer;">Sign Out</button>
+  <button onclick="signOut()" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid #cc2a2a;color:#cc2a2a;background:transparent;cursor:pointer;">Sign Out</button>
   <button onclick="document.getElementById('account-menu').classList.add('hidden')" style="width:100%;font-family:'Cinzel',serif;font-size:11px;padding:8px;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;margin-top:6px;">Close</button>
 </div>
 
@@ -1136,11 +1419,11 @@ let sbProfile = null; // players row
     </div>
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:180px;min-width:80px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-family:'Cinzel',serif;font-size:9px;color:#aa77ff;letter-spacing:0.05em;">Lv <span id="player-level-display">1</span></span>
+        <span style="font-family:'Cinzel',serif;font-size:9px;color:#8855cc;letter-spacing:0.05em;">Lv <span id="player-level-display">1</span></span>
         <span style="font-size:9px;color:#8888ff;font-family:'Cinzel',serif;" id="xp-bar-text">0/80</span>
       </div>
       <div style="height:6px;background:#1a1f2e;border-radius:3px;overflow:hidden;">
-        <div id="xp-bar-fill" style="height:100%;background:linear-gradient(90deg,#8855ff,#aa77ff);border-radius:3px;width:0%;transition:width 0.4s;"></div>
+        <div id="xp-bar-fill" style="height:100%;background:linear-gradient(90deg,#6644aa,#8855cc);border-radius:3px;width:0%;transition:width 0.4s;"></div>
       </div>
     </div>
     <span id="player-name-display" style="font-size:11px;color:var(--gold);font-family:'Cinzel',serif;cursor:pointer;" onclick="showAccountMenu()" title="Account"></span>
@@ -1220,11 +1503,11 @@ let sbProfile = null; // players row
           Mana Cost: 30
         </div>
         <!-- Heal button -->
-        <div class="ability-slot" id="slot-heal" onclick="activateHeal()" style="border-color:#3acc7a;width:70px;min-height:56px;background:rgba(13,16,24,0.85);">
-          <div class="ab-slot-label" style="color:#3acc7a;">Heal</div>
+        <div class="ability-slot" id="slot-heal" onclick="activateHeal()" style="border-color:#2e9e58;width:70px;min-height:56px;background:rgba(13,16,24,0.85);">
+          <div class="ab-slot-label" style="color:#2e9e58;">Heal</div>
           <div class="ab-icon">＋</div>
           <div class="ab-name" style="color:var(--muted);font-size:7px;">Assign</div>
-          <div class="ab-cd-bar"><div class="ab-cd-fill" style="width:0%;background:#3acc7a"></div></div>
+          <div class="ab-cd-bar"><div class="ab-cd-fill" style="width:0%;background:#2e9e58"></div></div>
         </div>
       </div>
       <div id="combat-tooltip" onclick="dismissTooltip()" class="hidden">
@@ -1245,7 +1528,7 @@ let sbProfile = null; // players row
         <div id="enemy-type-badge"></div>
       </div>
       <div id="boss-timer-wrap">
-        <div style="font-family:'Cinzel',serif;font-size:10px;color:#ff2266;letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin-bottom:2px;">Boss Attempt</div>
+        <div style="font-family:'Cinzel',serif;font-size:10px;color:#cc1a44;letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin-bottom:2px;">Boss Attempt</div>
         <div id="boss-timer">60</div>
         <div id="boss-dmg-display">0 dmg</div>
         <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:2px;">→ Leaderboard</div>
@@ -1288,12 +1571,11 @@ let sbProfile = null; // players row
       </div>
     </div>
 
-
     <!-- Bottom action bar — always fully visible -->
     <div style="display:flex;gap:4px;padding:4px 8px;background:var(--panel);border-top:1px solid var(--border);" id="wave-btns">
       <button class="action-btn btn-next" id="next-btn" onclick="toggleAutoWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">💀</span>Boss</button>
-      <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
+      <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#2e9e58;color:#2e9e58;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
       <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:#aa7722;color:#e8b84b;background:rgba(232,184,75,0.06);" title="Reset your run for maximum Trinity Force XP"><span class="btn-icon">⚔️</span>Honor</button>
     </div>
@@ -1380,10 +1662,10 @@ let sbProfile = null; // players row
 <!-- BOSS RESULTS -->
 <div class="modal-overlay centered hidden" id="boss-results-modal">
   <div class="modal">
-    <div class="modal-title" style="color:var(--boss);">💀 Boss Attempt Complete</div>
+    <div class="modal-title" style="color:#cc1a44;">💀 Boss Attempt Complete</div>
     <div id="boss-result-content"></div>
     <div class="modal-btns">
-      <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);" onclick="closeBossResults()">Continue</button>
+      <button style="flex:1;font-family:'Cinzel',serif;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid #cc1a44;color:#cc1a44;background:rgba(255,34,102,0.08);" onclick="closeBossResults()">Continue</button>
     </div>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted);">
       Full leaderboard &amp; more at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
@@ -1737,20 +2019,20 @@ function showTitleTutorial() {
   overlay.id = 'title-tutorial-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML = `
-    <div style="background:#151a28;border:1px solid #aa77ff44;border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
+    <div style="background:#151a28;border:1px solid #8855cc44;border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;">
       <div style="font-size:36px;margin-bottom:10px;">🎖️</div>
-      <div style="font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#aa77ff;margin-bottom:6px;">You have a Title!</div>
+      <div style="font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:#8855cc;margin-bottom:6px;">You have a Title!</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
-        You've been awarded the <span style="color:#aa77ff;font-family:'Cinzel',serif;">${playerTitles.map(t=>TITLES[t]?.label||t).join(', ')}</span> title${playerTitles.length>1?'s':''}.
+        You've been awarded the <span style="color:#8855cc;font-family:'Cinzel',serif;">${playerTitles.map(t=>TITLES[t]?.label||t).join(', ')}</span> title${playerTitles.length>1?'s':''}.
         Titles appear next to your name on the leaderboard.
       </div>
-      <div style="background:#0d1018;border:1px solid #aa77ff33;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+      <div style="background:#0d1018;border:1px solid #8855cc33;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
         To equip a title:<br>
-        <span style="color:#aa77ff;">1.</span> Start a game<br>
-        <span style="color:#aa77ff;">2.</span> Tap your name in the top bar <span style="color:#e8b84b;">or</span> go to the <span style="color:#e8b84b;">Stats tab</span><br>
-        <span style="color:#aa77ff;">3.</span> Select the title you want displayed
+        <span style="color:#8855cc;">1.</span> Start a game<br>
+        <span style="color:#8855cc;">2.</span> Tap your name in the top bar <span style="color:#e8b84b;">or</span> go to the <span style="color:#e8b84b;">Stats tab</span><br>
+        <span style="color:#8855cc;">3.</span> Select the title you want displayed
       </div>
-      <button onclick="document.getElementById('title-tutorial-overlay').remove()" style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px 32px;border-radius:10px;border:1px solid #aa77ff;background:rgba(170,119,255,0.1);color:#aa77ff;cursor:pointer;">Got it</button>
+      <button onclick="document.getElementById('title-tutorial-overlay').remove()" style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px 32px;border-radius:10px;border:1px solid #8855cc;background:rgba(170,119,255,0.1);color:#8855cc;cursor:pointer;">Got it</button>
     </div>`;
   document.body.appendChild(overlay);
 }
@@ -1765,7 +2047,7 @@ async function selectTitle(titleId) {
 function updateNameDisplay() {
   const titleText = playerSelectedTitle ? getTitleDisplay(playerSelectedTitle) : '';
   const nameEl = document.getElementById('player-name-display');
-  if(nameEl) nameEl.innerHTML = `<span style="color:var(--gold)">${G.playerName}</span>${titleText ? `<br><span style="font-size:9px;color:#aa77ff;letter-spacing:0.06em;">${titleText}</span>` : ''}`;
+  if(nameEl) nameEl.innerHTML = `<span style="color:var(--gold)">${G.playerName}</span>${titleText ? `<br><span style="font-size:9px;color:#8855cc;letter-spacing:0.06em;">${titleText}</span>` : ''}`;
 }
 
 // Init G state
@@ -1787,15 +2069,11 @@ function initGState() {
   }
 }
 
-
 // ═══════════════════════════════════════════════
 // ABILITY DEFINITIONS
 // ═══════════════════════════════════════════════
 // Types: 'basic' | 'regular' | 'ultimate'
 // Unlock levels: basic=0, regular1=3, regular2=6, ultimate=10
-
-
-
 
 // ═══════════════════════════════════════════════
 // CLASS XP STATE (added to G)
@@ -1872,7 +2150,7 @@ function renderWaveTimeline() {
   const tl = document.getElementById('wave-timeline');
   if(!tl) return;
   const diff = MAP.difficulty||'easy';
-  const diffColor = {easy:'#3acc7a',medium:'#e8b84b',hard:'#ff4d1a',extreme:'#ff2266'}[diff]||'#ff2266';
+  const diffColor = {easy:'#2e9e58',medium:'#e8b84b',hard:'#ff4d1a',extreme:'#cc1a44'}[diff]||'#cc1a44';
 
   if(diff === 'extreme') {
     // Show extreme with boss markers every 5 waves
@@ -1933,7 +2211,7 @@ function startBossWave() {
   updateResourceBar();
   startEnemyAutoAttack();
   drawArena();
-  log(`<span style="color:#ff2266;font-weight:600;">💀 Wave Boss! Defeat it for bonus loot!</span>`);
+  log(`<span style="color:#cc1a44;font-weight:600;">💀 Wave Boss! Defeat it for bonus loot!</span>`);
 }
 
 function showWaveBossPrompt() {
@@ -1942,23 +2220,23 @@ function showWaveBossPrompt() {
   overlay.id = 'wave-boss-prompt';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML = `
-    <div style="background:#151a28;border:1px solid #ff226644;border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center;">
+    <div style="background:#151a28;border:1px solid #cc1a4444;border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center;">
       <div style="font-size:42px;margin-bottom:8px;">💀</div>
-      <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:#ff2266;margin-bottom:6px;">Boss Awaits</div>
+      <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:900;color:#cc1a44;margin-bottom:6px;">Boss Awaits</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">A powerful boss has appeared at the end of this path. Fight it for bonus loot — or skip straight to the merchant.</div>
-      <div style="background:#0d1018;border:1px solid #ff226633;border-radius:10px;padding:12px;margin-bottom:20px;">
+      <div style="background:#0d1018;border:1px solid #cc1a4433;border-radius:10px;padding:12px;margin-bottom:20px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
           <div style="color:var(--muted);">Boss Level</div>
-          <div style="font-family:'Cinzel',serif;color:#ff2266;">${bossLevel}</div>
+          <div style="font-family:'Cinzel',serif;color:#cc1a44;">${bossLevel}</div>
           <div style="color:var(--muted);">Reward</div>
-          <div style="font-family:'Cinzel',serif;color:#3acc7a;">Bonus loot + gold</div>
+          <div style="font-family:'Cinzel',serif;color:#2e9e58;">Bonus loot + gold</div>
           <div style="color:var(--muted);">Risk</div>
-          <div style="font-family:'Cinzel',serif;color:#e83a3a;">It fights back</div>
+          <div style="font-family:'Cinzel',serif;color:#cc2a2a;">It fights back</div>
         </div>
       </div>
       <div style="display:flex;gap:10px;">
         <button onclick="skipWaveBoss()" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:12px;border-radius:8px;border:1px solid var(--border);color:var(--muted);background:transparent;cursor:pointer;">Skip → Merchant</button>
-        <button onclick="acceptWaveBoss()" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px;border-radius:8px;border:1px solid #ff2266;background:rgba(255,34,102,0.1);color:#ff2266;cursor:pointer;">💀 Fight the Boss</button>
+        <button onclick="acceptWaveBoss()" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:12px;border-radius:8px;border:1px solid #cc1a44;background:rgba(255,34,102,0.1);color:#cc1a44;cursor:pointer;">💀 Fight the Boss</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -2018,7 +2296,7 @@ function saveGame() {
       selectedTitle: playerSelectedTitle,
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
-  } catch(e){}
+  } catch(e){ console.error('saveGame error:', e); }
 }
 
 function loadGame(name) {
@@ -2029,7 +2307,8 @@ function loadGame(name) {
     // Accept save if name matches OR if signed in (cloud save owns the name)
     if (!sbUser && save.playerName !== name) return false;
     G.playerName = save.playerName;
-    G.hp = save.hp; G.maxHp = save.maxHp;
+    G.maxHp = save.maxHp || 200;
+    G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
     G.gold = save.gold;
     G.xp = save.xp||0; G.xpToNext = save.xpToNext||40; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
     spPending = save.spPending||0; passivePending = save.passivePending||0;
@@ -2068,7 +2347,7 @@ function loadGame(name) {
       // name-input removed
       continueBtn.classList.remove('hidden');
     }
-  } catch(e) {}
+  } catch(e){ console.error('checkExistingSave error:', e); }
 })();
 
 function continueGame() {
@@ -2077,7 +2356,7 @@ function continueGame() {
     const save = JSON.parse(raw);
     // name-input removed
     startGame();
-  } catch(e) {}
+  } catch(e){ console.error('continueGame error:', e); }
 }
 
 function startGame() {
@@ -2243,7 +2522,6 @@ function rollEnemy(wave) {
   };
 }
 
-
 function spawnEnemy() {
   if(G.enemy && G.enemy.hp > 0) {
     console.warn('Spawn blocked: enemy still active');
@@ -2306,16 +2584,16 @@ function updateEnemyUI() {
     return;
   }
   document.getElementById('enemy-name').textContent = e.name;
-  const nameColor = G.inBoss ? '#ff2266' : (e.enragedColor || '#cc8844');
+  const nameColor = G.inBoss ? '#cc1a44' : (e.enragedColor || '#cc8844');
   document.getElementById('enemy-name').style.color = nameColor;
   if(G.inBoss) {
     const milestone = Math.max(1000, Math.ceil(G.bossDmgDealt / 1000) * 1000 || 1000);
     const prevMilestone = milestone - 1000;
     const pct = Math.min(100, ((G.bossDmgDealt - prevMilestone) / 1000) * 100);
     document.getElementById('enemy-hp-fill').style.width = pct + '%';
-    document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff2266,#ff6699)';
+    document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc1a44,#ff6699)';
     if(hpNums) hpNums.textContent = '';
-    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2266;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
+    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#cc1a44;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
   } else {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#cc2222,#ff5555)';
@@ -2345,7 +2623,7 @@ function rollBoss(level, infinite=false) {
   if(infinite) {
     return {
       name:`${name}`, type:'boss', id:'dragon',
-      icon:'🐉', resistance:null, enragedColor:'#ff2266',
+      icon:'🐉', resistance:null, enragedColor:'#cc1a44',
       hp:999999999, maxHp:999999999,
       attack:0, defense:Math.floor(15+level*5),
       gold:0, xp:0, statusEffects:{},
@@ -2355,7 +2633,7 @@ function rollBoss(level, infinite=false) {
   const baseAtk = Math.min(Math.floor((8+level*3)*atkScale), 28 + level*4);
   return {
     name:`${name}`, type:'boss', id: base.id,
-    icon: base.icon, resistance:null, enragedColor:'#ff2266',
+    icon: base.icon, resistance:null, enragedColor:'#cc1a44',
     hp:         Math.floor((600+level*400)*hpScale),
     maxHp:      Math.floor((600+level*400)*hpScale),
     attack:     baseAtk,
@@ -2381,7 +2659,7 @@ function startBossAttempt() {
   document.getElementById('boss-level-badge').style.display = 'block';
   document.getElementById('boss-level-badge').textContent = 'BOSS LV 1';
   updateEnemyUI();
-  log(`<span style="color:#ff2266;font-weight:600;">💀 BOSS ATTEMPT STARTED! Deal as much damage as you can in 60 seconds!</span>`);
+  log(`<span style="color:#cc1a44;font-weight:600;">💀 BOSS ATTEMPT STARTED! Deal as much damage as you can in 60 seconds!</span>`);
   startBossTimer();
   // Boss does NOT attack — pure DPS race
   drawArena();
@@ -2400,7 +2678,7 @@ function startBossTimer() {
 
 function updateBossTimerUI() {
   document.getElementById('boss-timer').textContent = G.bossTimerSec;
-  document.getElementById('boss-timer').style.color = G.bossTimerSec <= 10 ? '#ff2266' : (G.bossTimerSec <= 20 ? '#ff8800' : '#ff2266');
+  document.getElementById('boss-timer').style.color = G.bossTimerSec <= 10 ? '#cc1a44' : (G.bossTimerSec <= 20 ? '#ff8800' : '#cc1a44');
   document.getElementById('boss-dmg-display').textContent = '⚔️ ' + numberWithCommas(G.bossDmgDealt) + ' dmg';
   // Show next milestone
   const nextM = BOSS_MILESTONES.find(m => !G.bossRewardsClaimed.includes(BOSS_MILESTONES.indexOf(m)));
@@ -2442,7 +2720,7 @@ function onBossPhaseKill() {
   G.bossLevel++;
   playSound('boss_hit');
   triggerScreenShake(12, 0.6);
-  log(`<span style="color:#ff2266;">💀 Boss Phase ${G.bossLevel-1} cleared! Level ${G.bossLevel} awakens!</span>`);
+  log(`<span style="color:#cc1a44;">💀 Boss Phase ${G.bossLevel-1} cleared! Level ${G.bossLevel} awakens!</span>`);
   document.getElementById('boss-level-badge').textContent = `BOSS LV ${G.bossLevel}`;
   G.enemy = rollBoss(G.bossLevel);
   G.combatActive = true;
@@ -2502,7 +2780,7 @@ async function showBossResults() {
       if(rankEl && myRank > 0) rankEl.textContent = `Rank #${myRank}`;
       saveLocalLeaderboard(liveBoard);
     }
-  } catch(e) {}
+  } catch(e){ console.error('leaderboard fetch error:', e); }
 }
 
 function renderBossResultsModal(score, name, leaderboard, myRank) {
@@ -2521,7 +2799,7 @@ function renderBossResultsModal(score, name, leaderboard, myRank) {
               ${m.icon} ${m.label}
             </div>`).join('')}
         </div>
-        <div style="text-align:center;font-size:13px;color:#3acc7a;">Rewards: +${numberWithCommas(totalGold)} gold &nbsp;·&nbsp; +${totalXP} XP</div>
+        <div style="text-align:center;font-size:13px;color:#2e9e58;">Rewards: +${numberWithCommas(totalGold)} gold &nbsp;·&nbsp; +${totalXP} XP</div>
       </div>`;
   }
 
@@ -2563,7 +2841,7 @@ function buildLBHtml(leaderboard, highlightName, limit=10) {
   return leaderboard.slice(0,limit).map((entry,i)=>{
     const rankClass = i===0?'first':i===1?'second':i===2?'third':'';
     const isMe = entry.name === highlightName;
-    const titleStr = entry.title ? `<span style="font-size:9px;color:#aa77ff;display:block;line-height:1.2;">${entry.title}</span>` : '';
+    const titleStr = entry.title ? `<span style="font-size:9px;color:#8855cc;display:block;line-height:1.2;">${entry.title}</span>` : '';
     return `<div class="leaderboard-row ${isMe?'lb-row-highlight':''}">
       <span class="lb-rank ${rankClass}">${medals[i]||'#'+(i+1)}</span>
       <span class="lb-name" style="${isMe?'color:var(--gold);font-weight:600;':''}">
@@ -2583,7 +2861,7 @@ function buildNameScreenLBHtml(leaderboard) {
     return `<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;background:rgba(255,255,255,0.04);margin-bottom:3px;">
       <span style="font-family:'Cinzel',serif;font-size:13px;font-weight:700;width:24px;text-align:center;color:${i===0?'#e8b84b':i===1?'#aaa':i===2?'#cd7f32':'#5a6080'}">${medals[i]||'#'+(i+1)}</span>
       <span style="flex:1;font-size:13px;color:#c8d0e8;">${entry.name}</span>
-      <span style="font-family:'Cinzel',serif;font-size:12px;color:#ff2266;">${numberWithCommas(entry.score)}</span>
+      <span style="font-family:'Cinzel',serif;font-size:12px;color:#cc1a44;">${numberWithCommas(entry.score)}</span>
     </div>`;
   }).join('');
 }
@@ -2626,7 +2904,6 @@ async function postLeaderboard(data) {
 function getLocalLeaderboard() {
   try { return JSON.parse(localStorage.getItem('elementalRift_leaderboard')||'[]'); } catch { return []; }
 }
-
 
 // ═══════════════════════════════════════════════
 // ABILITY SYSTEM
@@ -2831,7 +3108,7 @@ function fireAbility(ab) {
         spawnDamageNumber(
           canvas.width*0.25 - cloneOffsetX + (Math.random()-.5)*15,
           canvas.height*0.62 - 30 - c*20,
-          cloneDmg, cloneCrit, false, '#8855ff'
+          cloneDmg, cloneCrit, false, '#6644aa'
         );
         combatLog(`👤 Clone ${cloneDmg}${cloneCrit?' CRIT':''}`, 'dmg-out');
       }
@@ -2849,7 +3126,7 @@ function fireAbility(ab) {
     const echoDmg = Math.floor(totalDmg * 0.60);
     G.enemy.hp -= echoDmg;
     if(G.inBoss) G.bossDmgDealt += echoDmg;
-    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-55, echoDmg, false, false, '#aa77ff');
+    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-55, echoDmg, false, false, '#8855cc');
     combatLog(`🔮 Echo ${echoDmg}`, 'se');
   }
   if(hasMutation('wild_magic') && Math.random() < 0.10 && G.enemy && G.enemy.hp > 0) {
@@ -3146,7 +3423,7 @@ function openLoadoutPicker(slotIdx) {
     const lv = G.abilityLevels[ab.id]||0;
     const cp = G.classCP[ab.class]||0;
     const equipped = G.loadout.includes(ab.id);
-    const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
+    const typeColor = {basic:'#2e9e58',regular:'#2196f3',ultimate:'#cc1a44'}[ab.type];
     const slotLabel = {basic:'Attack slot',regular:'Skill slot',ultimate:'Ultimate slot'}[ab.type]||ab.type;
     const cdText = ab.cd > 0 ? `${(ab.cd/1000).toFixed(1)}s cooldown` : 'Auto-attack (no cooldown)';
     const manaCost = MANA_COSTS[ab.type]||0;
@@ -3280,7 +3557,7 @@ function updateClassXPPanel() {
   html += '<div class="panel-title" style="position:static;">🔮 Passive Skills</div>';
   html += `<div class="sp-display">${G.passivePoints} Passive Point${G.passivePoints!==1?'s':''}</div>`;
   const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
-  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'};
+  const elColors={offense:'#cc2a2a',defense:'#e8b84b',effects:'#8855cc',utility:'#2e9e58'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]||'#88aacc'}">${elEmoji[el]||'⚡'} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
     skills.forEach((sk,i)=>{
@@ -3308,7 +3585,6 @@ function getSEMultiplier(attackImbue, enemy) {
 }
 
 // Base spell cooldowns in ms (physical has no cooldown — pure atkSpeed)
-
 
 // ── XP & SKILL POINT SYSTEM ──
 const XP_PER_LEVEL = 100; // XP needed per skill point
@@ -3343,7 +3619,6 @@ const BOSS_MILESTONES = [
   { dmg:30000000,  gold:400000,xp:150, icon:'🐉', label:'30M',  titleReward:'boss_30m' },
   { dmg:50000000,  gold:750000,xp:200, icon:'☄️', label:'50M',  titleReward:'boss_50m' },
 ];
-
 
 // ═══════════════════════════════════════════════
 // TRINITY FORCE — COSMIC ALIGNMENT SYSTEM
@@ -3550,7 +3825,6 @@ function refreshAutoAttackSpeeds() {} // stub — auto speeds handled by activat
 function toggleAutoAttack(element) {} // stub — no longer used
 function attack(element) {} // stub — no longer used
 
-
 // ── TELEGRAPH SYSTEM — enemy attacks are telegraphed and dodgeable ──
 const TELEGRAPH = {
   active: false,
@@ -3614,7 +3888,7 @@ function showAttackWarning(dir) {
   if (!arena) return;
 
   const isSweep = dir === 'sweep';
-  const color = isSweep ? '#ff2266' : '#ffaa00';
+  const color = isSweep ? '#cc1a44' : '#ffaa00';
   const arrow = dir === 'left' ? '◀◀' : dir === 'right' ? '▶▶' : '↔';
   const label = isSweep ? '⚠ SWEEP — Dodge or Block!' : `⚠ Attack ${dir.toUpperCase()} — move ${dir === 'left' ? 'RIGHT' : 'LEFT'}!`;
 
@@ -3630,14 +3904,14 @@ function showAttackWarning(dir) {
   leftZone.style.cssText = `
     position:absolute;top:0;left:0;bottom:0;width:50%;
     background:${dir==='left'||isSweep ? `rgba(255,34,102,0.18)` : 'rgba(58,204,122,0.06)'};
-    border-right:2px solid ${dir==='left'||isSweep ? '#ff2266' : '#3acc7a'};
+    border-right:2px solid ${dir==='left'||isSweep ? '#cc1a44' : '#2e9e58'};
     transition:background 0.15s;
   `;
   const rightZone = document.createElement('div');
   rightZone.style.cssText = `
     position:absolute;top:0;right:0;bottom:0;width:50%;
     background:${dir==='right'||isSweep ? `rgba(255,34,102,0.18)` : 'rgba(58,204,122,0.06)'};
-    border-left:2px solid ${dir==='right'||isSweep ? '#ff2266' : '#3acc7a'};
+    border-left:2px solid ${dir==='right'||isSweep ? '#cc1a44' : '#2e9e58'};
     transition:background 0.15s;
   `;
 
@@ -3675,7 +3949,7 @@ function showAttackWarning(dir) {
     const safeDir = dir === 'left' ? 'RIGHT' : 'LEFT';
     safeLbl.style.cssText = `
       position:absolute;${dir==='left'?'right':'left'}:8px;bottom:8px;
-      font-family:'Cinzel',serif;font-size:10px;color:#3acc7a;
+      font-family:'Cinzel',serif;font-size:10px;color:#2e9e58;
       background:rgba(58,204,122,0.12);padding:3px 8px;border-radius:10px;
     `;
     safeLbl.textContent = `✓ SAFE: ${safeDir}`;
@@ -3701,7 +3975,7 @@ function updateTelegraphCountdown(val) {
   const el = document.getElementById('telegraph-cd');
   if (!el) return;
   el.textContent = Math.max(0, val);
-  el.style.color = val <= 1 ? '#e83a3a' : '#ffaa00';
+  el.style.color = val <= 1 ? '#cc2a2a' : '#ffaa00';
 }
 
 function clearAttackWarning() {
@@ -3740,7 +4014,7 @@ function resolveEnemyAttack() {
   if (isDodgeIframe) {
     // Full dodge via roll
     combatLog('✦ Rolled through attack!', 'dmg-heal');
-    spawnDamageNumber(px, py - 40, 'ROLL DODGE', false, false, '#3acc7a');
+    spawnDamageNumber(px, py - 40, 'ROLL DODGE', false, false, '#2e9e58');
     startAnimLoop();
     playSound('hit_physical');
     restartEnemyAttackCycle();
@@ -3759,7 +4033,7 @@ function resolveEnemyAttack() {
 
   if (isDodged) {
     combatLog(`✓ Dodged ${dir.toUpperCase()}!`, 'dmg-heal');
-    spawnDamageNumber(px, py - 40, 'DODGED!', false, false, '#3acc7a');
+    spawnDamageNumber(px, py - 40, 'DODGED!', false, false, '#2e9e58');
     // Flash safe side
     const arena = document.getElementById('arena');
     if (arena) {
@@ -3973,48 +4247,48 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
   overlay.innerHTML = `
-    <div style="background:#151a28;border:1px solid #2a2f45;border-radius:16px;padding:24px;max-width:420px;width:100%;text-align:center;">
+    <div style="background:linear-gradient(160deg,#0e1016 0%,#090b0f 100%);border:1px solid #252830;clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);padding:24px;max-width:420px;width:100%;text-align:center;">
       <div style="font-size:48px;margin-bottom:8px;">💀</div>
-      <div style="font-family:'Cinzel',serif;font-size:24px;font-weight:900;color:#e83a3a;margin-bottom:4px;">You Have Fallen</div>
+      <div style="font-family:'Cinzel',serif;font-size:24px;font-weight:900;color:#cc2a2a;margin-bottom:4px;">You Have Fallen</div>
       <div style="font-size:13px;color:#5a6080;margin-bottom:20px;">${G.playerName} · Wave ${G.wave}</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+        <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid #252830;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:12px;">
           <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Kills</div>
           <div style="font-family:'Cinzel',serif;font-size:22px;color:#e8b84b;">${G.kills}</div>
         </div>
-        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+        <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid #252830;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:12px;">
           <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Best Hit</div>
           <div style="font-family:'Cinzel',serif;font-size:22px;color:#ff4d1a;">${numberWithCommas(G.runStats.bestHit)}</div>
         </div>
-        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+        <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid #252830;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:12px;">
           <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Class</div>
           <div style="font-size:20px;">${CLASS_ICONS[G.playerClass]||'⚔️'}</div>
           <div style="font-family:'Cinzel',serif;font-size:11px;color:${CLASS_COLORS[G.playerClass]||'#aaa'};">${(G.playerClass||'').charAt(0).toUpperCase()+(G.playerClass||'').slice(1)}</div>
           <div style="font-size:10px;color:${topElemColor};">${topElemIcon} ${topElemName}</div>
         </div>
-        <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:12px;">
+        <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid #252830;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:12px;">
           <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Gold Earned</div>
           <div style="font-family:'Cinzel',serif;font-size:22px;color:#e8b84b;">${numberWithCommas(G.runStats.totalGold)}</div>
         </div>
       </div>
 
       ${sbUser ? `
-      <div style="background:#0d1018;border:1px solid #8855ff44;border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="background:#0d1018;border:1px solid #6644aa44;border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
         <div>
-          <div style="font-size:10px;color:#8855ff;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">⚡ Trinity Rank</div>
-          <div style="font-family:'Cinzel',serif;font-size:22px;color:#8855ff;">+${trinityRank}</div>
+          <div style="font-size:10px;color:#6644aa;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">⚡ Trinity Rank</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#6644aa;">+${trinityRank}</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Total Rank</div>
-          <div style="font-family:'Cinzel',serif;font-size:22px;color:#aa77ff;">${trinityRank} Rank</div>
+          <div style="font-family:'Cinzel',serif;font-size:22px;color:#8855cc;">${trinityRank} Rank</div>
         </div>
       </div>` : `
-      <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;text-align:center;font-size:12px;color:#5a6080;">
+      <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid #252830;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:10px;margin-bottom:16px;text-align:center;font-size:12px;color:#5a6080;">
         Sign in to track Trinity Force progress
       </div>`}
 
-      <div style="background:#0d1018;border:1px solid #2a2f45;border-radius:10px;padding:10px;margin-bottom:16px;">
+      <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid #252830;clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:10px;margin-bottom:16px;">
         <div style="font-size:10px;color:#5a6080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Element Usage</div>
         <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
           ${Object.entries(uses).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([imbue,count])=>`
@@ -4050,7 +4324,6 @@ function emergencySpawn() {
     }
   }
 }
-
 
 function safeHide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
 function safeShow(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
@@ -4468,7 +4741,7 @@ function showItemModal(item, context){
     const nextVal = preview ? preview[k] : null;
     const delta = nextVal ? (nextVal - v) : 0;
     const fmt = val => ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(k) ? parseFloat(val).toFixed(1) : Math.floor(val);
-    return `<div class="item-stat" style="${isStar?'color:#ffdd00;':''}">${isStar?'⭐ ':''}${STAT_LABELS[k]||k}: <span style="${isStar?'color:#ffdd00;':''}">+${fmt(v)}</span>${nextVal&&delta>0?`<span style="color:#3acc7a;font-size:10px;"> → +${fmt(nextVal)}</span>`:''}${isStar?` <span style="color:#ffdd00;font-size:9px;">(star bonus)</span>`:''}</div>`;
+    return `<div class="item-stat" style="${isStar?'color:#ffdd00;':''}">${isStar?'⭐ ':''}${STAT_LABELS[k]||k}: <span style="${isStar?'color:#ffdd00;':''}">+${fmt(v)}</span>${nextVal&&delta>0?`<span style="color:#2e9e58;font-size:10px;"> → +${fmt(nextVal)}</span>`:''}${isStar?` <span style="color:#ffdd00;font-size:9px;">(star bonus)</span>`:''}</div>`;
   }).join('');
 
   // Upgrade section
@@ -4536,13 +4809,13 @@ function showVendorItemDecision(item) {
     // Format value nicely — show decimals for float stats
     const fmt = v => ['atkSpeed','critChance','lifeSteal','spellVamp','cdr','manaRegen'].includes(k) ? v.toFixed(1) : Math.floor(v);
     const deltaHtml = !equipped
-      ? `<span style="color:#3acc7a;font-size:10px;margin-left:4px;">new</span>`
+      ? `<span style="color:#2e9e58;font-size:10px;margin-left:4px;">new</span>`
       : delta > 0
-      ? `<span style="color:#3acc7a;font-size:10px;margin-left:4px;">▲+${fmt(delta)}</span>`
+      ? `<span style="color:#2e9e58;font-size:10px;margin-left:4px;">▲+${fmt(delta)}</span>`
       : delta < 0
-      ? `<span style="color:#e83a3a;font-size:10px;margin-left:4px;">▼${fmt(delta)}</span>`
+      ? `<span style="color:#cc2a2a;font-size:10px;margin-left:4px;">▼${fmt(delta)}</span>`
       : `<span style="color:var(--muted);font-size:10px;margin-left:4px;">—</span>`;
-    const newColor = !equipped ? '#3acc7a' : delta>0 ? '#3acc7a' : delta<0 ? '#e83a3a' : 'var(--text)';
+    const newColor = !equipped ? '#2e9e58' : delta>0 ? '#2e9e58' : delta<0 ? '#cc2a2a' : 'var(--text)';
     newCol += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.04);">
       <span style="color:var(--muted);">${STAT_LABELS[k]||k}</span>
       <span style="display:flex;align-items:center;color:${newColor};font-weight:600;">+${fmt(newVal)}${deltaHtml}</span>
@@ -4575,7 +4848,7 @@ function showVendorItemDecision(item) {
       </div>
 
       <div style="display:flex;gap:8px;">
-        <button onclick="vendorEquipItem()" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:13px;border-radius:10px;border:1px solid #3acc7a;background:rgba(58,204,122,0.1);color:#3acc7a;cursor:pointer;">
+        <button onclick="vendorEquipItem()" style="flex:2;font-family:'Cinzel',serif;font-size:13px;font-weight:700;padding:13px;border-radius:10px;border:1px solid #2e9e58;background:rgba(58,204,122,0.1);color:#2e9e58;cursor:pointer;">
           ✓ Equip${equipped?' (sell old for '+equipped.sellVal+'g)':''}
         </button>
         <button onclick="vendorSellNew()" style="flex:1;font-family:'Cinzel',serif;font-size:12px;padding:13px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">
@@ -4614,7 +4887,7 @@ function vendorEquipItem() {
   updateResourceBar();
   refreshAutoAttackSpeeds && refreshAutoAttackSpeeds();
   saveGame();
-  log(`<span style="color:#3acc7a">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equipped.sellVal+'g':''}</span>`);
+  log(`<span style="color:#2e9e58">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equipped.sellVal+'g':''}</span>`);
   modal.remove();
   G.buyingVendorItem = false;
   document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
@@ -4732,7 +5005,7 @@ function renderVendor(){
     // Show top stats
     const statEntries = Object.entries(v.item.stats||{}).slice(0,3);
     const statsHtml = statEntries.map(([k,val])=>
-      `<span style="font-size:10px;color:#3acc7a;margin-right:6px;">+${val} ${STAT_LABELS[k]||k}</span>`
+      `<span style="font-size:10px;color:#2e9e58;margin-right:6px;">+${val} ${STAT_LABELS[k]||k}</span>`
     ).join('');
     return `<div class="vendor-item" style="${glow}">
       <div style="flex:1;">
@@ -4839,7 +5112,7 @@ function updateResourceBar(){
 
 function updateStatsPanel(){
   const s=getStats();
-  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'};
+  const elColors={offense:'#cc2a2a',defense:'#e8b84b',effects:'#8855cc',utility:'#2e9e58'};
   let html=`<div class="panel-title">⚔️ ${G.playerName||'Wanderer'}</div>`;
   html+=`<div class="stat-row"><span class="stat-label">Class</span><span class="stat-val" style="color:${CLASS_COLORS[G.playerClass]||'#aaa'}">${CLASS_ICONS[G.playerClass]||''} ${(G.playerClass||'—').charAt(0).toUpperCase()+(G.playerClass||'').slice(1)} · ${(G.playerImbue||'—').charAt(0).toUpperCase()+(G.playerImbue||'').slice(1)}</span></div>`;
   html+=`<div class="stat-row"><span class="stat-label">Attack</span><span class="stat-val">${Math.floor(s.attack)}</span></div>`;
@@ -4867,8 +5140,8 @@ function updateStatsPanel(){
 function inspectGear(slot){const item=G.equipment[slot];if(item)showItemModal(item,'gear_inspect');}
 
 function updateSkillPanel(){
-  const sp=G.skillPoints;
-  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'};
+  const sp=G.passivePoints;
+  const elColors={offense:'#cc2a2a',defense:'#e8b84b',effects:'#8855cc',utility:'#2e9e58'};
   const elEmoji={offense:'⚔️',defense:'🛡️',effects:'✨',utility:'🔮'};
   let html=`<div class="panel-title">Skill Tree</div><div class="sp-display">${sp} Skill Point${sp!==1?'s':''}</div>`;
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
@@ -5044,9 +5317,9 @@ function spawnHealNumber(x,y,amt){
     x, y, vy:-2.0,
     text:`+${amt} ♥`,
     life:1, decay:0.018,
-    size:16, color:'#3acc7a',
+    size:16, color:'#2e9e58',
     bold:true,
-    glow:'#3acc7a'
+    glow:'#2e9e58'
   });
 }
 function triggerPlayerLunge(tx,ty,sx,sy){lungeAnim={progress:0,startX:sx,startY:sy,targetX:tx,targetY:ty};}
@@ -5121,7 +5394,7 @@ function animLoop(ts){
   });
   damageNumbers=damageNumbers.filter(d=>{d.y+=d.vy;d.vy*=.92;d.life-=d.decay;return d.life>0;});
   drawArena();
-  if(particles.length>0||damageNumbers.length>0||lungeAnim||enemyLungeAnim||enemyShake.timer>0||enemyFlash>0||playerFlash>0){requestAnimationFrame(animLoop);}else{animLoopRunning=false;}
+  if(particles.length>0||damageNumbers.length>0||lungeAnim||enemyLungeAnim||enemyShake.timer>0||enemyFlash>0||playerFlash>0||essenceCache){requestAnimationFrame(animLoop);}else{animLoopRunning=false;}
 }
 
 function resizeCanvas(){
@@ -5176,7 +5449,7 @@ function drawArena(){
       ctx.stroke();
       // Clone label
       ctx.font = "9px 'Cinzel',serif";
-      ctx.fillStyle = '#aa77ff';
+      ctx.fillStyle = '#8855cc';
       ctx.textAlign = 'center';
       ctx.fillText(`${Math.round(cloneConf.dmgPct*100)}%`, cx, cy+8);
       ctx.restore();
@@ -5201,7 +5474,7 @@ function drawArena(){
   if(G.enemy){
     const isBoss=G.inBoss;
     const enemyBaseColor = G.enemy.enragedColor || IMBUE_COLORS[G.enemy.resistance] || '#cc8844';
-    const ec=isBoss?'#ff2266':enemyBaseColor;
+    const ec=isBoss?'#cc1a44':enemyBaseColor;
     ctx.save();
     const pulse=.3+.15*Math.sin(Date.now()/400);
     const eg=ctx.createRadialGradient(ex,ey-24,5,ex,ey-24,isBoss?80:56);
@@ -5211,12 +5484,12 @@ function drawArena(){
       // Boss — large multi-layered
       const bsz=32+G.bossLevel*3;
       ctx.fillStyle='#1a0008';ctx.beginPath();ctx.arc(ex,ey-22,bsz+6,0,Math.PI*2);ctx.fill();
-      for(let i=0;i<8;i++){const a=(Math.PI*2/8)*i+Date.now()/1200;ctx.fillStyle='#ff2266';ctx.beginPath();ctx.moveTo(ex+Math.cos(a)*(bsz+4),ey-22+Math.sin(a)*(bsz+4));ctx.lineTo(ex+Math.cos(a+.2)*(bsz+4),ey-22+Math.sin(a+.2)*(bsz+4));ctx.lineTo(ex+Math.cos(a+.1)*(bsz+14),ey-22+Math.sin(a+.1)*(bsz+14));ctx.closePath();ctx.fill();}
+      for(let i=0;i<8;i++){const a=(Math.PI*2/8)*i+Date.now()/1200;ctx.fillStyle='#cc1a44';ctx.beginPath();ctx.moveTo(ex+Math.cos(a)*(bsz+4),ey-22+Math.sin(a)*(bsz+4));ctx.lineTo(ex+Math.cos(a+.2)*(bsz+4),ey-22+Math.sin(a+.2)*(bsz+4));ctx.lineTo(ex+Math.cos(a+.1)*(bsz+14),ey-22+Math.sin(a+.1)*(bsz+14));ctx.closePath();ctx.fill();}
       ctx.fillStyle='#cc1144';ctx.beginPath();ctx.arc(ex,ey-22,bsz,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#ff2266';ctx.beginPath();ctx.arc(ex,ey-22,bsz-8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#cc1a44';ctx.beginPath();ctx.arc(ex,ey-22,bsz-8,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='#ff6688';ctx.beginPath();ctx.arc(ex,ey-27,bsz*.35,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex-8,ey-25,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ex+8,ey-25,4,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#ff2266';ctx.beginPath();ctx.arc(ex-8,ey-25,2.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ex+8,ey-25,2.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#cc1a44';ctx.beginPath();ctx.arc(ex-8,ey-25,2.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ex+8,ey-25,2.5,0,Math.PI*2);ctx.fill();
     } else if(G.enemy.type==='brute'){
       // Brute — chunky rectangle with stone texture
       ctx.fillStyle='#2a1a08';
@@ -5343,7 +5616,6 @@ function drawParticlesLayer(layer){
 }
 
 function flashCanvas(){}
-
 
 // ═══════════════════════════════════════════════
 // SOUND ENGINE (Web Audio API — procedural, no files)
@@ -5520,7 +5792,7 @@ function playSound(type, options={}) {
         break;
       }
     }
-  } catch(e) {}
+  } catch(e){ /* audio not available */ }
 }
 
 // ── SCREEN SHAKE ──
@@ -5540,9 +5812,6 @@ function applyScreenShake() {
   shakeAmount = Math.max(0, shakeAmount - shakeDecay);
   if(shakeAmount <= 0.1) { shakeAmount=0; canvas.style.transform=''; }
 }
-
-
-
 
 // ═══════════════════════════════════════════════
 // MANA SYSTEM
@@ -5690,7 +5959,7 @@ function doHeal(ab) {
   healCD = Date.now() + getHealCD(ab);
   earnClassXP(ab.class, 4);
   playSound('heal');
-  log(`<span style="color:#3acc7a">${ab.icon} ${ab.name} — restored ${ab.hot ? 'HP over time' : healAmt + ' HP'}</span>`);
+  log(`<span style="color:#2e9e58">${ab.icon} ${ab.name} — restored ${ab.hot ? 'HP over time' : healAmt + ' HP'}</span>`);
   combatLog(`♥ ${ab.name} +${healAmt}`, 'heal');
   updateHealSlotUI();
   startHealCDBar(ab);
@@ -5714,7 +5983,7 @@ function updateHealSlotUI() {
   const slot = document.getElementById('slot-heal');
   if (!slot) return;
   const ab = healLoadout ? ABILITIES[healLoadout] : null;
-  const color = ab ? (CLASS_COLORS[ab.class] || '#3acc7a') : '#3acc7a';
+  const color = ab ? (CLASS_COLORS[ab.class] || '#2e9e58') : '#2e9e58';
   // Dim heal slot between waves
   slot.style.opacity = (G.combatActive && G.enemy) ? '1' : '0.45';
   const isHealAuto = !!G.autoSlots['heal'];
@@ -5749,7 +6018,7 @@ function openHealPicker() {
         <span class="apc-icon">${ab.icon}</span>
         <span class="apc-name" style="color:${CLASS_COLORS[ab.class]}">${ab.name}</span>
         ${equipped ? '<span style="font-size:10px;color:var(--gold);margin-left:4px;">✓ Equipped</span>' : ''}
-        <span class="apc-type" style="border-color:#3acc7a;color:#3acc7a">heal</span>
+        <span class="apc-type" style="border-color:#2e9e58;color:#2e9e58">heal</span>
       </div>
       <div class="apc-desc">${ab.desc}</div>
       <div style="font-size:10px;color:var(--muted);margin-top:3px;">CD: ${(ab.cd/1000).toFixed(1)}s · ${lv > 0 ? 'Lv'+lv+' · +'+Math.floor(lv*10)+'% stronger healing' : 'Base healing'}</div>
@@ -5772,10 +6041,6 @@ function saveHealLoadout() {
 function loadHealLoadout() {
   try { healLoadout = localStorage.getItem('elementalRift_heal') || null; if(healLoadout==='')healLoadout=null; } catch(e) {}
 }
-
-
-
-
 
 // ═══════════════════════════════════════════════
 // SUPABASE AUTH SYSTEM
@@ -5853,10 +6118,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(error) { status.textContent = ''; return; }
         if(data) {
           status.textContent = '✓ Available';
-          status.style.color = '#3acc7a';
+          status.style.color = '#2e9e58';
         } else {
           status.textContent = '✗ Already taken — choose another';
-          status.style.color = '#e83a3a';
+          status.style.color = '#cc2a2a';
         }
       }, 500);
     });
@@ -5963,15 +6228,15 @@ function showForgotPassword() {
 async function sendPasswordReset() {
   const email = document.getElementById('forgot-pw-email').value.trim();
   const msgEl = document.getElementById('forgot-pw-msg');
-  if(!email) { msgEl.style.color='#e83a3a'; msgEl.textContent='Please enter your email.'; return; }
+  if(!email) { msgEl.style.color='#cc2a2a'; msgEl.textContent='Please enter your email.'; return; }
   msgEl.style.color='var(--muted)'; msgEl.textContent='Sending...';
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.href.split('#')[0] // redirect back to this page
   });
   if(error) {
-    msgEl.style.color='#e83a3a'; msgEl.textContent=error.message;
+    msgEl.style.color='#cc2a2a'; msgEl.textContent=error.message;
   } else {
-    msgEl.style.color='#3acc7a';
+    msgEl.style.color='#2e9e58';
     msgEl.textContent='✓ Email sent! Check your inbox and click the link.';
   }
 }
@@ -6166,7 +6431,7 @@ function honorableDeath() {
   overlay.id = 'honorable-death-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML = `
-    <div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:28px;max-width:360px;width:100%;text-align:center;">
+    <div style="background:linear-gradient(160deg,#0e1016 0%,#090b0f 100%);border:1px solid rgba(212,165,53,0.25);clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);padding:28px;max-width:360px;width:100%;text-align:center;">
       <div style="font-size:48px;margin-bottom:8px;">⚔️</div>
       <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:#e8b84b;margin-bottom:6px;">Honorable Death</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5;">End your current run with honor. Your progress is lost but your legacy endures.</div>
@@ -6179,11 +6444,11 @@ function honorableDeath() {
           <div style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${G.kills}</div>
           ${sbUser ? `
           <div style="font-size:12px;color:var(--muted);">Orbs Earned</div>
-          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855ff;">+${trinityRank}</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#6644aa;">+${trinityRank}</div>
           <div style="font-size:12px;color:var(--muted);">Total Rank</div>
-          <div style="font-family:'Cinzel',serif;font-size:14px;color:#aa77ff;">${trinityRank} Rank</div>
+          <div style="font-family:'Cinzel',serif;font-size:14px;color:#8855cc;">${trinityRank} Rank</div>
           ` : `
-          <div style="font-size:12px;color:var(--muted);grid-column:1/-1;color:#e83a3a;margin-top:4px;">Sign in to earn Trinity Rank</div>
+          <div style="font-size:12px;color:var(--muted);grid-column:1/-1;color:#cc2a2a;margin-top:4px;">Sign in to earn Trinity Rank</div>
           `}
         </div>
       </div>
@@ -6221,7 +6486,6 @@ async function signOut() {
   location.reload();
 }
 
-
 // ═══════════════════════════════════════════════
 // TRINITY FORCE — SUPABASE
 // ═══════════════════════════════════════════════
@@ -6236,7 +6500,7 @@ async function loadTrinity() {
       try {
         const saved = JSON.parse(data.trinity_data);
         trinityData = { ...trinityData, ...saved };
-      } catch(e) {}
+      } catch(e){ console.error('trinity_data parse error:', e); }
     }
   }
 }
@@ -6380,7 +6644,7 @@ function checkBossMilestones() {
         grantTitle(sbUser.id, m.titleReward).then(()=>{
           if(!playerTitles.includes(m.titleReward)) {
             playerTitles.push(m.titleReward);
-            log(`<span style="color:#aa77ff">🎖️ Title unlocked: ${TITLES[m.titleReward]?.label}!</span>`);
+            log(`<span style="color:#8855cc">🎖️ Title unlocked: ${TITLES[m.titleReward]?.label}!</span>`);
             setTimeout(()=>showTitleTutorial(), 1500);
           }
         });
@@ -6402,7 +6666,7 @@ function showMilestoneNotification(m) {
   notif.innerHTML = `
     <div style="font-size:28px;margin-bottom:4px;">${m.icon}</div>
     <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;color:var(--gold);">Milestone: ${m.label} Damage!</div>
-    <div style="font-size:12px;color:#3acc7a;margin-top:4px;">+${m.gold} gold &nbsp;·&nbsp; +${m.xp} XP</div>
+    <div style="font-size:12px;color:#2e9e58;margin-top:4px;">+${m.gold} gold &nbsp;·&nbsp; +${m.xp} XP</div>
   `;
   if(milestoneNotifTimeout) clearTimeout(milestoneNotifTimeout);
   milestoneNotifTimeout = setTimeout(() => { notif.style.opacity='0'; }, 2500);
@@ -6454,7 +6718,7 @@ function buyPotion() {
   );
   startAnimLoop();
   playSound('heal');
-  log(`<span style="color:#3acc7a">🧪 Potion used — restored ${heal} HP</span>`);
+  log(`<span style="color:#2e9e58">🧪 Potion used — restored ${heal} HP</span>`);
   showPotionBtn(); // refresh cost display
   saveGame();
 }
@@ -6590,7 +6854,6 @@ function selectImbue(imbue) {
   showMapScreen(true);
 }
 
-
 // ═══════════════════════════════════════════════
 // XP & SKILL POINT POPUP SYSTEM
 // ═══════════════════════════════════════════════
@@ -6690,7 +6953,7 @@ function renderSPPopup() {
         <span style="font-size:16px;">${opt.icon}</span>
         <div>
           <div style="font-size:11px;color:var(--text);">${opt.label}</div>
-          <div style="font-family:'Cinzel',serif;font-size:12px;color:#3acc7a;">${opt.display}</div>
+          <div style="font-family:'Cinzel',serif;font-size:12px;color:#2e9e58;">${opt.display}</div>
           <div style="font-size:9px;color:var(--muted);">Current: ${typeof G.baseStats[opt.key]==='number'?G.baseStats[opt.key].toFixed(opt.amount<1?1:0):0}</div>
         </div>
       </div>`;
@@ -6731,7 +6994,7 @@ function renderSPPopup() {
       <div style="font-family:'Cinzel',serif;font-size:12px;color:#8888ff;margin-bottom:8px;letter-spacing:0.08em;">🔮 Passive Skills — ${passivePending} point${passivePending>1?'s':''} to invest</div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Tap any skill to invest 1 passive point</div>`;
     Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
-      const color = {offense:'#e83a3a',defense:'#e8b84b',effects:'#aa77ff',utility:'#3acc7a'}[elKey]||'#aaa';
+      const color = {offense:'#cc2a2a',defense:'#e8b84b',effects:'#8855cc',utility:'#2e9e58'}[elKey]||'#aaa';
       html += `<div style="margin-bottom:8px;"><div style="font-size:10px;color:${color};font-family:'Cinzel',serif;letter-spacing:0.08em;margin-bottom:4px;">${elEmoji[elKey]||'⚡'} ${elKey.toUpperCase()}</div>`;
       skills.forEach((sk,i) => {
         const key=`${elKey}_${i}`;
@@ -6758,7 +7021,6 @@ function renderSPPopup() {
   el.innerHTML = html;
 }
 
-
 function spBoostStat(key) {
   if(spPending <= 0) return;
   const opt = STAT_BOOST_OPTIONS.find(o => o.key === key);
@@ -6773,7 +7035,7 @@ function spBoostStat(key) {
     updateHpBar();
   }
   if(key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
-  log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
+  log(`<span style="color:#2e9e58">📈 ${opt.label} ${opt.display}</span>`);
   updateStatsPanel(); updateClassXPPanel(); updateResourceBar();
   if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
   renderSPPopup();
@@ -6900,7 +7162,7 @@ function buildAbilityUpgradesHTML() {
         const dmgBonus = abLv > 0
       ? (ab.type==='heal' ? `+${abLv*10}% healing power` : `+${Math.floor(abLv * 15)}% damage`)
       : 'Base power';
-        const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
+        const typeColor = {basic:'#2e9e58',regular:'#2196f3',ultimate:'#cc1a44'}[ab.type];
 
         if (!unlocked) {
           html += `<div class="ab-upgrade-card" style="opacity:0.4;">
@@ -6929,7 +7191,6 @@ function buildAbilityUpgradesHTML() {
   });
   return html;
 }
-
 
 // ═══════════════════════════════════════════════
 // ABILITY TUTORIAL — Sequential guided tour
@@ -7107,9 +7368,6 @@ function resetTutorial() {
   localStorage.removeItem(TUT_KEY);
 }
 
-
-
-
 // ═══════════════════════════════════════════════
 // TRINITY FORCE — SHOP UI
 // ═══════════════════════════════════════════════
@@ -7180,7 +7438,7 @@ function renderTrinityModal() {
 
   const inner = modal.querySelector('.trinity-inner');
   if(inner) inner.innerHTML = html;
-  else modal.innerHTML = `<div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;" class="trinity-inner">${html}</div>`;
+  else modal.innerHTML = `<div style="background:linear-gradient(160deg,#0e1016 0%,#090b0f 100%);border:1px solid rgba(212,165,53,0.25);clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);padding:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;" class="trinity-inner">${html}</div>`;
 }
 
 function chooseTrinityAlignment(alignId) {
@@ -7249,10 +7507,10 @@ function renderTrinityNodeTree(align) {
       const canUnlock = !unlocked && rank >= node.cost &&
         (!node.requires || td.unlockedNodes.includes(node.requires));
       const locked = !unlocked && !canUnlock;
-      const nodeColor = unlocked ? '#3acc7a' : canUnlock ? clsColor : 'var(--muted)';
+      const nodeColor = unlocked ? '#2e9e58' : canUnlock ? clsColor : 'var(--muted)';
       html += `
         <div onclick="${canUnlock ? `unlockTrinityNode('${node.id}')` : ''}"
-          style="background:#0d1018;border:1px solid ${unlocked?'#3acc7a44':canUnlock?clsColor+'44':'var(--border)'};border-radius:8px;padding:8px 10px;cursor:${canUnlock?'pointer':'default'};display:flex;align-items:center;gap:8px;opacity:${locked?0.45:1};"
+          style="background:#0d1018;border:1px solid ${unlocked?'#2e9e5844':canUnlock?clsColor+'44':'var(--border)'};border-radius:8px;padding:8px 10px;cursor:${canUnlock?'pointer':'default'};display:flex;align-items:center;gap:8px;opacity:${locked?0.45:1};"
           ${canUnlock ? `onmouseover="this.style.background='${clsColor}11'" onmouseout="this.style.background='#0d1018'"` : ''}>
           <span style="font-size:16px;">${node.icon}</span>
           <div style="flex:1;">
@@ -7308,20 +7566,20 @@ function renderTrinityAscension(align) {
   ];
 
   return `
-    <div style="background:#0d1018;border:1px solid #ff226644;border-radius:10px;padding:12px;margin-bottom:12px;">
+    <div style="background:#0d1018;border:1px solid #cc1a4444;border-radius:10px;padding:12px;margin-bottom:12px;">
       <div style="font-family:'Cinzel',serif;font-size:12px;color:#ff4444;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">
         ⬆ Ascension ${td.ascensionCount > 0 ? `(#${td.ascensionCount+1})` : ''}
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Reset Trinity Rank to 0 and all nodes/mutations for a permanent stat boost this season. Higher rank = bigger boost.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;">
         ${boosts.map(b => `
-          <div style="background:#0a0c12;border:1px solid #ff226622;border-radius:6px;padding:6px 8px;font-size:11px;">
+          <div style="background:#0a0c12;border:1px solid #cc1a4422;border-radius:6px;padding:6px 8px;font-size:11px;">
             <span style="color:var(--muted);">${b.stat}</span>
-            <span style="color:#3acc7a;font-family:'Cinzel',serif;float:right;">+${b.amount}</span>
+            <span style="color:#2e9e58;font-family:'Cinzel',serif;float:right;">+${b.amount}</span>
           </div>`).join('')}
       </div>
       <div style="font-size:10px;color:#ff4444;margin-bottom:8px;">⚠ Rank resets to 0. All nodes and mutations lost. Stat boosts are permanent for this season.</div>
-      <button onclick="triggerAscension()" style="width:100%;font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #ff2266;background:rgba(255,34,102,0.08);color:#ff4444;cursor:pointer;">
+      <button onclick="triggerAscension()" style="width:100%;font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #cc1a44;background:rgba(255,34,102,0.08);color:#ff4444;cursor:pointer;">
         ⬆ Ascend (Rank ${rank} → 0)
       </button>
     </div>`;
@@ -7375,27 +7633,27 @@ function renderTrinityMutations() {
   if(rank < 10) return `<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px;">Mutations unlock at Trinity Rank 10, 20, 30...</div>`;
 
   const available = rank >= nextMutationRank && td.mutations.length < Math.floor(rank/10);
-  let html = `<div style="font-family:'Cinzel',serif;font-size:11px;color:#aa77ff;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">🧬 Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
+  let html = `<div style="font-family:'Cinzel',serif;font-size:11px;color:#8855cc;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">🧬 Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
 
   if(td.mutations.length > 0) {
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
     td.mutations.forEach(mid => {
       const m = TRINITY_MUTATIONS.find(x => x.id === mid);
       if(!m) return;
-      html += `<div style="padding:4px 8px;border-radius:6px;border:1px solid #aa77ff44;background:#aa77ff11;font-size:10px;color:#aa77ff;">${m.icon} ${m.name}</div>`;
+      html += `<div style="padding:4px 8px;border-radius:6px;border:1px solid #8855cc44;background:#8855cc11;font-size:10px;color:#8855cc;">${m.icon} ${m.name}</div>`;
     });
     html += '</div>';
   }
 
   if(available) {
-    html += `<div style="font-size:11px;color:#3acc7a;margin-bottom:6px;">Choose a mutation for Rank ${nextMutationRank}:</div>`;
+    html += `<div style="font-size:11px;color:#2e9e58;margin-bottom:6px;">Choose a mutation for Rank ${nextMutationRank}:</div>`;
     html += `<div style="display:flex;flex-direction:column;gap:5px;">`;
     TRINITY_MUTATIONS.filter(m => !td.mutations.includes(m.id)).slice(0,4).forEach(m => {
-      html += `<div onclick="chooseMutation('${m.id}')" style="background:#0d1018;border:1px solid #aa77ff44;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;"
-        onmouseover="this.style.background='#aa77ff11'" onmouseout="this.style.background='#0d1018'">
+      html += `<div onclick="chooseMutation('${m.id}')" style="background:#0d1018;border:1px solid #8855cc44;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;"
+        onmouseover="this.style.background='#8855cc11'" onmouseout="this.style.background='#0d1018'">
         <span style="font-size:16px;">${m.icon}</span>
         <div>
-          <div style="font-family:'Cinzel',serif;font-size:11px;color:#aa77ff;">${m.name}</div>
+          <div style="font-family:'Cinzel',serif;font-size:11px;color:#8855cc;">${m.name}</div>
           <div style="font-size:10px;color:var(--muted);">${m.desc}</div>
         </div>
       </div>`;
@@ -7412,14 +7670,14 @@ function chooseMutation(mutationId) {
   trinityData.mutations.push(mutationId);
   saveTrinity().catch(()=>{});
   const m = TRINITY_MUTATIONS.find(x => x.id === mutationId);
-  log(`<span style="color:#aa77ff">🧬 Mutation chosen: ${m?.name}!</span>`);
+  log(`<span style="color:#8855cc">🧬 Mutation chosen: ${m?.name}!</span>`);
   renderTrinityModal();
 }
 
 function renderTrinitySimulate() {
   return `
-    <div style="background:#0d1018;border:1px solid #3acc7a44;border-radius:10px;padding:12px;margin-bottom:12px;">
-      <div style="font-family:'Cinzel',serif;font-size:12px;color:#3acc7a;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
+    <div style="background:#0d1018;border:1px solid #2e9e5844;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel',serif;font-size:12px;color:#2e9e58;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
         ⚡ Simulate Waves
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Instantly simulate waves using your exact current stats. Results apply immediately.</div>
@@ -7427,7 +7685,7 @@ function renderTrinitySimulate() {
         <input type="number" id="simulate-count" value="10" min="1" max="500" style="width:80px;background:#0a0c12;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;font-family:'Cinzel',serif;outline:none;">
         <span style="font-size:11px;color:var(--muted);">waves to simulate</span>
       </div>
-      <button onclick="simulateWaves()" style="width:100%;font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #3acc7a;background:rgba(58,204,122,0.08);color:#3acc7a;cursor:pointer;">
+      <button onclick="simulateWaves()" style="width:100%;font-family:'Cinzel',serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #2e9e58;background:rgba(58,204,122,0.08);color:#2e9e58;cursor:pointer;">
         ▶ Simulate Now
       </button>
       <div id="simulate-results" style="margin-top:8px;"></div>
@@ -7524,17 +7782,17 @@ function mapSimulateWaves() {
       G.kills += wavesSurvived;
       G.runStats.totalGold += totalGold;
       const newSt = getStats();
-      G.maxHp = newSt.maxHp; G.hp = 0;
+      G.maxHp = newSt.maxHp; G.hp = 1;
       updateEquipUI(); updateStatsPanel(); updateResourceBar(); updateHpBar();
       saveGame();
       if(results) results.innerHTML = `
-        <div style="background:#0a0c12;border:1px solid #e83a3a55;border-radius:8px;padding:10px;font-size:11px;">
-          <div style="font-family:'Cinzel',serif;font-size:13px;color:#e83a3a;margin-bottom:6px;">💀 Died on Wave ${baseWave + wavesSurvived}</div>
+        <div style="background:#0a0c12;border:1px solid #cc2a2a55;border-radius:8px;padding:10px;font-size:11px;">
+          <div style="font-family:'Cinzel',serif;font-size:13px;color:#cc2a2a;margin-bottom:6px;">💀 Died on Wave ${baseWave + wavesSurvived}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
-            <span style="color:var(--muted);">Survived</span><span style="color:#e83a3a;font-family:'Cinzel',serif;">${wavesSurvived}/${count} waves</span>
+            <span style="color:var(--muted);">Survived</span><span style="color:#cc2a2a;font-family:'Cinzel',serif;">${wavesSurvived}/${count} waves</span>
             <span style="color:var(--muted);">Gold earned</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">+${numberWithCommas(totalGold)}</span>
             <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Cinzel',serif;">+${numberWithCommas(totalXP)}</span>
-            ${lootFound.length>0?`<span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Cinzel',serif;">${lootFound.length} pieces</span>`:''}
+            ${lootFound.length>0?`<span style="color:var(--muted);">Gear upgraded</span><span style="color:#2e9e58;font-family:'Cinzel',serif;">${lootFound.length} pieces</span>`:''}
           </div>
           <div style="margin-top:8px;">
             <button onclick="location.reload()" style="font-family:'Cinzel',serif;font-size:11px;padding:6px 14px;border-radius:6px;border:1px solid #e8b84b;color:#e8b84b;background:rgba(232,184,75,0.08);cursor:pointer;">Play Again</button>
@@ -7558,17 +7816,17 @@ function mapSimulateWaves() {
     saveGame();
 
     if(results) results.innerHTML = `
-      <div style="background:#0a0c12;border:1px solid #3acc7a33;border-radius:8px;padding:10px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
-        <span style="color:var(--muted);">Survived</span><span style="color:#3acc7a;font-family:'Cinzel',serif;">${wavesSurvived}/${count} waves</span>
-        <span style="color:var(--muted);">HP remaining</span><span style="color:${G.hp/G.maxHp>0.5?'#3acc7a':'#e83a3a'};font-family:'Cinzel',serif;">${Math.floor(G.hp)}/${G.maxHp}</span>
+      <div style="background:#0a0c12;border:1px solid #2e9e5833;border-radius:8px;padding:10px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
+        <span style="color:var(--muted);">Survived</span><span style="color:#2e9e58;font-family:'Cinzel',serif;">${wavesSurvived}/${count} waves</span>
+        <span style="color:var(--muted);">HP remaining</span><span style="color:${G.hp/G.maxHp>0.5?'#2e9e58':'#cc2a2a'};font-family:'Cinzel',serif;">${Math.floor(G.hp)}/${G.maxHp}</span>
         <span style="color:var(--muted);">Gold earned</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">+${numberWithCommas(totalGold)}</span>
         <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Cinzel',serif;">+${numberWithCommas(totalXP)}</span>
-        <span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Cinzel',serif;">${lootFound.length} piece${lootFound.length!==1?'s':''}</span>
+        <span style="color:var(--muted);">Gear upgraded</span><span style="color:#2e9e58;font-family:'Cinzel',serif;">${lootFound.length} piece${lootFound.length!==1?'s':''}</span>
         ${lootFound.length>0?`<span style="color:var(--muted);grid-column:1/-1;margin-top:2px;">Auto-equipped: ${lootFound.map(i=>`<span style="color:${(i.tier||i.rarity).color}">${i.name}</span>`).join(', ')}</span>`:''}
       </div>`;
     } catch(e) {
       console.error('Simulate error:', e);
-      if(results) results.innerHTML = `<div style="color:#e83a3a;font-size:11px;padding:4px;">Simulation error: ${e.message}</div>`;
+      if(results) results.innerHTML = `<div style="color:#cc2a2a;font-size:11px;padding:4px;">Simulation error: ${e.message}</div>`;
     }
   }, 20);
 }
@@ -7644,7 +7902,7 @@ function simulateWaves() {
           <span style="color:var(--muted);">Waves</span><span style="color:var(--text);font-family:'Cinzel',serif;">${count}</span>
           <span style="color:var(--muted);">Gold earned</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">+${numberWithCommas(totalGold)}</span>
           <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Cinzel',serif;">+${numberWithCommas(totalXP)}</span>
-          <span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Cinzel',serif;">${lootFound.length} pieces</span>
+          <span style="color:var(--muted);">Gear upgraded</span><span style="color:#2e9e58;font-family:'Cinzel',serif;">${lootFound.length} pieces</span>
           <span style="color:var(--muted);">Trinity XP</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">+${numberWithCommas(Math.floor(totalDmg))}</span>
         </div>
         ${lootFound.length>0?`<div style="margin-top:6px;font-size:10px;color:var(--muted);">Auto-equipped: ${lootFound.map(i=>`<span style="color:${(i.tier||i.rarity).color}">${i.name}</span>`).join(', ')}</div>`:''}
@@ -7668,7 +7926,7 @@ function trinityEarnXP(dmgDealt) {
     log(`<span style="color:#e8b84b">⚡ Trinity Rank ${trinityData.rank}!</span>`);
     // Check mutation availability
     if(trinityData.rank % 10 === 0) {
-      log(`<span style="color:#aa77ff">🧬 Mutation available! Open Trinity Force to choose.</span>`);
+      log(`<span style="color:#8855cc">🧬 Mutation available! Open Trinity Force to choose.</span>`);
     }
   }
   // Auto-save every 5 ranks
@@ -7798,9 +8056,9 @@ function buildStatsPanelHTML() {
       const t = TITLES[tid];
       if(!t) return;
       const isActive = playerSelectedTitle === tid;
-      html += `<div onclick="selectTitle('${tid}')" style="padding:6px 10px;border-radius:6px;border:1px solid ${isActive?'#aa77ff':'var(--border)'};background:${isActive?'rgba(170,119,255,0.1)':'transparent'};cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;color:${isActive?'#aa77ff':'var(--text)'};">${t.label}</span>
-        ${isActive?'<span style="font-size:10px;color:#aa77ff;">✓ Active</span>':''}
+      html += `<div onclick="selectTitle('${tid}')" style="padding:6px 10px;border-radius:6px;border:1px solid ${isActive?'#8855cc':'var(--border)'};background:${isActive?'rgba(170,119,255,0.1)':'transparent'};cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:${isActive?'#8855cc':'var(--text)'};">${t.label}</span>
+        ${isActive?'<span style="font-size:10px;color:#8855cc;">✓ Active</span>':''}
       </div>`;
     });
     html += `</div>`;
@@ -8094,7 +8352,7 @@ function aaResolveAttack() {
   } else if (isSafe) {
     AA.dodges++;
     aaFlash('dodge');
-    aaPopResult('DODGED!', '#3acc7a');
+    aaPopResult('DODGED!', '#2e9e58');
     aaLog(`✓ Dodged ${atk.toUpperCase()} attack`, 'l-dodge');
     playSound('hit_physical');
   } else {
@@ -8145,7 +8403,7 @@ function aaDeath() {
   if (AA.totalTrinityXP > 0) {
     trinityEarnXP(AA.totalTrinityXP);
     saveTrinity().catch(() => {});
-    log(`<span style="color:#aa77ff">⚡ Rift Gauntlet: +${AA.totalTrinityXP.toLocaleString()} Trinity XP earned!</span>`);
+    log(`<span style="color:#8855cc">⚡ Rift Gauntlet: +${AA.totalTrinityXP.toLocaleString()} Trinity XP earned!</span>`);
   }
 
   // Build death screen
@@ -8165,7 +8423,7 @@ function aaDeath() {
   document.getElementById('aa-reward-rows').innerHTML = `
     <div class="aa-reward-row">
       <span style="color:var(--muted);">Trinity Rank XP</span>
-      <span style="color:#aa77ff;font-family:'Cinzel',serif;">+${AA.totalTrinityXP.toLocaleString()}</span>
+      <span style="color:#8855cc;font-family:'Cinzel',serif;">+${AA.totalTrinityXP.toLocaleString()}</span>
     </div>
     ${survived >= 3 ? `<div class="aa-reward-row"><span style="color:var(--muted);">Arena Title Eligible</span><span style="color:#e8b84b;font-family:'Cinzel',serif;">✓</span></div>` : ''}
   `;
@@ -8282,7 +8540,7 @@ function aaUpdateHpBars() {
   document.getElementById('aa-player-hp-text').textContent = Math.max(0, AA.playerHp) + '/' + AA.playerMaxHp;
   document.getElementById('aa-boss-hp-text').textContent = Math.max(0, AA.bossHp) + '/' + AA.bossMaxHp;
   document.getElementById('aa-player-hp-bar').style.background =
-    pp > 50 ? 'linear-gradient(90deg,#22aa44,#3acc7a)' :
+    pp > 50 ? 'linear-gradient(90deg,#22aa44,#2e9e58)' :
     pp > 25 ? 'linear-gradient(90deg,#cc8800,#ffaa00)' :
               'linear-gradient(90deg,#cc2222,#ff5555)';
 }
@@ -8336,7 +8594,7 @@ function aaSetPhaseLabel(text) {
 function aaSetTimer(val) {
   const el = document.getElementById('aa-timer');
   el.textContent = val === null ? '–' : val;
-  el.style.color = val === null ? '#5a6080' : val <= 1 ? '#e83a3a' : val <= 2 ? '#ffaa00' : '#3acc7a';
+  el.style.color = val === null ? '#5a6080' : val <= 1 ? '#cc2a2a' : val <= 2 ? '#ffaa00' : '#2e9e58';
 }
 
 function aaLog(msg, cls = '') {
@@ -8550,7 +8808,7 @@ if (typeof enemyAttackPlayer !== 'undefined') {
       spawnDamageNumber(
         canvas.width * MOVE.px,
         canvas.height * MOVE.py - 40,
-        'DODGE', false, false, '#3acc7a'
+        'DODGE', false, false, '#2e9e58'
       );
       startAnimLoop();
       return;
@@ -8662,8 +8920,8 @@ document.addEventListener('DOMContentLoaded', () => {
   dodgeWrap.style.cssText = 'position:absolute;bottom:10px;left:10px;display:flex;gap:8px;z-index:6;';
   dodgeWrap.innerHTML = `
     <button onclick="performDodge(-1)" id="dodge-left-btn" style="
-      width:48px;height:48px;border-radius:50%;border:2px solid #3acc7a;
-      background:rgba(10,12,18,0.82);color:#3acc7a;font-size:20px;cursor:pointer;
+      width:48px;height:48px;border-radius:50%;border:2px solid #2e9e58;
+      background:rgba(10,12,18,0.82);color:#2e9e58;font-size:20px;cursor:pointer;
       display:flex;align-items:center;justify-content:center;
       backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
       -webkit-tap-highlight-color:transparent;user-select:none;" title="Dodge Left (Q)">◀</button>
@@ -8674,8 +8932,8 @@ document.addEventListener('DOMContentLoaded', () => {
       backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
       -webkit-tap-highlight-color:transparent;user-select:none;" title="Block incoming attack (F)">🛡️<span style="font-size:7px;font-family:'Cinzel',serif;letter-spacing:0.05em;">BLOCK</span></button>
     <button onclick="performDodge(1)" id="dodge-right-btn" style="
-      width:48px;height:48px;border-radius:50%;border:2px solid #3acc7a;
-      background:rgba(10,12,18,0.82);color:#3acc7a;font-size:20px;cursor:pointer;
+      width:48px;height:48px;border-radius:50%;border:2px solid #2e9e58;
+      background:rgba(10,12,18,0.82);color:#2e9e58;font-size:20px;cursor:pointer;
       display:flex;align-items:center;justify-content:center;
       backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
       -webkit-tap-highlight-color:transparent;user-select:none;" title="Dodge Right (E)">▶</button>`;
@@ -8689,7 +8947,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dodgeBtns.forEach(btn => {
       if (!btn) return;
       btn.style.opacity = ready ? '1' : '0.35';
-      btn.style.borderColor = ready ? '#3acc7a' : '#2a4a3a';
+      btn.style.borderColor = ready ? '#2e9e58' : '#2a4a3a';
     });
     // Block button — highlights when telegraph is active
     const blockBtn = document.getElementById('block-btn');
@@ -8769,18 +9027,18 @@ function dropEssenceCache() {
   notif.id = 'cache-notif';
   notif.style.cssText = `
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:#0d1018;border:1px solid #8855ff44;border-radius:12px;
+    background:#0d1018;border:1px solid #6644aa44;border-radius:12px;
     padding:16px 20px;z-index:500;text-align:center;
     font-family:'Cinzel',serif;max-width:300px;
     animation:cacheAppear 0.4s ease-out;
   `;
   notif.innerHTML = `
     <div style="font-size:28px;margin-bottom:6px;">💎</div>
-    <div style="font-size:13px;color:#aa77ff;font-weight:700;margin-bottom:4px;">Essence Sphere Cache Dropped</div>
+    <div style="font-size:13px;color:#8855cc;font-weight:700;margin-bottom:4px;">Essence Sphere Cache Dropped</div>
     <div style="font-size:11px;color:var(--muted);line-height:1.6;">
       Contains <span style="color:#8888ff;">${xpVal.toLocaleString()} XP</span>
       and <span style="color:var(--gold);">${goldVal} gold</span>.<br>
-      Fades in <span style="color:#e83a3a;">30 seconds</span>.
+      Fades in <span style="color:#cc2a2a;">30 seconds</span>.
     </div>
     <div style="font-size:10px;color:#554466;margin-top:8px;">In multiplayer, allies can recover this for you.</div>`;
   document.body.appendChild(notif);
@@ -8791,7 +9049,7 @@ function dropEssenceCache() {
 
   // Log it
   if (typeof log === 'function') {
-    log(`<span style="color:#aa77ff;">💎 Essence Sphere Cache dropped — ${xpVal} XP, ${goldVal} gold. Fades in 30s.</span>`);
+    log(`<span style="color:#8855cc;">💎 Essence Sphere Cache dropped — ${xpVal} XP, ${goldVal} gold. Fades in 30s.</span>`);
   }
 }
 
@@ -8814,8 +9072,8 @@ drawArena = function() {
   ctx2.globalAlpha = alpha;
   // Glow
   const cg = ctx2.createRadialGradient(cx, cy, 2, cx, cy, 22 * pulse);
-  cg.addColorStop(0, '#aa77ffcc');
-  cg.addColorStop(1, '#aa77ff00');
+  cg.addColorStop(0, '#8855cccc');
+  cg.addColorStop(1, '#8855cc00');
   ctx2.fillStyle = cg;
   ctx2.beginPath();
   ctx2.arc(cx, cy, 22 * pulse, 0, Math.PI * 2);
@@ -8831,7 +9089,7 @@ drawArena = function() {
   ctx2.fill();
   // Label
   ctx2.font = "9px 'Cinzel',serif";
-  ctx2.fillStyle = '#aa77ff';
+  ctx2.fillStyle = '#8855cc';
   ctx2.textAlign = 'center';
   ctx2.fillText('CACHE', cx, cy + 20);
   ctx2.restore();
@@ -8848,11 +9106,11 @@ window.honorableDeath = function() {
   overlay.id = 'honorable-death-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML = `
-    <div style="background:#151a28;border:1px solid #e8b84b44;border-radius:16px;padding:28px;max-width:380px;width:100%;text-align:center;">
+    <div style="background:linear-gradient(160deg,#0e1016 0%,#090b0f 100%);border:1px solid rgba(212,165,53,0.25);clip-path:polygon(6px 0%,100% 0%,100% calc(100% - 6px),calc(100% - 6px) 100%,0% 100%,0% 6px);padding:28px;max-width:380px;width:100%;text-align:center;">
       <div style="font-size:48px;margin-bottom:8px;">⚔️</div>
       <div style="font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:#e8b84b;margin-bottom:4px;">Honorable Death</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;">End your run with honor. No cache dropped. Maximum Trinity Force XP earned. Come back stronger.</div>
-      <div style="background:#0d1018;border:1px solid #8855ff33;border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="background:linear-gradient(160deg,#0c0e14 0%,#080a0e 100%);border:1px solid rgba(100,60,180,0.2);clip-path:polygon(3px 0%,100% 0%,100% calc(100% - 3px),calc(100% - 3px) 100%,0% 100%,0% 3px);padding:14px;margin-bottom:16px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
           <div style="color:var(--muted);">Level Reached</div>
           <div style="font-family:'Cinzel',serif;color:var(--text);">${currentLv}</div>
@@ -8861,9 +9119,9 @@ window.honorableDeath = function() {
           <div style="color:var(--muted);">Kills</div>
           <div style="font-family:'Cinzel',serif;color:var(--text);">${G.kills}</div>
           <div style="color:var(--muted);">Trinity Force XP</div>
-          <div style="font-family:'Cinzel',serif;color:#aa77ff;">+${xpBonus.toLocaleString()}</div>
+          <div style="font-family:'Cinzel',serif;color:#8855cc;">+${xpBonus.toLocaleString()}</div>
         </div>
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a2f45;font-size:11px;color:#3acc7a;">
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #2a2f45;font-size:11px;color:#2e9e58;">
           ✓ No cache dropped &nbsp;·&nbsp; ✓ Full XP reward &nbsp;·&nbsp; ✓ Season tier preserved
         </div>
       </div>
@@ -8878,27 +9136,16 @@ window.honorableDeath = function() {
   document.body.appendChild(overlay);
 };
 
-// Hook into player death (non-honorable) to drop cache
-const _checkPlayerDeath = window.checkPlayerDeath;
-document.addEventListener('DOMContentLoaded', () => {
-  // Patch the death screen if it exists
-  const origOnPlayerDeath = window.onPlayerDeath;
-  if (typeof origOnPlayerDeath === 'function') {
-    window.onPlayerDeath = function(...args) {
-      dropEssenceCache();
-      return origOnPlayerDeath.apply(this, args);
-    };
-  }
-});
+// Note: dropEssenceCache is called directly inside onDeath() — no additional hook needed.
 
 // ═══════════════════════════════════════════════════════════════
 // WORLD SECTIONS — 4-tier world structure on map screen
 // ═══════════════════════════════════════════════════════════════
 const WORLD_SECTIONS = [
-  { id: 1, name: 'Verdant Lowlands',   levels: '1–35',   color: '#3acc7a', icon: '🌿', desc: 'Bright meadows invaded by corrupted creatures. Your journey begins here.',   unlockLv: 1  },
+  { id: 1, name: 'Verdant Lowlands',   levels: '1–35',   color: '#2e9e58', icon: '🌿', desc: 'Bright meadows invaded by corrupted creatures. Your journey begins here.',   unlockLv: 1  },
   { id: 2, name: 'Shattered Highlands', levels: '36–70',  color: '#e8b84b', icon: '⛰️', desc: 'Rocky peaks where ancient elemental wars left the land fractured.',         unlockLv: 35 },
-  { id: 3, name: 'Abyssal Reaches',    levels: '71–150',  color: '#aa77ff', icon: '🌑', desc: 'A realm that looks peaceful from afar but seethes with ancient darkness.',   unlockLv: 70 },
-  { id: 4, name: 'The Rift Eternal',   levels: '151+',    color: '#ff2266', icon: '💀', desc: 'No ceiling. No mercy. The Rift itself has broken through.',                 unlockLv: 150 },
+  { id: 3, name: 'Abyssal Reaches',    levels: '71–150',  color: '#8855cc', icon: '🌑', desc: 'A realm that looks peaceful from afar but seethes with ancient darkness.',   unlockLv: 70 },
+  { id: 4, name: 'The Rift Eternal',   levels: '151+',    color: '#cc1a44', icon: '💀', desc: 'No ceiling. No mercy. The Rift itself has broken through.',                 unlockLv: 150 },
 ];
 
 function injectWorldSections() {
