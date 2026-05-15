@@ -2618,6 +2618,7 @@ function rollEnemy(wave) {
 
 
 function spawnEnemy() {
+  if(!_tick.running) startMasterTick();
   if(G.enemy && G.enemy.hp > 0) {
     console.warn('Spawn blocked: enemy still active');
     return;
@@ -2648,25 +2649,13 @@ function spawnEnemy() {
 }
 
 function startEnemyAutoAttack() {
-  stopEnemyAutoAttack();
   if(!G.enemy || !G.combatActive) return;
-  const interval = G.inBoss
-    ? 1200 + Math.random() * 600
-    : 1800 + Math.random() * 1200;
-  G.enemyAttackInterval = setInterval(() => {
-    if (G.combatActive && G.enemy && G.enemy.hp > 0 && G.hp > 0 && !G._deathInProgress && !G._enemyDeathInProgress) {
-      // Windup glow 350ms before hit
-      setTimeout(() => {
-        if(G.combatActive && G.enemy) { triggerEnemyWindup(); playSound('windup', {vol:0.15}); startAnimLoop(); }
-      }, Math.max(0, interval - 350));
-      enemyAttack();
-    } else if (!G.combatActive || !G.enemy) {
-      stopEnemyAutoAttack();
-    }
-  }, interval);
+  resetMasterTickEnemy();
+  if(!_tick.running) startMasterTick();
 }
 
 function stopEnemyAutoAttack() {
+  // Enemy attack timer handled by masterTick — just clear legacy interval if any
   if (G.enemyAttackInterval) {
     clearInterval(G.enemyAttackInterval);
     G.enemyAttackInterval = null;
@@ -2769,12 +2758,9 @@ function startBossAttempt() {
 function startBossTimer() {
   G.bossTimerSec = 60;
   updateBossTimerUI();
-  clearInterval(G.bossTimerInterval);
-  G.bossTimerInterval = setInterval(() => {
-    G.bossTimerSec--;
-    updateBossTimerUI();
-    if (G.bossTimerSec <= 0) endBossAttempt();
-  }, 1000);
+  if(G.bossTimerInterval) { clearInterval(G.bossTimerInterval); G.bossTimerInterval = null; }
+  _tick.boss = 0; // reset boss timer accumulator
+  if(!_tick.running) startMasterTick();
 }
 
 function updateBossTimerUI() {
@@ -3327,20 +3313,10 @@ function activateAbility(slotIdx) {
     if(G.combatActive && G.enemy) fireAbility(ab);
     scheduleNextBasic();
   } else {
-    // Skills/ults poll every 250ms — CD system handles their timing
-    G.autoSlots[slotIdx] = setInterval(() => {
-      if(!G.combatActive || !G.enemy){
-        clearInterval(G.autoSlots[slotIdx]);
-        delete G.autoSlots[slotIdx];
-        updateLoadoutUI();
-        return;
-      }
-      if(!isAbilityReady(ab)) return;
-      const manaCost = MANA_COSTS[ab.type]||0;
-      if(manaCost > 0 && G.mana < manaCost) return;
-      fireAbility(ab);
-      startCDBarAnimation(slotIdx, ab);
-    }, 250);
+    // Skills/ults — polled by masterTick every 250ms
+    G.autoSlots[slotIdx] = 'master';
+    _tick.slots[slotIdx] = 0;
+    if(!_tick.running) startMasterTick();
   }
 
   updateLoadoutUI();
@@ -3372,9 +3348,9 @@ function stopAllAutoSlots(save=false) {
       G.healWasAuto = healActive;
     }
   }
-  // Clear both setInterval and setTimeout handles (basic attacks use setTimeout)
+  // Clear timer handles (basic attacks=setTimeout, skills='master', basics=true)
   Object.values(G.autoSlots).forEach(id => {
-    if(id && id !== true) {
+    if(id && id !== true && id !== 'master') {
       clearInterval(id);
       clearTimeout(id);
     }
@@ -3412,14 +3388,8 @@ function restoreAutoSlots() {
       scheduleRestoreBasic();
     } else {
       startCDBarAnimation(slotIdx, ab);
-      G.autoSlots[slotIdx] = setInterval(() => {
-        if(!G.combatActive || !G.enemy){ clearInterval(G.autoSlots[slotIdx]); delete G.autoSlots[slotIdx]; markDirty(['loadout']); return; }
-        if(!isAbilityReady(ab)) return;
-        const manaCost = MANA_COSTS[ab.type]||0;
-        if(manaCost > 0 && G.mana < manaCost) return;
-        fireAbility(ab);
-        startCDBarAnimation(slotIdx, ab);
-      }, 250);
+      G.autoSlots[slotIdx] = 'master';
+      _tick.slots[slotIdx] = 0;
     }
   });
   if(G.healWasAuto && !G.autoSlots['heal']) activateHeal();
@@ -4357,6 +4327,7 @@ function onDeath() {
   G._deathInProgress = true;
   G.combatActive=false;
   G.enemy=null;
+  stopMasterTick();
   stopEnemyAutoAttack();
   stopAllAutoSlots();
   stopStatusTick();
@@ -6171,6 +6142,138 @@ function playSound(type, options={}) {
 // ── SCREEN SHAKE ──
 
 
+
+// ── MASTER TICK ──
+// Single rAF loop replaces: enemyAttackInterval, manaRegenInterval,
+// statusTickInterval, bossTimerInterval, autoSlot skill polling.
+// Basic attack setTimeout chains stay — they self-schedule correctly.
+
+const _tick = {
+  lastTs: 0,
+  mana: 0,          // accumulator ms
+  status: 0,        // accumulator ms
+  boss: 0,          // accumulator ms
+  enemyAtk: 0,      // accumulator ms
+  enemyAtkDelay: 0, // randomised interval for current enemy
+  slots: {},        // per-slot accumulators { slotIdx: ms }
+  heal: 0,          // heal slot accumulator
+  running: false,
+};
+
+function masterTick(ts) {
+  if(!_tick.running) return;
+  const dt = _tick.lastTs ? Math.min(ts - _tick.lastTs, 100) : 16; // cap dt at 100ms (tab hidden)
+  _tick.lastTs = ts;
+
+  // ── Mana regen (was 100ms interval) ──
+  if(G.combatActive && G.enemy) {
+    _tick.mana += dt;
+    if(_tick.mana >= 100) {
+      _tick.mana = 0;
+      const max = getMaxMana();
+      if(G.mana < max) {
+        G.mana = Math.min(max, G.mana + getManaRegen() / 10);
+        markDirty(['mana']);
+      }
+    }
+
+    // ── Status effects tick (was 500ms interval) ──
+    _tick.status += dt;
+    if(_tick.status >= 500) {
+      _tick.status = 0;
+      tickStatusEffects();
+    }
+
+    // ── Enemy attack (was setInterval with random interval) ──
+    if(!G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0) {
+      _tick.enemyAtk += dt;
+      if(_tick.enemyAtk >= _tick.enemyAtkDelay) {
+        _tick.enemyAtk = 0;
+        // Roll next interval now
+        _tick.enemyAtkDelay = G.inBoss
+          ? 1200 + Math.random() * 600
+          : 1800 + Math.random() * 1200;
+        // Windup glow
+        const windupIn = Math.max(0, _tick.enemyAtkDelay - 350);
+        setTimeout(() => {
+          if(G.combatActive && G.enemy && !G._deathInProgress) {
+            triggerEnemyWindup(); playSound('windup', {vol:0.15}); startAnimLoop();
+          }
+        }, windupIn);
+        enemyAttack();
+      }
+    }
+
+    // ── Skill auto-slot polling (was 250ms setInterval per slot) ──
+    for(const key in G.autoSlots) {
+      if(key === 'heal' || isNaN(Number(key))) continue;
+      const slotIdx = Number(key);
+      if(G.autoSlots[slotIdx] === true) continue; // basic attack — managed by setTimeout
+      if(G.autoSlots[slotIdx] !== 'master') continue; // only handle master-tick slots
+      _tick.slots[slotIdx] = (_tick.slots[slotIdx] || 0) + dt;
+      if(_tick.slots[slotIdx] >= 250) {
+        _tick.slots[slotIdx] = 0;
+        const abId = G.loadout[slotIdx];
+        if(!abId) continue;
+        const ab = ABILITIES[abId];
+        if(!ab || !isAbilityReady(ab)) continue;
+        const manaCost = MANA_COSTS[ab.type] || 0;
+        if(manaCost > 0 && G.mana < manaCost) continue;
+        fireAbility(ab);
+        startCDBarAnimation(slotIdx, ab);
+      }
+    }
+
+    // ── Heal auto-slot (was its own setInterval) ──
+    if(G.autoSlots['heal'] === 'master') {
+      _tick.heal += dt;
+      const healAb = healLoadout ? ABILITIES[healLoadout] : null;
+      if(healAb && _tick.heal >= 250) {
+        _tick.heal = 0;
+        if(isAbilityReady(healAb)) {
+          const manaCost = MANA_COSTS[healAb.type] || 0;
+          if(manaCost === 0 || G.mana >= manaCost) {
+            activateHeal();
+          }
+        }
+      }
+    }
+  }
+
+  // ── Boss countdown timer (was 1000ms setInterval) ──
+  if(G.inBoss && G.bossTimerSec > 0) {
+    _tick.boss += dt;
+    if(_tick.boss >= 1000) {
+      _tick.boss -= 1000;
+      G.bossTimerSec--;
+      updateBossTimerUI();
+      if(G.bossTimerSec <= 0) endBossAttempt();
+    }
+  }
+
+  requestAnimationFrame(masterTick);
+}
+
+function startMasterTick() {
+  if(_tick.running) return;
+  _tick.running = true;
+  _tick.lastTs = 0;
+  _tick.mana = 0; _tick.status = 0; _tick.boss = 0;
+  _tick.enemyAtk = 0;
+  _tick.enemyAtkDelay = G.inBoss ? 1200 + Math.random()*600 : 1800 + Math.random()*1200;
+  requestAnimationFrame(masterTick);
+}
+
+function stopMasterTick() {
+  _tick.running = false;
+}
+
+function resetMasterTickEnemy() {
+  // Call when a new enemy spawns — resets attack timer with fresh random delay
+  _tick.enemyAtk = 0;
+  _tick.enemyAtkDelay = G.inBoss ? 1200 + Math.random()*600 : 1800 + Math.random()*1200;
+}
+
 // ── ATTACK TRAIL ARCS ──
 let attackTrails = [];
 function spawnAttackTrail(fromX, fromY, toX, toY, element, isCrit) {
@@ -6274,15 +6377,9 @@ function getManaRegen() {
 }
 
 function startManaRegen() {
-  if (G.manaRegenInterval) clearInterval(G.manaRegenInterval);
-  G.manaRegenInterval = setInterval(() => {
-    if (!G.combatActive || !G.enemy) return; // only regen during active combat
-    const max = getMaxMana();
-    if (G.mana < max) {
-      G.mana = Math.min(max, G.mana + getManaRegen() / 10);
-      updateManaBar();
-    }
-  }, 100);
+  // Handled by masterTick — keep function for call-site compatibility
+  if (G.manaRegenInterval) { clearInterval(G.manaRegenInterval); G.manaRegenInterval = null; }
+  if(!_tick.running) startMasterTick();
 }
 
 function spendMana(amount) {
@@ -6339,8 +6436,12 @@ function activateHeal() {
     doHeal(ab);
   }
   // Set up auto — fires when HP < 80%, CD ready, mana available
-  G.autoSlots['heal'] = setInterval(()=>{
-    if(!G.combatActive||!G.enemy){ clearInterval(G.autoSlots['heal']); delete G.autoSlots['heal']; updateHealSlotUI(); return; }
+  G.autoSlots['heal'] = 'master';
+  _tick.heal = 0;
+  if(!_tick.running) startMasterTick();
+  // Legacy no-op block kept for syntax — master tick handles execution
+  if(false) {
+    if(!G.combatActive||!G.enemy){ delete G.autoSlots['heal']; updateHealSlotUI(); return; }
     if(!isHealReady()) return;
     if(G.mana < MANA_COSTS.heal) return;
     if(G.hp >= G.maxHp * 0.8) return; // only heal when below 80% hp
@@ -7094,13 +7195,14 @@ function getStatusBadgesHTML(enemy) {
   return html ? `<div style="display:flex;gap:4px;justify-content:center;margin-top:2px;">${html}</div>` : '';
 }
 
-let statusTickInterval = null;
+let statusTickInterval = null; // kept for legacy clearInterval calls
 function startStatusTick() {
-  if(statusTickInterval) return;
-  statusTickInterval = setInterval(tickStatusEffects, 500);
+  // Handled by masterTick
+  if(!_tick.running) startMasterTick();
 }
 function stopStatusTick() {
   if(statusTickInterval) { clearInterval(statusTickInterval); statusTickInterval = null; }
+  // masterTick continues running for mana/boss — only enemy attack checks combatActive
 }
 
 // ── BOSS MILESTONE REWARDS ──
