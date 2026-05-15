@@ -3133,10 +3133,6 @@ function fireAbility(ab) {
   if(totalDmg > G.runStats.bestHit) G.runStats.bestHit = totalDmg;
   trinityEarnXP(totalDmg);
   G.runStats.imbueUses[G.playerImbue||ab.class] = (G.runStats.imbueUses[G.playerImbue||ab.class]||0) + 1;
-  // Trigger imbue fog for effects not covered by applyEffect
-  if(G.enemy && G.enemy.hp > 0 && G.playerImbue && !ab.applyEffect) {
-    triggerImbueFog(G.playerImbue, 1800);
-  }
 
   // Shadow Clone attack (Rogue Trinity node)
   if(G.playerClass === 'rogue') {
@@ -6649,13 +6645,11 @@ function applyImbueEffect(enemy, effect, st, stacks=1) {
     const dur = ((st.poisonDuration||4) * 1000);
     const dps = Math.floor((st.attack||18) * 0.08 + dotBonus * 0.4);
     const existing = enemy.statusEffects.poison;
-    const newStacks = (existing ? existing.stacks : 0) + stacks;
     enemy.statusEffects.poison = {
       dps: dps * stacks,
       timer: now + dur,
-      stacks: newStacks
+      stacks: (existing ? existing.stacks : 0) + stacks
     };
-    triggerPoisonFog(dur, newStacks);
     startStatusTick();
   }
   if(effect === 'electric') {
@@ -6676,9 +6670,7 @@ function applyImbueEffect(enemy, effect, st, stacks=1) {
       enemy.statusEffects.frozen = { timer: now + freezeDur };
       enemy.frozenUntil = now + freezeDur;
       log(`<span style="color:#88eeff">❄️ ${enemy.name} is FROZEN for ${(st.freezeDuration||1.5).toFixed(1)}s!</span>`);
-      triggerIceFog(freezeDur, true);
     } else if(effect === 'ice') {
-      triggerIceFog(dur, false);
     }
     startStatusTick();
   }
@@ -9123,103 +9115,6 @@ drawArena = function() {
   ctx2.restore();
 };
 */
-
-// Fog images — loaded on first use, not at startup
-const FOG_CONFIG = {
-  fire:     { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Fire_Fog.png',     opacity: 0.55, speed: 0.09, yPos: '65%', size: '65%', direction: -1 },
-  water:    { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Water_Fog.png',    opacity: 0.25, speed: 0.05, yPos: '60%', size: '70%', direction: -1 },
-  grass:    { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Grass_Fog.png',    opacity: 0.50, speed: 0.04, yPos: '70%', size: '60%', direction: -1 },
-  electric: { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Electric_Fog.png', opacity: 0.60, speed: 0.11, yPos: '55%', size: '75%', direction:  1 },
-  rock:     { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Rock_Fog.png',     opacity: 0.45, speed: 0.03, yPos: '75%', size: '55%', direction: -1 },
-  wind:     { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Wind_Fog.png',     opacity: 0.40, speed: 0.13, yPos: '50%', size: '80%', direction:  1 },
-  ice:      { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Ice_Fog.png',      opacity: 0.45, speed: 0.06, yPos: '60%', size: '60%', direction: -1 },
-  poison:   { url: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Poison_Fog.png',   opacity: 0.45, speed: 0.03, yPos: '70%', size: '60%', direction: -1 },
-};
-const FOG_IMAGE_CACHE = {};
-
-function getFogImage(imbue) {
-  if(FOG_IMAGE_CACHE[imbue]) return FOG_IMAGE_CACHE[imbue];
-  const cfg = FOG_CONFIG[imbue];
-  if(!cfg) return null;
-  const img = new Image();
-  img.src = cfg.url;
-  FOG_IMAGE_CACHE[imbue] = img;
-  return img;
-}
-
-function spawnFogLayer(id, imbue, opacity, speed, yPos, size, direction, duration) {
-  const arena = document.getElementById('arena');
-  if(!arena) return;
-  const existing = document.getElementById(id);
-  if(existing) existing.remove();
-
-  // Lazy-load the image — fetch only on first use
-  const img = getFogImage(imbue);
-  const url = FOG_CONFIG[imbue].url;
-
-  const startX = direction > 0 ? -20 : 110;
-  const fog = document.createElement('div');
-  fog.id = id;
-  fog.style.cssText = `
-    position:absolute;inset:0;pointer-events:none;z-index:6;
-    background-image:url('${url}');
-    background-size:${size} auto;
-    background-repeat:repeat-x;
-    background-position:${startX}% ${yPos};
-    opacity:0;mix-blend-mode:screen;
-    transition:opacity 0.35s ease;
-  `;
-  arena.appendChild(fog);
-
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    fog.style.opacity = String(opacity);
-  }));
-
-  let posX = startX;
-  let animId;
-  (function drift() {
-    posX += speed * direction * -1;
-    fog.style.backgroundPositionX = posX + '%';
-    const limit = direction > 0 ? 130 : -130;
-    const keep = direction > 0 ? posX < limit : posX > limit;
-    if(keep) animId = requestAnimationFrame(drift);
-  })();
-
-  setTimeout(() => {
-    fog.style.transition = 'opacity 0.7s ease';
-    fog.style.opacity = '0';
-  }, Math.max(200, duration - 800));
-
-  setTimeout(() => { cancelAnimationFrame(animId); fog.remove(); }, duration + 400);
-}
-
-function triggerImbueFog(imbue, duration) {
-  const cfg = FOG_CONFIG[imbue];
-  if(!cfg) return;
-  spawnFogLayer(`${imbue}-fog-layer`, imbue, cfg.opacity, cfg.speed, cfg.yPos, cfg.size, cfg.direction, duration);
-}
-
-function triggerIceFog(duration, isFreeze) {
-  const cfg = FOG_CONFIG.ice;
-  spawnFogLayer('ice-fog-layer', 'ice',
-    isFreeze ? 0.75 : cfg.opacity,
-    isFreeze ? 0.04 : cfg.speed,
-    cfg.yPos,
-    isFreeze ? '80%' : cfg.size,
-    cfg.direction,
-    duration
-  );
-}
-
-function triggerPoisonFog(duration, stacks) {
-  const cfg = FOG_CONFIG.poison;
-  const opacity = Math.min(0.8, cfg.opacity + (stacks - 1) * 0.12);
-  const size = Math.min(100, 50 + stacks * 8) + '%';
-  spawnFogLayer('poison-fog-layer', 'poison', opacity, cfg.speed, cfg.yPos, size, cfg.direction, duration);
-}
-
-// ICE FOG
-
 </script>
 </body>
 </html>
