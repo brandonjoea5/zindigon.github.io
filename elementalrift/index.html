@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.6.1</title>
+<title>Elemental Rift v2.6.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1083,7 +1083,7 @@ let sbProfile = null; // players row
       More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.1 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.2 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 (function(){
@@ -2499,6 +2499,8 @@ function loadGame(name) {
     const save = JSON.parse(raw);
     // Accept save if name matches OR if signed in (cloud save owns the name)
     if (!sbUser && save.playerName !== name) return false;
+    // Require a class to be set — otherwise treat as new game
+    if (!save.playerClass) return false;
     G.playerName = save.playerName;
     G.maxHp = save.maxHp || 200;
     G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
