@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.6.2</title>
+<title>Elemental Rift v2.6.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1083,7 +1083,7 @@ let sbProfile = null; // players row
       More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.2 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.3 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 (function(){
@@ -2557,6 +2557,9 @@ function continueGame() {
 function startGame() {
   // name comes from auth — already set in G.playerName
   if(!G.playerName){ const n=Math.floor(Math.random()*9000)+1000; G.playerName=`Guest#${n}`; }
+  // Clear class state so a stale initGame cloud-load can't skip class selection
+  G.playerClass = null;
+  G.playerImbue = null;
   const loaded = loadGame(G.playerName);
   document.getElementById('name-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
@@ -2577,7 +2580,40 @@ function startGame() {
   });});
 }
 
-function resumeFromSave() {
+function loadFromData(data) {
+  if(!data) return false;
+  try {
+    // Cloud save data is the same shape as localStorage save
+    const save = typeof data === 'string' ? JSON.parse(data) : data;
+    if(!save.playerClass) return false;
+    G.playerName = save.playerName || G.playerName;
+    G.maxHp = save.maxHp || 200;
+    G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
+    G.gold = save.gold || 0;
+    G.xp = save.xp||0; G.xpToNext = save.xpToNext||40;
+    G.playerLevel = save.playerLevel||1;
+    G.skillPoints = save.skillPoints||0;
+    G.passivePoints = save.passivePoints||0;
+    spPending = save.spPending||0; passivePending = save.passivePending||0;
+    if(save.playerClass)  G.playerClass  = save.playerClass;
+    if(save.playerImbue)  G.playerImbue  = save.playerImbue;
+    if(save.rogueWeapon)  G.rogueWeapon  = save.rogueWeapon;
+    if(save.selectedTitle) playerSelectedTitle = save.selectedTitle;
+    G.kills = save.kills||0; G.wave = save.wave||1;
+    if(save.baseStats)     G.baseStats     = save.baseStats;
+    if(save.skillLevels)   G.skillLevels   = save.skillLevels;
+    if(save.equipment)     G.equipment     = save.equipment;
+    if(save.classXP)       G.classXP       = save.classXP;
+    if(save.classLv)       G.classLv       = save.classLv;
+    if(save.classCP)       G.classCP       = save.classCP;
+    if(save.abilityLevels) G.abilityLevels = save.abilityLevels;
+    if(save.loadout)       G.loadout       = save.loadout;
+    if(save.healLoadout)   healLoadout     = save.healLoadout;
+    return true;
+  } catch(e) { console.error('loadFromData error:', e); return false; }
+}
+
+
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
   updateResourceBar();
   // If we have a segment in progress use segment system, else spawn directly
@@ -5536,25 +5572,27 @@ function showAccountMenu() {
 }
 
 function initGame() {
-  // Try to load cloud save first, fall back to localStorage
-  if(sbUser) {
-    cloudLoad().then(cloudData => {
-      const loaded = cloudData ? loadFromData(cloudData) : loadGame();
-      document.getElementById('name-screen').classList.remove('hidden');
-      document.getElementById('game').classList.add('hidden');
-      if(sbProfile) {
-        document.getElementById('player-name-display').textContent = sbProfile.username;
+  // Just show the name screen — actual save loading happens in startGame()
+  // when the player clicks Begin Journey. We do load profile info for display only.
+  document.getElementById('name-screen').classList.remove('hidden');
+  document.getElementById('game').classList.add('hidden');
+  if(sbProfile) {
+    G.playerName = sbProfile.username;
+    document.getElementById('player-name-display').textContent = sbProfile.username;
+  }
+  loadNameScreenLB();
+  // Show continue button if a valid save exists
+  const raw = localStorage.getItem('elementalRift_v3');
+  if(raw) {
+    try {
+      const save = JSON.parse(raw);
+      if(save.playerClass && (sbUser || save.playerName === G.playerName)) {
+        const continueBtn = document.getElementById('continue-btn');
+        const continueName = document.getElementById('continue-name');
+        if(continueBtn) continueBtn.classList.remove('hidden');
+        if(continueName) continueName.textContent = save.playerName || G.playerName;
       }
-      loadNameScreenLB();
-    }).catch(() => {
-      loadGame();
-      document.getElementById('name-screen').classList.remove('hidden');
-      loadNameScreenLB();
-    });
-  } else {
-    loadGame();
-    document.getElementById('name-screen').classList.remove('hidden');
-    loadNameScreenLB();
+    } catch(e) {}
   }
 }
 
