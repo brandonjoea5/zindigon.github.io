@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Elemental Rift v2.6.6</title>
+<title>Elemental Rift v2.6.8</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1083,7 +1083,7 @@ let sbProfile = null; // players row
       More games at <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'Cinzel',serif;">zindigon.com/Games</a>
     </div>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.6 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:var(--muted);letter-spacing:0.1em;z-index:1;">v2.6.8 · <a href="https://zindigon.com/Games/" target="_blank" style="color:var(--muted);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 (function(){
@@ -3098,6 +3098,7 @@ function buildNameScreenLBHtml(leaderboard) {
   }).join('');
 }
 
+function loadNameScreenLB() { renderNameScreenLB(); }
 async function renderNameScreenLB() {
   const lb = await fetchLeaderboard();
   const el = document.getElementById('name-screen-lb');
@@ -4602,10 +4603,9 @@ function cycleFxLevel() {
 
 function updateFxBtn() {
   const btn = document.getElementById('fx-btn');
-  if(!btn) return;
-  btn.textContent = FX.labels[G_fxLevel];
-  btn.style.color = FX.colors[G_fxLevel];
-  btn.style.borderColor = FX.colors[G_fxLevel] + '88';
+  if(btn) { btn.textContent = FX.labels[G_fxLevel]; btn.style.color = FX.colors[G_fxLevel]; btn.style.borderColor = FX.colors[G_fxLevel] + '88'; }
+  const menuBtn = document.getElementById('menu-fx-btn');
+  if(menuBtn) { menuBtn.textContent = FX.labels[G_fxLevel]; menuBtn.style.color = FX.colors[G_fxLevel]; }
 }
 
 // Particle multiplier per mode
@@ -4667,9 +4667,13 @@ let autoWaveEnabled = false;
 
 function setNextBtnActive(active) {
   const btn = document.getElementById('next-btn');
-  if(!btn) return;
-  btn.style.opacity = active ? '1' : '0.35';
-  btn.style.pointerEvents = active ? 'auto' : 'none';
+  if(btn) { btn.style.opacity = active ? '1' : '0.35'; btn.style.pointerEvents = active ? 'auto' : 'none'; }
+  if(active) {
+    showWaveChoice('Wave ' + G.wave + ' cleared!', G.wave >= 3);
+    if(autoWaveEnabled) setTimeout(() => { if(autoWaveEnabled && !G.combatActive) { hideWaveChoice(); nextWave(); } }, 600);
+  } else {
+    hideWaveChoice();
+  }
 }
 
 function setBossBtnActive(active) {
@@ -6067,8 +6071,9 @@ function dismissTooltip() {
 function toggleMute() {
   isMuted = !isMuted;
   const btn = document.getElementById('mute-btn');
-  if (btn) btn.textContent = isMuted ? '🔇 SFX' : '🔊 SFX';
-  if (btn) btn.style.borderColor = isMuted ? 'var(--red)' : 'var(--border)';
+  if(btn) { btn.textContent = isMuted ? '🔇 SFX' : '🔊 SFX'; btn.style.borderColor = isMuted ? 'var(--red)' : 'var(--border)'; }
+  const menuBtn = document.getElementById('menu-mute-btn');
+  if(menuBtn) menuBtn.textContent = isMuted ? '🔇 SFX' : '🔊 SFX';
 }
 
 function playSound(type, options={}) {
@@ -9760,34 +9765,7 @@ function hideWaveChoice() {
   if(overlay) overlay.style.display = 'none';
 }
 
-// Override setNextBtnActive to show/hide wave choice overlay instead
-const _origSetNextBtnActive = setNextBtnActive;
-function setNextBtnActive(active) {
-  _origSetNextBtnActive(active);
-  if(active) {
-    const showBoss = G.wave >= 3;
-    showWaveChoice('Wave ' + (G.wave) + ' cleared!', showBoss);
-    if(autoWaveEnabled) {
-      setTimeout(() => { if(autoWaveEnabled && !G.combatActive) { hideWaveChoice(); nextWave(); } }, 600);
-    }
-  } else {
-    hideWaveChoice();
-  }
-}
 
-// Sync old mute/fx buttons with menu versions
-const _origToggleMute = toggleMute;
-function toggleMute() {
-  _origToggleMute();
-  const btn = document.getElementById('menu-mute-btn');
-  if(btn) btn.textContent = isMuted ? '🔇 SFX' : '🔊 SFX';
-}
-const _origUpdateFxBtn = updateFxBtn;
-function updateFxBtn() {
-  _origUpdateFxBtn();
-  const btn = document.getElementById('menu-fx-btn');
-  if(btn) { btn.textContent = FX.labels[G_fxLevel]; btn.style.color = FX.colors[G_fxLevel]; }
-}
 
 
 </script>
