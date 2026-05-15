@@ -1597,6 +1597,7 @@ let sbProfile = null; // players row
       <button class="action-btn btn-next" id="next-btn" onclick="nextWave()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">▶</span>Next Wave</button>
       <button class="action-btn btn-boss" id="boss-btn" onclick="startBossAttempt()" style="flex:1;opacity:0.35;pointer-events:none;"><span class="btn-icon">💀</span>Boss</button>
       <button class="action-btn" id="potion-btn" onclick="buyPotion()" style="flex:1;opacity:0.35;pointer-events:none;border-color:#3acc7a;color:#3acc7a;"><span class="btn-icon">🧪</span><span id="potion-label">Potion</span></button>
+      <button class="action-btn" onclick="honorableDeath()" style="flex:1;border-color:rgba(232,184,75,0.5);color:#e8b84b;background:linear-gradient(170deg,rgba(232,184,75,0.06) 0%,#080a0e 100%);" title="End your run with honor for maximum Trinity Force XP"><span class="btn-icon">⚔️</span>Honor</button>
       <button class="action-btn" id="loadout-btn" onclick="openSlotSelector()" style="flex:1;border-color:#8888ff;color:#8888ff;"><span class="btn-icon">⚡</span>Loadout</button>
       
     </div>
@@ -4236,59 +4237,63 @@ function onEnemyDeath() {
   const enemyMaxHp = G.enemy.maxHp || 50;
   G.enemy = null;
   try {
-  G.kills++;
-  G.gold += enemyGold;
-  G.runStats.totalGold += enemyGold;
-  // XP per kill = wave * 12 → always ~7 kills to level regardless of wave
-  const waveNum = MAP.currentSegWave || G.wave;
-  const xpGain = Math.floor(waveNum * 12 * (enemyType === 'brute' ? 1.3 : 1.0));
-  awardXP(xpGain);
-  // Award passive skill point every 5 kills
-  if(G.kills % 5 === 0) {
-    G.passivePoints++;
-    updateClassXPPanel();
-    updateResourceBar();
-    log(`<span style="color:#8888ff">🔮 Passive Skill Point earned! (${G.passivePoints} available)</span>`);
-  }
-  log(`<span class="log-gold">💰 +${enemyGold}g  ✨ +${xpGain} XP</span>`);
-
-  // Loot drop on kill
-  const dropChance = {easy:0.12,medium:0.18,hard:0.28}[MAP.difficulty||'easy']||0.15;
-  if(Math.random() < dropChance + G.wave*0.004) {
-    const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
-    const dropItem = rollItem(dropSlot, G.wave, false);
-    const t = dropItem.tier||dropItem.rarity;
-    if(['Ancient','Cosmic'].includes(t.name)||Math.random()<0.35) {
-      log(`<span style="color:${t.color};font-weight:600;">⬇ ${t.name} drop: ${dropItem.name}!</span>`);
-      setTimeout(()=>showItemModal(dropItem,'vendor_buy'),600);
+    G.kills++;
+    G.gold += enemyGold;
+    G.runStats.totalGold += enemyGold;
+    const waveNum = MAP.currentSegWave || G.wave;
+    const xpGain = Math.floor(waveNum * 12 * (enemyType === 'brute' ? 1.3 : 1.0));
+    awardXP(xpGain);
+    if(G.kills % 5 === 0) {
+      G.passivePoints++;
+      updateClassXPPanel();
+      updateResourceBar();
+      log(`<span style="color:#8888ff">🔮 Passive Skill Point earned! (${G.passivePoints} available)</span>`);
     }
-  }
-  playSound('enemy_death');
-  triggerScreenShake(5, 0.3);
-  updateEnemyUI();
-  updateHealSlotUI();
-  updateResourceBar();
-  updateClassXPPanel();
-  updateStatsPanel();
-  updateLoadoutUI();
-  refreshMobilePanel();
-  syncMobileLog();
-  drawArena();
-  saveGame();
-    G._enemyDeathInProgress = false;
-    // If a level-up popup is about to open (or is already open), defer wave completion
-    // until the player dismisses it — otherwise the next spawn gets skipped entirely.
+    log(`<span class="log-gold">💰 +${enemyGold}g  ✨ +${xpGain} XP</span>`);
+
+    // Loot drop on kill
+    const dropChance = {easy:0.12,medium:0.18,hard:0.28}[MAP.difficulty||'easy']||0.15;
+    if(Math.random() < dropChance + G.wave*0.004) {
+      const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
+      const dropItem = rollItem(dropSlot, G.wave, false);
+      const t = dropItem.tier||dropItem.rarity;
+      if(['Ancient','Cosmic'].includes(t.name)||Math.random()<0.35) {
+        log(`<span style="color:${t.color};font-weight:600;">⬇ ${t.name} drop: ${dropItem.name}!</span>`);
+        setTimeout(()=>showItemModal(dropItem,'vendor_buy'),600);
+      }
+    }
+    playSound('enemy_death');
+    triggerScreenShake(5, 0.3);
+    updateEnemyUI();
+    updateHealSlotUI();
+    updateResourceBar();
+    updateClassXPPanel();
+    updateStatsPanel();
+    updateLoadoutUI();
+    refreshMobilePanel();
+    syncMobileLog();
+    drawArena();
+    saveGame();
+
     if(spPopupOpen || spPending > 0 || passivePending > 0) {
       G._pendingWaveComplete = true;
+      // Safety net: if popup never closes, unstick after 30s
+      setTimeout(() => {
+        if(G._pendingWaveComplete && !G.enemy && !G.combatActive) {
+          G._pendingWaveComplete = false;
+          setNextBtnActive(true);
+          onSegmentWaveComplete();
+        }
+      }, 30000);
     } else {
       onSegmentWaveComplete();
     }
   } catch(e) {
     console.error('onEnemyDeath error:', e);
-    G._enemyDeathInProgress = false;
-    // Force show next wave button so player isn't stuck
     setNextBtnActive(true);
     if(autoWaveEnabled) setTimeout(()=>nextWave(), 800);
+  } finally {
+    G._enemyDeathInProgress = false;
   }
 }
 
