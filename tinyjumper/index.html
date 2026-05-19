@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tiny Jumper</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #111; display: flex; align-items: center; justify-content: center; height: 100vh; }
-  #wrap { display: flex; flex-direction: column; align-items: flex-start; }
-  #label { font-size: 10px; color: #666; margin-bottom: 3px; font-family: monospace; letter-spacing: 0.05em; }
+  body { background: #111; display: flex; align-items: center; justify-content: center; height: 100vh; user-select: none; }
+  #wrap { display: flex; flex-direction: column; align-items: flex-start; width: min(100vw, 220px); padding: 0 8px; }
+  #label { font-size: 10px; color: #666; margin-bottom: 3px; font-family: monospace; letter-spacing: 0.05em; white-space: nowrap; }
   #score { font-size: 10px; color: #666; font-family: monospace; margin-top: 3px; }
-  canvas { display: block; border: 1px solid #333; cursor: pointer; outline: none; }
+  canvas { display: block; border: 1px solid #333; cursor: pointer; outline: none; width: 100%; height: auto; }
 </style>
 </head>
 <body>
 <div id="wrap">
-  <div id="label">TINY JUMPER — space or click to jump</div>
+  <div id="label">TINY JUMPER — space or tap to jump</div>
   <canvas id="c" width="220" height="55" tabindex="0"></canvas>
   <div id="score">score: 0 | hi: 0</div>
 </div>
@@ -110,8 +111,15 @@
 
   state = 'idle'; reset();
   document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); jump(); } });
-  canvas.addEventListener('click', () => jump());
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); jump(); });
+  document.addEventListener('click', () => jump());
+  document.addEventListener('touchstart', e => { e.preventDefault(); jump(); }, { passive: false });
+
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 500;
+  if (isMobile) {
+    const wrap = document.getElementById('wrap');
+    wrap.style.width = '100vw';
+    wrap.style.padding = '0 12px';
+  }
 
   (function loop(){ update(); draw(); requestAnimationFrame(loop); })();
 })();
