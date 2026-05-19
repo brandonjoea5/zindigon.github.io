@@ -66,7 +66,9 @@
     if (player.y >= GROUND) { player.y = GROUND; player.vy = 0; player.grounded = true; player.jumps = 0; }
     spawnTimer++;
     if (spawnTimer >= spawnInterval) {
-      spawnObs(); spawnTimer = 0; spawnInterval = Math.max(28, spawnInterval - 0.4);
+      spawnObs(); spawnTimer = 0;
+      const base = Math.max(28, 60 - score * 0.015);
+      spawnInterval = base + (Math.random() * base * 0.7) - (base * 0.2);
     }
     for (let o of obstacles) o.x -= speed;
     obstacles = obstacles.filter(o => o.x + o.w > 0);
