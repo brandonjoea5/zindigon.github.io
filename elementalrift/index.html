@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
+<!-- v2.7.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, and Ice abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -57,7 +58,14 @@
 }
 </script>
 
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Preconnect to font servers to reduce render blocking -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet"></noscript>
+<!-- Preconnect to Supabase for faster asset loading -->
+<link rel="preconnect" href="https://kryfuceztfzccsidkzog.supabase.co">
+<link rel="dns-prefetch" href="https://kryfuceztfzccsidkzog.supabase.co">
 <style>
 :root {
   --fire:#ff4d1a; --water:#1ab3ff; --grass:#3dcc5a;
