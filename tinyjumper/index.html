@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tiny Jumper</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; display: flex; align-items: center; justify-content: center; height: 100vh; }
+  #wrap { display: flex; flex-direction: column; align-items: flex-start; }
+  #label { font-size: 10px; color: #666; margin-bottom: 3px; font-family: monospace; letter-spacing: 0.05em; }
+  #score { font-size: 10px; color: #666; font-family: monospace; margin-top: 3px; }
+  canvas { display: block; border: 1px solid #333; cursor: pointer; outline: none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="label">TINY JUMPER — space or click to jump</div>
+  <canvas id="c" width="220" height="55" tabindex="0"></canvas>
+  <div id="score">score: 0 | hi: 0</div>
+</div>
+<script>
+(function(){
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const W = 220, H = 55, GH = 12, GROUND = H - GH;
+
+  const COL = {
+    bg: '#1a1a1a', ground: '#444441', player: '#afa9ec',
+    obs: '#f09595', text: '#d3d1c7', dead: '#ef9f27'
+  };
+
+  let state, player, obstacles, score, hiScore = 0, frame, speed, spawnTimer, spawnInterval;
+
+  function reset() {
+    player = { x: 22, y: GROUND, w: 8, h: 9, vy: 0, grounded: true, jumps: 0 };
+    obstacles = [];
+    score = 0; frame = 0; speed = 2.2; spawnTimer = 0; spawnInterval = 60;
+  }
+
+  function jump() {
+    if (state === 'idle' || state === 'dead') { reset(); state = 'running'; doJump(); return; }
+    if (state === 'running') doJump();
+  }
+
+  function doJump() {
+    if (player.grounded) {
+      player.vy = -5.2; player.grounded = false; player.jumps = 1;
+    } else if (player.jumps < 2) {
+      player.vy = -4.8; player.jumps = 2;
+    }
+  }
+
+  function spawnObs() {
+    const tall = Math.random() < 0.35;
+    const h = tall ? 14 : 9;
+    const w = 5 + Math.floor(Math.random() * 4);
+    obstacles.push({ x: W, y: GROUND - h + 9, w, h });
+  }
+
+  function update() {
+    if (state !== 'running') return;
+    frame++;
+    player.vy += 0.38;
+    player.y += player.vy;
+    if (player.y >= GROUND) { player.y = GROUND; player.vy = 0; player.grounded = true; player.jumps = 0; }
+    spawnTimer++;
+    if (spawnTimer >= spawnInterval) {
+      spawnObs(); spawnTimer = 0; spawnInterval = Math.max(28, spawnInterval - 0.4);
+    }
+    for (let o of obstacles) o.x -= speed;
+    obstacles = obstacles.filter(o => o.x + o.w > 0);
+    speed += 0.0012;
+    score++;
+    for (let o of obstacles) {
+      if (player.x + player.w - 2 > o.x + 1 && player.x + 1 < o.x + o.w - 1 && player.y + player.h - 1 > o.y + 1) {
+        state = 'dead';
+        if (score > hiScore) hiScore = score;
+      }
+    }
+  }
+
+  function draw() {
+    ctx.fillStyle = COL.bg; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = COL.ground; ctx.fillRect(0, GROUND + 8, W, GH - 8);
+
+    if (state === 'idle') {
+      ctx.fillStyle = COL.text; ctx.textAlign = 'center';
+      ctx.font = '8px monospace'; ctx.fillText('TINY JUMPER', W/2, H/2 - 4);
+      ctx.font = '7px monospace'; ctx.fillText('space / click to start', W/2, H/2 + 5);
+      ctx.textAlign = 'left';
+    }
+
+    if (state === 'dead') {
+      ctx.fillStyle = COL.dead; ctx.textAlign = 'center';
+      ctx.font = '7px monospace'; ctx.fillText('dead. space to retry', W/2, H/2 - 2);
+      ctx.textAlign = 'left';
+    }
+
+    ctx.fillStyle = state === 'dead' ? COL.dead : COL.player;
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    ctx.fillStyle = COL.obs;
+    for (let o of obstacles) ctx.fillRect(o.x, o.y, o.w, o.h);
+
+    scoreEl.textContent = `score: ${score} | hi: ${hiScore}`;
+  }
+
+  state = 'idle'; reset();
+  document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); jump(); } });
+  canvas.addEventListener('click', () => jump());
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); jump(); });
+
+  (function loop(){ update(); draw(); requestAnimationFrame(loop); })();
+})();
+</script>
+</body>
+</html>
