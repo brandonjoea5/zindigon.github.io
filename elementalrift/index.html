@@ -2052,26 +2052,51 @@ const CLASS_SPRITES = {};
 const ARROW_IMG = new Image(); ARROW_IMG.src = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png';
 
 const CRITICAL_ASSETS = [
-  { key:'mage',    label:'Mage',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Mage.png' },
-  { key:'warrior', label:'Warrior', url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Warrior.png' },
-  { key:'rogue',        label:'Rogue',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png' },
-  { key:'rogue_bow',     label:'Rogue Bow',url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png' },
-  { key:'arena',   label:'Arena',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Forest.png' },
-  { key:'bg_menu', label:'Menu',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Menu.png' },
-  { key:'e_wolf',   label:'Wolf',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Wolf.png' },
-  { key:'e_bear',   label:'Bear',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Bear.png' },
-  { key:'e_troll',  label:'Troll',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Troll.png' },
-  { key:'e_harpy',  label:'Harpy',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Harpy.png' },
-  { key:'e_golem',  label:'Golem',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Golum.png' },
-  { key:'e_giant',  label:'Giant',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Giant.png' },
-  { key:'e_wraith', label:'Wraith', url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Wraith.png' },
-  { key:'e_dragon', label:'Dragon', url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Dragon.png' },
-  { key:'e_unicorn',  label:'Unicorn', url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Unicorn.png' },
-  { key:'arena_city',   label:'City',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_City.png' },
-  { key:'arena_heaven', label:'Heaven',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Heaven.png' },
-  { key:'arena_portal',  label:'Portal',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Portal.png' },
-  { key:'bar_hp',   label:'HP Bar',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Health_Bar.png' },
-  { key:'bar_mp',   label:'Mana Bar', url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Mana_Bar.png' },
+  /* Characters */
+  { key:'mage',         label:'Mage',          url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Mage.png' },
+  { key:'warrior',      label:'Warrior',        url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Warrior.png' },
+  { key:'rogue',        label:'Rogue',          url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png' },
+  { key:'rogue_bow',    label:'Rogue Bow',      url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png' },
+  /* Enemies */
+  { key:'e_wolf',       label:'Wolf',           url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Wolf.png' },
+  { key:'e_bear',       label:'Bear',           url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Bear.png' },
+  { key:'e_troll',      label:'Troll',          url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Troll.png' },
+  { key:'e_harpy',      label:'Harpy',          url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Harpy.png' },
+  { key:'e_golum',      label:'Golem',          url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Golum.png' },
+  { key:'e_giant',      label:'Giant',          url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Giant.png' },
+  { key:'e_wraith',     label:'Wraith',         url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Wraith.png' },
+  { key:'e_dragon',     label:'Dragon',         url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Dragon.png' },
+  { key:'e_unicorn',    label:'Unicorn',        url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Unicorn.png' },
+  /* Arenas */
+  { key:'arena_city',   label:'City Arena',     url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_City.png' },
+  { key:'arena_forest', label:'Forest Arena',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Forest.png' },
+  { key:'arena_heaven', label:'Heaven Arena',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Heaven.png' },
+  { key:'arena_portal', label:'Portal Arena',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Portal.png' },
+  /* Backgrounds */
+  { key:'bg_menu',      label:'Menu BG',        url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Menu.png' },
+  { key:'bg_scroll',    label:'Scroll BG',      url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Scroll.png' },
+  /* Buttons */
+  { key:'btn_basic',    label:'Button',         url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png' },
+  { key:'btn_fire',     label:'Fire Button',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Fire.png' },
+  { key:'btn_water',    label:'Water Button',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Water.png' },
+  { key:'btn_grass',    label:'Grass Button',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Grass.png' },
+  { key:'btn_poison',   label:'Poison Button',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Poison.png' },
+  { key:'btn_electric', label:'Electric Button',url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Electric.png' },
+  { key:'btn_ice',      label:'Ice Button',     url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Ice.png' },
+  { key:'btn_rock',     label:'Rock Button',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Rock.png' },
+  { key:'btn_wind',     label:'Wind Button',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Wind.png' },
+  /* Element Logos */
+  { key:'logo_fire',    label:'Fire Logo',      url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Fire.png' },
+  { key:'logo_water',   label:'Water Logo',     url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Water.png' },
+  { key:'logo_grass',   label:'Grass Logo',     url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Grass.png' },
+  { key:'logo_poison',  label:'Poison Logo',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Poison.png' },
+  { key:'logo_electric',label:'Electric Logo',  url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Electric.png' },
+  { key:'logo_ice',     label:'Ice Logo',       url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Ice.png' },
+  { key:'logo_rock',    label:'Rock Logo',      url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Rock.png' },
+  { key:'logo_wind',    label:'Wind Logo',      url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Logos/Logo_Wind.png' },
+  /* Tools */
+  { key:'bar_hp',       label:'HP Bar',         url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Health_Bar.png' },
+  { key:'bar_mp',       label:'Mana Bar',       url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Mana_Bar.png' },
 ];
 
 let _assetsLoaded = 0;
@@ -2112,10 +2137,35 @@ _tryDismiss._done = false;
     img.onload  = () => { _onAssetProgress(asset.label); };
     img.onerror = () => { _onAssetProgress(asset.label + ' ✗'); }; // count failures too
     img.src = asset.url;
-    if(asset.key === 'mage' || asset.key === 'warrior' || asset.key === 'rogue') {
+    // Characters
+    if(['mage','warrior','rogue','rogue_bow'].includes(asset.key)) {
       CLASS_SPRITES[asset.key] = img;
-    } else if(asset.key === 'rogue_bow') {
-      CLASS_SPRITES['rogue_bow'] = img;
+    }
+    // Enemies — reuse the already-loaded image
+    const enemyKeyMap = {
+      e_wolf:'wolf', e_bear:'bear', e_troll:'troll', e_harpy:'harpy',
+      e_golum:'golem', e_giant:'giant', e_wraith:'wraith',
+      e_dragon:'dragon', e_unicorn:'unicorn'
+    };
+    if(enemyKeyMap[asset.key]) {
+      ENEMY_SPRITES[enemyKeyMap[asset.key]] = img;
+    }
+    // Logos — reuse loaded image in LOGO_ASSETS_IMG map
+    const logoKeyMap = {
+      logo_fire:'fire', logo_water:'water', logo_grass:'grass', logo_poison:'poison',
+      logo_electric:'electric', logo_ice:'ice', logo_rock:'rock', logo_wind:'wind'
+    };
+    if(logoKeyMap[asset.key]) {
+      LOGO_ASSETS_IMG[logoKeyMap[asset.key]] = img;
+    }
+    // Buttons
+    const btnKeyMap = {
+      btn_basic:'basic', btn_fire:'fire', btn_water:'water', btn_grass:'grass',
+      btn_poison:'poison', btn_electric:'electric', btn_ice:'ice',
+      btn_rock:'rock', btn_wind:'wind'
+    };
+    if(btnKeyMap[asset.key]) {
+      BUTTON_IMGS[btnKeyMap[asset.key]] = img;
     }
   });
 })();
@@ -2145,6 +2195,8 @@ function elemLogoHTML(imbue, size=18) {
   return `<img src="${src}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;flex-shrink:0;" alt="${imbue}">`;
 }
 const ENEMY_SPRITES = {};
+const LOGO_ASSETS_IMG = {}; // loaded Image objects for canvas use
+const BUTTON_IMGS = {}; // preloaded button assets
 // Arena background by player level
 function getArenaByLevel(level) {
   const BASE = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/';
@@ -6192,7 +6244,7 @@ function drawArena(){
     eg.addColorStop(0,ec+Math.floor(pulse*255).toString(16).padStart(2,'0'));eg.addColorStop(1,ec+'00');
     ctx.fillStyle=eg;ctx.beginPath();ctx.arc(ex,ey-24,isBoss?80:56,0,Math.PI*2);ctx.fill();
     // Draw enemy sprite — asset or fallback glow
-    const eSprite = ENEMY_SPRITES[G.enemy.id];
+    const eSprite = ENEMY_SPRITES[G.enemy.id] || ENEMY_SPRITES[G.enemy.id?.toLowerCase()];
     const sprH = isBoss ? 130 : 90;
     if(eSprite && eSprite.complete && eSprite.naturalWidth > 0) {
       const sprW = sprH * (eSprite.naturalWidth / eSprite.naturalHeight);
