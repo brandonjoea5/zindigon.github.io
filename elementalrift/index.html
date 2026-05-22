@@ -325,11 +325,12 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;cursor:pointer;
   font-family:'Jim Nightshade',cursive;font-size:10px;
-  color:rgba(200,170,110,0.65);letter-spacing:0.06em;
+  color:rgba(255,255,255,0.75);letter-spacing:0.06em;
   border-top:2px solid transparent;
   transition:all 0.15s;
   -webkit-tap-highlight-color:transparent;
-  text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  text-shadow:none;
+  font-size:11px;
 }
 .nav-tab.active{color:var(--gold);border-top-color:var(--gold);}
 .nav-tab-icon{font-size:14px;line-height:1;}
@@ -445,8 +446,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 #resource-bar::before,#resource-bar::after{display:none;}
 .res-group{display:flex;gap:12px;align-items:center;}
 .res-item{display:flex;flex-direction:column;align-items:center;gap:1px;}
-.res-label{font-size:9px;color:rgba(220,190,130,0.8);text-transform:uppercase;letter-spacing:0.12em;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.9);}
-.res-val{font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:rgba(255,230,160,1);text-shadow:0 1px 4px rgba(0,0,0,0.9);}
+.res-label{font-size:9px;color:rgba(255,255,255,0.85);text-transform:uppercase;letter-spacing:0.12em;font-weight:900;}
+.res-val{font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;color:#fff;}
 .res-val.red{color:rgba(255,120,120,1);text-shadow:0 1px 4px rgba(0,0,0,0.9);}
 .res-val.blue{color:rgba(120,180,255,1);text-shadow:0 1px 4px rgba(0,0,0,0.9);}
 #player-name-display{font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--text-light);letter-spacing:0.04em;}
@@ -461,7 +462,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   flex-shrink:0;display:flex;flex-direction:column;gap:5px;
 }
 .bar-wrap{display:flex;align-items:center;gap:8px;}
-.bar-label{font-size:10px;color:rgba(220,190,130,0.85);width:28px;text-align:right;flex-shrink:0;letter-spacing:0.04em;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.9);}
+.bar-label{font-size:10px;color:rgba(255,255,255,0.85);width:28px;text-align:right;flex-shrink:0;letter-spacing:0.04em;font-weight:700;}
 .bar-track{
   flex:1;height:6px;
   background:rgba(180,140,80,0.2);
@@ -472,7 +473,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 .bar-fill{height:100%;transition:width 0.3s;border-radius:3px;}
 .bar-fill.hp{background:linear-gradient(90deg,#3a9e4a,#52c466,#6ee080);box-shadow:0 0 6px rgba(82,196,102,0.5);}
 .bar-fill.mp{background:linear-gradient(90deg,#2a60b8,#4a8ce0,#6aaaf0);box-shadow:0 0 6px rgba(74,140,224,0.5);}
-.bar-nums{font-size:10px;color:rgba(220,190,130,0.8);width:60px;text-align:right;flex-shrink:0;text-shadow:0 1px 3px rgba(0,0,0,0.9);}
+.bar-nums{font-size:10px;color:rgba(255,255,255,0.8);width:60px;text-align:right;flex-shrink:0;}
 
 /* Arena */
 #arena{flex:1;position:relative;overflow:hidden;min-height:0;}
@@ -779,7 +780,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .wt-node.boss-node.current{background:rgba(200,48,42,0.18);box-shadow:0 0 8px rgba(200,48,42,0.4);}
 .wt-connector{height:2px;flex:1;min-width:4px;background:rgba(180,140,60,0.3);}
 .wt-connector.done{background:var(--green);}
-.wt-diff-label{font-family:'Jim Nightshade',cursive;font-size:9px;color:rgba(220,190,130,0.8);letter-spacing:0.1em;margin-right:8px;flex-shrink:0;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.9);}
+.wt-diff-label{font-family:'Jim Nightshade',cursive;font-size:9px;color:rgba(255,255,255,0.8);letter-spacing:0.1em;margin-right:8px;flex-shrink:0;font-weight:700;}
 
 /* ══════════════════════════════════
    PANELS & MODALS
@@ -892,7 +893,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   margin-bottom:4px;letter-spacing:0.06em;
   color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);
 }
-.diff-waves{font-size:13px;color:rgba(255,255,255,0.85);margin-bottom:4px;text-shadow:0 1px 2px rgba(0,0,0,0.5);font-weight:700;}
+.diff-waves{font-size:13px;color:#fff;margin-bottom:4px;text-shadow:0 1px 3px rgba(0,0,0,0.9);font-weight:700;}
 .diff-loot{display:none;}
 .easy .diff-title{color:#2ecc71;text-shadow:0 1px 4px rgba(0,0,0,0.5);}
 .medium .diff-title{color:#e67e22;text-shadow:0 1px 4px rgba(0,0,0,0.5);}
@@ -1309,7 +1310,7 @@ let sbProfile = null; // players row
     min-height:88px;
     text-shadow:0 1px 3px rgba(0,0,0,0.6);
     transition:filter 0.15s,transform 0.15s;
-  ">▶ Continue as <span id="continue-name"></span></button>
+  ">Continue as <span id="continue-name"></span></button>
   <div class="name-input-wrap" style="width:100%;max-width:340px;margin-bottom:4px;display:none;"></div>
   <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
     <button id="start-btn" onclick="startGame()" style="width:100%;font-size:18px;letter-spacing:0.08em;min-height:88px;padding:0;">Begin Journey</button>
@@ -1337,7 +1338,7 @@ let sbProfile = null; // players row
     </div>
   </div>
   </div><!-- end content card -->
-  <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);">v2.6.9 · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);">v3.0.0 · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
 // No shards on name screen — background asset handles visuals
@@ -1410,13 +1411,13 @@ let sbProfile = null; // players row
   <div style="font-size:12px;color:var(--text-light);text-align:center;max-width:320px;">Final wave of each path has a chance to spawn a Boss with bonus rewards</div>
   <div id="map-boss-section" class="hidden" style="margin-top:4px;text-align:center;">
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">— or —</div>
-    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;padding:14px 32px;border:none;cursor:pointer;animation:bossPulse 2s ease-in-out infinite;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-height:130px;letter-spacing:0.06em;"> Boss Attempt — 60 Second Damage Race</button>
+    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;padding:14px 32px;border:none;cursor:pointer;animation:bossPulse 2s ease-in-out infinite;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-height:130px;letter-spacing:0.06em;;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:11px;letter-spacing:0.04em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
     <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compete for the leaderboard · Earn milestone rewards</div>
   </div>
 
   <!-- RIFT GAUNTLET NOTE — now merged into main combat -->
   <div style="width:100%;max-width:500px;border-top:1px solid rgba(200,155,60,0.2);padding-top:14px;margin-top:2px;text-align:center;">
-    <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffdd88;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.6);">Combat System</div>
+    <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffe090;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,1);">Combat System</div>
     <div style="font-size:11px;color:var(--muted);line-height:1.7;max-width:380px;margin:0 auto;">
       Survive waves of enemies. Use abilities and gear to grow stronger.
       <!-- Use <span style="color:#3acc7a;">Q / E</span> to roll on desktop. Rogues can attack during rolls. -->
@@ -1425,7 +1426,7 @@ let sbProfile = null; // players row
 
   <!-- SIMULATE WAVES — available after first run -->
   <div id="map-simulate-section" style="width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:2px;">
-    <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffdd88;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;text-align:center;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.6);">Simulate Waves</div>
+    <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffe090;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;text-align:center;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,1);">Simulate Waves</div>
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;">Instantly simulate waves using your exact current stats — XP, gold and loot apply immediately.</div>
     <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;gap:6px;background:rgba(255,248,225,0.8);border:1px solid rgba(200,155,60,0.3);border-radius:8px;padding:6px 10px;">
@@ -1554,7 +1555,7 @@ let sbProfile = null; // players row
   <div class="aa-action-cluster">
     <div class="aa-action-row">
       <button class="aa-btn-circ c-parry" id="aa-btn-parry" onclick="aaBtnAction('parry')">
-        <span class="ci-icon">✨</span>
+        
         <span class="ci-label">Parry</span>
         <span class="ci-cd" id="aa-cd-parry"></span>
         <svg class="ci-ring" id="aa-ring-parry" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="#ffdd00" stroke-width="2" stroke-dasharray="150.8" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 26 26)" style="transition:stroke-dashoffset linear;opacity:0.5"/></svg>
@@ -1703,7 +1704,7 @@ let sbProfile = null; // players row
   ">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0 16px 14px;border-bottom:1px solid var(--metal-edge);">
       <span style="font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);letter-spacing:0.15em;font-weight:700;">MENU</span>
-      <div onclick="closeMenu()" style="cursor:pointer;color:var(--muted);font-size:18px;line-height:1;font-weight:700;">✕</div>
+      <div onclick="closeMenu()" style="cursor:pointer;color:var(--muted);font-size:18px;line-height:1;font-weight:700;">×</div>
     </div>
     <!-- Auto Wave toggle -->
     <div style="padding:12px 16px;border-bottom:1px solid var(--metal-edge);">
@@ -1792,12 +1793,12 @@ let sbProfile = null; // players row
   <div id="bars-row">
     <div class="bar-wrap">
       <span class="bar-label">HP</span>
-      <div class="bar-track"><div class="bar-fill hp" id="hp-bar" style="width:100%"></div></div>
+      <div class="bar-track hp-track"><div class="bar-fill hp" id="hp-bar" style="width:100%"><img src="https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Health_Bar.png" alt="" style="width:100%;height:100%;display:block;"></div></div>
       <span class="bar-nums" id="hp-nums">200/200</span>
     </div>
     <div class="bar-wrap">
       <span class="bar-label" style="color:#63b3ff;">Mana</span>
-      <div class="bar-track"><div class="bar-fill mp" id="mp-bar" style="width:100%"></div></div>
+      <div class="bar-track mp-track"><div class="bar-fill mp" id="mp-bar" style="width:100%"><img src="https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Mana_Bar.png" alt="" style="width:100%;height:100%;display:block;"></div></div>
       <span class="bar-nums" style="color:#63b3ff;" id="mp-nums">100/100</span>
     </div>
   </div>
@@ -1926,15 +1927,15 @@ let sbProfile = null; // players row
     </div>
 
     <!-- BETWEEN-WAVE FULL SCREEN OVERLAY -->
-    <div id="wave-choice-overlay" style="display:none;position:absolute;inset:0;z-index:20;background:rgba(60,40,10,0.55);backdrop-filter:blur(6px);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
-      <div id="wave-choice-title" style="font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;color:#fff;letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-shadow:2px 2px 0 rgba(80,40,0,0.4);"></div>
+    <div id="wave-choice-overlay" style="display:none;position:absolute;inset:0;z-index:20;background:rgba(10,6,2,0.82);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+      <div id="wave-choice-title" style="font-family:'Jim Nightshade',cursive;font-size:22px;font-weight:700;color:#fff;letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-shadow:0 2px 8px rgba(0,0,0,1),0 0 20px rgba(0,0,0,0.8);"></div>
       <button id="wc-next" onclick="hideWaveChoice();nextWave();" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);transition:filter 0.15s,transform 0.15s;">Next Wave</button>
-      <button id="wc-boss" onclick="startBossAttempt()" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);animation:bossPulse 2s ease-in-out infinite;">Challenge Boss</button>
+      <button id="wc-boss" onclick="startBossAttempt()" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);animation:bossPulse 2s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:12px;letter-spacing:0.06em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
       <button id="wc-honor" onclick="hideWaveChoice();honorableDeath();" style="
         width:100%;max-width:320px;font-family:'Jim Nightshade',cursive;font-size:14px;
-        padding:14px;border:1px solid rgba(232,184,75,0.4);color:#ffdd44;
-        background:rgba(232,184,75,0.05);cursor:pointer;letter-spacing:0.06em;
-        clip-path:polygon(5px 0%,100% 0%,100% calc(100% - 5px),calc(100% - 5px) 100%,0% 100%,0% 5px);
+        padding:14px;border:1px solid rgba(200,155,60,0.5);color:#fff;
+        background:rgba(200,155,60,0.12);cursor:pointer;letter-spacing:0.06em;
+        border-radius:8px;text-shadow:0 1px 3px rgba(0,0,0,0.8);
       ">Honorable Death</button>
     </div>
   </div>
@@ -1971,7 +1972,7 @@ let sbProfile = null; // players row
 <!-- VENDOR MODAL -->
 <div class="modal-overlay hidden" id="vendor-modal">
   <div class="modal">
-    <div class="modal-title">⚗️ Wandering Merchant</div>
+    <div class="modal-title">Wandering Merchant</div>
     <div class="modal-subtitle">Buy to reveal stats</div>
     <div style="text-align:center;font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);margin:-8px 0 12px;letter-spacing:0.05em;" id="vendor-gold-display">0 gold</div>
     <div id="vendor-items"></div>
@@ -2537,13 +2538,13 @@ let playerTitles = [];       // array of title_id strings the player owns
 let playerSelectedTitle = null; // currently equipped title id
 
 const TITLES = {
-  guinea_pig:       { id:'guinea_pig',       label:'🐾 Guinea Pig',        desc:'Original tester — was there from the start.' },
-  season1_gold:     { id:'season1_gold',     label:'🥇 Season 1 Champion', desc:'Highest boss damage in Season 1.' },
-  season1_silver:   { id:'season1_silver',   label:'🥈 Season 1 Runner-Up',desc:'Second highest boss damage in Season 1.' },
-  season1_bronze:   { id:'season1_bronze',   label:'🥉 Season 1 Third',    desc:'Third highest boss damage in Season 1.' },
-  boss_10m:         { id:'boss_10m',         label:'👹 Decimator',          desc:'Dealt 10 million damage to the World Boss.' },
-  boss_30m:         { id:'boss_30m',         label:'🐉 Dragonslayer',       desc:'Dealt 30 million damage to the World Boss.' },
-  boss_50m:         { id:'boss_50m',         label:'☄️ World Ender',        desc:'Dealt 50 million damage to the World Boss.' },
+  guinea_pig:       { id:'guinea_pig',       label:'Guinea Pig',        desc:'Original tester — was there from the start.' },
+  season1_gold:     { id:'season1_gold',     label:'Season 1 Champion', desc:'Highest boss damage in Season 1.' },
+  season1_silver:   { id:'season1_silver',   label:'Season 1 Runner-Up',desc:'Second highest boss damage in Season 1.' },
+  season1_bronze:   { id:'season1_bronze',   label:'Season 1 Third',    desc:'Third highest boss damage in Season 1.' },
+  boss_10m:         { id:'boss_10m',         label:'Decimator',          desc:'Dealt 10 million damage to the World Boss.' },
+  boss_30m:         { id:'boss_30m',         label:'Dragonslayer',       desc:'Dealt 30 million damage to the World Boss.' },
+  boss_50m:         { id:'boss_50m',         label:'World Ender',        desc:'Dealt 50 million damage to the World Boss.' },
 };
 
 function getTitleDisplay(titleId) {
@@ -2813,7 +2814,7 @@ function acceptWaveBoss() {
 function skipWaveBoss() {
   const overlay = document.getElementById('wave-boss-prompt');
   if(overlay) overlay.remove();
-  log(`<span class="log-sys">✅ ${MAP.difficulty} path complete! Heading to the merchant...</span>`);
+  log(`<span class="log-sys">${MAP.difficulty} path complete! Heading to the merchant...</span>`);
   setTimeout(()=>{ openVendor(); }, 300);
 }
 
@@ -2828,7 +2829,7 @@ function onSegmentWaveComplete() {
       MAP.pendingBoss = false;
       showWaveBossPrompt();
     } else {
-      const msg = `✅ ${MAP.difficulty} path ${pathDone ? 'complete' : `wave ${MAP.currentSegWave}`}! Vendor incoming...`;
+      const msg = `${MAP.difficulty} path ${pathDone ? 'complete' : `wave ${MAP.currentSegWave}`}! Vendor incoming...`;
       log(`<span class="log-sys">${msg}</span>`);
       setTimeout(()=>{ openVendor(); }, 500);
     }
@@ -3207,7 +3208,7 @@ function updateEnemyUI() {
       ? `<span style="color:${IMBUE_COLORS[e.resistance]||'#aaa'};font-size:9px;"> resists ${e.resistance}</span>`
       : '';
     const enragedColor = e.enragedColor || '#cc8844';
-    const typeBadge = `<span style="color:${enragedColor};font-size:10px;">${e.name} ${e.name}</span> ${resistText}`;
+    const typeBadge = resistText ? `<span style="color:${enragedColor};font-size:10px;">${resistText}</span>` : '';
     document.getElementById('enemy-type-badge').innerHTML = typeBadge + getStatusBadgesHTML(e);
   }
 }
@@ -3651,7 +3652,7 @@ function fireAbility(ab) {
     const isBowShot = ab.id === 'rogue_basic_bow';
     if(isBowShot) {
       // Arrow — projectile animation, no lunge
-      spawnArrowProjectile(px, py, ex, ey, totalDmg, isCrit, seMult>1.0, elColor);
+      spawnArrowProjectile(px, py - 45, ex, ey - 30, totalDmg, isCrit, seMult>1.0, elColor);
       if(healAmt>0) setTimeout(()=>spawnHealNumber(px+(Math.random()-.5)*20,py-45,healAmt), 300);
       startAnimLoop();
     } else {
@@ -3683,7 +3684,7 @@ function fireAbility(ab) {
   else if(isMaxRoll)       combatLog(`◆ MAX ${totalDmg}`,'se');
   else if(seMult>=1.6)     combatLog(`✦ SE ${totalDmg}`,'se');
   else if(seMult<0.75)     combatLog(`▽ NVE ${totalDmg}`,'dmg-out');
-  if(healAmt>0)           combatLog(`♥ +${healAmt} ${ab.isMagic?'vamp':'steal'}`,'heal');
+  if(healAmt>0)           combatLog(`+${healAmt} ${ab.isMagic?'vamp':'steal'}`,'heal');
 
   // Apply status effects based on ability
   if(G.enemy && G.enemy.hp > 0) {
@@ -3981,7 +3982,7 @@ function openSlotSelector() {
           <span class="apc-name" style="color:${color}">${label}</span>
           <span style="font-size:10px;color:var(--muted);margin-left:6px;">${ab?ab.name:'Empty'}</span>
         </div>
-        ${unlocked?'<span style="font-size:10px;color:#8888ff;">Change →</span>':`<span style="font-size:10px;color:var(--muted);">🔒 ${lockMsg}</span>`}
+        ${unlocked?'<span style="font-size:10px;color:#8888ff;">Change →</span>':`<span style="font-size:10px;color:var(--muted);">Locked: ${lockMsg}</span>`}
       </div>
       ${ab?`<div class="apc-desc" style="font-size:11px;">${ab.desc}</div>`:''}
     </div>`;
@@ -4220,82 +4221,34 @@ const BOSS_MILESTONES = [
 // TRINITY FORCE — COSMIC ALIGNMENT SYSTEM
 // ═══════════════════════════════════════════════
 
-const TRINITY_ALIGNMENTS = {
-  inferno: { id:'inferno', name:'Inferno', icon:'', color:'#ff4d1a', desc:'Masters of fire and destruction. Amplifies Mage fire builds.', resonance:{ class:'mage', imbue:'fire' } },
-  storm:   { id:'storm',   name:'Storm',   icon:'', color:'#ffdd00', desc:'Lightning speed and chain damage. Amplifies Rogue electric builds.', resonance:{ class:'rogue', imbue:'electric' } },
-  void:    { id:'void',    name:'Void',    icon:'', color:'#aa55ff', desc:'Poison and shadow. Amplifies Rogue poison builds.', resonance:{ class:'rogue', imbue:'poison' } },
-  nature:  { id:'nature',  name:'Nature',  icon:'', color:'#3dcc5a', desc:'Life and growth. Amplifies Grass Mage builds.', resonance:{ class:'mage', imbue:'grass' } },
-  order:   { id:'order',   name:'Order',   icon:'', color:'#88eeff', desc:'Ice and defense. Amplifies Warrior ice builds.', resonance:{ class:'warrior', imbue:'ice' } },
-  chaos:   { id:'chaos',   name:'Chaos',   icon:'', color:'#e8b84b', desc:'Unpredictable power. Bonuses apply to ALL classes.', resonance:null },
+const TRINITY_LANES = {
+  attack:  { id:'attack',  name:'Attack',  color:'#e85030', desc:'Increase your damage, elemental power, and offensive synergies.' },
+  defense: { id:'defense', name:'Defense', color:'#4a90d9', desc:'Strengthen your survivability, resistances, and recovery.' },
+  utility: { id:'utility', name:'Utility', color:'#44bb77', desc:'Boost your XP, gold, and Trinity XP gains across all runs.' },
 };
 
 const TRINITY_NODES = {
-  // MAGE PATH A — Grey/White/Apex Wizard progression
-  mage_path_a1: { id:'mage_path_a1', name:'Arcane Surge',    icon:'', cost:5,  classPath:'mage', path:'A', desc:'All mage spells deal +12% damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.12 } },
-  mage_path_a2: { id:'mage_path_a2', name:'Grey Wizard I',   icon:'', cost:10, classPath:'mage', path:'A', desc:'Unlock Grey Wizard. +20% damage, mana costs -15%.', effect:{ type:'tier', tier:'grey_wizard' }, requires:'mage_path_a1' },
-  mage_path_a3: { id:'mage_path_a3', name:'Grey Wizard II',  icon:'', cost:15, classPath:'mage', path:'A', desc:'+25% damage. Overheal up to 10% max HP.', effect:{ type:'overheal', cap:0.10 }, requires:'mage_path_a2' },
-  mage_path_a4: { id:'mage_path_a4', name:'White Wizard I',  icon:'', cost:22, classPath:'mage', path:'A', desc:'Ascend to White Wizard. +40% damage, overheal 50%.', effect:{ type:'overheal', cap:0.50 }, requires:'mage_path_a3' },
-  mage_path_a5: { id:'mage_path_a5', name:'White Wizard II', icon:'', cost:30, classPath:'mage', path:'A', desc:'+60% damage, overheal 150%. Spells can echo.', effect:{ type:'overheal', cap:1.50 }, requires:'mage_path_a4' },
-  mage_path_a6: { id:'mage_path_a6', name:'Apex Wizard',     icon:'', cost:40, classPath:'mage', path:'A', desc:'+80% damage, overheal 300%. Ultimates free.', effect:{ type:'overheal', cap:3.00 }, requires:'mage_path_a5' },
-  // MAGE PATH B — Spell Echo / Mana mastery
-  mage_path_b1: { id:'mage_path_b1', name:'Vamp Mastery',    icon:'', cost:5,  classPath:'mage', path:'B', desc:'Spell vamp 50% more effective.', effect:{ type:'stat_mult', stat:'spellVamp', mult:1.5 } },
-  mage_path_b2: { id:'mage_path_b2', name:'Mana Overflow',   icon:'', cost:10, classPath:'mage', path:'B', desc:'+50 mana, mana regen doubles.', effect:{ type:'stat_flat', stats:{ mana:50, manaRegen:5 } }, requires:'mage_path_b1' },
-  mage_path_b3: { id:'mage_path_b3', name:'Arcane Echo',     icon:'', cost:15, classPath:'mage', path:'B', desc:'15% chance any spell fires twice at 50% power.', effect:{ type:'mutation_node', id:'arcane_echo' }, requires:'mage_path_b2' },
-  mage_path_b4: { id:'mage_path_b4', name:'Chain Spell',     icon:'', cost:22, classPath:'mage', path:'B', desc:'Ultimates chain — deal 40% damage again.', effect:{ type:'mutation_node', id:'chain_spell' }, requires:'mage_path_b3' },
-  // WARRIOR PATH A — Thorns / Tank
-  warr_path_a1: { id:'warr_path_a1', name:'Iron Skin',       icon:'', cost:5,  classPath:'warrior', path:'A', desc:'+15% defense permanently.', effect:{ type:'stat_pct', stat:'defense', pct:0.15 } },
-  warr_path_a2: { id:'warr_path_a2', name:'Thorns I',        icon:'', cost:10, classPath:'warrior', path:'A', desc:'Reflect 15% incoming damage back.', effect:{ type:'thorns', pct:0.15 }, requires:'warr_path_a1' },
-  warr_path_a3: { id:'warr_path_a3', name:'Thorns II',       icon:'', cost:15, classPath:'warrior', path:'A', desc:'Thorns 25%, +25% defense.', effect:{ type:'thorns', pct:0.25 }, requires:'warr_path_a2' },
-  warr_path_a4: { id:'warr_path_a4', name:'Fortress',        icon:'', cost:22, classPath:'warrior', path:'A', desc:'DR cap raised to 80%. Thorns 40%.', effect:{ type:'thorns', pct:0.40, dr_cap:0.80 }, requires:'warr_path_a3' },
-  warr_path_a5: { id:'warr_path_a5', name:'Colossus',        icon:'', cost:30, classPath:'warrior', path:'A', desc:'+100HP, DR cap 85%, Thorns 50%.', effect:{ type:'thorns', pct:0.50, dr_cap:0.85 }, requires:'warr_path_a4' },
-  warr_path_a6: { id:'warr_path_a6', name:'Undying',         icon:'', cost:40, classPath:'warrior', path:'A', desc:'Survive 1 killing blow per run at 1HP. Thorns 60%, DR 90%.', effect:{ type:'thorns', pct:0.60, dr_cap:0.90, undying:true }, requires:'warr_path_a5' },
-  // WARRIOR PATH B — Shockwave / Berserker
-  warr_path_b1: { id:'warr_path_b1', name:'Warlord',         icon:'', cost:5,  classPath:'warrior', path:'B', desc:'+15% attack. Life steal +1%.', effect:{ type:'stat_flat', stats:{ lifeSteal:1 }, pct:{ attack:0.15 } } },
-  warr_path_b2: { id:'warr_path_b2', name:'Shockwave',       icon:'', cost:10, classPath:'warrior', path:'B', desc:'Every 5th hit releases a 200% damage shockwave.', effect:{ type:'mutation_node', id:'shockwave', every:5 }, requires:'warr_path_b1' },
-  warr_path_b3: { id:'warr_path_b3', name:'Battle Hardened', icon:'', cost:15, classPath:'warrior', path:'B', desc:'Life steal 2x effective. +10% attack.', effect:{ type:'stat_mult', stat:'lifeSteal', mult:2.0 }, requires:'warr_path_b2' },
-  warr_path_b4: { id:'warr_path_b4', name:'Berserker',       icon:'', cost:22, classPath:'warrior', path:'B', desc:'Below 30% HP: +50% attack speed, +30% damage.', effect:{ type:'mutation_node', id:'berserker' }, requires:'warr_path_b3' },
-  // ROGUE PATH A — Shadow Clone
-  rogue_path_a1: { id:'rogue_path_a1', name:'Shadow Step',   icon:'', cost:5,  classPath:'rogue', path:'A', desc:'+20% attack speed. +5% crit.', effect:{ type:'stat_flat', stats:{ atkSpeed:0.4, critChance:5 } } },
-  rogue_path_a2: { id:'rogue_path_a2', name:'Clone I',       icon:'', cost:10, classPath:'rogue', path:'A', desc:'Shadow Clone deals 30% damage. No crit/DOT yet.', effect:{ type:'clone', dmgPct:0.30, canCrit:false, canDot:false, count:1 }, requires:'rogue_path_a1' },
-  rogue_path_a3: { id:'rogue_path_a3', name:'Clone: Crit',   icon:'', cost:15, classPath:'rogue', path:'A', desc:'Clone can now crit. Damage 50%.', effect:{ type:'clone', dmgPct:0.50, canCrit:true, canDot:false, count:1 }, requires:'rogue_path_a2' },
-  rogue_path_a4: { id:'rogue_path_a4', name:'Clone: DOT',    icon:'', cost:22, classPath:'rogue', path:'A', desc:'Clone applies imbue DOTs. Damage 65%.', effect:{ type:'clone', dmgPct:0.65, canCrit:true, canDot:true, count:1 }, requires:'rogue_path_a3' },
-  rogue_path_a5: { id:'rogue_path_a5', name:'Twin Clones',   icon:'', cost:30, classPath:'rogue', path:'A', desc:'Second Clone. Both at 65%. Combined +130% DPS.', effect:{ type:'clone', dmgPct:0.65, canCrit:true, canDot:true, count:2 }, requires:'rogue_path_a4' },
-  rogue_path_a6: { id:'rogue_path_a6', name:'Clone Mastery', icon:'', cost:40, classPath:'rogue', path:'A', desc:'Both clones reach 85%. Clones match your attack speed.', effect:{ type:'clone', dmgPct:0.85, canCrit:true, canDot:true, count:2, matchSpeed:true }, requires:'rogue_path_a5' },
-  // ROGUE PATH B — Assassin / Execute
-  rogue_path_b1: { id:'rogue_path_b1', name:'Assassin',      icon:'', cost:5,  classPath:'rogue', path:'B', desc:'+10% crit damage, +8% crit chance.', effect:{ type:'stat_flat', stats:{ critDmg:10, critChance:8 } } },
-  rogue_path_b2: { id:'rogue_path_b2', name:'Execute',       icon:'', cost:10, classPath:'rogue', path:'B', desc:'Enemies <20% HP take 50% more damage.', effect:{ type:'mutation_node', id:'execute' }, requires:'rogue_path_b1' },
-  rogue_path_b3: { id:'rogue_path_b3', name:'Hemorrhage',    icon:'', cost:15, classPath:'rogue', path:'B', desc:'Crits apply Hemorrhage — enemy takes +20% damage for 4s.', effect:{ type:'mutation_node', id:'hemorrhage' }, requires:'rogue_path_b2' },
-  rogue_path_b4: { id:'rogue_path_b4', name:'One Shot',      icon:'', cost:22, classPath:'rogue', path:'B', desc:'+25% crit damage. 10% chance crits deal 5x damage.', effect:{ type:'mutation_node', id:'one_shot', chance:0.10, mult:5 }, requires:'rogue_path_b3' },
-  // CHAOS PATHS (any class)
-  chaos_1: { id:'chaos_1', name:'Chaotic Power', icon:'', cost:5,  classPath:'chaos', path:'C', desc:'+8% ALL stats.', effect:{ type:'all_stats_pct', pct:0.08 } },
-  chaos_2: { id:'chaos_2', name:'Wild Magic',    icon:'', cost:10, classPath:'chaos', path:'C', desc:'10% chance on hit to deal 3x damage.', effect:{ type:'mutation_node', id:'wild_magic', chance:0.10, mult:3 }, requires:'chaos_1' },
-  chaos_3: { id:'chaos_3', name:'Entropy',       icon:'', cost:15, classPath:'chaos', path:'C', desc:'+15% all stats. 15% crit chance to reset all CDs.', effect:{ type:'mutation_node', id:'entropy', all_stats_pct:0.15 }, requires:'chaos_2' },
-  chaos_4: { id:'chaos_4', name:'Singularity',   icon:'', cost:25, classPath:'chaos', path:'C', desc:'First hit on each enemy is guaranteed crit. +20% all stats.', effect:{ type:'mutation_node', id:'singularity', all_stats_pct:0.20 }, requires:'chaos_3' },
+  atk_1: { id:'atk_1', lane:'attack',  name:'Raw Power',        cost:3,  desc:'+12% base attack damage on all abilities.', effect:{ type:'stat_pct', stat:'attack', pct:0.12 } },
+  atk_2: { id:'atk_2', lane:'attack',  name:'Elemental Edge',   cost:8,  desc:'Elemental abilities deal +18% damage. Imbue effects last 20% longer.', effect:{ type:'stat_pct', stat:'attack', pct:0.18, imbueDurMult:1.20 }, requires:'atk_1' },
+  atk_3: { id:'atk_3', lane:'attack',  name:'Critical Focus',   cost:15, desc:'+10% crit chance, +20% crit damage.', effect:{ type:'stat_flat', stats:{ critChance:10, critDmg:20 } }, requires:'atk_2' },
+  atk_4: { id:'atk_4', lane:'attack',  name:'Elemental Mastery',cost:25, desc:'+30% elemental damage. Status effects deal double damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.30, dotMult:2.0 }, requires:'atk_3' },
+  atk_5: { id:'atk_5', lane:'attack',  name:'Apex Predator',    cost:40, desc:'+50% all damage. 10% chance any hit triggers a free 3x echo.', effect:{ type:'mutation_node', id:'wild_magic', chance:0.10, mult:3, bonusAtk:0.50 }, requires:'atk_4' },
+
+  def_1: { id:'def_1', lane:'defense', name:'Iron Will',        cost:3,  desc:'+20 max HP and +8% damage reduction.', effect:{ type:'stat_flat', stats:{ maxHp:20 }, pct:{ defense:0.08 } } },
+  def_2: { id:'def_2', lane:'defense', name:'Resilience',       cost:8,  desc:'+50 max HP. Healing restores 20% more.', effect:{ type:'stat_flat', stats:{ maxHp:50 }, healMult:1.20 }, requires:'def_1' },
+  def_3: { id:'def_3', lane:'defense', name:'Thorns',           cost:15, desc:'Reflect 20% of incoming damage back at enemies.', effect:{ type:'thorns', pct:0.20 }, requires:'def_2' },
+  def_4: { id:'def_4', lane:'defense', name:'Elemental Guard',  cost:25, desc:'+15% resistance to all elemental damage. Thorns 35%.', effect:{ type:'thorns', pct:0.35, elemResist:0.15 }, requires:'def_3' },
+  def_5: { id:'def_5', lane:'defense', name:'Undying',          cost:40, desc:'Once per run survive a killing blow at 1 HP. +100 max HP. Thorns 50%.', effect:{ type:'thorns', pct:0.50, dr_cap:0.85, undying:true, bonusHp:100 }, requires:'def_4' },
+
+  util_1: { id:'util_1', lane:'utility', name:'Keen Eye',         cost:3,  desc:'+15% XP gain and +10% gold from all sources.', effect:{ type:'utility', xpMult:1.15, goldMult:1.10 } },
+  util_2: { id:'util_2', lane:'utility', name:'Honor Bound',      cost:8,  desc:'Honorable Death grants +50% more Trinity Force XP.', effect:{ type:'utility', honorDeathTrinXP:1.50 }, requires:'util_1' },
+  util_3: { id:'util_3', lane:'utility', name:"Survivor's Legacy", cost:15, desc:'Accidental deaths grant 25% of run damage as Trinity XP.', effect:{ type:'utility', deathTrinXPPct:0.25 }, requires:'util_2' },
+  util_4: { id:'util_4', lane:'utility', name:"Fortune's Favor",  cost:25, desc:'+30% XP, +25% gold. Vendor items 15% cheaper.', effect:{ type:'utility', xpMult:1.30, goldMult:1.25, vendorDiscount:0.15 }, requires:'util_3' },
+  util_5: { id:'util_5', lane:'utility', name:'Trinity Conduit',  cost:40, desc:'Trinity XP doubled from all sources. +50% gold. Honorable Death grants 3x Trinity XP.', effect:{ type:'utility', trinXPMult:2.0, goldMult:1.50, honorDeathTrinXP:3.0 }, requires:'util_4' },
 };
 
-const TRINITY_MUTATIONS = [
-  { id:'fireball_split',    name:'Fireball Split',  icon:'', desc:'Fire spells split, dealing 50% damage again on impact.' },
-  { id:'poison_spread',     name:'Plague Vector',   icon:'', desc:'Poisoned enemy death spreads full Poison stacks to next enemy.' },
-  { id:'ice_shatter',       name:'Ice Shatter',     icon:'', desc:'Killing a frozen enemy explodes them for 200% max HP as AOE.' },
-  { id:'shockwave',         name:'Earthshaker',     icon:'', desc:'Every 5th warrior auto releases a 200% damage shockwave.' },
-  { id:'arcane_echo',       name:'Arcane Echo',     icon:'', desc:'15% chance any mage spell fires again at 60% power.' },
-  { id:'chain_lightning',   name:'Chain Lightning', icon:'', desc:'Electric hits chain to deal 50% damage to a second target.' },
-  { id:'execute',           name:'Execute',         icon:'', desc:'Enemies below 20% HP take 50% more damage from you.' },
-  { id:'wild_magic',        name:'Wild Magic',      icon:'', desc:'10% chance each hit deals 3x damage.' },
-];
-
-// ── TRINITY STATE ──
-let trinityData = {
-  rank: 0,
-  rankXP: 0,
-  alignment: null,
-  classEnhancement: null,
-  unlockedNodes: [],
-  mutations: [],
-  ascensionCount: 0,
-  totalDmgDealt: 0,
-  ascensionBoosts: [],   // accumulated per-season stat boosts from ascensions
-};
+const TRINITY_ALIGNMENTS = { inferno:{id:'inferno',name:'Inferno',color:'#ff4d1a',desc:'',resonance:{class:'mage',imbue:'fire'}}, storm:{id:'storm',name:'Storm',color:'#ffdd00',desc:'',resonance:{class:'rogue',imbue:'electric'}}, void:{id:'void',name:'Void',color:'#aa55ff',desc:'',resonance:{class:'rogue',imbue:'poison'}}, nature:{id:'nature',name:'Nature',color:'#3dcc5a',desc:'',resonance:{class:'mage',imbue:'grass'}}, order:{id:'order',name:'Order',color:'#88eeff',desc:'',resonance:{class:'warrior',imbue:'ice'}}, chaos:{id:'chaos',name:'Chaos',color:'#e8b84b',desc:'',resonance:null} };
+const TRINITY_MUTATIONS = [ {id:'fireball_split',name:'Fireball Split',desc:'Fire spells split dealing 50% damage again.'}, {id:'poison_spread',name:'Plague Vector',desc:'Poisoned enemy death spreads stacks.'}, {id:'ice_shatter',name:'Ice Shatter',desc:'Killing frozen enemies explodes them for 200% HP.'}, {id:'shockwave',name:'Earthshaker',desc:'Every 5th warrior hit releases a shockwave.'}, {id:'arcane_echo',name:'Arcane Echo',desc:'15% chance any spell fires again at 60% power.'}, {id:'chain_lightning',name:'Chain Lightning',desc:'Electric hits chain to a second target.'}, {id:'execute',name:'Execute',desc:'Enemies below 20% HP take 50% more damage.'}, {id:'wild_magic',name:'Wild Magic',desc:'10% chance each hit deals 3x damage.'} ];
 
 const TRINITY_RANK_XP_PER_LEVEL = 50000;
 const TRINITY_ORB_THRESHOLD = 10000;
@@ -4304,43 +4257,30 @@ const TRINITY_ORB_THRESHOLD = 10000;
 function getTrinityBonuses() {
   const bonuses = {};
   if(!trinityData.unlockedNodes) return bonuses;
-
   trinityData.unlockedNodes.forEach(nodeId => {
     const node = TRINITY_NODES[nodeId];
     if(!node) return;
     const e = node.effect;
-    if(e.type === 'stat_flat' && e.stats) {
-      Object.entries(e.stats).forEach(([k,v]) => { bonuses[k] = (bonuses[k]||0) + v; });
-    }
-    if(e.type === 'stat_pct' && e.stat) {
-      // Percentage bonuses stored separately, applied in getStats
-      if(!bonuses._pct) bonuses._pct = {};
-      bonuses._pct[e.stat] = (bonuses._pct[e.stat]||0) + e.pct;
-    }
-    if(e.type === 'all_stats_pct') {
-      if(!bonuses._allPct) bonuses._allPct = 0;
-      bonuses._allPct += e.pct;
-    }
-    if(e.type === 'stat_mult' && e.stat) {
-      if(!bonuses._mult) bonuses._mult = {};
-      bonuses._mult[e.stat] = (bonuses._mult[e.stat]||1) * e.mult;
-    }
-    if(e.type === 'thorns') {
-      bonuses._thorns = Math.max(bonuses._thorns||0, e.pct);
-      if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap);
-    }
-    if(e.type === 'overheal') {
-      bonuses._overhealCap = Math.max(bonuses._overhealCap||0, e.cap);
+    if(e.stats) Object.entries(e.stats).forEach(([k,v]) => { bonuses[k] = (bonuses[k]||0) + v; });
+    if(e.bonusHp) bonuses.maxHp = (bonuses.maxHp||0) + e.bonusHp;
+    if(e.type === 'stat_pct' && e.stat) { if(!bonuses._pct) bonuses._pct={}; bonuses._pct[e.stat] = (bonuses._pct[e.stat]||0) + e.pct; }
+    if(e.bonusAtk) { if(!bonuses._pct) bonuses._pct={}; bonuses._pct.attack = (bonuses._pct?.attack||0) + e.bonusAtk; }
+    if(e.type === 'all_stats_pct') { bonuses._allPct = (bonuses._allPct||0) + e.pct; }
+    if(e.type === 'stat_mult' && e.stat) { if(!bonuses._mult) bonuses._mult={}; bonuses._mult[e.stat] = (bonuses._mult[e.stat]||1) * e.mult; }
+    if(e.type === 'thorns') { bonuses._thorns = Math.max(bonuses._thorns||0, e.pct); if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap); if(e.undying) bonuses._undying=true; }
+    if(e.type === 'overheal') { bonuses._overhealCap = Math.max(bonuses._overhealCap||0, e.cap); }
+    if(e.healMult) bonuses._healMult = Math.max(bonuses._healMult||1, e.healMult);
+    if(e.dotMult)  bonuses._dotMult  = Math.max(bonuses._dotMult||1,  e.dotMult);
+    if(e.type === 'utility') {
+      if(e.xpMult)           bonuses._xpMult   = Math.max(bonuses._xpMult||1,   e.xpMult);
+      if(e.goldMult)         bonuses._goldMult  = Math.max(bonuses._goldMult||1,  e.goldMult);
+      if(e.honorDeathTrinXP) bonuses._honorTrinXP = Math.max(bonuses._honorTrinXP||1, e.honorDeathTrinXP);
+      if(e.deathTrinXPPct)   bonuses._deathTrinXP = Math.max(bonuses._deathTrinXP||0,  e.deathTrinXPPct);
+      if(e.vendorDiscount)   bonuses._vendorDisc  = Math.max(bonuses._vendorDisc||0,   e.vendorDiscount);
+      if(e.trinXPMult)       bonuses._trinXPMult  = Math.max(bonuses._trinXPMult||1,   e.trinXPMult);
     }
   });
-
-  // Ascension boosts (permanent for this season)
-  if(trinityData.ascensionBoosts) {
-    trinityData.ascensionBoosts.forEach(boost => {
-      bonuses[boost.stat] = (bonuses[boost.stat]||0) + boost.amount;
-    });
-  }
-
+  if(trinityData.ascensionBoosts) trinityData.ascensionBoosts.forEach(b => { bonuses[b.stat] = (bonuses[b.stat]||0) + b.amount; });
   return bonuses;
 }
 
@@ -4488,7 +4428,7 @@ function showAttackWarning(dir) {
   const isSweep = dir === 'sweep';
   const color = isSweep ? '#ff2266' : '#ffaa00';
   const arrow = dir === 'left' ? '◀◀' : dir === 'right' ? '▶▶' : '↔';
-  const label = isSweep ? '⚠ SWEEP — Dodge or Block!' : `⚠ Attack ${dir.toUpperCase()} — move ${dir === 'left' ? 'RIGHT' : 'LEFT'}!`;
+  const label = isSweep ? 'SWEEP — Dodge or Block!' : `Attack ${dir.toUpperCase()} — move ${dir === 'left' ? 'RIGHT' : 'LEFT'}!`;
 
   const warn = document.createElement('div');
   warn.id = 'attack-warning';
@@ -4801,7 +4741,7 @@ function onEnemyDeath() {
       const dropItem = rollItem(dropSlot, G.wave, false);
       const t = dropItem.tier||dropItem.rarity;
       if(['Ancient','Cosmic'].includes(t.name)||Math.random()<0.35) {
-        log(`<span style="color:${t.color};font-weight:600;">⬇ ${t.name} drop: ${dropItem.name}!</span>`);
+        log(`<span style="color:${t.color};font-weight:600;">${t.name} drop: ${dropItem.name}!</span>`);
         setTimeout(()=>showItemModal(dropItem,'vendor_buy'),600);
       }
     }
@@ -4851,6 +4791,13 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
+  // Accidental death Trinity XP (utility lane)
+  if(sbUser && G.runStats && G.runStats.totalDmg > 0) {
+    const _tb = getTrinityBonuses();
+    if(_tb._deathTrinXP > 0) trinityEarnXP(Math.floor(G.runStats.totalDmg * _tb._deathTrinXP));
+  }
+  // Always save trinity on death
+  if(sbUser) saveTrinity().catch(()=>{});
   // Trinity rank display
   const orbsEarned = 0; // orbs replaced by Trinity Rank system
   const orbTotal = trinityData.rank||0;
@@ -4895,20 +4842,32 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
         </div>
       </div>
 
-      ${sbUser ? `
-      <div style="background:rgba(230,210,160,0.6);border:1px solid rgba(200,155,60,0.35);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;font-weight:700;">Trinity Rank</div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:24px;color:var(--gold);">+${trinityRank}</div>
+      \${sbUser ? \`
+      <div style="background:rgba(200,155,60,0.12);border:1.5px solid rgba(200,155,60,0.5);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;text-align:center;margin-bottom:10px;font-weight:700;">Trinity Force Progress</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+          <div>
+            <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700;">XP This Run</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">\${numberWithCommas(G.runStats.totalDmg||0)}</div>
+          </div>
+          <div>
+            <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700;">Current Rank</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">\${trinityRank}</div>
+          </div>
+          <div>
+            <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700;">XP to Next</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">\${numberWithCommas(Math.max(0,TRINITY_RANK_XP_PER_LEVEL-(trinityData.rankXP||0)))}</div>
+          </div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;font-weight:700;">Total Rank</div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:24px;color:var(--gold);">${trinityRank} Rank</div>
+        <div style="margin-top:10px;height:8px;background:rgba(0,0,0,0.25);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;background:linear-gradient(90deg,#a07808,#e8b020,#ffe84d);border-radius:4px;width:\${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}%;"></div>
         </div>
-      </div>` : `
-      <div style="background:rgba(230,210,160,0.6);border:1px solid rgba(200,155,60,0.35);border-radius:10px;padding:10px;margin-bottom:12px;text-align:center;font-family:'Lato',sans-serif;font-size:12px;color:var(--text-light);font-weight:600;">
-        Sign in to track Trinity Force progress
-      </div>`}
+        <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-align:center;margin-top:4px;">\${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}% to Rank \${trinityRank+1}</div>
+      </div>\` : \`
+      <div style="background:rgba(200,155,60,0.08);border:1px solid rgba(200,155,60,0.3);border-radius:10px;padding:12px;margin-bottom:12px;text-align:center;">
+        <div style="font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);margin-bottom:4px;">Trinity Force</div>
+        <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-light);font-weight:600;">Sign in to track progress and earn permanent upgrades</div>
+      </div>\`}
 
       <div style="background:rgba(230,210,160,0.6);border:1px solid rgba(200,155,60,0.35);border-radius:10px;padding:10px;margin-bottom:14px;">
         <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;font-weight:700;">Element Usage</div>
@@ -4957,7 +4916,7 @@ function safeShow(id) { const el=document.getElementById(id); if(el) el.classLis
 // 0 = Performance, 1 = Balanced, 2 = High FX
 const FX = {
   PERF: 0, BAL: 1, HIGH: 2,
-  labels: [' Perf', ' Balanced', '✨ High FX'],
+  labels: [' Perf', ' Balanced', 'High FX'],
   colors: ['#cc2a2a', '#d4a535', '#2e9e58'],
 };
 let G_fxLevel = parseInt(localStorage.getItem('er_fxLevel') ?? '1');
@@ -5082,12 +5041,12 @@ function updateAutoWaveBtn() {
     btn.style.background = 'rgba(58,204,122,0.15)';
     btn.style.boxShadow = '0 0 10px rgba(58,204,122,0.4)';
     btn.style.borderColor = 'var(--green)';
-    btn.innerHTML = '<span class="btn-icon">▶</span>Auto ON';
+    btn.innerHTML = 'Auto ON';
   } else {
     btn.style.background = '';
     btn.style.boxShadow = '';
     btn.style.borderColor = '';
-    btn.innerHTML = '<span class="btn-icon">▶</span>Next Wave';
+    btn.innerHTML = 'Next Wave';
   }
 }
 
@@ -6083,7 +6042,7 @@ function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){
 function spawnHealNumber(x,y,amt){
   damageNumbers.push({
     x, y, vy:-2.0,
-    text:`+${amt} ♥`,
+    text:`+${amt} HP`,
     life:1, decay:0.018,
     size:16, color:'#3acc7a',
     bold:true,
@@ -6969,7 +6928,7 @@ function doHeal(ab) {
   earnClassXP(ab.class, 4);
   playSound('heal');
   log(`<span style="color:#3acc7a">${ab.name} — restored ${ab.hot ? 'HP over time' : healAmt + ' HP'}</span>`);
-  combatLog(`♥ ${ab.name} +${healAmt}`, 'heal');
+  combatLog(`${ab.name} +${healAmt}`, 'heal');
   updateHealSlotUI();
   startHealCDBar(ab);
 }
@@ -7387,6 +7346,7 @@ async function grantCosmetic(itemId, source='boss_reward') {
 // ── SUPABASE LEADERBOARD (replaces JSONBin) ──
 async function postSupabaseLeaderboard(score) {
   if(!sbUser || !sbProfile) return;
+  if(sbUser) await saveTrinity().catch(()=>{});
   await sb.from('leaderboard').upsert({
     player_id: sbUser.id,
     username: sbProfile.username,
@@ -7471,20 +7431,37 @@ function honorableDeath() {
     <div style="background:rgba(248,235,205,0.98);border:1px solid rgba(200,155,60,0.3);border-radius:12px;padding:24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
       <div style="font-family:'Jim Nightshade',cursive;font-size:22px;font-weight:900;color:var(--red);margin-bottom:6px;text-shadow:0 1px 3px rgba(0,0,0,0.1);">Honorable Death</div>
       <div style="font-family:'Lato',sans-serif;font-size:13px;color:var(--text-light);margin-bottom:16px;line-height:1.5;">End your current run with honor. Your progress is lost but your legacy endures.</div>
-      <div style="background:rgba(230,210,160,0.6);border:1px solid rgba(200,155,60,0.35);border-radius:10px;padding:14px;margin-bottom:16px;">
-        <div style="font-family:'Lato',sans-serif;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Run Summary</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:left;">
+      <div style="background:rgba(230,210,160,0.6);border:1px solid rgba(200,155,60,0.35);border-radius:10px;padding:12px;margin-bottom:12px;">
+        <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-transform:uppercase;font-weight:700;margin-bottom:8px;text-align:center;">Run Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:left;margin-bottom:10px;">
           <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-light);font-weight:600;">Wave Reached</div>
           <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:var(--text);text-align:right;">${G.wave}</div>
           <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-light);font-weight:600;">Kills</div>
           <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:var(--text);text-align:right;">${G.kills}</div>
-          \${sbUser ? \`
-          <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-light);font-weight:600;">Trinity Rank</div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:var(--gold);text-align:right;">+\${trinityRank}</div>
-          \` : \`
-          <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--red);grid-column:1/-1;text-align:center;margin-top:4px;font-weight:600;">Sign in to earn Trinity Rank</div>
-          \`}
         </div>
+        ${sbUser ? `
+        <div style="border-top:1px solid rgba(200,155,60,0.25);padding-top:10px;">
+          <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin-bottom:8px;">Trinity Force Progress</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center;margin-bottom:8px;">
+            <div>
+              <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;font-weight:700;">XP This Run</div>
+              <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:var(--gold);">${numberWithCommas(G.runStats.totalDmg||0)}</div>
+            </div>
+            <div>
+              <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;font-weight:700;">Current Rank</div>
+              <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:var(--gold);">${trinityRank}</div>
+            </div>
+            <div>
+              <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;font-weight:700;">XP to Next</div>
+              <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:var(--gold);">${numberWithCommas(Math.max(0,TRINITY_RANK_XP_PER_LEVEL-(trinityData.rankXP||0)))}</div>
+            </div>
+          </div>
+          <div style="height:6px;background:rgba(0,0,0,0.2);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,#a07808,#e8b020,#ffe84d);border-radius:3px;width:${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}%;"></div>
+          </div>
+          <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-align:center;margin-top:3px;">${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}% to Rank ${trinityRank+1}</div>
+        </div>` : `
+        <div style="border-top:1px solid rgba(200,155,60,0.2);padding-top:8px;text-align:center;font-family:'Lato',sans-serif;font-size:12px;color:var(--red);font-weight:600;">Sign in to earn Trinity Rank</div>`}
       </div>
       <div style="display:flex;gap:8px;">
         <button onclick="document.getElementById('honorable-death-overlay').remove()" style="flex:1;font-family:'Jim Nightshade',cursive;font-size:14px;padding:0;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;min-height:72px;text-shadow:0 1px 3px rgba(0,0,0,0.6);filter:grayscale(0.4);transition:filter 0.15s;">Cancel</button>
@@ -7495,6 +7472,14 @@ function honorableDeath() {
 }
 
 function executeHonorableDeath(orbsEarned) {
+  // Honorable death bonus Trinity XP (utility lane)
+  if(sbUser && G.runStats && G.runStats.totalDmg > 0) {
+    const _tb = getTrinityBonuses();
+    const honorMult = _tb._honorTrinXP || 1;
+    if(honorMult > 1) trinityEarnXP(Math.floor(G.runStats.totalDmg * (honorMult - 1)));
+  }
+  // Save trinity before clearing local data
+  if(sbUser) saveTrinity().catch(()=>{});
   // Clear local save data
   ['elementalRift_v3','er_tooltip_seen','er_ability_tutorial_done',
    'er_passive_tutorial_done','er_lb_version','elementalRift_leaderboard',
@@ -7542,13 +7527,18 @@ async function loadTrinity() {
 
 async function saveTrinity() {
   if(!sbUser) return;
-  const payload = {
-    player_id: sbUser.id,
-    trinity_data: JSON.stringify(trinityData),
-    rank: trinityData.rank||0,
-    updated_at: new Date().toISOString()
-  };
-  await sb.from('player_trinity').upsert(payload, { onConflict: 'player_id' });
+  try {
+    const payload = {
+      player_id: sbUser.id,
+      trinity_data: JSON.stringify(trinityData),
+      rank: trinityData.rank||0,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await sb.from('player_trinity').upsert(payload, { onConflict: 'player_id' });
+    if(error) console.error('[Trinity] Save failed:', error.message, error);
+  } catch(e) {
+    console.error('[Trinity] Save exception:', e);
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -7597,7 +7587,7 @@ function applyImbueEffect(enemy, effect, st, stacks=1) {
       const freezeDur = (st.freezeDuration||1.5) * 1000;
       enemy.statusEffects.frozen = { timer: now + freezeDur };
       enemy.frozenUntil = now + freezeDur;
-      log(`<span style="color:#88eeff">❄️ ${enemy.name} is FROZEN for ${(st.freezeDuration||1.5).toFixed(1)}s!</span>`);
+      log(`<span style="color:#88eeff">${enemy.name} is FROZEN for ${(st.freezeDuration||1.5).toFixed(1)}s!</span>`);
     } else if(effect === 'ice') {
     }
     startStatusTick();
@@ -7645,10 +7635,10 @@ function getStatusBadgesHTML(enemy) {
   const se = enemy.statusEffects;
   const now = Date.now();
   let html = '';
-  if(se.frozen && now < se.frozen.timer) html += `<span style="color:#88eeff;font-size:11px;">❄️ FROZEN</span>`;
+  if(se.frozen && now < se.frozen.timer) html += `<span style="color:#88eeff;font-size:11px;">FROZEN</span>`;
   else if(se.slow)   html += `<span style="color:#88eeff;font-size:11px;">Slowed</span>`;
   if(se.burn)        html += `<span style="color:#ff4d1a;font-size:11px;">Burnx${Math.ceil(se.burn.dps/3)}</span>`;
-  if(se.poison)      html += `<span style="color:#88cc00;font-size:11px;">☠️x${se.poison.stacks||1}</span>`;
+  if(se.poison)      html += `<span style="color:#88cc00;font-size:11px;">Poison x${se.poison.stacks||1}</span>`;
   if(se.electric)    html += `<span style="color:#ffdd00;font-size:11px;"></span>`;
   return html ? `<div style="display:flex;gap:4px;justify-content:center;margin-top:2px;">${html}</div>` : '';
 }
@@ -8427,173 +8417,132 @@ async function openTrinityShop() {
 }
 
 function closeTrinityShop() {
+  if(sbUser) saveTrinity().catch(()=>{});
   document.getElementById('trinity-modal').classList.add('hidden');
 }
 
 function renderTrinityModal() {
-  const modal = document.getElementById('trinity-modal');
-  if(!modal) return;
-  const td = trinityData;
-  const align = td.alignment ? TRINITY_ALIGNMENTS[td.alignment] : null;
-  const rankXPNeeded = TRINITY_RANK_XP_PER_LEVEL;
-  const rankPct = Math.min(100, Math.floor((td.rankXP||0) / rankXPNeeded * 100));
-
-  let html = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div style="font-family:'Jim Nightshade',cursive;font-size:18px;font-weight:900;color:#ffdd44;">
-         Trinity Force
-      </div>
-      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:var(--muted);padding:4px 10px;cursor:pointer;font-size:12px;">✕</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Permanent cosmic progression. Resets each season. Titles carry over.</div>
-
-    <!-- Rank Bar -->
-    <div style="background:rgba(245,225,175,0.92);border:1px solid #e8b84b33;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-family:'Jim Nightshade',cursive;font-size:13px;color:#ffdd44;">Trinity Rank ${td.rank||0}</span>
-        <span style="font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--muted);">${numberWithCommas(td.rankXP||0)} / ${numberWithCommas(rankXPNeeded)} dmg</span>
-      </div>
-      <div style="height:6px;background:rgba(245,225,175,0.9);border-radius:3px;overflow:hidden;">
-        <div style="height:100%;width:${rankPct}%;background:linear-gradient(90deg,#e8b84b,#ffdd00);border-radius:3px;transition:width 0.4s;"></div>
-      </div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px;">Earned from total enemy damage dealt per run · ${td.ascensionCount||0} Ascensions this season</div>
-    </div>`;
-
-  if(!align) {
-    // No alignment chosen yet — show alignment selection
-    html += `
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#ffdd44;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Choose Your Cosmic Alignment</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
-        ${Object.values(TRINITY_ALIGNMENTS).map(a => `
-          <div onclick="chooseTrinityAlignment('${a.id}')" style="background:rgba(245,225,175,0.92);border:1px solid ${a.color}44;border-radius:10px;padding:12px;cursor:pointer;transition:all 0.2s;"
-            onmouseover="this.style.background='${a.color}11'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
-            <div style="font-size:20px;margin-bottom:4px;">${a.icon}</div>
-            <div style="font-family:'Jim Nightshade',cursive;font-size:12px;font-weight:700;color:${a.color};">${a.name}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px;line-height:1.4;">${a.desc}</div>
-          </div>`).join('')}
-      </div>`;
-  } else {
-    // Alignment chosen — show node tree + ascension + simulate
-    html += renderTrinityNodeTree(align);
-    html += renderTrinityAscension(align);
-    html += renderTrinitySimulate();
-    html += renderTrinityMutations();
-  }
-
-  const inner = modal.querySelector('.trinity-inner');
-  if(inner) inner.innerHTML = html;
-  else modal.innerHTML = `<div style="background:rgba(248,235,205,0.98);border:1px solid rgba(200,155,60,0.3);border-radius:12px;padding:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;" class="trinity-inner">${html}</div>`;
-}
-
-function chooseTrinityAlignment(alignId) {
-  if(trinityData.alignment) {
-    if(!confirm('Changing alignment resets all nodes and mutations. Continue?')) return;
-  }
-  trinityData.alignment = alignId;
-  trinityData.classEnhancement = null;
-  trinityData.unlockedNodes = [];
-  trinityData.mutations = [];
-  saveTrinity().catch(()=>{});
-  renderTrinityModal();
-}
-
-function renderTrinityNodeTree(align) {
+  const inner = document.getElementById('trinity-modal-inner');
+  if(!inner) return;
   const td = trinityData;
   const rank = td.rank || 0;
+  const rankXP = td.rankXP || 0;
+  const pct = Math.min(100, Math.round((rankXP / TRINITY_RANK_XP_PER_LEVEL) * 100));
+  if(td._activeLane) { renderTrinityLane(td._activeLane); return; }
 
-  // If no class chosen, show class picker
-  if(!td.classEnhancement) {
-    return `
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:${align.color};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
-        ${align.name} — Choose Class to Enhance
+  const laneCards = Object.values(TRINITY_LANES).map(lane => {
+    const laneNodes = Object.values(TRINITY_NODES).filter(n => n.lane === lane.id);
+    const done = laneNodes.filter(n => (td.unlockedNodes||[]).includes(n.id)).length;
+    const next = laneNodes.find(n => !(td.unlockedNodes||[]).includes(n.id));
+    const canAfford = next && rank >= next.cost;
+    return `<div onclick="trinityData._activeLane='${lane.id}';renderTrinityModal();" style="cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid ${lane.color}44;border-radius:14px;padding:18px 16px;transition:all 0.2s;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='${lane.color}99'" onmouseout="this.style.borderColor='${lane.color}44'">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,${lane.color},transparent);opacity:0.5;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="font-family:'Jim Nightshade',cursive;font-size:20px;color:${lane.color};letter-spacing:0.08em;">${lane.name}</div>
+        <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:${canAfford?lane.color:'rgba(255,255,255,0.3)'};">${canAfford?'Ready':'Rank '+( next?next.cost:'-')}</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
-        ${['mage','warrior','rogue'].map(cls => `
-          <div onclick="chooseTrinityClass('${cls}')" style="background:rgba(245,225,175,0.92);border:1px solid ${CLASS_COLORS[cls]}44;border-radius:10px;padding:12px;cursor:pointer;text-align:center;"
-            onmouseover="this.style.borderColor='${CLASS_COLORS[cls]}'" onmouseout="this.style.borderColor='${CLASS_COLORS[cls]}44'">
-            <div style="font-size:24px;">${CLASS_ICONS[cls]}</div>
-            <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:${CLASS_COLORS[cls]};margin-top:4px;">${cls.charAt(0).toUpperCase()+cls.slice(1)}</div>
-          </div>`).join('')}
-        <div onclick="chooseTrinityClass('chaos')" style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,155,60,0.25);border-radius:10px;padding:12px;cursor:pointer;text-align:center;grid-column:span 3;"
-          onmouseover="this.style.borderColor='#e8b84b'" onmouseout="this.style.borderColor='rgba(200,155,60,0.25)'">
-          
-          <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffdd44;margin-top:4px;">Chaos — Works with any class</div>
-        </div>
-      </div>`;
-  }
-
-  // Show node tree for chosen class
-  const cls = td.classEnhancement;
-  const clsColor = cls === 'chaos' ? '#e8b84b' : (CLASS_COLORS[cls]||'#aaa');
-  const pathNodes = (cls === 'chaos')
-    ? [['C', Object.values(TRINITY_NODES).filter(n => n.classPath === 'chaos')]]
-    : [
-        ['A', Object.values(TRINITY_NODES).filter(n => n.classPath === cls && n.path === 'A')],
-        ['B', Object.values(TRINITY_NODES).filter(n => n.classPath === cls && n.path === 'B')],
-        ['C', Object.values(TRINITY_NODES).filter(n => n.classPath === 'chaos')],
-      ];
-
-  let html = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:${align.color};letter-spacing:0.1em;text-transform:uppercase;">
-        ${align.name} · ${cls === 'chaos' ? 'Chaos' : (CLASS_ICONS[cls]+' '+cls.charAt(0).toUpperCase()+cls.slice(1))} Enhancement
+      <div style="font-family:'Lato',sans-serif;font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:10px;line-height:1.4;">${lane.desc}</div>
+      <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="height:100%;background:${lane.color};width:${Math.round(done/laneNodes.length*100)}%;"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-family:'Lato',sans-serif;font-size:9px;color:rgba(255,255,255,0.35);">
+        <span>${done}/${laneNodes.length} nodes</span><span>Enter →</span>
       </div>
-      <button onclick="trinityData.classEnhancement=null;renderTrinityModal()" style="font-family:'Jim Nightshade',cursive;font-size:10px;background:transparent;border:1px solid rgba(200,155,60,0.25);color:var(--muted);padding:3px 8px;border-radius:5px;cursor:pointer;">↩ Change</button>
     </div>`;
+  }).join('');
 
-  pathNodes.forEach(([pathLetter, nodes]) => {
-    if(!nodes.length) return;
-    const pathLabel = pathLetter === 'A' ? 'Path A' : pathLetter === 'B' ? 'Path B' : 'Chaos Path';
-    html += `<div style="font-size:10px;color:var(--muted);font-family:'Jim Nightshade',cursive;letter-spacing:0.08em;text-transform:uppercase;margin:8px 0 5px;">${pathLabel}</div>`;
-    html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">`;
-    nodes.forEach(node => {
-      const unlocked = td.unlockedNodes.includes(node.id);
-      const canUnlock = !unlocked && rank >= node.cost &&
-        (!node.requires || td.unlockedNodes.includes(node.requires));
-      const locked = !unlocked && !canUnlock;
-      const nodeColor = unlocked ? '#3acc7a' : canUnlock ? clsColor : 'var(--muted)';
-      html += `
-        <div onclick="${canUnlock ? `unlockTrinityNode('${node.id}')` : ''}"
-          style="background:rgba(245,225,175,0.92);border:1px solid ${unlocked?'#3acc7a44':canUnlock?clsColor+'44':'var(--border)'};border-radius:8px;padding:8px 10px;cursor:${canUnlock?'pointer':'default'};display:flex;align-items:center;gap:8px;opacity:${locked?0.45:1};"
-          ${canUnlock ? `onmouseover="this.style.background='${clsColor}11'" onmouseout="this.style.background='rgba(245,225,175,0.92)'"` : ''}>
-          <span style="font-size:16px;">${node.icon}</span>
-          <div style="flex:1;">
-            <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:${nodeColor};">${node.name}${unlocked?' ✓':''}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:1px;">${node.desc}</div>
-          </div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:10px;color:${rank>=node.cost?'#e8b84b':'#cc4444'};flex-shrink:0;">${unlocked?'✓':rank+'/'+node.cost}</div>
-        </div>`;
-      if(node.requires && !td.unlockedNodes.includes(node.requires)) {
-        const reqNode = TRINITY_NODES[node.requires];
-        if(reqNode) html += `<div style="font-size:9px;color:var(--muted);padding-left:34px;margin-top:-2px;">Requires: ${reqNode.name}</div>`;
-      }
-    });
-    html += '</div>';
-  });
-
-  return html;
+  inner.innerHTML = `<div style="padding:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div style="font-family:'Jim Nightshade',cursive;font-size:22px;color:rgba(220,180,60,0.95);letter-spacing:0.08em;">Trinity Force</div>
+        <div style="font-family:'Lato',sans-serif;font-size:11px;color:rgba(255,255,255,0.4);">Permanent upgrades · 3 Power Lanes</div>
+      </div>
+      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:rgba(255,255,255,0.5);padding:6px 12px;cursor:pointer;font-family:'Jim Nightshade',cursive;font-size:14px;">×</button>
+    </div>
+    <div style="background:rgba(200,155,60,0.1);border:1px solid rgba(200,155,60,0.25);border-radius:10px;padding:12px;margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div><div style="font-family:'Lato',sans-serif;font-size:9px;color:rgba(255,255,255,0.45);text-transform:uppercase;font-weight:700;letter-spacing:0.1em;">Trinity Rank</div>
+          <div style="font-family:'Jim Nightshade',cursive;font-size:28px;color:rgba(220,180,60,0.95);line-height:1;">${rank}</div></div>
+        <div style="text-align:right;"><div style="font-family:'Lato',sans-serif;font-size:9px;color:rgba(255,255,255,0.45);text-transform:uppercase;font-weight:700;letter-spacing:0.1em;">XP to Next</div>
+          <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:rgba(220,180,60,0.8);">${numberWithCommas(TRINITY_RANK_XP_PER_LEVEL-rankXP)}</div></div>
+      </div>
+      <div style="height:6px;background:rgba(0,0,0,0.3);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;background:linear-gradient(90deg,#a07808,#e8b020,#ffe84d);border-radius:3px;width:${pct}%;"></div>
+      </div>
+      <div style="font-family:'Lato',sans-serif;font-size:10px;color:rgba(255,255,255,0.35);text-align:right;margin-top:3px;">${pct}% to Rank ${rank+1}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">${laneCards}</div>
+  </div>`;
 }
 
-function chooseTrinityClass(cls) {
-  trinityData.classEnhancement = cls;
-  trinityData.unlockedNodes = [];
-  saveTrinity().catch(()=>{});
-  renderTrinityModal();
+function renderTrinityLane(laneId) {
+  const inner = document.getElementById('trinity-modal-inner');
+  if(!inner) return;
+  const lane = TRINITY_LANES[laneId];
+  if(!lane) { trinityData._activeLane=null; renderTrinityModal(); return; }
+  const td = trinityData;
+  const rank = td.rank || 0;
+  const nodes = Object.values(TRINITY_NODES).filter(n => n.lane === laneId);
+  const BASE_BTN = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png';
+
+  const nodeHTML = nodes.map((node, idx) => {
+    const unlocked  = (td.unlockedNodes||[]).includes(node.id);
+    const prevDone  = !node.requires || (td.unlockedNodes||[]).includes(node.requires);
+    const canUnlock = !unlocked && prevDone && rank >= node.cost;
+    const tooExp    = !unlocked && prevDone && rank < node.cost;
+    const locked    = !unlocked && !prevDone;
+
+    const bg     = unlocked ? 'rgba('+hexToRgb(lane.color)+',0.15)' : 'rgba(15,9,3,0.6)';
+    const border = unlocked ? lane.color+'88' : (canUnlock ? lane.color+'55' : 'rgba(255,255,255,0.1)');
+    const opacity = locked ? '0.45' : '1';
+    const connector = idx < nodes.length-1 ? `<div style="display:flex;justify-content:center;height:18px;align-items:center;"><div style="width:2px;height:100%;background:${unlocked?lane.color:'rgba(255,255,255,0.12)'}"></div></div>` : '';
+
+    return `<div style="opacity:${opacity}">
+      <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:14px 16px;position:relative;${unlocked?'box-shadow:0 0 10px '+lane.color+'22;':''}">
+        ${unlocked?`<div style="position:absolute;top:8px;right:12px;font-family:'Jim Nightshade',cursive;font-size:10px;color:${lane.color};letter-spacing:0.06em;">Unlocked</div>`:''}
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;background:${unlocked?lane.color+'22':'rgba(255,255,255,0.04)'};border:1.5px solid ${unlocked?lane.color:'rgba(255,255,255,0.12)'};display:flex;align-items:center;justify-content:center;font-family:'Jim Nightshade',cursive;font-size:13px;color:${unlocked?lane.color:'rgba(255,255,255,0.25)'};">${idx+1}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:${unlocked?lane.color:'rgba(255,255,255,0.9)'};margin-bottom:4px;">${node.name}</div>
+            <div style="font-family:'Lato',sans-serif;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.4;">${node.desc}</div>
+          </div>
+        </div>
+        ${!unlocked && prevDone ? `<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="font-family:'Lato',sans-serif;font-size:11px;color:${rank>=node.cost?'rgba(220,180,60,0.9)':'rgba(255,255,255,0.4)'};">Cost: <span style="font-family:'Jim Nightshade',cursive;font-size:14px;">${node.cost} Rank</span>${rank<node.cost?' · Need '+(node.cost-rank)+' more':''}</div>
+          ${rank>=node.cost?`<button onclick="unlockTrinityNode('${node.id}')" style="font-family:'Jim Nightshade',cursive;font-size:13px;padding:0;border:none;cursor:pointer;background:url('${BASE_BTN}') center/100% 100% no-repeat;color:#fff;min-height:42px;min-width:90px;text-shadow:0 1px 3px rgba(0,0,0,0.6);transition:filter 0.15s;">Unlock</button>`:''}
+        </div>`:''}
+        ${locked?`<div style="margin-top:8px;font-family:'Lato',sans-serif;font-size:11px;color:rgba(255,255,255,0.25);">Unlock the previous node first</div>`:''}
+      </div>${connector}
+    </div>`;
+  }).join('');
+
+  inner.innerHTML = `<div style="padding:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <button onclick="trinityData._activeLane=null;renderTrinityModal();" style="background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:rgba(255,255,255,0.5);padding:5px 10px;cursor:pointer;font-size:13px;">← Back</button>
+      <div style="font-family:'Jim Nightshade',cursive;font-size:22px;color:${lane.color};letter-spacing:0.08em;">${lane.name}</div>
+    </div>
+    <div style="font-family:'Lato',sans-serif;font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:18px;">${lane.desc}</div>
+    <div style="display:flex;flex-direction:column;gap:0;">${nodeHTML}</div>
+  </div>`;
+}
+
+function hexToRgb(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return r+','+g+','+b;
 }
 
 function unlockTrinityNode(nodeId) {
   const node = TRINITY_NODES[nodeId];
   if(!node) return;
   const rank = trinityData.rank || 0;
-  if(rank < node.cost) { log('<span style="color:#cc4444">Not enough Trinity Rank!</span>'); return; }
-  if(node.requires && !trinityData.unlockedNodes.includes(node.requires)) return;
-  if(trinityData.unlockedNodes.includes(nodeId)) return;
+  if(rank < node.cost) return;
+  if(node.requires && !(trinityData.unlockedNodes||[]).includes(node.requires)) return;
+  if((trinityData.unlockedNodes||[]).includes(nodeId)) return;
+  if(!trinityData.unlockedNodes) trinityData.unlockedNodes = [];
   trinityData.unlockedNodes.push(nodeId);
   saveTrinity().catch(()=>{});
-  log(`<span style="color:#e8b84b"> Trinity Node unlocked: ${node.name}!</span>`);
-  playSound('level_up');
-  renderTrinityModal();
+  log(`<span style="color:#e8b84b">Trinity Node unlocked: ${node.name}!</span>`);
+  renderTrinityLane(node.lane);
 }
+
 
 function renderTrinityAscension(align) {
   const td = trinityData;
@@ -8622,7 +8571,7 @@ function renderTrinityAscension(align) {
             <span style="color:#3acc7a;font-family:'Jim Nightshade',cursive;float:right;">+${b.amount}</span>
           </div>`).join('')}
       </div>
-      <div style="font-size:10px;color:#ff4444;margin-bottom:8px;">⚠ Rank resets to 0. All nodes and mutations lost. Stat boosts are permanent for this season.</div>
+      <div style="font-size:10px;color:#ff4444;margin-bottom:8px;">Rank resets to 0. All nodes and mutations lost. Stat boosts are permanent for this season.</div>
       <button onclick="triggerAscension()" style="width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #ff2266;background:rgba(255,34,102,0.08);color:#ff4444;cursor:pointer;">
          Ascend (Rank ${rank} → 0)
       </button>
@@ -8677,7 +8626,7 @@ function renderTrinityMutations() {
   if(rank < 10) return `<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px;">Mutations unlock at Trinity Rank 10, 20, 30...</div>`;
 
   const available = rank >= nextMutationRank && td.mutations.length < Math.floor(rank/10);
-  let html = `<div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">🧬 Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
+  let html = `<div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;"> Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
 
   if(td.mutations.length > 0) {
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
@@ -8730,7 +8679,7 @@ function renderTrinitySimulate() {
         <span style="font-size:11px;color:var(--muted);">waves to simulate</span>
       </div>
       <button onclick="simulateWaves()" style="width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #3acc7a;background:rgba(58,204,122,0.08);color:#3acc7a;cursor:pointer;">
-        ▶ Simulate Now
+        Simulate Now
       </button>
       <div id="simulate-results" style="margin-top:8px;"></div>
     </div>`;
@@ -8957,10 +8906,11 @@ function simulateWaves() {
 // ── TRINITY XP EARN ──
 function trinityEarnXP(dmgDealt) {
   if(!sbUser || !trinityData) return;
+  const _tb = getTrinityBonuses();
+  dmgDealt = Math.floor(dmgDealt * (_tb._trinXPMult||1));
   trinityData.totalDmgDealt = (trinityData.totalDmgDealt||0) + dmgDealt;
 
-  // Only earn rank XP if above threshold (prevents early farming)
-  if(trinityData.totalDmgDealt < TRINITY_ORB_THRESHOLD) return;
+  // No threshold — earn XP from the start
 
   const prevRank = trinityData.rank || 0;
   trinityData.rankXP = (trinityData.rankXP||0) + dmgDealt;
@@ -8973,8 +8923,16 @@ function trinityEarnXP(dmgDealt) {
       log(`<span style="color:var(--gold)">Mutation available! Open Trinity Force to choose.</span>`);
     }
   }
-  // Auto-save every 5 ranks
-  if(Math.floor((trinityData.rank||0)/5) > Math.floor(prevRank/5)) {
+  // Save on rank gain
+  if((trinityData.rank||0) > prevRank) {
+    saveTrinity().catch(()=>{});
+    return;
+  }
+  // Also save XP progress periodically (every ~500 damage calls) so partial progress survives
+  if(!trinityEarnXP._saveCounter) trinityEarnXP._saveCounter = 0;
+  trinityEarnXP._saveCounter++;
+  if(trinityEarnXP._saveCounter >= 500) {
+    trinityEarnXP._saveCounter = 0;
     saveTrinity().catch(()=>{});
   }
 }
@@ -9299,7 +9257,7 @@ function aaNextRound() {
   document.getElementById('aa-round').textContent = AA.round;
   aaUpdateHpBars();
   aaUpdateTrinityDisplay();
-  aaLog(`━ Round ${AA.round} — Boss HP: ${AA.bossMaxHp} · Dmg: ${AA.bossDmg} · React: ${(aaReactMs(AA.round)/1000).toFixed(1)}s ━`, 'l-round');
+  aaLog(`Round ${AA.round} — Boss HP: ${AA.bossMaxHp} · Dmg: ${AA.bossDmg} · React: ${(aaReactMs(AA.round)/1000).toFixed(1)}s ━`, 'l-round');
   aaSetPhaseLabel('Round ' + AA.round + ' — Prepare!');
   // Brief pause then start first attack sequence
   AA.phaseTimer = setTimeout(() => aaTelegraphAttack(), 900);
@@ -9324,7 +9282,7 @@ function aaTelegraphAttack() {
   // Show telegraph
   aaShowTelegraph(atk);
   const verb = atk === 'sweep' ? 'SWEEP — full arena!' : `Attacking ${atk.toUpperCase()}`;
-  aaSetPhaseLabel('⚠️ ' + verb);
+  aaSetPhaseLabel(verb);
   aaLog(`Boss: ${verb}`, 'l-hit');
 
   // Brief telegraph pre-show, then start countdown
@@ -9504,9 +9462,9 @@ function aaBtnAction(type) {
     // Parry arms a window — if it's during the window phase it fires on resolve
     if (AA.phase === 'window') {
       AA.parryArmed = true;
-      aaLog('✨ Parry armed!', 'l-parry');
+      aaLog('Parry armed!', 'l-parry');
     } else {
-      aaLog('✨ Parry — wait for the attack window', 'l-parry');
+      aaLog('Parry — wait for the attack window', 'l-parry');
       AA.parryArmed = true; // arm anyway in case telegraph fires first
     }
     aaStartCD('parry', 4000);
@@ -10075,7 +10033,7 @@ function closeMenuPanel() {
 function menuToggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
   const btn = document.getElementById('menu-auto-wave');
-  if(btn) btn.textContent = '▶ Auto Wave: ' + (autoWaveEnabled ? 'ON' : 'OFF');
+  if(btn) btn.textContent = 'Auto Wave: ' + (autoWaveEnabled ? 'ON' : 'OFF');
   if(btn) btn.style.color = autoWaveEnabled ? '#2e9e58' : '#4e5468';
   if(btn) btn.style.borderColor = autoWaveEnabled ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
   // If toggled on and between waves, fire immediately
@@ -10137,9 +10095,9 @@ function hideWaveChoice() {
   border-bottom: 1px solid rgba(200,155,60,0.12) !important;
 }
 #attack-area, #loadout-area {
-  background: linear-gradient(180deg, rgba(12,7,2,0) 0%, rgba(12,7,2,0.65) 30%) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+  background: linear-gradient(180deg, rgba(12,7,2,0) 0%, rgba(12,7,2,0.75) 35%) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
   border-top: none !important;
   box-shadow: none !important;
 }
@@ -10150,8 +10108,8 @@ function hideWaveChoice() {
 }
 
 /* Resource bar text */
-.res-label { color: rgba(220,190,130,0.8) !important; font-size: 8px !important; text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important; }
-.res-val { color: rgba(255,230,160,1) !important; text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important; font-weight: 700 !important; }
+.res-label { color: #fff !important; font-size: 9px !important; text-shadow: none !important; font-weight: 900 !important; opacity: 0.8; }
+.res-val { color: #fff !important; text-shadow: none !important; font-weight: 700 !important; }
 
 /* ── ASSET-BASED HP/MP BARS ── */
 .bar-wrap { position: relative !important; align-items: center !important; }
@@ -10191,8 +10149,8 @@ function hideWaveChoice() {
 /* Fallback color if image fails */
 .bar-fill.hp { background: rgba(40,160,60,0.3) !important; }
 .bar-fill.mp { background: rgba(40,80,200,0.3) !important; }
-.bar-label { color: rgba(220,190,130,0.85) !important; font-size: 9px !important; text-shadow: 0 1px 3px rgba(0,0,0,0.9) !important; }
-.bar-nums  { color: rgba(220,190,130,0.8)  !important; font-size: 9px !important; text-shadow: 0 1px 3px rgba(0,0,0,0.9) !important; }
+.bar-label { color: rgba(255,255,255,0.85) !important; font-size: 9px !important; text-shadow: none !important; }
+.bar-nums  { color: rgba(255,255,255,0.8) !important; font-size: 9px !important; text-shadow: none !important; }
 
 /* ── CIRCULAR SKILL ICONS ── */
 .ability-slot {
@@ -10268,17 +10226,16 @@ function hideWaveChoice() {
 /* Skill label under icon */
 .ab-slot-label {
   font-family: 'Jim Nightshade', cursive !important;
-  font-size: 8px !important;
-  color: rgba(220,190,130,0.85) !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
+  font-size: 10px !important;
+  color: rgba(255,230,160,0.95) !important;
+  letter-spacing: 0.04em !important;
   text-align: center;
-  line-height: 1.2;
-  max-width: 56px;
+  line-height: 1.3;
+  max-width: 60px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,1) !important;
 }
 
 /* Active slot glow */
@@ -10319,8 +10276,8 @@ function hideWaveChoice() {
 .wt-connector.done { background: rgba(60,180,80,0.5) !important; }
 
 /* ── NAV TABS ── */
-.nav-tab { color: rgba(200,170,110,0.65) !important; border-top-color: transparent !important; text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important; }
-.nav-tab.active { color: rgba(255,235,170,1) !important; border-top-color: rgba(220,180,60,0.9) !important; text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important; }
+.nav-tab { color: rgba(255,255,255,0.7) !important; border-top-color: transparent !important; text-shadow: 0 1px 0 rgba(0,0,0,1), 0 -1px 0 rgba(0,0,0,1) !important; }
+.nav-tab.active { color: #fff !important; border-top-color: rgba(220,180,60,0.9) !important; text-shadow: 0 1px 0 rgba(0,0,0,1), 0 -1px 0 rgba(0,0,0,1) !important; }
 .nav-tab-icon { font-size: 12px !important; opacity: 0.7; }
 
 /* ── PANEL DECORATIVE CORNERS ── */
