@@ -2130,44 +2130,64 @@ function _tryDismiss() {
 }
 _tryDismiss._done = false;
 
-// Preload all critical assets
+// Preload all critical assets — batched to avoid connection limits
 (function() {
-  CRITICAL_ASSETS.forEach(asset => {
-    const img = new Image();
-    img.onload  = () => { _onAssetProgress(asset.label); };
-    img.onerror = () => { _onAssetProgress(asset.label + ' ✗'); }; // count failures too
-    img.src = asset.url;
-    // Characters
-    if(['mage','warrior','rogue','rogue_bow'].includes(asset.key)) {
-      CLASS_SPRITES[asset.key] = img;
+  const BATCH_SIZE = 6; // max concurrent loads
+  const PER_ASSET_TIMEOUT = 8000; // 8s per asset before marking failed
+
+  const enemyKeyMap = {
+    e_wolf:'wolf', e_bear:'bear', e_troll:'troll', e_harpy:'harpy',
+    e_golum:'golem', e_giant:'giant', e_wraith:'wraith',
+    e_dragon:'dragon', e_unicorn:'unicorn'
+  };
+  const logoKeyMap = {
+    logo_fire:'fire', logo_water:'water', logo_grass:'grass', logo_poison:'poison',
+    logo_electric:'electric', logo_ice:'ice', logo_rock:'rock', logo_wind:'wind'
+  };
+  const btnKeyMap = {
+    btn_basic:'basic', btn_fire:'fire', btn_water:'water', btn_grass:'grass',
+    btn_poison:'poison', btn_electric:'electric', btn_ice:'ice',
+    btn_rock:'rock', btn_wind:'wind'
+  };
+
+  function assignImg(asset, img) {
+    if(['mage','warrior','rogue','rogue_bow'].includes(asset.key)) CLASS_SPRITES[asset.key] = img;
+    if(enemyKeyMap[asset.key]) ENEMY_SPRITES[enemyKeyMap[asset.key]] = img;
+    if(logoKeyMap[asset.key])  LOGO_ASSETS_IMG[logoKeyMap[asset.key]] = img;
+    if(btnKeyMap[asset.key])   BUTTON_IMGS[btnKeyMap[asset.key]] = img;
+  }
+
+  function loadAsset(asset) {
+    return new Promise(resolve => {
+      const img = new Image();
+      const timer = setTimeout(() => {
+        // Per-asset timeout — count it and move on
+        _onAssetProgress(asset.label + ' (timeout)');
+        resolve();
+      }, PER_ASSET_TIMEOUT);
+      img.onload = () => {
+        clearTimeout(timer);
+        assignImg(asset, img);
+        _onAssetProgress(asset.label);
+        resolve();
+      };
+      img.onerror = () => {
+        clearTimeout(timer);
+        _onAssetProgress(asset.label + ' (failed)');
+        resolve();
+      };
+      img.src = asset.url;
+    });
+  }
+
+  // Process in batches
+  async function loadBatched() {
+    for(let i = 0; i < CRITICAL_ASSETS.length; i += BATCH_SIZE) {
+      const batch = CRITICAL_ASSETS.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(loadAsset));
     }
-    // Enemies — reuse the already-loaded image
-    const enemyKeyMap = {
-      e_wolf:'wolf', e_bear:'bear', e_troll:'troll', e_harpy:'harpy',
-      e_golum:'golem', e_giant:'giant', e_wraith:'wraith',
-      e_dragon:'dragon', e_unicorn:'unicorn'
-    };
-    if(enemyKeyMap[asset.key]) {
-      ENEMY_SPRITES[enemyKeyMap[asset.key]] = img;
-    }
-    // Logos — reuse loaded image in LOGO_ASSETS_IMG map
-    const logoKeyMap = {
-      logo_fire:'fire', logo_water:'water', logo_grass:'grass', logo_poison:'poison',
-      logo_electric:'electric', logo_ice:'ice', logo_rock:'rock', logo_wind:'wind'
-    };
-    if(logoKeyMap[asset.key]) {
-      LOGO_ASSETS_IMG[logoKeyMap[asset.key]] = img;
-    }
-    // Buttons
-    const btnKeyMap = {
-      btn_basic:'basic', btn_fire:'fire', btn_water:'water', btn_grass:'grass',
-      btn_poison:'poison', btn_electric:'electric', btn_ice:'ice',
-      btn_rock:'rock', btn_wind:'wind'
-    };
-    if(btnKeyMap[asset.key]) {
-      BUTTON_IMGS[btnKeyMap[asset.key]] = img;
-    }
-  });
+  }
+  loadBatched();
 })();
 const CLASS_XP_TO_LEVEL = [0, 30, 80, 160, 280, 440, 650, 920, 1250, 1650, 2100];
 
@@ -7133,7 +7153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dismissLoader();
     if(!document.getElementById('game').classList.contains('hidden')) return;
     initGame();
-  }, 8000);
+  }, 5000);
 
   // Check if already signed in
   sb.auth.getSession().then(({ data: { session } }) => {
