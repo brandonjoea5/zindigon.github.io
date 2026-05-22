@@ -2054,7 +2054,8 @@ const ARROW_IMG = new Image(); ARROW_IMG.src = 'https://kryfuceztfzccsidkzog.sup
 const CRITICAL_ASSETS = [
   { key:'mage',    label:'Mage',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Mage.png' },
   { key:'warrior', label:'Warrior', url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Warrior.png' },
-  { key:'rogue',   label:'Rogue',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png' },
+  { key:'rogue',        label:'Rogue',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png' },
+  { key:'rogue_bow',     label:'Rogue Bow',url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png' },
   { key:'arena',   label:'Arena',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_Forest.png' },
   { key:'bg_menu', label:'Menu',    url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Menu.png' },
   { key:'e_wolf',   label:'Wolf',   url:'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Enemies/Enemy_Wolf.png' },
@@ -2113,6 +2114,8 @@ _tryDismiss._done = false;
     img.src = asset.url;
     if(asset.key === 'mage' || asset.key === 'warrior' || asset.key === 'rogue') {
       CLASS_SPRITES[asset.key] = img;
+    } else if(asset.key === 'rogue_bow') {
+      CLASS_SPRITES['rogue_bow'] = img;
     }
   });
 })();
@@ -2502,7 +2505,7 @@ function showTitleTutorial() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(60,40,10,0.5);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML = `
     <div style="background:rgba(248,235,205,0.98);border:1px solid rgba(200,155,60,0.3);border-radius:12px;padding:24px;max-width:340px;width:100%;text-align:center;">
-      <div style="font-size:36px;margin-bottom:10px;">🎖️</div>
+      <div style="font-size:36px;margin-bottom:10px;"></div>
       <div style="font-family:'Jim Nightshade',cursive;font-size:17px;font-weight:700;color:var(--gold);margin-bottom:6px;">You have a Title!</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
         You've been awarded the <span style="color:var(--gold);font-family:'Jim Nightshade',cursive;">${playerTitles.map(t=>TITLES[t]?.label||t).join(', ')}</span> title${playerTitles.length>1?'s':''}.
@@ -3122,7 +3125,7 @@ function updateEnemyUI() {
     document.getElementById('enemy-hp-fill').style.width = pct + '%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff2266,#ff6699)';
     if(hpNums) hpNums.textContent = '';
-    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2277;font-size:10px;">👑 BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
+    document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2277;font-size:10px;">★ BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
   } else {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff1155,#ff5555)';
@@ -3132,7 +3135,7 @@ function updateEnemyUI() {
       ? `<span style="color:${IMBUE_COLORS[e.resistance]||'#aaa'};font-size:9px;"> resists ${e.resistance}</span>`
       : '';
     const enragedColor = e.enragedColor || '#cc8844';
-    const typeBadge = `<span style="color:${enragedColor};font-size:10px;">${e.icon||'👹'} ${e.name}</span> ${resistText}`;
+    const typeBadge = `<span style="color:${enragedColor};font-size:10px;">${e.name} ${e.name}</span> ${resistText}`;
     document.getElementById('enemy-type-badge').innerHTML = typeBadge + getStatusBadgesHTML(e);
   }
 }
@@ -3228,12 +3231,12 @@ function onBossPhaseKill() {
     // Boss gives 5x a regular kill's XP — always a meaningful reward
     const bossXP = Math.floor(G.wave * 12 * 5);
     awardXP(bossXP);
-    log(`<span class="log-gold"> Boss slain! 💰 +${Math.floor(50+G.wave*15)}g  ✨ +${bossXP} XP</span>`);
+    log(`<span class="log-gold"> Boss slain! +${Math.floor(50+G.wave*15)}g  +${bossXP} XP</span>`);
     // Big loot drop
     const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
     const dropItem = rollItem(dropSlot, G.wave, false);
     const t = dropItem.tier||dropItem.rarity;
-    log(`<span style="color:${t.color};font-weight:700;">🎁 Boss Drop: ${dropItem.name}!</span>`);
+    log(`<span style="color:${t.color};font-weight:700;">Boss Drop: ${dropItem.name}!</span>`);
     setTimeout(()=>showItemModal(dropItem,'vendor_buy'), 500);
     G.combatActive=false; G.enemy=null;
     updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena(); saveGame();
@@ -3360,7 +3363,7 @@ function closeBossResults() {
 // ── LEADERBOARD (JSONBin) ──
 // ── LEADERBOARD RENDER HELPERS ──
 function buildLBHtml(leaderboard, highlightName, limit=10) {
-  const medals = ['🥇','🥈','🥉'];
+  const medals = ['1st','2nd','3rd'];
   if(!leaderboard || leaderboard.length===0) {
     return '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px;font-style:italic;">No scores yet. Be the first!</div>';
   }
@@ -3379,7 +3382,7 @@ function buildLBHtml(leaderboard, highlightName, limit=10) {
 }
 
 function buildNameScreenLBHtml(leaderboard) {
-  const medals = ['🥇','🥈','🥉'];
+  const medals = ['1st','2nd','3rd'];
   if(!leaderboard || leaderboard.length===0) {
     return '<div style="text-align:center;color:var(--muted);font-size:12px;font-style:italic;">No scores yet — be the first!</div>';
   }
@@ -3540,7 +3543,7 @@ function fireAbility(ab) {
   if(ab.id === 'water_reg4') {
     G.mana = Math.min(getMaxMana(), G.mana + 50);
     updateManaBar();
-    log(`<span style="color:#63b3ff">💦 +50 mana restored!</span>`);
+    log(`<span style="color:#63b3ff">+50 mana restored!</span>`);
   }
 
   // Class XP
@@ -3642,7 +3645,7 @@ function fireAbility(ab) {
           canvas.height*0.62 - 30 - c*20,
           cloneDmg, cloneCrit, false, '#8855ff'
         );
-        combatLog(`👤 Clone ${cloneDmg}${cloneCrit?' CRIT':''}`, 'dmg-out');
+        combatLog(`Clone ${cloneDmg}${cloneCrit?' CRIT':''}`, 'dmg-out');
       }
     }
   }
@@ -3659,14 +3662,14 @@ function fireAbility(ab) {
     G.enemy.hp -= echoDmg;
     if(G.inBoss) G.bossDmgDealt += echoDmg;
     spawnDamageNumber(ex+(Math.random()-.5)*30, ey-55, echoDmg, false, false, 'var(--gold)');
-    combatLog(`🔮 Echo ${echoDmg}`, 'se');
+    combatLog(`Echo ${echoDmg}`, 'se');
   }
   if(hasMutation('wild_magic') && Math.random() < 0.10 && G.enemy && G.enemy.hp > 0) {
     const wildDmg = Math.floor(totalDmg * 3);
     G.enemy.hp -= wildDmg;
     if(G.inBoss) G.bossDmgDealt += wildDmg;
     spawnDamageNumber(ex+(Math.random()-.5)*25, ey-60, wildDmg, true, false, '#e8b84b');
-    combatLog(`🎲 Wild Magic ${wildDmg}!`, 'crit');
+    combatLog(`Wild Magic ${wildDmg}!`, 'crit');
   }
   if(hasMutation('execute') && G.enemy && G.enemy.hp > 0 && G.enemy.hp < G.enemy.maxHp * 0.20) {
     const execBonus = Math.floor(totalDmg * 0.50);
@@ -3956,7 +3959,7 @@ function openLoadoutPicker(slotIdx) {
       <div class="apc-desc">${ab.desc}</div>
       <div style="display:flex;gap:10px;margin-top:4px;font-size:10px;color:var(--muted);">
         <span>⏱ ${cdText}</span>
-        ${manaCost>0?`<span style="color:#63b3ff">💧 ${manaCost} mana</span>`:'<span>✓ Free</span>'}
+        ${manaCost>0?`<span style="color:#63b3ff">${manaCost} mana</span>`:'<span>Free</span>'}
         ${lv>0?`<span style="color:#8888ff">Lv${lv}</span>`:''}
       </div>
 
@@ -4073,9 +4076,9 @@ function updateClassXPPanel() {
   html += '<hr class="upgrade-divider">';
 
   // Original skill tree below
-  html += '<div class="panel-title" style="position:static;">🔮 Passive Skills</div>';
+  html += '<div class="panel-title" style="position:static;">Passive Skills</div>';
   html += `<div class="sp-display">${G.passivePoints} Passive Point${G.passivePoints!==1?'s':''}</div>`;
-  const elEmoji={offense:'',defense:'',effects:'',utility:'🔮'};
+  const elEmoji={offense:'',defense:'',effects:'',utility:''};
   const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'var(--gold)',utility:'#3acc7a'};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]||'#88aacc'}">${elEmoji[el]||''} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
@@ -4715,9 +4718,9 @@ function onEnemyDeath() {
       G.passivePoints++;
       updateClassXPPanel();
       updateResourceBar();
-      log(`<span style="color:#8888ff">🔮 Passive Skill Point earned! (${G.passivePoints} available)</span>`);
+      log(`<span style="color:#8888ff">Passive Skill Point earned! (${G.passivePoints} available)</span>`);
     }
-    log(`<span class="log-gold">💰 +${enemyGold}g  ✨ +${xpGain} XP</span>`);
+    log(`<span class="log-gold">+${enemyGold}g  +${xpGain} XP</span>`);
 
     // Loot drop on kill
     const dropChance = {easy:0.12,medium:0.18,hard:0.28}[MAP.difficulty||'easy']||0.15;
@@ -5525,7 +5528,7 @@ function vendorEquipItem() {
   log(`<span style="color:#3acc7a">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equipped.sellVal+'g':''}</span>`);
   modal.remove();
   G.buyingVendorItem = false;
-  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   renderVendor();
   if(itemModalQueue.length > 0) {
     const next = itemModalQueue.shift();
@@ -5539,10 +5542,10 @@ function vendorSellNew() {
   const item = modal._item;
   G.gold += item.sellVal;
   updateResourceBar();
-  log(`<span style="color:#e8b84b">💰 Sold ${item.name} for ${item.sellVal}g</span>`);
+  log(`<span style="color:#e8b84b">Sold ${item.name} for ${item.sellVal}g</span>`);
   modal.remove();
   G.buyingVendorItem = false;
-  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   renderVendor();
   if(itemModalQueue.length > 0) {
     const next = itemModalQueue.shift();
@@ -5576,7 +5579,7 @@ function closeItemModal(){
   }
   const vendorModal = document.getElementById('vendor-modal');
   if(vendorModal && !vendorModal.classList.contains('hidden')) {
-    document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+    document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
     renderVendor();
     return;
   }
@@ -5603,7 +5606,7 @@ function openVendor(){
   vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
   renderVendor();
   document.getElementById('vendor-modal').classList.remove('hidden');
-  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   playSound('vendor');
 }
 
@@ -5617,9 +5620,9 @@ function refreshVendorStock() {
   vendorResetCount++;
   vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
   updateResourceBar();
-  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   renderVendor();
-  log(`<span class="log-sys">🔄 Merchant refreshed!</span>`);
+  log(`<span class="log-sys">Merchant refreshed!</span>`);
   playSound('vendor');
 }
 function renderVendor(){
@@ -5672,7 +5675,7 @@ function buyVendorItem(idx){
   }
   G.gold -= v.item.buyVal;
   updateResourceBar();
-  document.getElementById('vendor-gold-display').textContent = `💰 ${G.gold} gold`;
+  document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   const boughtItem = v.item;
   vendorStock.splice(idx, 1);
   renderVendor();
@@ -5777,7 +5780,7 @@ function inspectGear(slot){const item=G.equipment[slot];if(item)showItemModal(it
 function updateSkillPanel(){
   const sp=G.passivePoints;
   const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'var(--gold)',utility:'#3acc7a'};
-  const elEmoji={offense:'',defense:'',effects:'',utility:'🔮'};
+  const elEmoji={offense:'',defense:'',effects:'',utility:''};
   let html=`<div class="panel-title">Skill Tree</div><div class="sp-display">${sp} Skill Point${sp!==1?'s':''}</div>`;
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]}">${elEmoji[el]} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
@@ -6140,7 +6143,7 @@ function drawArena(){
 
   // Player
   ctx.save();
-  const playerImg = CLASS_SPRITES[G.playerClass];
+  const playerImg = (G.playerClass === 'rogue') ? (CLASS_SPRITES[G.rogueWeapon === 'bow' ? 'rogue_bow' : 'rogue']) : CLASS_SPRITES[G.playerClass];
   if(playerImg && playerImg.complete && playerImg.naturalWidth > 0) {
     const sprH = 90;
     const sprW = sprH * (playerImg.naturalWidth / playerImg.naturalHeight);
@@ -6307,9 +6310,9 @@ function dismissTooltip() {
 function toggleMute() {
   isMuted = !isMuted;
   const btn = document.getElementById('mute-btn');
-  if(btn) { btn.textContent = isMuted ? '🔇 SFX' : ' SFX'; btn.style.borderColor = isMuted ? 'var(--red)' : 'var(--border)'; }
+  if(btn) { btn.textContent = isMuted ? 'SFX OFF' : 'SFX ON'; btn.style.borderColor = isMuted ? 'var(--red)' : 'var(--border)'; }
   const menuBtn = document.getElementById('menu-mute-btn');
-  if(menuBtn) menuBtn.textContent = isMuted ? '🔇 SFX' : ' SFX';
+  if(menuBtn) menuBtn.textContent = isMuted ? 'SFX OFF' : 'SFX ON';
 }
 
 function playSound(type, options={}) {
@@ -6956,7 +6959,7 @@ function openHealPicker() {
       </div>
       <div class="apc-desc">${ab.desc}</div>
       <div style="font-size:10px;color:var(--muted);margin-top:3px;">CD: ${(ab.cd/1000).toFixed(1)}s · ${lv > 0 ? 'Lv'+lv+' · +'+Math.floor(lv*10)+'% stronger healing' : 'Base healing'}</div>
-      ${!unlocked ? `<div class="apc-unlock">🔒 Requires ${ab.class} class level ${ab.unlockLv || 0}</div>` : ''}
+      ${!unlocked ? `<div class="apc-unlock">Requires ${ab.class} class level ${ab.unlockLv || 0}</div>` : ''}
     </div>`;
   }).join('');
   document.getElementById('ability-picker-modal').classList.remove('hidden');
@@ -7571,8 +7574,8 @@ function getStatusBadgesHTML(enemy) {
   const now = Date.now();
   let html = '';
   if(se.frozen && now < se.frozen.timer) html += `<span style="color:#88eeff;font-size:11px;">❄️ FROZEN</span>`;
-  else if(se.slow)   html += `<span style="color:#88eeff;font-size:11px;">🌊 Slowed</span>`;
-  if(se.burn)        html += `<span style="color:#ff4d1a;font-size:11px;">🔥x${Math.ceil(se.burn.dps/3)}</span>`;
+  else if(se.slow)   html += `<span style="color:#88eeff;font-size:11px;">Slowed</span>`;
+  if(se.burn)        html += `<span style="color:#ff4d1a;font-size:11px;">Burnx${Math.ceil(se.burn.dps/3)}</span>`;
   if(se.poison)      html += `<span style="color:#88cc00;font-size:11px;">☠️x${se.poison.stacks||1}</span>`;
   if(se.electric)    html += `<span style="color:#ffdd00;font-size:11px;"></span>`;
   return html ? `<div style="display:flex;gap:4px;justify-content:center;margin-top:2px;">${html}</div>` : '';
@@ -7606,7 +7609,7 @@ function checkBossMilestones() {
         grantTitle(sbUser.id, m.titleReward).then(()=>{
           if(!playerTitles.includes(m.titleReward)) {
             playerTitles.push(m.titleReward);
-            log(`<span style="color:var(--gold)">🎖️ Title unlocked: ${TITLES[m.titleReward]?.label}!</span>`);
+            log(`<span style="color:var(--gold)"> Title unlocked: ${TITLES[m.titleReward]?.label}!</span>`);
             setTimeout(()=>showTitleTutorial(), 1500);
           }
         });
@@ -7680,7 +7683,7 @@ function buyPotion() {
   );
   startAnimLoop();
   playSound('heal');
-  log(`<span style="color:#3acc7a">🧪 Potion used — restored ${heal} HP</span>`);
+  log(`<span style="color:#3acc7a">Potion used — restored ${heal} HP</span>`);
   showPotionBtn(); // refresh cost display
   saveGame();
 }
@@ -7730,7 +7733,7 @@ function selectClass(cls) {
         <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">Hits twice per attack<br>Less damage per hit<br>Higher attack speed</div>
       </div>
       <div onclick="selectRogueWeapon('bow')" style="background:rgba(245,225,175,0.92);border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
-        <div style="font-size:32px;margin-bottom:6px;">🏹</div>
+        
         <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${color};">Bow</div>
         <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">Ranged single shot<br>Moderate damage<br>Fast attack speed</div>
       </div>`;
@@ -7953,9 +7956,9 @@ function renderSPPopup() {
 
   // ── PASSIVE SKILLS (if passive points pending) ──
   if(passivePending > 0) {
-    const elEmoji={offense:'',defense:'',effects:'',utility:'🔮'};
+    const elEmoji={offense:'',defense:'',effects:'',utility:''};
     html += `<div style="${spPending>0?'margin-top:16px;padding-top:14px;border-top:1px solid var(--border);':''}">
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#8888ff;margin-bottom:8px;letter-spacing:0.08em;">🔮 Passive Skills — ${passivePending} point${passivePending>1?'s':''} to invest</div>
+      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#8888ff;margin-bottom:8px;letter-spacing:0.08em;">Passive Skills — ${passivePending} point${passivePending>1?'s':''} to invest</div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Tap any skill to invest 1 passive point</div>`;
     Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
       const color = {offense:'#e83a3a',defense:'#e8b84b',effects:'var(--gold)',utility:'#3acc7a'}[elKey]||'#aaa';
@@ -8000,7 +8003,7 @@ function spBoostStat(key) {
     updateHpBar();
   }
   if(key === 'mana') { G.maxMana = st.mana||100; updateManaBar(); }
-  log(`<span style="color:#3acc7a">📈 ${opt.label} ${opt.display}</span>`);
+  log(`<span style="color:#3acc7a">${opt.label} ${opt.display}</span>`);
   updateStatsPanel(); updateClassXPPanel(); updateResourceBar();
   if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
   renderSPPopup();
@@ -8131,7 +8134,7 @@ function buildAbilityUpgradesHTML() {
 
         if (!unlocked) {
           html += `<div class="ab-upgrade-card" style="opacity:0.4;">
-            <span class="ab-upgrade-icon">🔒</span>
+            <span class="ab-upgrade-icon">—</span>
             <div class="ab-upgrade-info">
               <div class="ab-upgrade-name" style="color:${color}">${ab.name}</div>
               <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3}</div>
@@ -8171,28 +8174,28 @@ const TUT_STEPS = [
     slotId: 'slot-basic',
     title: ' Attack Slot',
     desc: 'Tap any ability to toggle AUTO on — it fires automatically. Tap again to stop. Skills fire as soon as their cooldown ends.',
-    hint: '👆 Tap the Attack button now',
+    hint: 'Tap the Attack button now',
     waitForTap: 'slot-basic',
   },
   {
     slotId: 'slot-reg1',
     title: ' Skill 1',
     desc: 'Tap to toggle auto — it will fire automatically every time the cooldown resets. Tap again to turn off.',
-    hint: '👆 Tap Skill 1 to try it',
+    hint: 'Tap Skill 1 to try it',
     waitForTap: 'slot-reg1',
   },
   {
     slotId: 'slot-heal',
-    title: '💚 Heal Slot',
+    title: 'Heal Slot',
     desc: 'This is your heal. Tap it when your HP is low — it costs 30 mana and has a cooldown.',
-    hint: '👆 Tap the Heal button',
+    hint: 'Tap the Heal button',
     waitForTap: 'slot-heal',
   },
   {
     slotId: 'loadout-btn',
-    title: '🔮 Loadout',
+    title: 'Loadout',
     desc: 'Tap Loadout anytime to swap your abilities as you unlock new ones.',
-    hint: '👆 Tap Loadout to finish the tutorial',
+    hint: 'Tap Loadout to finish the tutorial',
     waitForTap: 'loadout-btn',
   },
 ];
@@ -8430,7 +8433,7 @@ function renderTrinityNodeTree(align) {
   if(!td.classEnhancement) {
     return `
       <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:${align.color};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
-        ${align.icon} ${align.name} — Choose Class to Enhance
+        ${align.name} — Choose Class to Enhance
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
         ${['mage','warrior','rogue'].map(cls => `
@@ -8441,7 +8444,7 @@ function renderTrinityNodeTree(align) {
           </div>`).join('')}
         <div onclick="chooseTrinityClass('chaos')" style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,155,60,0.25);border-radius:10px;padding:12px;cursor:pointer;text-align:center;grid-column:span 3;"
           onmouseover="this.style.borderColor='#e8b84b'" onmouseout="this.style.borderColor='rgba(200,155,60,0.25)'">
-          <div style="font-size:24px;">🌀</div>
+          
           <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffdd44;margin-top:4px;">Chaos — Works with any class</div>
         </div>
       </div>`;
@@ -8461,14 +8464,14 @@ function renderTrinityNodeTree(align) {
   let html = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:${align.color};letter-spacing:0.1em;text-transform:uppercase;">
-        ${align.icon} ${align.name} · ${cls === 'chaos' ? '🌀 Chaos' : (CLASS_ICONS[cls]+' '+cls.charAt(0).toUpperCase()+cls.slice(1))} Enhancement
+        ${align.name} · ${cls === 'chaos' ? 'Chaos' : (CLASS_ICONS[cls]+' '+cls.charAt(0).toUpperCase()+cls.slice(1))} Enhancement
       </div>
       <button onclick="trinityData.classEnhancement=null;renderTrinityModal()" style="font-family:'Jim Nightshade',cursive;font-size:10px;background:transparent;border:1px solid rgba(200,155,60,0.25);color:var(--muted);padding:3px 8px;border-radius:5px;cursor:pointer;">↩ Change</button>
     </div>`;
 
   pathNodes.forEach(([pathLetter, nodes]) => {
     if(!nodes.length) return;
-    const pathLabel = pathLetter === 'A' ? 'Path A' : pathLetter === 'B' ? 'Path B' : '🌀 Chaos Path';
+    const pathLabel = pathLetter === 'A' ? 'Path A' : pathLetter === 'B' ? 'Path B' : 'Chaos Path';
     html += `<div style="font-size:10px;color:var(--muted);font-family:'Jim Nightshade',cursive;letter-spacing:0.08em;text-transform:uppercase;margin:8px 0 5px;">${pathLabel}</div>`;
     html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">`;
     nodes.forEach(node => {
@@ -8639,7 +8642,7 @@ function chooseMutation(mutationId) {
   trinityData.mutations.push(mutationId);
   saveTrinity().catch(()=>{});
   const m = TRINITY_MUTATIONS.find(x => x.id === mutationId);
-  log(`<span style="color:var(--gold)">🧬 Mutation chosen: ${m?.name}!</span>`);
+  log(`<span style="color:var(--gold)">Mutation chosen: ${m?.name}!</span>`);
   renderTrinityModal();
 }
 
@@ -8895,7 +8898,7 @@ function trinityEarnXP(dmgDealt) {
     log(`<span style="color:#e8b84b"> Trinity Rank ${trinityData.rank}!</span>`);
     // Check mutation availability
     if(trinityData.rank % 10 === 0) {
-      log(`<span style="color:var(--gold)">🧬 Mutation available! Open Trinity Force to choose.</span>`);
+      log(`<span style="color:var(--gold)">Mutation available! Open Trinity Force to choose.</span>`);
     }
   }
   // Auto-save every 5 ranks
@@ -8971,7 +8974,7 @@ function buildStatsPanelHTML() {
 
   // Title selection
   if(playerTitles.length > 0) {
-    html += `<div class="panel-title" style="position:static;margin-top:8px;">🎖️ Titles</div>`;
+    html += `<div class="panel-title" style="position:static;margin-top:8px;"> Titles</div>`;
     html += `<div style="padding:4px 10px;display:flex;flex-direction:column;gap:4px;">`;
     playerTitles.forEach(tid => {
       const t = TITLES[tid];
@@ -9024,8 +9027,8 @@ function buildUpgradesPanelHTML() {
 
   // Divider + passive skills
   html += '<hr class="upgrade-divider">';
-  html += `<div class="panel-title" style="position:static;">🔮 Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.passivePoints} pts)</span></div>`;
-  const elEmoji={offense:'',defense:'',effects:'',utility:'🔮'};
+  html += `<div class="panel-title" style="position:static;">Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.passivePoints} pts)</span></div>`;
+  const elEmoji={offense:'',defense:'',effects:'',utility:''};
   Object.entries(SKILL_TREE).forEach(([el,skills])=>{
     const color = CLASS_COLORS[el]||'#88aacc';
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${color}">${elEmoji[el]||''} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
@@ -9090,12 +9093,17 @@ function idlePulse(){
 // ═══════════════════════════════════════════════
 
 const AA_BOSS_NAMES  = ['THE RIFT WARDEN','VOID HERALD','CHAOS TITAN','OBLIVION KING','THE ETERNAL','DREAD SOVEREIGN','ABYSS HERALD'];
-const AA_BOSS_SPRITES= ['👹','👾','🐲','','☠️','🔮','👁️'];
+const AA_BOSS_SPRITES= ['','','','','','',''];
 const AA_CLASS_SPRITES = {
   mage:    'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Mage.png',
   warrior: 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Warrior.png',
   rogue:   'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png',
 };
+function getRogueSprite() {
+  return G.rogueWeapon === 'bow'
+    ? 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png'
+    : 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png';
+}
 
 // Reaction window: generous early, tightens each round, floor at 750ms
 function aaReactMs(round) { return Math.max(750, 2800 - (round - 1) * 90); }
@@ -9142,7 +9150,7 @@ function aaShowLobby() {
   document.getElementById('aa-lobby').classList.remove('hidden');
   document.getElementById('aa-death').classList.add('hidden');
   // Set player sprite based on class
-  const sprUrl = AA_CLASS_SPRITES[G.playerClass] || '';
+  const sprUrl = G.playerClass === 'rogue' ? getRogueSprite() : (AA_CLASS_SPRITES[G.playerClass] || '');
   const sprEl = document.getElementById('aa-player-sprite');
   if(sprUrl) {
     sprEl.style.backgroundImage = 'url(' + sprUrl + ')';
@@ -9318,7 +9326,7 @@ function aaResolveAttack() {
     AA.hits++;
     aaFlash('hit');
     aaPopResult('-' + dmg, '#ff4444');
-    aaLog(`💥 Hit for ${dmg} HP`, 'l-hit');
+    aaLog(`Hit for ${dmg} HP`, 'l-hit');
     aaUpdateHpBars();
     triggerScreenShake(4, 0.2);
     if (AA.playerHp <= 0) { setTimeout(aaDeath, 400); return; }
@@ -9335,7 +9343,7 @@ function aaResolveAttack() {
 function aaBossDefeated() {
   if (AA.phase === 'dead') return;
   AA.roundsComplete++;
-  aaLog(`💥 Boss defeated! Round ${AA.round} complete.`, 'l-parry');
+  aaLog(`Boss defeated! Round ${AA.round} complete.`, 'l-parry');
   aaSetPhaseLabel('Round ' + AA.round + ' Clear!');
   aaPopResult('ROUND ' + AA.round + ' CLEAR!', '#e8b84b');
   // Award Trinity XP for the round: total dmg dealt * a small multiplier
@@ -10074,48 +10082,43 @@ function hideWaveChoice() {
 .res-val { color: rgba(255,230,160,1) !important; text-shadow: 0 1px 4px rgba(0,0,0,0.9) !important; font-weight: 700 !important; }
 
 /* ── ASSET-BASED HP/MP BARS ── */
+.bar-wrap { position: relative !important; align-items: center !important; }
 .bar-track {
-  height: 16px !important;
-  background: rgba(0,0,0,0.5) !important;
-  border: none !important;
-  border-radius: 3px !important;
+  flex: 1 !important;
+  height: 18px !important;
   position: relative !important;
   overflow: hidden !important;
+  background: rgba(0,0,0,0.55) !important;
+  border-radius: 4px !important;
+  border: none !important;
 }
-/* The fill sits inside, full height */
+.bar-track::before, .bar-track::after { display: none !important; }
+/* Dark empty track */
+.bar-track-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+/* The fill image — width is set by JS, clips naturally */
 .bar-fill {
-  height: 100% !important;
-  position: relative !important;
-  border-radius: 3px !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; bottom: 0 !important;
+  border-radius: 4px !important;
   transition: width 0.3s ease !important;
-  z-index: 0;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
 }
-.bar-fill.hp {
-  background: linear-gradient(90deg, #2a9a40, #44dd60 80%, #aaff99) !important;
-  box-shadow: 2px 0 8px rgba(60,200,80,0.6) !important;
+.bar-fill img {
+  height: 100% !important;
+  width: 100% !important;
+  object-fit: fill !important;
+  display: block !important;
+  flex-shrink: 0 !important;
 }
-.bar-fill.mp {
-  background: linear-gradient(90deg, #1a50cc, #4488ee 80%, #99ccff) !important;
-  box-shadow: 2px 0 8px rgba(60,130,230,0.6) !important;
-}
-/* Asset frame overlaid on top — sits over fill but is non-blocking */
-.bar-track.hp-track::after {
-  content: '' !important;
-  position: absolute !important;
-  inset: 0 !important;
-  background: url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Health_Bar.png') left center / 100% 100% no-repeat !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-.bar-track.mp-track::after {
-  content: '' !important;
-  position: absolute !important;
-  inset: 0 !important;
-  background: url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Tools/Tool_Mana_Bar.png') left center / 100% 100% no-repeat !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-}
-.bar-track::before { display: none !important; }
+/* Fallback color if image fails */
+.bar-fill.hp { background: rgba(40,160,60,0.3) !important; }
+.bar-fill.mp { background: rgba(40,80,200,0.3) !important; }
 .bar-label { color: rgba(220,190,130,0.85) !important; font-size: 9px !important; text-shadow: 0 1px 3px rgba(0,0,0,0.9) !important; }
 .bar-nums  { color: rgba(220,190,130,0.8)  !important; font-size: 9px !important; text-shadow: 0 1px 3px rgba(0,0,0,0.9) !important; }
 
