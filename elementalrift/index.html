@@ -2292,12 +2292,7 @@ let sbProfile = null; // players row
       <div id="wave-choice-title" style="font-family:'Jim Nightshade',cursive;font-size:22px;font-weight:700;color:#fff;letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-shadow:0 2px 8px rgba(0,0,0,1),0 0 20px rgba(0,0,0,0.8);"></div>
       <button id="wc-next" onclick="hideWaveChoice();nextWave();" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);transition:filter 0.15s,transform 0.15s;">Next Wave</button>
       <button id="wc-boss" onclick="startBossAttempt()" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);animation:bossPulse 2s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:12px;letter-spacing:0.06em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
-      <button id="wc-honor" onclick="hideWaveChoice();honorableDeath();" style="
-        width:100%;max-width:320px;font-family:'Jim Nightshade',cursive;font-size:14px;
-        padding:14px;border:1px solid rgba(200,155,60,0.5);color:#fff;
-        background:rgba(200,155,60,0.12);cursor:pointer;letter-spacing:0.06em;
-        border-radius:8px;text-shadow:0 1px 3px rgba(0,0,0,0.8);
-      ">Honorable Death</button>
+
     </div>
   </div>
 
@@ -3033,6 +3028,14 @@ function showMapScreen(isFirst=false) {
   if(G.autoSlots) Object.values(G.autoSlots).forEach(id=>clearInterval(id));
   G.autoSlots = {};
   if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
+  // Clear blocking state so next path spawns cleanly
+  G._deathInProgress = false;
+  G._enemyDeathInProgress = false;
+  G._pendingWaveComplete = false;
+  G.enemy = null;
+  G.combatActive = false;
+  G.inBoss = false;
+  hideWaveChoice();
   document.getElementById('map-screen').classList.remove('hidden');
   const title = document.getElementById('map-title');
   const sub   = document.getElementById('map-subtitle');
@@ -3045,6 +3048,15 @@ function showMapScreen(isFirst=false) {
 
 function selectDifficulty(diff) {
   setArenaBg();
+  // Reset all blocking flags so a new path always starts clean
+  G._deathInProgress = false;
+  G._enemyDeathInProgress = false;
+  G._pendingWaveComplete = false;
+  G.enemy = null;
+  G.combatActive = false;
+  G.inBoss = false;
+  G.buffs = G.buffs || {};
+  hideWaveChoice();
   const cfg = DIFF_CONFIG[diff];
   MAP.difficulty = diff;
   MAP.totalWaves = cfg.min;
@@ -3052,6 +3064,8 @@ function selectDifficulty(diff) {
   MAP.isBossWave = false;
   MAP.segmentComplete = false;
   MAP.pendingBoss = false;
+  // Reset per-run stats for new path
+  G.runStats = { totalDmg:0, bestHit:0, imbueUses:{}, totalGold:0 };
   document.getElementById('map-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
   // Double rAF ensures layout has fully settled before we measure the canvas
@@ -3495,9 +3509,11 @@ function rollEnemy(wave) {
 
 function spawnEnemy() {
   if(!_tick.running) startMasterTick();
+  // Clear any blocking flags so spawn always works
+  G._deathInProgress = false;
+  G._enemyDeathInProgress = false;
   if(G.enemy && G.enemy.hp > 0) {
-    console.warn('Spawn blocked: enemy still active');
-    return;
+    console.warn('Spawn blocked: enemy still active, clearing');
   }
   stopEnemyAutoAttack();
   G.enemy = null;
@@ -3671,13 +3687,11 @@ function onBossPhaseKill() {
     const dropItem = rollItem(dropSlot, G.wave, false);
     const t = dropItem.tier||dropItem.rarity;
     log(`<span style="color:${t.color};font-weight:700;">Boss Drop: ${dropItem.name}!</span>`);
-    setTimeout(()=>showItemModal(dropItem,'vendor_buy'), 500);
     G.combatActive=false; G.enemy=null;
     updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena(); saveGame();
-    // Always let player initiate next enemy
-  setNextBtnActive(true);
-  showPotionBtn();
-  if(G.wave >= 3) setBossBtnActive(true);
+    // Show loot then trigger proper segment completion (vendor or map screen)
+    setTimeout(()=>showItemModal(dropItem,'vendor_buy'), 500);
+    onSegmentWaveComplete();
     return;
   }
   G.bossLevel++;
@@ -5133,13 +5147,22 @@ function onEnemyDeath() {
     drawArena();
     saveGame();
 
-    if(spPopupOpen || spPending > 0 || passivePending > 0) {
+    if(spPending > 0 && !spPopupOpen) {
+      // Enemy just died — safe to show level-up popup now
       G._pendingWaveComplete = true;
+      setTimeout(() => triggerLevelUpPopup(), 400);
       // Safety net: if popup never closes, unstick after 30s
       setTimeout(() => {
         if(G._pendingWaveComplete && !G.enemy && !G.combatActive) {
           G._pendingWaveComplete = false;
-          setNextBtnActive(true);
+          onSegmentWaveComplete();
+        }
+      }, 30000);
+    } else if(spPopupOpen || passivePending > 0) {
+      G._pendingWaveComplete = true;
+      setTimeout(() => {
+        if(G._pendingWaveComplete && !G.enemy && !G.combatActive) {
+          G._pendingWaveComplete = false;
           onSegmentWaveComplete();
         }
       }, 30000);
@@ -8278,9 +8301,11 @@ function awardXP(amount) {
     passivePending++;  // one passive investment per level
   }
   if(spPending > 0 && !spPopupOpen) {
-    G.combatActive = false; // pause combat fully while popup is pending
-    stopEnemyAutoAttack();
-    stopAllAutoSlots(true);
+    // Never interrupt active combat — wait until enemy is dead
+    if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+      // Will be shown from onEnemyDeath / closeSPPopup chain
+      return;
+    }
     setTimeout(() => {
       const itemModal = document.getElementById('item-modal');
       if(itemModal && !itemModal.classList.contains('hidden')) {
@@ -10423,12 +10448,18 @@ function menuToggleAutoWave() {
 
 // ── BETWEEN-WAVE CHOICE OVERLAY ──
 function showWaveChoice(title, showBoss) {
+  // If the segment is complete, skip the wave-choice overlay — vendor/map handles it
+  if(MAP.segmentComplete) return;
   const overlay = document.getElementById('wave-choice-overlay');
   const titleEl = document.getElementById('wave-choice-title');
   const bossBtn = document.getElementById('wc-boss');
+  const nextBtn = document.getElementById('wc-next');
   if(!overlay) return;
   titleEl.textContent = title || 'What will you do?';
   bossBtn.style.display = showBoss ? 'block' : 'none';
+  // Only show Next Wave if there are more waves remaining
+  const hasMoreWaves = MAP.currentSegWave < MAP.totalWaves;
+  if(nextBtn) nextBtn.style.display = hasMoreWaves ? 'block' : 'none';
   overlay.style.display = 'flex';
 }
 function hideWaveChoice() {
