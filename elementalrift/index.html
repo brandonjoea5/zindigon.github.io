@@ -1123,6 +1123,346 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let sbUser = null; // current signed-in user
 let sbProfile = null; // players row
 </script>
+<style>
+/* ══════════════════════════════════════════════════════
+   GENSHIN-STYLE UI OVERHAUL
+   Circular skill icons · Elegant bars · Soft transparency
+   ══════════════════════════════════════════════════════ */
+
+/* ── PURGE ALL CYAN ── */
+* { outline-color: rgba(200,155,60,0.4) !important; }
+
+/* ── GAME SCREEN: see-through layered UI ── */
+#resource-bar {
+  background: rgba(20,12,4,0.55) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(200,155,60,0.2) !important;
+  box-shadow: 0 1px 0 rgba(255,220,140,0.06) !important;
+}
+#bars-row {
+  background: rgba(15,9,3,0.5) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(200,155,60,0.15) !important;
+}
+#wave-timeline {
+  background: rgba(15,9,3,0.45) !important;
+  backdrop-filter: blur(10px) !important;
+  border-bottom: 1px solid rgba(200,155,60,0.12) !important;
+}
+#attack-area, #loadout-area {
+  background: linear-gradient(180deg, rgba(12,7,2,0) 0%, rgba(12,7,2,0.75) 35%) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  border-top: none !important;
+  box-shadow: none !important;
+}
+#bottom-nav {
+  background: rgba(12,7,2,0.7) !important;
+  backdrop-filter: blur(16px) !important;
+  border-top: 1px solid rgba(200,155,60,0.2) !important;
+}
+
+/* Resource bar text */
+.res-label { color: #fff !important; font-size: 9px !important; text-shadow: none !important; font-weight: 900 !important; opacity: 0.8; }
+.res-val { color: #fff !important; text-shadow: none !important; font-weight: 700 !important; }
+
+/* ── ASSET-BASED HP/MP BARS ── */
+.bar-wrap { position: relative !important; align-items: center !important; }
+.bar-track {
+  flex: 1 !important;
+  height: 18px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: rgba(0,0,0,0.55) !important;
+  border-radius: 4px !important;
+  border: none !important;
+}
+.bar-track::before, .bar-track::after { display: none !important; }
+/* Dark empty track */
+.bar-track-bg {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+/* The fill image — width is set by JS, clips naturally */
+.bar-fill {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; bottom: 0 !important;
+  border-radius: 4px !important;
+  transition: width 0.3s ease !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
+}
+.bar-fill img {
+  height: 100% !important;
+  width: 100% !important;
+  object-fit: fill !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+}
+/* Fallback color if image fails */
+.bar-fill.hp { background: rgba(40,160,60,0.3) !important; }
+.bar-fill.mp { background: rgba(40,80,200,0.3) !important; }
+.bar-label { color: rgba(255,255,255,0.85) !important; font-size: 9px !important; text-shadow: none !important; }
+.bar-nums  { color: rgba(255,255,255,0.8) !important; font-size: 9px !important; text-shadow: none !important; }
+
+/* ── CIRCULAR SKILL ICONS ── */
+.ability-slot {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 2px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 3px !important;
+  min-height: 68px !important;
+}
+
+/* The circular icon frame */
+.ab-icon-wrap {
+  position: relative;
+  width: 52px; height: 52px;
+  flex-shrink: 0;
+}
+.ab-icon-circle {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: rgba(20,12,4,0.75);
+  border: 1.5px solid rgba(200,155,60,0.55);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.08);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ab-icon-circle img {
+  width: 32px; height: 32px;
+  object-fit: contain;
+}
+/* Decorative outer ring */
+.ab-icon-circle::before {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,155,60,0.2);
+  pointer-events: none;
+}
+/* Gloss highlight */
+.ab-icon-circle::after {
+  content: '';
+  position: absolute; top: 2px; left: 4px; right: 4px; height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
+}
+
+/* Cooldown radial sweep overlay */
+.ab-cd-radial {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(rgba(0,0,0,0.72) var(--cd, 0%), transparent var(--cd, 0%));
+  pointer-events: none;
+  transition: none;
+}
+.ab-cd-text {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jim Nightshade', cursive;
+  font-size: 13px; font-weight: 700;
+  color: rgba(255,220,140,0.95);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  pointer-events: none;
+}
+
+/* Skill label under icon */
+.ab-slot-label {
+  font-family: 'Jim Nightshade', cursive !important;
+  font-size: 10px !important;
+  color: rgba(255,230,160,0.95) !important;
+  letter-spacing: 0.04em !important;
+  text-align: center;
+  line-height: 1.3;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,1) !important;
+}
+
+/* Active slot glow */
+.ability-slot.active-ability .ab-icon-circle {
+  border-color: rgba(220,180,60,0.9) !important;
+  box-shadow: 0 0 12px rgba(200,155,40,0.5), inset 0 1px 0 rgba(255,220,140,0.15) !important;
+}
+
+/* Empty slot */
+.ab-icon-empty {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 1px dashed rgba(200,155,60,0.25);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(200,155,60,0.3);
+  font-size: 18px;
+}
+
+/* ── WAVE TIMELINE NODES ── */
+.wt-node {
+  border-color: rgba(200,155,60,0.35) !important;
+  background: rgba(20,12,4,0.5) !important;
+  color: rgba(200,155,60,0.6) !important;
+}
+.wt-node.done {
+  background: rgba(40,120,60,0.3) !important;
+  border-color: rgba(60,180,80,0.6) !important;
+  color: rgba(80,200,100,0.9) !important;
+}
+.wt-node.current {
+  background: rgba(160,120,20,0.3) !important;
+  border-color: rgba(220,180,40,0.8) !important;
+  box-shadow: 0 0 6px rgba(200,160,30,0.4) !important;
+}
+.wt-node.boss-node { border-color: rgba(180,40,40,0.6) !important; }
+.wt-node.boss-node.current { box-shadow: 0 0 8px rgba(200,40,40,0.5) !important; }
+.wt-connector { background: rgba(200,155,60,0.2) !important; }
+.wt-connector.done { background: rgba(60,180,80,0.5) !important; }
+
+/* ── NAV TABS ── */
+.nav-tab { color: rgba(255,255,255,0.7) !important; border-top-color: transparent !important; text-shadow: 0 1px 0 rgba(0,0,0,1), 0 -1px 0 rgba(0,0,0,1) !important; }
+.nav-tab.active { color: #fff !important; border-top-color: rgba(220,180,60,0.9) !important; text-shadow: 0 1px 0 rgba(0,0,0,1), 0 -1px 0 rgba(0,0,0,1) !important; }
+.nav-tab-icon { font-size: 12px !important; opacity: 0.7; }
+
+/* ── PANEL DECORATIVE CORNERS ── */
+.forge-panel, .modal, .equip-slot, .vendor-item, .ab-upgrade-card {
+  border-color: rgba(200,155,60,0.2) !important;
+  border-width: 1px !important;
+  position: relative;
+}
+/* Corner accents on key panels */
+.forge-panel::before, .forge-panel::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+.forge-panel::before {
+  top: -1px; left: -1px;
+  border-top: 1.5px solid rgba(220,180,60,0.7);
+  border-left: 1.5px solid rgba(220,180,60,0.7);
+}
+.forge-panel::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 1.5px solid rgba(220,180,60,0.7);
+  border-right: 1.5px solid rgba(220,180,60,0.7);
+}
+
+/* ── EQUIP SLOTS — framed panel style ── */
+.equip-slot {
+  background: rgba(20,12,4,0.4) !important;
+  border: 1px solid rgba(200,155,60,0.2) !important;
+  border-radius: 6px !important;
+  position: relative;
+}
+.equip-slot::before {
+  content: '';
+  position: absolute; top: 2px; left: 2px; right: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,220,140,0.15), transparent);
+  pointer-events: none;
+}
+.slot-name { color: rgba(200,170,100,0.6) !important; }
+.slot-item { color: rgba(255,220,140,0.9) !important; }
+.slot-empty { color: rgba(200,155,60,0.25) !important; }
+
+/* ── SIDE MENU ── */
+#side-menu {
+  background: rgba(12,7,2,0.82) !important;
+  border-right: 1px solid rgba(200,155,60,0.2) !important;
+  backdrop-filter: blur(20px) !important;
+}
+#menu-panel {
+  background: rgba(12,7,2,0.88) !important;
+  backdrop-filter: blur(20px) !important;
+}
+.panel-title {
+  background: rgba(20,12,4,0.6) !important;
+  border-bottom: 1px solid rgba(200,155,60,0.18) !important;
+  color: rgba(220,180,80,0.9) !important;
+}
+.stat-row { border-bottom: 1px solid rgba(200,155,60,0.08) !important; }
+.stat-label { color: rgba(200,170,100,0.6) !important; }
+.stat-val { color: rgba(255,240,200,0.9) !important; }
+
+/* Menu nav buttons */
+#side-menu button, #menu-panel button {
+  background: rgba(255,220,140,0.05) !important;
+  border: 1px solid rgba(200,155,60,0.18) !important;
+  color: rgba(220,185,110,0.85) !important;
+  border-radius: 4px !important;
+  transition: background 0.15s, border-color 0.15s !important;
+}
+#side-menu button:hover, #menu-panel button:hover {
+  background: rgba(255,220,140,0.1) !important;
+  border-color: rgba(200,155,60,0.4) !important;
+}
+
+/* ── VENDOR / UPGRADE CARDS ── */
+.vendor-item {
+  background: rgba(20,12,4,0.45) !important;
+  border: 1px solid rgba(200,155,60,0.18) !important;
+}
+.vendor-item:hover {
+  background: rgba(30,18,6,0.6) !important;
+  border-color: rgba(200,155,60,0.4) !important;
+}
+.ab-upgrade-card {
+  background: rgba(20,12,4,0.4) !important;
+  border: 1px solid rgba(200,155,60,0.18) !important;
+}
+
+/* ── MODALS — remove heavy opaque boxes ── */
+.modal {
+  background: rgba(22,14,4,0.88) !important;
+  border: 1px solid rgba(200,155,60,0.25) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
+}
+.modal-title { color: rgba(255,220,140,0.95) !important; }
+.modal-subtitle { color: rgba(200,170,100,0.7) !important; }
+
+/* Compare cols */
+.compare-col {
+  background: rgba(30,18,6,0.5) !important;
+  border: 1px solid rgba(200,155,60,0.2) !important;
+}
+.compare-col.new-item { border-color: rgba(200,155,60,0.5) !important; }
+
+/* ── AA TOPBAR (active arena screen) ── */
+.aa-topbar {
+  background: linear-gradient(180deg, rgba(12,7,2,0.75) 0%, rgba(12,7,2,0.3) 80%, transparent 100%) !important;
+  backdrop-filter: blur(8px) !important;
+  border-bottom: none !important;
+}
+.aa-round-val { color: rgba(255,220,140,0.95) !important; }
+
+/* ── LEADERBOARD ── */
+.leaderboard-row { border-bottom: 1px solid rgba(200,155,60,0.1) !important; }
+.lb-rank { color: rgba(200,155,60,0.6) !important; }
+.lb-rank.first { color: rgba(255,100,100,0.9) !important; }
+.lb-name { color: rgba(230,205,160,0.85) !important; }
+.lb-score { color: rgba(255,220,100,0.9) !important; }
+
+/* ── RARITY POLISH ── */
+.rarity-rare      { color: #5ab0ff !important; text-shadow: 0 0 6px rgba(90,176,255,0.4) !important; }
+.rarity-epic      { color: #c070ff !important; text-shadow: 0 0 6px rgba(180,100,255,0.4) !important; }
+.rarity-legendary { color: #ffcc44 !important; text-shadow: 0 0 8px rgba(255,200,60,0.5) !important; }
+></style>
 </head>
 <body>
 
@@ -4252,6 +4592,20 @@ const TRINITY_MUTATIONS = [ {id:'fireball_split',name:'Fireball Split',desc:'Fir
 
 const TRINITY_RANK_XP_PER_LEVEL = 50000;
 const TRINITY_ORB_THRESHOLD = 10000;
+
+// ── TRINITY DATA — persistent across runs (loaded from Supabase) ──
+let trinityData = {
+  rank: 0,
+  rankXP: 0,
+  totalDmgDealt: 0,
+  unlockedNodes: [],
+  mutations: [],
+  ascensionBoosts: [],
+  ascensionCount: 0,
+  alignment: null,
+  classEnhancement: null,
+  _activeLane: null,
+};
 
 // ── TRINITY NODE BONUSES → feed into getStats() ──
 function getTrinityBonuses() {
@@ -10066,343 +10420,4 @@ function hideWaveChoice() {
 
 </script>
 </body>
-</html
-/* ══════════════════════════════════════════════════════
-   GENSHIN-STYLE UI OVERHAUL
-   Circular skill icons · Elegant bars · Soft transparency
-   ══════════════════════════════════════════════════════ */
-
-/* ── PURGE ALL CYAN ── */
-* { outline-color: rgba(200,155,60,0.4) !important; }
-
-/* ── GAME SCREEN: see-through layered UI ── */
-#resource-bar {
-  background: rgba(20,12,4,0.55) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-bottom: 1px solid rgba(200,155,60,0.2) !important;
-  box-shadow: 0 1px 0 rgba(255,220,140,0.06) !important;
-}
-#bars-row {
-  background: rgba(15,9,3,0.5) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid rgba(200,155,60,0.15) !important;
-}
-#wave-timeline {
-  background: rgba(15,9,3,0.45) !important;
-  backdrop-filter: blur(10px) !important;
-  border-bottom: 1px solid rgba(200,155,60,0.12) !important;
-}
-#attack-area, #loadout-area {
-  background: linear-gradient(180deg, rgba(12,7,2,0) 0%, rgba(12,7,2,0.75) 35%) !important;
-  backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
-  border-top: none !important;
-  box-shadow: none !important;
-}
-#bottom-nav {
-  background: rgba(12,7,2,0.7) !important;
-  backdrop-filter: blur(16px) !important;
-  border-top: 1px solid rgba(200,155,60,0.2) !important;
-}
-
-/* Resource bar text */
-.res-label { color: #fff !important; font-size: 9px !important; text-shadow: none !important; font-weight: 900 !important; opacity: 0.8; }
-.res-val { color: #fff !important; text-shadow: none !important; font-weight: 700 !important; }
-
-/* ── ASSET-BASED HP/MP BARS ── */
-.bar-wrap { position: relative !important; align-items: center !important; }
-.bar-track {
-  flex: 1 !important;
-  height: 18px !important;
-  position: relative !important;
-  overflow: hidden !important;
-  background: rgba(0,0,0,0.55) !important;
-  border-radius: 4px !important;
-  border: none !important;
-}
-.bar-track::before, .bar-track::after { display: none !important; }
-/* Dark empty track */
-.bar-track-bg {
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,0.5);
-  border-radius: 4px;
-}
-/* The fill image — width is set by JS, clips naturally */
-.bar-fill {
-  position: absolute !important;
-  top: 0 !important; left: 0 !important; bottom: 0 !important;
-  border-radius: 4px !important;
-  transition: width 0.3s ease !important;
-  overflow: hidden !important;
-  display: flex !important;
-  align-items: stretch !important;
-}
-.bar-fill img {
-  height: 100% !important;
-  width: 100% !important;
-  object-fit: fill !important;
-  display: block !important;
-  flex-shrink: 0 !important;
-}
-/* Fallback color if image fails */
-.bar-fill.hp { background: rgba(40,160,60,0.3) !important; }
-.bar-fill.mp { background: rgba(40,80,200,0.3) !important; }
-.bar-label { color: rgba(255,255,255,0.85) !important; font-size: 9px !important; text-shadow: none !important; }
-.bar-nums  { color: rgba(255,255,255,0.8) !important; font-size: 9px !important; text-shadow: none !important; }
-
-/* ── CIRCULAR SKILL ICONS ── */
-.ability-slot {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 2px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 3px !important;
-  min-height: 68px !important;
-}
-
-/* The circular icon frame */
-.ab-icon-wrap {
-  position: relative;
-  width: 52px; height: 52px;
-  flex-shrink: 0;
-}
-.ab-icon-circle {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  background: rgba(20,12,4,0.75);
-  border: 1.5px solid rgba(200,155,60,0.55);
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,220,140,0.08);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.ab-icon-circle img {
-  width: 32px; height: 32px;
-  object-fit: contain;
-}
-/* Decorative outer ring */
-.ab-icon-circle::before {
-  content: '';
-  position: absolute; inset: -3px;
-  border-radius: 50%;
-  border: 1px solid rgba(200,155,60,0.2);
-  pointer-events: none;
-}
-/* Gloss highlight */
-.ab-icon-circle::after {
-  content: '';
-  position: absolute; top: 2px; left: 4px; right: 4px; height: 40%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
-  border-radius: 50% 50% 0 0;
-  pointer-events: none;
-}
-
-/* Cooldown radial sweep overlay */
-.ab-cd-radial {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(rgba(0,0,0,0.72) var(--cd, 0%), transparent var(--cd, 0%));
-  pointer-events: none;
-  transition: none;
-}
-.ab-cd-text {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Jim Nightshade', cursive;
-  font-size: 13px; font-weight: 700;
-  color: rgba(255,220,140,0.95);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-  pointer-events: none;
-}
-
-/* Skill label under icon */
-.ab-slot-label {
-  font-family: 'Jim Nightshade', cursive !important;
-  font-size: 10px !important;
-  color: rgba(255,230,160,0.95) !important;
-  letter-spacing: 0.04em !important;
-  text-align: center;
-  line-height: 1.3;
-  max-width: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0,0,0,1) !important;
-}
-
-/* Active slot glow */
-.ability-slot.active-ability .ab-icon-circle {
-  border-color: rgba(220,180,60,0.9) !important;
-  box-shadow: 0 0 12px rgba(200,155,40,0.5), inset 0 1px 0 rgba(255,220,140,0.15) !important;
-}
-
-/* Empty slot */
-.ab-icon-empty {
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  border: 1px dashed rgba(200,155,60,0.25);
-  display: flex; align-items: center; justify-content: center;
-  color: rgba(200,155,60,0.3);
-  font-size: 18px;
-}
-
-/* ── WAVE TIMELINE NODES ── */
-.wt-node {
-  border-color: rgba(200,155,60,0.35) !important;
-  background: rgba(20,12,4,0.5) !important;
-  color: rgba(200,155,60,0.6) !important;
-}
-.wt-node.done {
-  background: rgba(40,120,60,0.3) !important;
-  border-color: rgba(60,180,80,0.6) !important;
-  color: rgba(80,200,100,0.9) !important;
-}
-.wt-node.current {
-  background: rgba(160,120,20,0.3) !important;
-  border-color: rgba(220,180,40,0.8) !important;
-  box-shadow: 0 0 6px rgba(200,160,30,0.4) !important;
-}
-.wt-node.boss-node { border-color: rgba(180,40,40,0.6) !important; }
-.wt-node.boss-node.current { box-shadow: 0 0 8px rgba(200,40,40,0.5) !important; }
-.wt-connector { background: rgba(200,155,60,0.2) !important; }
-.wt-connector.done { background: rgba(60,180,80,0.5) !important; }
-
-/* ── NAV TABS ── */
-.nav-tab { color: rgba(255,255,255,0.7) !important; border-top-color: transparent !important; text-shadow: 0 1px 0 rgba(0,0,0,1), 0 -1px 0 rgba(0,0,0,1) !important; }
-.nav-tab.active { color: #fff !important; border-top-color: rgba(220,180,60,0.9) !important; text-shadow: 0 1px 0 rgba(0,0,0,1), 0 -1px 0 rgba(0,0,0,1) !important; }
-.nav-tab-icon { font-size: 12px !important; opacity: 0.7; }
-
-/* ── PANEL DECORATIVE CORNERS ── */
-.forge-panel, .modal, .equip-slot, .vendor-item, .ab-upgrade-card {
-  border-color: rgba(200,155,60,0.2) !important;
-  border-width: 1px !important;
-  position: relative;
-}
-/* Corner accents on key panels */
-.forge-panel::before, .forge-panel::after {
-  content: '';
-  position: absolute;
-  width: 8px; height: 8px;
-  pointer-events: none;
-  z-index: 1;
-}
-.forge-panel::before {
-  top: -1px; left: -1px;
-  border-top: 1.5px solid rgba(220,180,60,0.7);
-  border-left: 1.5px solid rgba(220,180,60,0.7);
-}
-.forge-panel::after {
-  bottom: -1px; right: -1px;
-  border-bottom: 1.5px solid rgba(220,180,60,0.7);
-  border-right: 1.5px solid rgba(220,180,60,0.7);
-}
-
-/* ── EQUIP SLOTS — framed panel style ── */
-.equip-slot {
-  background: rgba(20,12,4,0.4) !important;
-  border: 1px solid rgba(200,155,60,0.2) !important;
-  border-radius: 6px !important;
-  position: relative;
-}
-.equip-slot::before {
-  content: '';
-  position: absolute; top: 2px; left: 2px; right: 2px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,220,140,0.15), transparent);
-  pointer-events: none;
-}
-.slot-name { color: rgba(200,170,100,0.6) !important; }
-.slot-item { color: rgba(255,220,140,0.9) !important; }
-.slot-empty { color: rgba(200,155,60,0.25) !important; }
-
-/* ── SIDE MENU ── */
-#side-menu {
-  background: rgba(12,7,2,0.82) !important;
-  border-right: 1px solid rgba(200,155,60,0.2) !important;
-  backdrop-filter: blur(20px) !important;
-}
-#menu-panel {
-  background: rgba(12,7,2,0.88) !important;
-  backdrop-filter: blur(20px) !important;
-}
-.panel-title {
-  background: rgba(20,12,4,0.6) !important;
-  border-bottom: 1px solid rgba(200,155,60,0.18) !important;
-  color: rgba(220,180,80,0.9) !important;
-}
-.stat-row { border-bottom: 1px solid rgba(200,155,60,0.08) !important; }
-.stat-label { color: rgba(200,170,100,0.6) !important; }
-.stat-val { color: rgba(255,240,200,0.9) !important; }
-
-/* Menu nav buttons */
-#side-menu button, #menu-panel button {
-  background: rgba(255,220,140,0.05) !important;
-  border: 1px solid rgba(200,155,60,0.18) !important;
-  color: rgba(220,185,110,0.85) !important;
-  border-radius: 4px !important;
-  transition: background 0.15s, border-color 0.15s !important;
-}
-#side-menu button:hover, #menu-panel button:hover {
-  background: rgba(255,220,140,0.1) !important;
-  border-color: rgba(200,155,60,0.4) !important;
-}
-
-/* ── VENDOR / UPGRADE CARDS ── */
-.vendor-item {
-  background: rgba(20,12,4,0.45) !important;
-  border: 1px solid rgba(200,155,60,0.18) !important;
-}
-.vendor-item:hover {
-  background: rgba(30,18,6,0.6) !important;
-  border-color: rgba(200,155,60,0.4) !important;
-}
-.ab-upgrade-card {
-  background: rgba(20,12,4,0.4) !important;
-  border: 1px solid rgba(200,155,60,0.18) !important;
-}
-
-/* ── MODALS — remove heavy opaque boxes ── */
-.modal {
-  background: rgba(22,14,4,0.88) !important;
-  border: 1px solid rgba(200,155,60,0.25) !important;
-  backdrop-filter: blur(20px) !important;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
-}
-.modal-title { color: rgba(255,220,140,0.95) !important; }
-.modal-subtitle { color: rgba(200,170,100,0.7) !important; }
-
-/* Compare cols */
-.compare-col {
-  background: rgba(30,18,6,0.5) !important;
-  border: 1px solid rgba(200,155,60,0.2) !important;
-}
-.compare-col.new-item { border-color: rgba(200,155,60,0.5) !important; }
-
-/* ── AA TOPBAR (active arena screen) ── */
-.aa-topbar {
-  background: linear-gradient(180deg, rgba(12,7,2,0.75) 0%, rgba(12,7,2,0.3) 80%, transparent 100%) !important;
-  backdrop-filter: blur(8px) !important;
-  border-bottom: none !important;
-}
-.aa-round-val { color: rgba(255,220,140,0.95) !important; }
-
-/* ── LEADERBOARD ── */
-.leaderboard-row { border-bottom: 1px solid rgba(200,155,60,0.1) !important; }
-.lb-rank { color: rgba(200,155,60,0.6) !important; }
-.lb-rank.first { color: rgba(255,100,100,0.9) !important; }
-.lb-name { color: rgba(230,205,160,0.85) !important; }
-.lb-score { color: rgba(255,220,100,0.9) !important; }
-
-/* ── RARITY POLISH ── */
-.rarity-rare      { color: #5ab0ff !important; text-shadow: 0 0 6px rgba(90,176,255,0.4) !important; }
-.rarity-epic      { color: #c070ff !important; text-shadow: 0 0 6px rgba(180,100,255,0.4) !important; }
-.rarity-legendary { color: #ffcc44 !important; text-shadow: 0 0 8px rgba(255,200,60,0.5) !important; }
->
+</html>
