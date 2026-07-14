@@ -181,9 +181,91 @@
     color: #999;
     font-size: 14px;
   }
+
+  /* Password gate */
+  #gate {
+    position: fixed;
+    inset: 0;
+    background: var(--black);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  #gate .box {
+    background: var(--black-soft);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 40px 35px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+
+  #gate .logo {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  #gate .logo span {
+    color: var(--red);
+  }
+
+  #gate p {
+    color: #bbb;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  #gate input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    background: var(--black);
+    color: var(--white);
+    font-size: 15px;
+    margin-bottom: 15px;
+  }
+
+  #gate input:focus {
+    outline: 1px solid var(--red);
+  }
+
+  #gate .btn {
+    width: 100%;
+    border: none;
+  }
+
+  #gate .error {
+    color: var(--red);
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  #site-content {
+    display: none;
+  }
 </style>
 </head>
 <body>
+
+<div id="gate">
+  <div class="box">
+    <div class="logo">GW<span>SW</span></div>
+    <p>This page is private. Enter the password to continue.</p>
+    <input type="password" id="gate-input" placeholder="Password" autocomplete="off">
+    <button class="btn" onclick="checkPassword()">Enter</button>
+    <div class="error" id="gate-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<div id="site-content">
 
 <header>
   <div class="logo">GW<span>SW</span></div>
@@ -261,6 +343,36 @@
 <!-- Zoho SalesIQ Zobot -->
 <script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script>
 <script id="zsiqscript" src="https://salesiq.zohopublic.com/widget?wc=siqe69f55f16d3c53c932b3169152c10533" defer></script>
+
+</div><!-- /site-content -->
+
+<script>
+  const SITE_PASSWORD = "GetWellStayWell";
+
+  function unlockSite() {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('site-content').style.display = 'block';
+  }
+
+  function checkPassword() {
+    const input = document.getElementById('gate-input').value;
+    if (input === SITE_PASSWORD) {
+      sessionStorage.setItem('gwsw-unlocked', 'true');
+      unlockSite();
+    } else {
+      document.getElementById('gate-error').style.display = 'block';
+    }
+  }
+
+  document.getElementById('gate-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkPassword();
+  });
+
+  // Stay unlocked for the rest of the browser session
+  if (sessionStorage.getItem('gwsw-unlocked') === 'true') {
+    unlockSite();
+  }
+</script>
 
 </body>
 </html>
