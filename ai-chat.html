@@ -13,83 +13,13 @@
     font-family: 'Segoe UI', Arial, sans-serif;
     height: 100vh;
     width: 100vw;
-  }
-
-  #gate {
-    position: fixed;
-    inset: 0;
-    background: #000;
-    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-  }
-
-  #gate .box {
-    background: #1a1a1a;
-    border: 1px solid #b3122b;
-    border-radius: 8px;
-    padding: 40px 35px;
-    max-width: 360px;
-    width: 100%;
     text-align: center;
   }
 
-  #gate p {
-    color: #bbb;
-    font-size: 14px;
-    margin-bottom: 20px;
-  }
-
-  #gate input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 6px;
-    border: 1px solid #2a2a2a;
-    background: #000;
-    color: #fff;
-    font-size: 15px;
-    margin-bottom: 15px;
-  }
-
-  #gate input:focus {
-    outline: 1px solid #b3122b;
-  }
-
-  #gate button {
-    width: 100%;
-    background: #b3122b;
-    color: #fff;
-    border: none;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  #gate button:hover {
-    background: #7a0d1e;
-  }
-
-  #gate .error {
-    color: #b3122b;
-    font-size: 13px;
-    margin-top: 12px;
-    display: none;
-  }
-
-  #site-content {
-    display: none;
-    height: 100vh;
-    width: 100vw;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-
-  #site-content h1 {
+  h1 {
     color: #b3122b;
     font-size: 32px;
   }
@@ -97,49 +27,11 @@
 </head>
 <body>
 
-<div id="gate">
-  <div class="box">
-    <p>This page is private. Enter the password to continue.</p>
-    <input type="password" id="gate-input" placeholder="Password" autocomplete="off">
-    <button onclick="checkPassword()">Enter</button>
-    <div class="error" id="gate-error">Incorrect password. Try again.</div>
-  </div>
-</div>
-
-<div id="site-content">
-  <h1>Testing page for chat bot</h1>
-</div>
+<h1>Testing page for chat bot</h1>
 
 <!-- Zoho SalesIQ Zobot -->
 <script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script>
 <script id="zsiqscript" src="https://salesiq.zohopublic.com/widget?wc=siqe69f55f16d3c53c932b3169152c10533" defer></script>
-
-<script>
-  const SITE_PASSWORD = "GetWellStayWell";
-
-  function unlockSite() {
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('site-content').style.display = 'flex';
-  }
-
-  function checkPassword() {
-    const input = document.getElementById('gate-input').value;
-    if (input === SITE_PASSWORD) {
-      sessionStorage.setItem('gwsw-unlocked', 'true');
-      unlockSite();
-    } else {
-      document.getElementById('gate-error').style.display = 'block';
-    }
-  }
-
-  document.getElementById('gate-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') checkPassword();
-  });
-
-  if (sessionStorage.getItem('gwsw-unlocked') === 'true') {
-    unlockSite();
-  }
-</script>
 
 </body>
 </html>
