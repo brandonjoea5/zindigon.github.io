@@ -1,292 +1,266 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="robots" content="noindex,nofollow"/>
-  <title>AI Support — Zindigon</title>
-  <link rel="stylesheet" href="assets/site.css"/>
-  <style>
-    body { overflow: hidden; }
-    main { padding: 0; max-width: none; }
-    .chat-shell {
-      width: 100%;
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 24px;
-      height: calc(100vh - 64px);
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      gap: 16px;
-    }
-    .chat-side, .chat-main {
-      background: var(--bg-elev);
-      border: 1px solid var(--line);
-      border-radius: var(--r-lg);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .chat-side .pad { padding: 22px; }
-    .chat-side h1 {
-      font-family: var(--serif);
-      font-weight: 400;
-      font-size: 24px;
-      margin: 12px 0 4px;
-    }
-    .chat-side .pill {
-      display: flex; justify-content: space-between;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      border-radius: var(--r-sm);
-      margin-bottom: 10px;
-      font-size: 13px;
-    }
-    .chat-side .pill .k {
-      font-family: var(--mono); font-size: 10px;
-      letter-spacing: 0.10em; text-transform: uppercase;
-      color: var(--fg-mute);
-    }
-    .chat-side .pill .v { color: var(--fg); font-weight: 500; }
-    .chat-side .pill .v.ok { color: var(--accent); display:flex; gap:6px; align-items:center; }
-    .chat-side .pill .v.ok::before {
-      content:""; width:6px; height:6px; border-radius:50%;
-      background: var(--accent); animation: pulse 2s infinite;
-    }
-    .chat-side .quick {
-      margin-top: auto;
-      padding: 18px 22px;
-      border-top: 1px solid var(--line);
-    }
-    .chat-side .quick h4 {
-      font-family: var(--mono); font-size: 10px;
-      letter-spacing: 0.10em; text-transform: uppercase;
-      color: var(--fg-mute); margin: 0 0 12px; font-weight: 500;
-    }
-    .chip {
-      display:block; width:100%; text-align:left;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      background: transparent;
-      color: var(--fg-soft);
-      border-radius: var(--r-sm);
-      font: inherit; font-size: 13px;
-      cursor: pointer;
-      margin-bottom: 6px;
-      transition: border-color 0.15s, color 0.15s, background 0.15s;
-    }
-    .chip:hover { border-color: var(--accent-line); color: var(--fg); background: var(--bg); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GWSW | Non-Insurance Benefits Subscription</title>
+<style>
+  :root {
+    --red: #b3122b;
+    --red-dark: #7a0d1e;
+    --black: #0d0d0d;
+    --black-soft: #1a1a1a;
+    --white: #f5f5f5;
+  }
 
-    .chat-top {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 22px;
-      border-bottom: 1px solid var(--line);
-    }
-    .chat-top .who { display: flex; gap: 12px; align-items: center; }
-    .chat-top .av {
-      width: 32px; height: 32px;
-      border-radius: 8px;
-      border: 1px solid var(--line-2);
-      background: var(--bg);
-      display: grid; place-items: center;
-      font-family: var(--mono); font-size: 11px;
-      color: var(--accent);
-    }
-    .chat-top strong { font-size: 14px; font-weight: 500; }
-    .chat-top span { font-family: var(--mono); font-size: 11px; color: var(--fg-mute); display:block; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .chat-stream {
-      flex: 1; overflow: auto;
-      padding: 20px 22px;
-      display: flex; flex-direction: column; gap: 14px;
-    }
-    .msg {
-      max-width: 78%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: var(--bg);
-      font-size: 14px;
-      line-height: 1.55;
-    }
-    .msg.user {
-      margin-left: auto;
-      background: color-mix(in oklch, var(--accent) 8%, var(--bg));
-      border-color: var(--accent-line);
-    }
-    .msg .meta {
-      display: flex; justify-content: space-between;
-      margin-bottom: 6px;
-      font-family: var(--mono); font-size: 10px;
-      letter-spacing: 0.06em;
-      color: var(--fg-mute);
-      text-transform: uppercase;
-    }
-    .msg p { margin: 0; color: var(--fg); white-space: pre-wrap; }
-    .typing {
-      align-self: flex-start;
-      padding: 10px 14px;
-      border: 1px dashed var(--line-2);
-      border-radius: 999px;
-      font-family: var(--mono); font-size: 11px;
-      color: var(--fg-mute);
-      display: inline-flex; gap: 8px; align-items: center;
-    }
-    .typing .d { display:inline-flex; gap:3px; }
-    .typing .d i {
-      width:4px; height:4px; border-radius:50%; background: var(--accent);
-      animation: pulse 1.2s infinite;
-    }
-    .typing .d i:nth-child(2){animation-delay:.15s}
-    .typing .d i:nth-child(3){animation-delay:.30s}
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--black);
+    color: var(--white);
+    line-height: 1.6;
+  }
 
-    .composer {
-      padding: 14px 22px;
-      border-top: 1px solid var(--line);
-      display: flex; gap: 10px;
-    }
-    .composer input {
-      flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--line-2);
-      color: var(--fg);
-      padding: 11px 14px;
-      border-radius: var(--r-sm);
-      font: inherit; font-size: 14px;
-      outline: none;
-    }
-    .composer input:focus { border-color: var(--accent); }
-    .composer button {
-      border: none;
-      background: var(--accent);
-      color: #0A0A0C;
-      padding: 11px 18px;
-      border-radius: var(--r-sm);
-      font: inherit; font-weight: 500; font-size: 14px;
-      cursor: pointer;
-    }
-    .composer button:disabled { opacity: 0.5; cursor: not-allowed; }
+  header {
+    background: var(--black-soft);
+    border-bottom: 3px solid var(--red);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-    @media (max-width: 820px) {
-      .chat-shell { grid-template-columns: 1fr; padding: 12px; height: calc(100vh - 60px); }
-      .chat-side { display: none; }
-    }
-  </style>
+  .logo {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--white);
+  }
+
+  .logo span {
+    color: var(--red);
+  }
+
+  nav a {
+    color: var(--white);
+    text-decoration: none;
+    margin-left: 30px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  nav a:hover {
+    color: var(--red);
+  }
+
+  .hero {
+    text-align: center;
+    padding: 100px 20px 80px;
+    background: linear-gradient(180deg, var(--black-soft), var(--black));
+  }
+
+  .hero h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 span {
+    color: var(--red);
+  }
+
+  .hero p {
+    font-size: 20px;
+    max-width: 600px;
+    margin: 0 auto 35px;
+    color: #ccc;
+  }
+
+  .btn {
+    background: var(--red);
+    color: var(--white);
+    padding: 14px 34px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+  }
+
+  .btn:hover {
+    background: var(--red-dark);
+  }
+
+  section {
+    padding: 70px 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  section h2 {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 40px;
+  }
+
+  section h2 span {
+    color: var(--red);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+  }
+
+  .card {
+    background: var(--black-soft);
+    border: 1px solid #2a2a2a;
+    border-top: 4px solid var(--red);
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+  }
+
+  .card h3 {
+    margin-bottom: 12px;
+    color: var(--white);
+  }
+
+  .card p {
+    color: #bbb;
+    font-size: 15px;
+  }
+
+  .plans {
+    background: var(--black-soft);
+  }
+
+  .plan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 25px;
+  }
+
+  .plan {
+    background: var(--black);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 35px 25px;
+    text-align: center;
+  }
+
+  .plan .price {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--red);
+    margin: 15px 0;
+  }
+
+  .plan ul {
+    list-style: none;
+    margin: 20px 0;
+    text-align: left;
+    color: #ccc;
+    font-size: 14px;
+  }
+
+  .plan ul li {
+    padding: 6px 0;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    background: var(--black-soft);
+    border-top: 3px solid var(--red);
+    color: #999;
+    font-size: 14px;
+  }
+</style>
 </head>
 <body>
 
-<div id="fx" aria-hidden="true">
-  <div class="fx-grid"></div><div class="fx-glow"></div><div class="fx-grain"></div>
-</div>
-
-<header class="site-header">
-  <nav class="nav" aria-label="Primary">
-    <a class="brand" href="/">
-      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
-      <span class="brand-name">Zindigon<em>studio</em></span>
-    </a>
-    <div class="nav-links">
-      <a href="/">Home</a><a href="/projects.html">Projects</a>
-      <a href="/work.html">Work</a><a href="/contact.html">Contact</a>
-    </div>
-    <span class="nav-clock" id="navClock">—</span>
-    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+<header>
+  <div class="logo">GW<span>SW</span></div>
+  <nav>
+    <a href="#benefits">Benefits</a>
+    <a href="#plans">Plans</a>
+    <a href="#contact">Contact</a>
   </nav>
-  <div class="mobile-nav" id="mobileNav">
-    <a href="/">Home</a><a href="/projects.html">Projects</a><a href="/work.html">Work</a><a href="/contact.html">Contact</a>
-  </div>
 </header>
 
-<main>
-  <div class="chat-shell">
-    <aside class="chat-side">
-      <div class="pad">
-        <span class="eyebrow"><span class="dot"></span> Demo · staging</span>
-        <h1>AI Support</h1>
-        <p class="mono muted">Presentation mode · scripted</p>
-      </div>
-      <div class="pad" style="padding-top:0;">
-        <div class="pill"><div class="k">Environment</div><div class="v">Staging</div></div>
-        <div class="pill"><div class="k">Status</div><div class="v ok">Online</div></div>
-        <div class="pill"><div class="k">Topics</div><div class="v">Billing · Providers</div></div>
-      </div>
-      <div class="quick">
-        <h4>Quick prompts</h4>
-        <button class="chip" data-msg="Am I active right now?">Am I covered?</button>
-        <button class="chip" data-msg="How do I find an in-network provider?">Find a provider</button>
-        <button class="chip" data-msg="Can you explain my monthly cost?">Monthly cost</button>
-        <button class="chip" data-msg="I need a replacement ID card.">Replace ID card</button>
-        <button class="chip" data-msg='What does "On Hold" mean?'>"On Hold"?</button>
-      </div>
-    </aside>
+<div class="hero">
+  <h1>Everyday Savings, <span>Not Insurance</span></h1>
+  <p>GWSW is a non-insurance benefits subscription platform giving members access to everyday savings and support services — without the complexity of traditional insurance.</p>
+  <a href="#plans" class="btn">View Plans</a>
+</div>
 
-    <main class="chat-main">
-      <div class="chat-top">
-        <div class="who">
-          <div class="av">AI</div>
-          <div><strong>Realm Assistant</strong><span>Fast answers · always on</span></div>
-        </div>
-        <button class="btn btn-ghost" id="reset" type="button">Reset</button>
-      </div>
-      <div class="chat-stream" id="stream"></div>
-      <div class="composer">
-        <input id="input" placeholder="Ask about coverage, billing, providers…" autocomplete="off"/>
-        <button id="send" type="button">Send</button>
-      </div>
-    </main>
+<section id="benefits">
+  <h2>Member <span>Benefits</span></h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Discount Network</h3>
+      <p>Access a wide network of participating providers and everyday discounts.</p>
+    </div>
+    <div class="card">
+      <h3>24/7 Support Line</h3>
+      <p>Talk to a live representative anytime you need help or have questions.</p>
+    </div>
+    <div class="card">
+      <h3>Simple Membership</h3>
+      <p>No underwriting, no claims process — just straightforward monthly access.</p>
+    </div>
   </div>
-</main>
+</section>
 
-<script src="assets/site.js" defer></script>
-<script>
-  const stream = document.getElementById('stream');
-  const input = document.getElementById('input');
-  const send = document.getElementById('send');
-  const reset = document.getElementById('reset');
+<section id="plans" class="plans">
+  <h2>Subscription <span>Plans</span></h2>
+  <div class="plan-grid">
+    <div class="plan">
+      <h3>Individual</h3>
+      <div class="price">$19/mo</div>
+      <ul>
+        <li>Personal access</li>
+        <li>Discount network</li>
+        <li>Support line</li>
+      </ul>
+      <a href="#" class="btn">Get Started</a>
+    </div>
+    <div class="plan">
+      <h3>Family</h3>
+      <div class="price">$39/mo</div>
+      <ul>
+        <li>Up to 5 members</li>
+        <li>Discount network</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#" class="btn">Get Started</a>
+    </div>
+    <div class="plan">
+      <h3>Business</h3>
+      <div class="price">Custom</div>
+      <ul>
+        <li>Employee bundles</li>
+        <li>Dedicated account manager</li>
+        <li>Volume pricing</li>
+      </ul>
+      <a href="#" class="btn">Contact Us</a>
+    </div>
+  </div>
+</section>
 
-  const replies = [
-    { m:/covered|active|coverage/i, r:'You\'re currently marked **Active**.\n\nIf you recently paid or were added to a group, processing can take a short window. Tell me your plan name and I can help confirm.' },
-    { m:/find|provider|network/i, r:'To find an in-network provider:\n1) Open Product Info\n2) Select your plan\n3) Tap Find Providers\n\nShare your ZIP and I\'ll narrow the search.' },
-    { m:/id card|replacement|new id/i, r:'No problem — I can submit a replacement request. Live, you\'d see:\n**Request received. Delivery in 7–10 business days.**' },
-    { m:/cost|monthly|price|amount/i, r:'Your monthly cost is the recurring premium for the plan you selected. In the live system that pulls from product fees and shows as **$X / month**.' },
-    { m:/hold|lapsed/i, r:'"On Hold" means the plan is temporarily paused — usually verification or a pending action.\n\n• Inactive · cancellation date set\n• On Hold · hold flag = 1\n• Otherwise Active' },
-  ];
-  const fallback = 'Got it. In the live build I\'d give a clear summary + next steps.\n\nTell me the plan name and what you\'re trying to do — I\'ll point you to the exact screen.';
+<footer id="contact">
+  &copy; 2026 GWSW. This is a non-insurance benefits subscription platform, not an insurance product.
+</footer>
 
-  const time = () => new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+<!-- Zoho SalesIQ Zobot -->
+<script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script>
+<script id="zsiqscript" src="https://salesiq.zohopublic.com/widget?wc=siqe69f55f16d3c53c932b3169152c10533" defer></script>
 
-  function add(role, text) {
-    const w = document.createElement('div');
-    w.className = 'msg ' + role;
-    const safe = text.replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    w.innerHTML = `<div class="meta"><span>${role==='user'?'You':'Assistant'}</span><span>${time()}</span></div><p>${safe}</p>`;
-    stream.appendChild(w);
-    stream.scrollTop = stream.scrollHeight;
-  }
-  function typing() {
-    const t = document.createElement('div');
-    t.className = 'typing'; t.id = 'typing';
-    t.innerHTML = 'Assistant typing <span class="d"><i></i><i></i><i></i></span>';
-    stream.appendChild(t); stream.scrollTop = stream.scrollHeight;
-  }
-  function untyping(){ document.getElementById('typing')?.remove(); }
-  function reply(t){ const h = replies.find(x => x.m.test(t)); return h ? h.r : fallback; }
-  function go(){
-    const v = input.value.trim(); if(!v) return;
-    add('user', v); input.value = ''; send.disabled = true;
-    typing();
-    setTimeout(() => { untyping(); add('ai', reply(v)); send.disabled = false; input.focus(); }, Math.min(900 + v.length*12, 2000));
-  }
-  function seed(){
-    stream.innerHTML='';
-    add('ai','Hi — I\'m the Realm Assistant (demo).\n\nAsk me about coverage, providers, billing, or ID cards.');
-  }
-  send.addEventListener('click', go);
-  input.addEventListener('keydown', e => e.key==='Enter' && go());
-  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { input.value = c.dataset.msg; input.focus(); }));
-  reset.addEventListener('click', seed);
-  seed();
-</script>
 </body>
 </html>
