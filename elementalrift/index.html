@@ -13,6 +13,9 @@
 <meta name="author" content="Zindigon Enterprises">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://zindigon.com/elementalrift/">
+<!-- Google AdSense -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2900666268471871"
+     crossorigin="anonymous"></script>
 
 <!-- Open Graph (social sharing + Google context) -->
 <meta property="og:title" content="Elemental Rift | Free Browser RPG">
@@ -1619,6 +1622,41 @@ try {
 .rarity-rare      { color: #5ab0ff !important; text-shadow: 0 0 6px rgba(90,176,255,0.4) !important; }
 .rarity-epic      { color: #c070ff !important; text-shadow: 0 0 6px rgba(180,100,255,0.4) !important; }
 .rarity-legendary { color: #ffcc44 !important; text-shadow: 0 0 8px rgba(255,200,60,0.5) !important; }
+
+/* ── GOOGLE ADSENSE PLACEMENTS ──
+   Sidebar ad only ever shows beside actual gameplay: it sits at z-index 130,
+   above #game's default stacking (no explicit z-index, i.e. ~0) but below
+   every real screen/modal/popup in the app (map-screen 150, class-screen
+   160, story-intro 161, name-screen 200, tutorial overlay 400, all modals
+   400-600) — so it's automatically covered whenever a menu, popup, or
+   tutorial step is open, and only visible during live play. Gated to wide
+   desktop viewports so it never competes with mobile's cramped layout or
+   its bottom tab bar. */
+#ad-sidebar{
+  display:none;
+  position:fixed;
+  right:14px;
+  top:130px;
+  width:300px;height:250px;
+  z-index:130;
+  pointer-events:auto;
+}
+@media (min-width:1140px) and (min-height:700px){
+  #ad-sidebar{ display:block; }
+}
+#ad-bottom{
+  display:none;
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:130;
+  max-height:110px;overflow:hidden;
+  background:rgba(15,10,4,0.55);
+  text-align:center;
+  pointer-events:auto;
+}
+@media (min-width:1024px){
+  #ad-bottom{ display:block; }
+}
 ></style>
 </head>
   <!-- Google tag (gtag.js) -->
@@ -1631,6 +1669,28 @@ try {
   gtag('config', 'G-1PJ7GDPE20');
 </script>
 <body>
+
+<!-- Desktop-only sidebar ad, shown beside the game -->
+<div id="ad-sidebar">
+  <ins class="adsbygoogle"
+       style="display:block;width:300px;height:250px"
+       data-ad-client="ca-pub-2900666268471871"
+       data-ad-slot="9972731543"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<!-- Responsive ad, shown below the game -->
+<div id="ad-bottom">
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-2900666268471871"
+       data-ad-slot="9509982523"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
 
 <!-- Hidden crawlable content for search engines -->
 <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
@@ -2890,7 +2950,7 @@ const ABILITIES = {
   // ── WARRIOR/ROGUE BASICS ──
   warrior_basic: { id:'warrior_basic', class:'warrior', imbue:null, type:'basic', name:'Sword Strike',  icon:'', cd:0, desc:'Powerful sword strike. Attack speed scales this. Toggles auto.', dmgMult:1.0, isMagic:false },
   rogue_basic:   { id:'rogue_basic',   class:'rogue',   imbue:null, type:'basic', name:'Dual Strike',   icon:'', cd:0, desc:'Twin dagger strikes hitting twice rapidly. Fast attack speed. Toggles auto.', dmgMult:0.65, isMagic:false, hits:2 },
-  rogue_basic_bow:{ id:'rogue_basic_bow',class:'rogue', imbue:null, type:'basic', name:'Arrow Shot',    icon:'', cd:0, desc:'Ranged arrow dealing physical damage. Fast attack speed. Toggles auto.', dmgMult:0.75, isMagic:false },
+  rogue_basic_bow:{ id:'rogue_basic_bow',class:'rogue', imbue:null, type:'basic', name:'Arrow Shot',    icon:'', cd:0, desc:'Ranged arrow dealing physical damage. Fast attack speed. 110% attack damage, +20% crit chance, +50% crit damage. Toggles auto.', dmgMult:1.10, isMagic:false, bonusCrit:20, bonusCritDmg:50 },
 
   // ── WARRIOR POISON ──
   warrior_poison_reg1: { id:'warrior_poison_reg1', class:'warrior', imbue:'poison', type:'regular', name:'Venom Slash',   icon:'', cd:3000, desc:'Venomous strike dealing damage. Applies Poison — deals DOT scaling with Poison Dur.', dmgMult:1.8, isMagic:false, applyEffect:'poison', unlockLv:3 },
@@ -3221,6 +3281,13 @@ const DIFF_CONFIG = {
   extreme:  { min:25,  max:25,  bossChance:1.0, lootCap:'Cosmic',   waveBonus:4.0, elitesOnly:true, bossEvery:5 },
 };
 
+// Easy is meant to be the low-variance intro path — every one of its 3
+// waves is clamped into a narrow effective-HP band (see rollEnemy) instead
+// of letting the normal level/type RNG decide, so two different level-1
+// characters get a comparably hard Easy run instead of one facing a ~450 HP
+// enemy and the other a ~1,200 HP one on the same wave.
+const EASY_WAVE_HP_BUDGET = { 1: [50, 80], 2: [100, 180], 3: [300, 500] };
+
 let MAP = {
   difficulty: null,
   totalWaves: 0,
@@ -3229,6 +3296,22 @@ let MAP = {
   segmentComplete: false,
   pendingBoss: false,
 };
+
+// Simulate Waves lets a player skip playing entirely and just bulk-resolve
+// waves for XP/gold/loot — genuinely useful once you understand what a wave
+// even is, but shown on the very first difficulty screen it just added a
+// third, unexplained system (after combat and builds) before a brand-new
+// player had cleared a single fight, and invited skipping the intro they
+// were meant to play through. Unlock once any of: the ability tutorial is
+// done, a path has been fully cleared once, or the character has leveled
+// up a bit — persisted, so it never disappears again once earned.
+const SIM_UNLOCK_KEY = 'er_sim_unlocked';
+function isSimulateWavesUnlocked() {
+  if(localStorage.getItem(SIM_UNLOCK_KEY)) return true;
+  const unlocked = !!localStorage.getItem(TUT_KEY) || (G.playerLevel||1) >= 3;
+  if(unlocked) { try { localStorage.setItem(SIM_UNLOCK_KEY, '1'); } catch(e){} }
+  return unlocked;
+}
 
 function showMapScreen(isFirst=false) {
   if(G.autoAttacks) Object.keys(G.autoAttacks).forEach(el=>clearInterval(G.autoAttacks[el]));
@@ -3248,10 +3331,16 @@ function showMapScreen(isFirst=false) {
   const title = document.getElementById('map-title');
   const sub   = document.getElementById('map-subtitle');
   if(isFirst){ title.textContent='Choose Your Path'; sub.textContent='Select difficulty. Higher risk, better rewards.'; }
-  else { title.textContent='Path Complete!'; sub.textContent='Choose your next challenge.'; }
+  else {
+    title.textContent='Path Complete!'; sub.textContent='Choose your next challenge.';
+    // A completed path is one of the unlock conditions in its own right.
+    try { localStorage.setItem(SIM_UNLOCK_KEY, '1'); } catch(e) {}
+  }
   // Show boss attempt option if wave >= 3
   const bossSection = document.getElementById('map-boss-section');
   if(bossSection) bossSection.classList.toggle('hidden', G.wave < 3);
+  const simSection = document.getElementById('map-simulate-section');
+  if(simSection) simSection.classList.toggle('hidden', !isSimulateWavesUnlocked());
 }
 
 function selectDifficulty(diff) {
@@ -3338,6 +3427,13 @@ function spawnNextSegmentWave() {
     ? (MAP.currentSegWave % 5 === 0)
     : MAP.currentSegWave === MAP.totalWaves;
   renderWaveTimeline();
+  // Some callers (e.g. nextWave()) update the resource bar BEFORE calling
+  // this function, so the "Wave N/Total" HUD text gets stamped with the
+  // stale wave number and only catches up whenever some unrelated event
+  // (a kill, a gold pickup) happens to call updateResourceBar() again —
+  // which made the counter look "one step behind" for the entire fight.
+  // Refresh it here too so it's always correct the instant a new wave starts.
+  if(typeof updateResourceBar === 'function') updateResourceBar();
 
   const bossChance = DIFF_CONFIG[MAP.difficulty].bossChance;
   if(MAP.isBossWave && Math.random() < bossChance) {
@@ -3733,7 +3829,7 @@ function rollEnemy(wave) {
   const rampFactor = Math.min(1, segWave / 3); // wave 1 -> ~1/3 spread, wave 2 -> ~2/3, wave 3+ -> full
   const effectiveMaxBonus = Math.max(1, Math.round(maxBonus * rampFactor));
   const maxLv = playerLv + effectiveMaxBonus;
-  const enemyLv = Math.floor(minLv + Math.random() * (maxLv - minLv + 1));
+  let enemyLv = Math.floor(minLv + Math.random() * (maxLv - minLv + 1));
 
   // HP and ATK use a power curve — scales aggressively but stays manageable
   // HP  = 30 * lv^1.85  — roughly doubles every 8-10 levels
@@ -3755,14 +3851,39 @@ function rollEnemy(wave) {
   for(let i=0;i<pool.length;i++){acc+=weights[i];if(r<acc){enemyType=pool[i];break;}}
 
   // Enraged variant chance scales with level gap (higher level enemies more likely enraged)
+  // — suppressed entirely on Easy (see the power-budget clamp below): a
+  // resistance/damage gimmick on a brand-new player's very first path was
+  // exactly the kind of RNG spike that made two identical-level characters
+  // have wildly different Easy runs.
   let variant = null;
   const enrageChance = 0.15 + Math.max(0, enemyLv - playerLv) * 0.05;
-  if(Math.random() < enrageChance) {
+  if(MAP.difficulty !== 'easy' && Math.random() < enrageChance) {
     variant = ENRAGED_VARIANTS[Math.floor(Math.random()*ENRAGED_VARIANTS.length)];
   }
 
-  const baseHp  = Math.floor(hpBase * enemyType.hpM * (variant?.prefix==='Ancient'?1.4:1));
-  const baseAtk = Math.floor(atkBase * enemyType.atkM * (variant?.prefix==='Ancient'?1.3:1));
+  let baseHp  = Math.floor(hpBase * enemyType.hpM * (variant?.prefix==='Ancient'?1.4:1));
+  let baseAtk = Math.floor(atkBase * enemyType.atkM * (variant?.prefix==='Ancient'?1.3:1));
+
+  // Easy-mode power budget: two brand-new level-1 characters could
+  // previously land anywhere from a ~450 HP enemy to a ~1,200 HP Ancient
+  // Golem on the exact same wave 3, purely from the enemy-level/type RNG
+  // above — making Easy's difficulty depend on luck rather than the
+  // player's build or understanding. Clamp each of Easy's 3 waves to a
+  // narrow effective-HP band (attack is renormalized to match, so a
+  // naturally hard-hitting type doesn't stay disproportionately dangerous
+  // once its HP is scaled down, or vice versa), regardless of which enemy
+  // type or level rolled.
+  if(MAP.difficulty === 'easy') {
+    const budget = EASY_WAVE_HP_BUDGET[Math.min(3, segWave)] || EASY_WAVE_HP_BUDGET[3];
+    const targetHp = Math.floor(budget[0] + Math.random() * (budget[1] - budget[0]));
+    const hpScale = targetHp / Math.max(1, baseHp);
+    baseAtk = Math.max(1, Math.round(baseAtk * hpScale));
+    baseHp = targetHp;
+    // Re-derive level from the budgeted HP (inverting HP = 30*lv^1.85) so
+    // defense/gold/xp scale consistently with the clamped difficulty
+    // instead of the original, now-discarded random level roll.
+    enemyLv = Math.max(1, Math.round(Math.pow(targetHp / 30, 1 / 1.85)));
+  }
 
   const name = variant ? `${variant.prefix} ${enemyType.name}` : enemyType.name;
   return {
@@ -4217,7 +4338,7 @@ function fireAbility(ab) {
   const st = getStats();
   const seMult = getSEMultiplier(ab.imbue||ab.class, G.enemy);
   const isCrit = Math.random()*100 < (st.critChance + (ab.bonusCrit||0));
-  const critMult = isCrit ? st.critDmg/100 : 1.0;
+  const critMult = isCrit ? (st.critDmg + (ab.bonusCritDmg||0))/100 : 1.0;
   const baseDR = Math.min(getDRCap(), (G.enemy.defense||0) * 0.008);
   const defenseReduction = baseDR;
   const armorPen = ab.armorPen||0;
@@ -4631,6 +4752,7 @@ function isAbilityUnlocked(abId) {
 let pickerSlot = -1;
 
 function openSlotSelector() {
+  if(tutActive) _tutLoadoutOpened = true;
   // Pause enemy while in loadout
   if(G.enemyAttackInterval){ clearInterval(G.enemyAttackInterval); G.enemyAttackInterval=null; }
   pickerSlot = -1;
@@ -5612,32 +5734,32 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
         </div>
       </div>
 
-      \${sbUser ? \`
+      ${sbUser ? `
       <div style="background:rgba(200,155,60,0.12);border:1.5px solid rgba(200,155,60,0.5);border-radius:10px;padding:14px;margin-bottom:12px;">
         <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;text-align:center;margin-bottom:10px;font-weight:700;">Trinity Force Progress</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
           <div>
             <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700;">XP This Run</div>
-            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">\${numberWithCommas(G.runStats.totalDmg||0)}</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">${numberWithCommas(G.runStats.totalDmg||0)}</div>
           </div>
           <div>
             <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700;">Current Rank</div>
-            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">\${trinityRank}</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">${trinityRank}</div>
           </div>
           <div>
             <div style="font-family:'Lato',sans-serif;font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700;">XP to Next</div>
-            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">\${numberWithCommas(Math.max(0,TRINITY_RANK_XP_PER_LEVEL-(trinityData.rankXP||0)))}</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:var(--gold);">${numberWithCommas(Math.max(0,TRINITY_RANK_XP_PER_LEVEL-(trinityData.rankXP||0)))}</div>
           </div>
         </div>
         <div style="margin-top:10px;height:8px;background:rgba(0,0,0,0.25);border-radius:4px;overflow:hidden;">
-          <div style="height:100%;background:linear-gradient(90deg,#a07808,#e8b020,#ffe84d);border-radius:4px;width:\${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}%;"></div>
+          <div style="height:100%;background:linear-gradient(90deg,#a07808,#e8b020,#ffe84d);border-radius:4px;width:${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}%;"></div>
         </div>
-        <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-align:center;margin-top:4px;">\${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}% to Rank \${trinityRank+1}</div>
-      </div>\` : \`
+        <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-align:center;margin-top:4px;">${Math.min(100,Math.round(((trinityData.rankXP||0)/TRINITY_RANK_XP_PER_LEVEL)*100))}% to Rank ${trinityRank+1}</div>
+      </div>` : `
       <div style="background:rgba(200,155,60,0.08);border:1px solid rgba(200,155,60,0.3);border-radius:10px;padding:12px;margin-bottom:12px;text-align:center;">
         <div style="font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);margin-bottom:4px;">Trinity Force</div>
         <div style="font-family:'Lato',sans-serif;font-size:12px;color:var(--text-light);font-weight:600;">Sign in to track progress and earn permanent upgrades</div>
-      </div>\`}
+      </div>`}
 
       <div style="background:rgba(230,210,160,0.6);border:1px solid rgba(200,155,60,0.35);border-radius:10px;padding:10px;margin-bottom:14px;">
         <div style="font-family:'Lato',sans-serif;font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;font-weight:700;">Element Usage</div>
@@ -7467,11 +7589,27 @@ function handleAutoManaStarved(slotKey, elapsedMs, abilityName) {
 
 // Called once a paused slot's ability is affordable again — clears the
 // pause and announces the resume, then lets the caller fire normally.
-function resumeAutoManaSlot(slotKey, abilityName) {
+//
+// manaCost (optional) lets us tell a REAL resume apart from a one-off: the
+// caller fires immediately after this returns, spending manaCost. If mana
+// was only just barely enough for that one cast, it drops straight back
+// below cost and the per-slot status text (getAbilityAutoStateText) flips
+// to "Waiting for mana" within a quarter-second — directly contradicting
+// the "AUTO resumed" banner that's still fading on screen. Only claim a
+// real "resumed" when there's enough of a buffer that firing won't
+// immediately re-starve; otherwise say plainly that this is one cast and
+// it'll keep regenerating for the next.
+function resumeAutoManaSlot(slotKey, abilityName, manaCost) {
   _tick.manaPaused[slotKey] = false;
   _tick.manaStarved[slotKey] = 0;
-  log(`<span style="color:#3acc7a">Mana recovered — AUTO resumed for ${abilityName}.</span>`);
-  showAutoManaBanner('Mana recovered — AUTO resumed.', '#3acc7a');
+  const durable = !manaCost || G.mana >= manaCost * 1.25;
+  if (durable) {
+    log(`<span style="color:#3acc7a">Mana recovered — AUTO resumed for ${abilityName}.</span>`);
+    showAutoManaBanner('Mana recovered — AUTO resumed.', '#3acc7a');
+  } else {
+    log(`<span style="color:#63b3ff">Enough mana for one ${abilityName} — regenerating for the next.</span>`);
+    showAutoManaBanner(`Regenerating mana — AUTO will resume at ${manaCost}.`, '#63b3ff');
+  }
   markDirty(['loadout','healSlot']);
 }
 
@@ -7503,7 +7641,14 @@ function masterTick(ts) {
     }
 
     // ── Enemy attack (was setInterval with random interval) ──
-    if(!G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0) {
+    // Suppressed while the opening ability tutorial is active: its
+    // instructions ("Tap the Attack button now", etc.) stayed on screen
+    // while the enemy kept attacking, mana kept draining, and waves kept
+    // completing underneath — so a step could go stale (or the player could
+    // take real damage) before they'd even finished reading it. The
+    // tutorial only ever runs on a brand-new player's very first fight, so
+    // this doesn't affect normal combat pacing at all once it's done.
+    if(!G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0 && !tutActive) {
       _tick.enemyAtk += dt;
       if(_tick.enemyAtk >= _tick.enemyAtkDelay) {
         _tick.enemyAtk = 0;
@@ -7540,7 +7685,25 @@ function masterTick(ts) {
           handleAutoManaStarved(slotIdx, 250, ab.name);
           continue;
         }
-        if(_tick.manaPaused[slotIdx]) resumeAutoManaSlot(slotIdx, ab.name);
+        // Mana priority: Emergency Heal outranks offensive AUTO abilities.
+        // Without this, an offensive AUTO skill spends whatever mana just
+        // regenerated the instant it's affordable, so Heal (a bigger, less
+        // frequent cost) could never accumulate enough — the exact death
+        // spiral of "regen mana → offense spends it → can't afford heal →
+        // take more damage → repeat" reported with mana-hungry kits. Only
+        // reserves when Heal is actually armed, ready, and HP is low enough
+        // that it's about to want to fire — otherwise offense spends freely.
+        if(manaCost > 0) {
+          const healAbForReserve = healLoadout ? ABILITIES[healLoadout] : null;
+          const healCostForReserve = healAbForReserve ? (MANA_COSTS[healAbForReserve.type] || 0) : 0;
+          const healAboutToFire = G.autoSlots['heal'] === 'master' && healAbForReserve &&
+            healCostForReserve > 0 && isHealReady() && G.hp < G.maxHp * AUTO_HEAL_HP_PCT;
+          if(healAboutToFire && (G.mana - manaCost) < healCostForReserve) {
+            handleAutoManaStarved(slotIdx, 250, ab.name);
+            continue;
+          }
+        }
+        if(_tick.manaPaused[slotIdx]) resumeAutoManaSlot(slotIdx, ab.name, manaCost);
         _tick.manaStarved[slotIdx] = 0;
         fireAbility(ab);
         startCDBarAnimation(slotIdx, ab);
@@ -7565,7 +7728,7 @@ function masterTick(ts) {
         if(G.hp < G.maxHp * AUTO_HEAL_HP_PCT && isHealReady()) {
           const manaCost = MANA_COSTS[healAb.type] || 0;
           if(manaCost === 0 || G.mana >= manaCost) {
-            if(_tick.manaPaused['heal']) resumeAutoManaSlot('heal', healAb.name);
+            if(_tick.manaPaused['heal']) resumeAutoManaSlot('heal', healAb.name, manaCost);
             _tick.manaStarved['heal'] = 0;
             doHeal(healAb);
           } else {
@@ -8756,12 +8919,12 @@ function selectClass(cls) {
       <div onclick="selectRogueWeapon('dagger')" style="background:rgba(245,225,175,0.92);border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
         <div style="font-size:32px;margin-bottom:6px;"></div>
         <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${color};">Dual Daggers</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">2 hits per attack, 65% attack dmg each (130% total)<br>Same attack speed as Bow<br>More consistent, more crit rolls per attack</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">2 hits per attack, 65% attack dmg each (130% total)<br>Same attack speed as Bow<br>Steady, reliable damage every hit</div>
       </div>
       <div onclick="selectRogueWeapon('bow')" style="background:rgba(245,225,175,0.92);border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
 
         <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${color};">Bow</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">1 hit per attack, 75% attack dmg (75% total)<br>Same attack speed as Daggers<br>Bigger single hits, more variance</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">1 hit per attack, 110% attack dmg<br>Same attack speed as Daggers<br>+20% crit chance, +50% crit damage — built to crit big</div>
       </div>`;
     return;
   }
@@ -9282,6 +9445,7 @@ const TUT_KEY = 'er_ability_tutorial_done';
 let tutStep = 0;
 let tutActive = false;
 let tutOriginalActivate = null;
+let _tutLoadoutOpened = false;
 
 const TUT_STEPS = [
   {
@@ -9323,14 +9487,54 @@ function startAbilityTutorial() {
   if(tutActive) return;
   tutActive = true;
   tutStep = 0;
+  _tutLoadoutOpened = false;
   document.getElementById('ability-tutorial').classList.remove('hidden');
   document.getElementById('ability-tutorial').classList.add('active');
   showTutStep(0);
 }
 
+// Checks whether the action a tutorial step is asking for has ALREADY
+// happened — e.g. the player toggled an ability's AUTO on before this step
+// ever rendered (so no tutorial click-listener existed yet to catch it).
+// Without this check, the step would render and wait for a tap that, if
+// given, would just toggle the already-on ability back OFF instead of
+// completing the lesson. See renderTutStep()'s state watcher for the other
+// half of this fix (catching the state change while the step is showing).
+function isTutStepAlreadySatisfied(s) {
+  if (s.slotId === 'slot-basic') return !!G.autoSlots[0];
+  if (s.slotId === 'slot-reg1')  return !!G.autoSlots[1];
+  if (s.slotId === 'slot-heal')  return !!G.autoSlots['heal'];
+  if (s.slotId === 'loadout-btn') return !!_tutLoadoutOpened;
+  return false;
+}
+
 function showTutStep(step) {
   const s = TUT_STEPS[step];
   if(!s) { endTutorial(); return; }
+
+  // If the underlying action this step asks for was already performed —
+  // e.g. the ability got AUTO'd on (or the loadout got opened) before this
+  // step ever rendered — skip straight to the next step instead of asking
+  // the player to repeat a tap that would undo what they already did.
+  if (isTutStepAlreadySatisfied(s)) {
+    log(`<span style="color:var(--muted)">${s.title.trim()} already set up — moving on.</span>`);
+    tutStep++;
+    if(tutStep < TUT_STEPS.length) setTimeout(() => showTutStep(tutStep), 500);
+    else endTutorial();
+    return;
+  }
+
+  // The Heal step can otherwise ask for something impossible: a player who
+  // reaches this step at full HP (nothing to heal) or below the mana cost
+  // (heal literally can't fire) would be stuck tapping a button that either
+  // silently no-ops ("Already at full health — no mana spent") or can't
+  // afford its own cost. Make the lesson always completable and worth
+  // seeing: grant enough mana to cover it, and make sure there's HP missing.
+  if (s.slotId === 'slot-heal') {
+    if (G.mana < MANA_COSTS.heal) { G.mana = MANA_COSTS.heal; updateManaBar(); }
+    if (G.hp >= G.maxHp * 0.9) { G.hp = Math.max(1, Math.floor(G.maxHp * 0.6)); updateHpBar(); }
+    updateResourceBar();
+  }
 
   // The "Manage Loadout" button lives inside the collapsible side menu,
   // which sits off-screen (left:-280px) until opened. Its bounding rect
@@ -9473,10 +9677,25 @@ function renderTutStep(step, s) {
   el.addEventListener('click', handler);
   el.addEventListener('touchend', handler);
   _tutCurrentHandler = { el, handler };
+
+  // Safety net: also watch the underlying game state directly, not just
+  // clicks on the target element. Covers any case where the step's
+  // condition becomes true without a fresh click on `el` being the thing
+  // that satisfied it (the click handler above already covers the normal
+  // tap case; this catches anything else).
+  clearInterval(_tutStateWatcher);
+  _tutStateWatcher = setInterval(() => {
+    if (!handled && isTutStepAlreadySatisfied(s)) {
+      handled = true;
+      clearInterval(_tutStateWatcher);
+      advanceTutStep(el, s, true);
+    }
+  }, 400);
 }
 
 let _tutSkipStepTimer = null;
 let _tutCurrentHandler = null;
+let _tutStateWatcher = null;
 
 function advanceTutStep(el, s, showConfirm) {
   // Clean up this step's highlight
@@ -9484,6 +9703,7 @@ function advanceTutStep(el, s, showConfirm) {
   el.style.boxShadow = '';
   el.style.zIndex = '';
   clearTimeout(_tutSkipStepTimer);
+  clearInterval(_tutStateWatcher);
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   // Hide the spotlight/bubble/arrow immediately instead of leaving the just-
@@ -9547,6 +9767,7 @@ function endTutorial() {
   document.getElementById('ability-tutorial').classList.add('hidden');
   document.getElementById('ability-tutorial').classList.remove('active');
   clearTimeout(_tutSkipStepTimer);
+  clearInterval(_tutStateWatcher);
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   _tutCurrentHandler = null;
