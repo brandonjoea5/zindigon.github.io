@@ -80,7 +80,7 @@
   --border:rgba(180,140,80,0.25);
   --text:#3a2a10;
   --text-light:#6a5230;
-  --muted:#9a8060;
+  --muted:#705838; /* darkened from #9a8060 — old value was ~2.9:1 contrast on --bg, below WCAG AA (4.5:1) for body text */
   --gold:#c8960a;
   --gold-bright:#e8b020;
   --gold-deep:#a07808;
@@ -300,9 +300,33 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 }
 .ability-slot:active{transform:scale(0.93);opacity:0.85;}
 .ability-slot.active-ability{
+  border-width:3px;
   border-color:rgba(200,155,60,0.8);
   background:rgba(200,155,60,0.15);
   box-shadow:0 0 10px rgba(200,155,60,0.3);
+  animation:autoGlow 1.6s ease-in-out infinite;
+}
+@keyframes autoGlow{
+  0%,100%{ box-shadow:0 0 8px 1px rgba(232,184,75,0.35); }
+  50%{ box-shadow:0 0 16px 4px rgba(232,184,75,0.75); }
+}
+.auto-badge{
+  position:absolute;
+  top:2px;
+  right:2px;
+  font-family:'Jim Nightshade',cursive;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:0.04em;
+  color:#1a1206;
+  background:#e8b84b;
+  border:1px solid rgba(0,0,0,0.35);
+  border-radius:5px;
+  padding:1px 4px;
+  line-height:1.4;
+  box-shadow:0 0 5px rgba(232,184,75,0.9);
+  z-index:2;
+  pointer-events:none;
 }
 .ab-slot-label{font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
 .ab-icon{font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;}
@@ -500,11 +524,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   position:relative;z-index:2;
 }
 .aa-topbar-left{display:flex;flex-direction:column;gap:1px;}
-.aa-round-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:700;}
+.aa-round-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;font-weight:700;}
 .aa-round-val{font-family:'Jim Nightshade',cursive;font-size:16px;font-weight:700;color:var(--gold);line-height:1;}
 .aa-hp-col{display:flex;flex-direction:column;gap:4px;flex:1;max-width:180px;}
 .aa-bar-row{display:flex;align-items:center;gap:5px;}
-.aa-bar-lbl{font-size:8px;color:var(--muted);width:26px;text-align:right;flex-shrink:0;letter-spacing:0.04em;font-weight:700;}
+.aa-bar-lbl{font-size:9px;color:var(--muted);width:28px;text-align:right;flex-shrink:0;letter-spacing:0.04em;font-weight:700;}
 .aa-bar-track{
   flex:1;height:16px;
   background:rgba(0,0,0,0.5);
@@ -520,7 +544,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .aa-bar-fill.boss{background:linear-gradient(90deg,#aa2020,#ee3030 80%,#ff8888);box-shadow:1px 0 6px rgba(220,50,50,0.7);}
 .aa-bar-nums{font-size:9px;color:var(--muted);min-width:40px;text-align:right;}
 .aa-topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
-.aa-trinity-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;}
+.aa-trinity-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;}
 .aa-trinity-val{font-family:'Jim Nightshade',cursive;font-size:13px;color:var(--gold);}
 
 /* Arena viewport */
@@ -557,7 +581,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   position:absolute;top:6px;right:10px;
   display:flex;flex-direction:column;align-items:center;
 }
-.aa-timer-lbl{font-size:8px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;font-weight:700;}
+.aa-timer-lbl{font-size:9px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;font-weight:700;}
 .aa-timer-num{
   font-family:'Jim Nightshade',cursive;font-size:24px;font-weight:700;line-height:1;
   color:var(--text);transition:color 0.2s;
@@ -652,10 +676,10 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .aa-btn-circ:active{transform:scale(0.88);}
 .aa-btn-circ.disabled{opacity:0.28;pointer-events:none;}
 .aa-btn-circ .ci-icon{font-size:18px;line-height:1;}
-.aa-btn-circ .ci-label{font-family:'Jim Nightshade',cursive;font-size:7px;letter-spacing:0.08em;color:var(--gold);opacity:0.85;}
+.aa-btn-circ .ci-label{font-family:'Jim Nightshade',cursive;font-size:8px;letter-spacing:0.08em;color:var(--gold);opacity:0.85;}
 .aa-btn-circ .ci-cd{
   position:absolute;top:2px;left:50%;transform:translateX(-50%);
-  font-family:'Jim Nightshade',cursive;font-size:7px;color:var(--muted);
+  font-family:'Jim Nightshade',cursive;font-size:8px;color:var(--muted);
 }
 
 /* ══════════════════════════════════
@@ -767,7 +791,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
   background:rgba(245,225,175,0.5);
   flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:7px;font-family:'Jim Nightshade',cursive;color:var(--muted);
+  font-size:8px;font-family:'Jim Nightshade',cursive;color:var(--muted);
   transition:all 0.3s;position:relative;
   /* Diamond shape */
   transform:rotate(45deg);
@@ -1749,30 +1773,30 @@ let sbProfile = null; // players row
   <p id="map-subtitle">Select difficulty. Higher risk, better rewards.</p>
   <div class="difficulty-cards">
 
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;">
+    <div onclick="selectDifficulty('easy')" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;cursor:pointer;">
       <div class="diff-title easy" style="color:#2ecc71;text-shadow:0 1px 6px rgba(0,0,0,0.7);font-size:17px;">Easy</div>
-      <div class="diff-card easy" onclick="selectDifficulty('easy')" style="width:100%;">
+      <div class="diff-card easy" style="width:100%;">
         <div class="diff-waves">3 Waves</div>
       </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;">
+    <div onclick="selectDifficulty('medium')" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;cursor:pointer;">
       <div class="diff-title medium" style="color:#e67e22;text-shadow:0 1px 6px rgba(0,0,0,0.7);font-size:17px;">Medium</div>
-      <div class="diff-card medium" onclick="selectDifficulty('medium')" style="width:100%;">
+      <div class="diff-card medium" style="width:100%;">
         <div class="diff-waves">7 Waves</div>
       </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;">
+    <div onclick="selectDifficulty('hard')" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;cursor:pointer;">
       <div class="diff-title hard" style="color:#e74c3c;text-shadow:0 1px 6px rgba(0,0,0,0.7);font-size:17px;">Hard</div>
-      <div class="diff-card hard" onclick="selectDifficulty('hard')" style="width:100%;">
+      <div class="diff-card hard" style="width:100%;">
         <div class="diff-waves">15 Waves</div>
       </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;">
+    <div onclick="selectDifficulty('extreme')" style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:110px;max-width:140px;cursor:pointer;">
       <div class="diff-title" style="color:#fff;text-shadow:0 1px 6px rgba(0,0,0,0.8);font-size:17px;font-weight:900;font-family:'Jim Nightshade',cursive;letter-spacing:0.06em;">Extreme</div>
-      <div class="diff-card" onclick="selectDifficulty('extreme')" style="width:100%;">
+      <div class="diff-card" style="width:100%;">
         <div class="diff-waves">25 Waves</div>
       </div>
     </div>
@@ -2224,7 +2248,7 @@ let sbProfile = null; // players row
         <div class="ability-slot" id="slot-heal" onclick="activateHeal()" style="background:transparent;border:none;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;padding:2px;">
           <div class="ab-slot-label" style="color:#3acc7a;">Heal</div>
           <div class="ab-icon">＋</div>
-          <div class="ab-name" style="color:var(--muted);font-size:7px;">Assign</div>
+          <div class="ab-name" style="color:var(--muted);font-size:8px;">Assign</div>
           <div class="ab-cd-bar"><div class="ab-cd-fill" style="width:0%;background:#3acc7a"></div></div>
         </div>
       </div>
@@ -2283,7 +2307,7 @@ let sbProfile = null; // players row
       <div class="ability-slot" id="slot-ult" onclick="activateAbility(3)" title="Ultimate">
         <div class="ab-slot-label">Ultimate</div>
         <div class="ab-empty">＋</div>
-        <div class="ab-name" style="color:var(--muted);font-size:8px;">Tap to assign</div>
+        <div class="ab-name" style="color:var(--muted);font-size:9px;">Tap to assign</div>
         <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-3" style="width:0%"></div></div>
       </div>
     </div>
@@ -3464,7 +3488,16 @@ function rollEnemy(wave) {
   const playerLv = G.playerLevel || 1;
   const minLv = Math.max(1, playerLv - 2);
   const maxBonus = Math.min(12, 5 + Math.floor(playerLv / 15)); // +5 early, up to +12 at lv105
-  const maxLv = playerLv + maxBonus;
+  // Ramp the upper end of the roll in over the first few waves of a path
+  // instead of allowing the full spread immediately. Previously `wave` was
+  // accepted but never used, so wave 1 of "Easy" could roll exactly as hard
+  // as wave 10 — a fresh level-1 player could face anywhere from a level-1
+  // enemy up to a level-6 (or Ancient/enraged level-6, ~1150+ HP) enemy on
+  // their very first fight, then get a much easier second enemy right after.
+  const segWave = Math.max(1, Math.floor(wave) || 1);
+  const rampFactor = Math.min(1, segWave / 3); // wave 1 -> ~1/3 spread, wave 2 -> ~2/3, wave 3+ -> full
+  const effectiveMaxBonus = Math.max(1, Math.round(maxBonus * rampFactor));
+  const maxLv = playerLv + effectiveMaxBonus;
   const enemyLv = Math.floor(minLv + Math.random() * (maxLv - minLv + 1));
 
   // HP and ATK use a power curve — scales aggressively but stays manageable
@@ -4470,6 +4503,7 @@ function updateLoadoutUI() {
     const manaCost = ab ? (MANA_COSTS[ab.type]||0) : 0;
     const elemDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
     el.innerHTML = unlocked ? `
+      ${isAutoOn ? '<div class="auto-badge">AUTO</div>' : ''}
       <div class="ab-icon-wrap">
         <div class="ab-icon-circle" style="border-color:${ab?color+'88':'rgba(200,155,60,0.25)'};">
           ${ab && ab.imbue ? elemLogoHTML(ab.imbue, 28) : ab ? '<span style="font-size:18px;opacity:0.7;color:rgba(255,220,140,0.6);">◆</span>' : '<span style="font-size:22px;color:rgba(200,155,60,0.3);">+</span>'}
@@ -7366,12 +7400,14 @@ function updateHealSlotUI() {
   else { slot.classList.remove('active-ability'); slot.style.boxShadow=''; slot.style.background=''; }
   slot.style.borderColor = color;
   const healDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
+  const healAutoBadge = isHealAuto ? '<div class="auto-badge">AUTO</div>' : '';
   slot.innerHTML = `
     ${healDot}
+    ${healAutoBadge}
     <div class="ab-slot-label" style="color:#fff;text-shadow:0 1px 3px rgba(0,0,0,1),0 0 8px rgba(0,0,0,0.8);font-weight:900;">Heal</div>
     <div class="ab-icon">${ab?(ab.imbue?elemLogoHTML(ab.imbue,22):'◆'):'＋'}</div>
     <div class="ab-name" style="color:#fff;font-size:${ab ? '9px' : '8px'};text-shadow:0 1px 3px rgba(0,0,0,1);font-weight:700;">${ab ? ab.name : 'Tap to assign'}</div>
-    <div style="font-size:7px;color:#fff;font-family:'Jim Nightshade',cursive;text-shadow:0 1px 2px rgba(0,0,0,1);font-weight:700;">30 mana</div>
+    <div style="font-size:8px;color:#fff;font-family:'Jim Nightshade',cursive;text-shadow:0 1px 2px rgba(0,0,0,1);font-weight:700;">30 mana</div>
     <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:${color}"></div></div>
   `;
 }
@@ -7414,7 +7450,16 @@ function saveHealLoadout() {
   try { localStorage.setItem('elementalRift_heal', healLoadout || ''); } catch(e) {}
 }
 function loadHealLoadout() {
-  try { healLoadout = localStorage.getItem('elementalRift_heal') || null; if(healLoadout==='')healLoadout=null; } catch(e) {}
+  try {
+    // Don't clobber a heal already validly equipped for the current class
+    // (e.g. the default set in selectImbue) just because no saved
+    // per-class preference exists yet — this used to reset healLoadout to
+    // null right before the first wave spawned, making the tutorial's
+    // heal step open the assign-heal picker instead of actually healing.
+    if (healLoadout && ABILITIES[healLoadout] && ABILITIES[healLoadout].class === G.playerClass) return;
+    const stored = localStorage.getItem('elementalRift_heal');
+    healLoadout = (stored && ABILITIES[stored] && ABILITIES[stored].class === G.playerClass) ? stored : null;
+  } catch(e) {}
 }
 
 
@@ -8229,6 +8274,8 @@ function showImbueSelection(cls) {
     poison:   'Applies Poison DOT, stacks with multiple hits',
     electric: 'Electric DOT with AOE splash damage',
     ice:      'Slows enemy attacks, chance to Freeze completely',
+    rock:     'Heavy damage, shreds enemy defense, chance to stun',
+    wind:     'Fast hits, big attack speed buffs, high mobility',
   };
   screen.querySelector('h2').textContent = 'Choose Your Imbue';
   screen.querySelector('p').textContent = 'Your imbue permanently defines your special abilities.';
@@ -8658,8 +8705,8 @@ const TUT_STEPS = [
   {
     slotId: 'slot-heal',
     title: 'Heal Slot',
-    desc: 'This is your heal. Tap it when your HP is low — it costs 30 mana and has a cooldown.',
-    hint: 'Tap the Heal button',
+    desc: 'This is your heal. Tapping it heals you immediately and turns on auto-heal, which fires again whenever your HP drops low. Costs 30 mana and has a cooldown.',
+    hint: 'Tap Heal to restore health',
     waitForTap: 'slot-heal',
   },
   {
@@ -10333,7 +10380,7 @@ document.addEventListener('DOMContentLoaded', () => {
       background:rgba(10,8,30,0.85);color:#88ccff;border-radius:50%;font-size:16px;cursor:pointer;
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
       backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
-      -webkit-tap-highlight-color:transparent;user-select:none;" title="Block incoming attack (F)"><span style="font-size:7px;font-family:'Jim Nightshade',cursive;letter-spacing:0.05em;">BLOCK</span></button>
+      -webkit-tap-highlight-color:transparent;user-select:none;" title="Block incoming attack (F)"><span style="font-size:8px;font-family:'Jim Nightshade',cursive;letter-spacing:0.05em;">BLOCK</span></button>
     <button onclick="performDodge(1)" id="dodge-right-btn" style="
       width:48px;height:48px;border-radius:50%;border:2px solid #22ffaa;
       background:rgba(10,8,30,0.85);color:#22ffaa;border-radius:50%;font-size:20px;cursor:pointer;
