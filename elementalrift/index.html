@@ -405,6 +405,20 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(6px); }
 }
+/* Brief "that didn't work" shake for a tapped ability slot that can't fire
+   right now (still on cooldown, not enough mana, etc.) — available-looking
+   controls need SOME immediate reaction to a click, not silence. */
+@keyframes abilityDenied{
+  0%,100%{ transform:translateX(0); }
+  20%{ transform:translateX(-4px); }
+  40%{ transform:translateX(4px); }
+  60%{ transform:translateX(-3px); }
+  80%{ transform:translateX(3px); }
+}
+.ability-denied{
+  animation:abilityDenied 0.35s ease-in-out;
+  box-shadow:0 0 0 3px rgba(255,80,80,0.55) !important;
+}
 /* Tutorial action confirmation toast */
 .tut-confirm-toast{
   position:fixed;
@@ -1624,38 +1638,70 @@ try {
 .rarity-legendary { color: #ffcc44 !important; text-shadow: 0 0 8px rgba(255,200,60,0.5) !important; }
 
 /* ── GOOGLE ADSENSE PLACEMENTS ──
-   Sidebar ad only ever shows beside actual gameplay: it sits at z-index 130,
-   above #game's default stacking (no explicit z-index, i.e. ~0) but below
-   every real screen/modal/popup in the app (map-screen 150, class-screen
-   160, story-intro 161, name-screen 200, tutorial overlay 400, all modals
-   400-600) — so it's automatically covered whenever a menu, popup, or
-   tutorial step is open, and only visible during live play. Gated to wide
-   desktop viewports so it never competes with mobile's cramped layout or
-   its bottom tab bar. */
+   Ads are ONLY ever shown on the calm, centered name-screen and map-screen
+   menus — NEVER during live gameplay, on any device. An earlier version
+   showed a "responsive" bottom banner throughout actual combat, reasoning
+   that CSS layering (ads sit below every real screen/modal) would keep it
+   out of the way. That reasoning was wrong in practice: a live-served
+   responsive ad creative rendered far taller than its reserved box and ate
+   clicks meant for the ability bar, making combat completely unplayable.
+   Do not reintroduce a fixed-position ad over the gameplay screen —
+   "outside the game container" is a hard requirement now, not a nice-to-
+   have.
+   The sidebar unit is a fixed, non-responsive 300x250 box (see the <ins>
+   tag — no data-ad-format/full-width-responsive), so its size is bounded
+   by AdSense itself; it's positioned beside the centered name/map card,
+   never over any button. The bottom unit IS responsive (variable height by
+   design), so it's placed as genuine in-flow HTML inside those two screens
+   instead of a fixed overlay — if it renders larger than expected it just
+   extends the screen's own scrollable area, and can never cover a button.
+   Visibility of the sidebar is toggled by JS via body.ad-ok at the handful
+   of screen-transition points (see setAdScreenActive()); the in-flow
+   bottom units need no JS at all — they're part of each screen's own DOM
+   and simply appear/disappear with that screen's normal .hidden toggle. */
 #ad-sidebar{
   display:none;
   position:fixed;
   right:14px;
   top:130px;
   width:300px;height:250px;
-  z-index:130;
+  z-index:210;
   pointer-events:auto;
 }
 @media (min-width:1140px) and (min-height:700px){
-  #ad-sidebar{ display:block; }
+  body.ad-ok #ad-sidebar{ display:block; }
 }
-#ad-bottom{
-  display:none;
-  position:fixed;
-  left:0;right:0;bottom:0;
-  z-index:130;
-  max-height:110px;overflow:hidden;
-  background:rgba(15,10,4,0.55);
+.ad-inflow{
+  width:100%;max-width:500px;
+  margin:10px auto 0;
   text-align:center;
-  pointer-events:auto;
+  overflow:hidden; /* extra safety: never let this grow wider than its column */
 }
-@media (min-width:1024px){
-  #ad-bottom{ display:block; }
+/* An ad slot AdSense couldn't fill sets data-ad-status="unfilled" on the
+   <ins> once it finishes processing (see the MutationObserver in the body
+   script below) — collapse the whole container in that case instead of
+   leaving an empty, still-clickable dead zone. An invisible ad eating
+   clicks is worse than no ad at all: the player has no idea why a button
+   stopped responding. */
+.ad-unfilled{ display:none !important; }
+
+/* ── DESKTOP HUD SCALING ──
+   Every HUD number/label above was sized for a phone screen held at arm's
+   length, but the whole #game shell has no max-width — on a real desktop
+   monitor it just stretches edge-to-edge, so that same tiny mobile text
+   sits in a much larger field of view and reads as illegible. Bump the
+   in-combat HUD text (Wave/Gold/Kills, HP/Mana numbers, level + XP,
+   bottom nav labels) up a notch once there's room for it; layout/positions
+   are untouched, only font-size changes. */
+@media (min-width:900px){
+  .res-label{ font-size:12px !important; }
+  .res-val{ font-size:19px !important; }
+  .bar-label{ font-size:12px !important; }
+  .bar-nums{ font-size:12px !important; }
+  .hud-charlv{ font-size:12px !important; }
+  .hud-xp-col{ max-width:260px !important; }
+  .nav-tab{ font-size:14px !important; }
+  .nav-tab-icon{ font-size:18px !important; }
 }
 ></style>
 </head>
@@ -1670,27 +1716,46 @@ try {
 </script>
 <body>
 
-<!-- Desktop-only sidebar ad, shown beside the game -->
+<!-- Sidebar ad, shown beside the name/map menu screens only — a fixed
+     300x250 unit (no auto/full-width-responsive), so AdSense can't render
+     it any larger than its declared box. Never shown during gameplay. -->
 <div id="ad-sidebar">
   <ins class="adsbygoogle"
-       style="display:block;width:300px;height:250px"
+       style="display:inline-block;width:300px;height:250px"
        data-ad-client="ca-pub-2900666268471871"
-       data-ad-slot="9972731543"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
+       data-ad-slot="9972731543"></ins>
   <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 </div>
-
-<!-- Responsive ad, shown below the game -->
-<div id="ad-bottom">
-  <ins class="adsbygoogle"
-       style="display:block"
-       data-ad-client="ca-pub-2900666268471871"
-       data-ad-slot="9509982523"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>
+<script>
+// An ad slot that AdSense couldn't fill sets data-ad-status="unfilled" on
+// the <ins> once processed — collapse its container (see .ad-unfilled in
+// <style>) instead of leaving an empty box that still intercepts clicks.
+// Filled slots get data-ad-status="filled" the same way, so this also
+// covers the normal case, just doing nothing extra for it.
+(function() {
+  function watch(ins) {
+    if (!ins || ins._adStatusWatched) return;
+    ins._adStatusWatched = true;
+    const check = () => {
+      const container = ins.closest('.ad-inflow, #ad-sidebar');
+      if (container) container.classList.toggle('ad-unfilled', ins.getAttribute('data-ad-status') === 'unfilled');
+    };
+    check();
+    new MutationObserver(check).observe(ins, { attributes: true, attributeFilter: ['data-ad-status'] });
+  }
+  function scan() { document.querySelectorAll('ins.adsbygoogle').forEach(watch); }
+  // This script tag runs before name-screen/map-screen (further down the
+  // page) have been parsed, so their <ins> units don't exist yet at this
+  // point — wait for the full DOM before scanning. All ad units are part
+  // of the initial page HTML (never created later via innerHTML), so one
+  // scan after DOMContentLoaded covers every placement.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scan);
+  } else {
+    scan();
+  }
+})();
+</script>
 
 <!-- Hidden crawlable content for search engines -->
 <div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
@@ -1904,6 +1969,18 @@ try {
     </div>
   </div>
   </div><!-- end content card -->
+  <!-- In-flow ad — genuine document content, not a fixed overlay, so a
+       taller-than-expected responsive creative just extends this screen's
+       own scroll area instead of ever covering a button. -->
+  <div class="ad-inflow">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-2900666268471871"
+         data-ad-slot="9509982523"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
   <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);">v3.0.0 · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
@@ -2003,19 +2080,16 @@ try {
     </div>
   </div>
 
-  <!-- SIMULATE WAVES — available after first run -->
-  <div id="map-simulate-section" style="width:100%;max-width:500px;border-top:1px solid var(--border);padding-top:14px;margin-top:2px;">
-    <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:#ffe090;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;text-align:center;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,1);">Simulate Waves</div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;">Instantly simulate waves using your exact current stats — XP, gold and loot apply immediately.</div>
-    <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:6px;background:rgba(255,248,225,0.8);border:1px solid rgba(200,155,60,0.3);border-radius:8px;padding:6px 10px;">
-        <span style="font-size:11px;color:var(--muted);">Waves:</span>
-        <input type="number" id="map-simulate-count" value="10" min="1" max="1000"
-          style="width:64px;background:transparent;border:none;color:var(--gold);font-family:'Jim Nightshade',cursive;font-size:14px;outline:none;text-align:center;font-weight:700;">
-      </div>
-      <button onclick="mapSimulateWaves()" style="font-family:'Jim Nightshade',cursive;font-size:18px;font-weight:700;padding:10px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-height:100px;transition:filter 0.15s,transform 0.15s;">Simulate</button>
-    </div>
-    <div id="map-simulate-results" style="margin-top:8px;"></div>
+  <!-- In-flow ad — see the matching comment on name-screen's copy of this
+       block for why this is real document content, not a fixed overlay. -->
+  <div class="ad-inflow">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-2900666268471871"
+         data-ad-slot="9509982523"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
   </div>
 </div>
 
@@ -2285,15 +2359,15 @@ try {
       <span style="font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);letter-spacing:0.15em;font-weight:700;">MENU</span>
       <div onclick="closeMenu()" style="cursor:pointer;color:var(--muted);font-size:18px;line-height:1;font-weight:700;">×</div>
     </div>
-    <!-- Auto Wave toggle -->
+    <!-- Auto-Advance Waves toggle -->
     <div style="padding:12px 16px;border-bottom:1px solid var(--metal-edge);">
       <div style="font-family:'Jim Nightshade',cursive;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Combat</div>
-      <button id="menu-auto-wave" onclick="menuToggleAutoWave()" style="
+      <button id="menu-auto-wave" onclick="menuToggleAutoWave()" title="Automatically starts the next wave once the current one is cleared. Does not automate combat itself." style="
         width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;padding:10px;
         border:1px solid rgba(180,140,60,0.35);color:var(--text-light);
         background:rgba(245,225,175,0.5);cursor:pointer;letter-spacing:0.06em;
         border-radius:6px;transition:all 0.15s;
-      ">▶ Auto Wave: OFF</button>
+      ">▶ Auto-Advance Waves: OFF</button>
       <button id="menu-auto-mana-pause" onclick="menuToggleAutoPauseMana()" title="When ON, an AUTO ability that can't afford its mana cost for a few seconds turns itself off with a message instead of silently doing nothing." style="
         width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;padding:10px;margin-top:6px;
         border:1px solid rgba(46,158,88,0.7);color:#2e9e58;
@@ -2364,10 +2438,10 @@ try {
       <div class="res-item"><span class="res-label">Kills</span><span class="res-val" id="kills-val">0</span></div>
 
     </div>
-    <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:180px;min-width:80px;">
+    <div class="hud-xp-col" style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:180px;min-width:80px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--gold);letter-spacing:0.05em;" title="Character Level — earns Skill Points &amp; Passive Points. Separate from your Class Mastery level in the Skills panel.">Char Lv <span id="player-level-display">1</span></span>
-        <span style="font-size:9px;color:#8888ff;font-family:'Jim Nightshade',cursive;" id="xp-bar-text">0/80</span>
+        <span class="hud-charlv" style="font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--gold);letter-spacing:0.05em;" title="Character Level — earns Skill Points &amp; Passive Points. Separate from your Class Mastery level in the Skills panel.">Char Lv <span id="player-level-display">1</span></span>
+        <span class="hud-charlv" style="font-size:9px;color:#8888ff;font-family:'Jim Nightshade',cursive;" id="xp-bar-text">0/80</span>
       </div>
       <div style="height:6px;background:rgba(245,225,175,0.9);border-radius:3px;overflow:hidden;">
         <div id="xp-bar-fill" style="height:100%;background:linear-gradient(90deg,#8855ff,var(--gold));border-radius:3px;width:0%;transition:width 0.4s;"></div>
@@ -3297,23 +3371,18 @@ let MAP = {
   pendingBoss: false,
 };
 
-// Simulate Waves lets a player skip playing entirely and just bulk-resolve
-// waves for XP/gold/loot — genuinely useful once you understand what a wave
-// even is, but shown on the very first difficulty screen it just added a
-// third, unexplained system (after combat and builds) before a brand-new
-// player had cleared a single fight, and invited skipping the intro they
-// were meant to play through. Unlock once any of: the ability tutorial is
-// done, a path has been fully cleared once, or the character has leveled
-// up a bit — persisted, so it never disappears again once earned.
-const SIM_UNLOCK_KEY = 'er_sim_unlocked';
-function isSimulateWavesUnlocked() {
-  if(localStorage.getItem(SIM_UNLOCK_KEY)) return true;
-  const unlocked = !!localStorage.getItem(TUT_KEY) || (G.playerLevel||1) >= 3;
-  if(unlocked) { try { localStorage.setItem(SIM_UNLOCK_KEY, '1'); } catch(e){} }
-  return unlocked;
+// Drives the fixed sidebar ad's visibility: it only shows beside the calm
+// name-screen/map-screen menus, never during live gameplay (see the
+// GOOGLE ADSENSE PLACEMENTS comment in <style>). Toggled at the handful of
+// screen transitions below. The in-flow bottom ad units need no JS at all
+// — they live inside name-screen's/map-screen's own DOM and simply
+// appear/disappear with those screens' normal .hidden toggle.
+function setAdScreenActive(active) {
+  document.body.classList.toggle('ad-ok', active);
 }
 
 function showMapScreen(isFirst=false) {
+  setAdScreenActive(true);
   if(G.autoAttacks) Object.keys(G.autoAttacks).forEach(el=>clearInterval(G.autoAttacks[el]));
   G.autoAttacks = {};
   if(G.autoSlots) Object.values(G.autoSlots).forEach(id=>clearInterval(id));
@@ -3333,17 +3402,14 @@ function showMapScreen(isFirst=false) {
   if(isFirst){ title.textContent='Choose Your Path'; sub.textContent='Select difficulty. Higher risk, better rewards.'; }
   else {
     title.textContent='Path Complete!'; sub.textContent='Choose your next challenge.';
-    // A completed path is one of the unlock conditions in its own right.
-    try { localStorage.setItem(SIM_UNLOCK_KEY, '1'); } catch(e) {}
   }
   // Show boss attempt option if wave >= 3
   const bossSection = document.getElementById('map-boss-section');
   if(bossSection) bossSection.classList.toggle('hidden', G.wave < 3);
-  const simSection = document.getElementById('map-simulate-section');
-  if(simSection) simSection.classList.toggle('hidden', !isSimulateWavesUnlocked());
 }
 
 function selectDifficulty(diff) {
+  setAdScreenActive(false);
   setArenaBg();
   // Reset all blocking flags so a new path always starts clean
   G._deathInProgress = false;
@@ -3353,6 +3419,16 @@ function selectDifficulty(diff) {
   G.combatActive = false;
   G.inBoss = false;
   G.buffs = G.buffs || {};
+  // A new path is a fresh expedition — fully restore HP and mana instead
+  // of silently carrying over whatever was left from the last fight. That
+  // previously let a player start a brand-new "Easy" path already at, say,
+  // 60/200 HP with no warning at all, turning the easiest difficulty into
+  // a near-death sprint.
+  const neededRest = G.hp < G.maxHp || G.mana < getMaxMana();
+  G.hp = G.maxHp;
+  G.mana = getMaxMana();
+  if(typeof updateHpBar === 'function') updateHpBar();
+  if(typeof updateManaBar === 'function') updateManaBar();
   hideWaveChoice();
   const cfg = DIFF_CONFIG[diff];
   MAP.difficulty = diff;
@@ -3376,6 +3452,7 @@ function selectDifficulty(diff) {
       initUI();
       const label = diff === 'extreme' ? ' EXTREME mode — 25 waves, elites only, boss every 5 waves!' : `${diff.toUpperCase()} path chosen — ${MAP.totalWaves} waves await.`;
       log(`<span class="log-sys">${label}</span>`);
+      if(neededRest) log(`<span style="color:#3acc7a">Fully rested — HP and mana restored for the new path.</span>`);
       spawnNextSegmentWave();
     });
   }));
@@ -3626,6 +3703,7 @@ function beginJourneyClicked() {
 }
 
 function startGame() {
+  setAdScreenActive(false);
   if(!G.playerName){ const n=Math.floor(Math.random()*9000)+1000; G.playerName=`Guest#${n}`; }
 
   // Always clear stale state before attempting load
@@ -3918,6 +3996,10 @@ function spawnEnemy() {
   G.combatActive = false;
   G.enemy = rollEnemy(MAP.currentSegWave || G.wave);
   G.combatActive = true;
+  // Baseline for the stalemate watchdog (see masterTick) — a fresh fight
+  // starts the clock at "no damage dealt yet" rather than inheriting a
+  // stale timestamp from whatever the player was doing before this spawn.
+  G._lastDamageTime = Date.now();
   updateEnemyUI();
   log(`<span class="log-sys"> ${G.enemy.name} appears! ${G.enemy.resistance?'[resists '+G.enemy.resistance+']':''}</span>`);
   if(G.kills===0){
@@ -4335,6 +4417,13 @@ function fireAbility(ab) {
   }
   if(manaCost > 0) spendMana(manaCost);
 
+  // Tracks the last time the player actually dealt damage, independent of
+  // whether AUTO Heal/other AUTO abilities are firing — see the stalemate
+  // watchdog in masterTick() below, which nudges a player who's only
+  // auto-healing with no attack armed instead of letting combat sit
+  // indefinitely with zero outgoing damage.
+  G._lastDamageTime = Date.now();
+
   const st = getStats();
   const seMult = getSEMultiplier(ab.imbue||ab.class, G.enemy);
   const isCrit = Math.random()*100 < (st.critChance + (ab.bonusCrit||0));
@@ -4555,6 +4644,21 @@ function fireAbility(ab) {
   return true;
 }
 
+// Brief visual+log nudge for a tap that looked available but couldn't
+// actually do anything right now — cooldown remaining, out of combat, etc.
+// Available-looking controls silently doing nothing on click reads as
+// broken; this makes sure every failed tap gets SOME immediate reaction.
+function flashAbilityDenied(slotIdx, message) {
+  const el = document.getElementById(SLOT_IDS[slotIdx]);
+  if(el) {
+    el.classList.remove('ability-denied');
+    void el.offsetWidth; // restart animation if it's already mid-flash
+    el.classList.add('ability-denied');
+    setTimeout(() => el.classList.remove('ability-denied'), 400);
+  }
+  if(message) log(`<span style="color:#ff6666">${message}</span>`);
+}
+
 function activateAbility(slotIdx) {
   if(!isSlotUnlocked(slotIdx)){
     const msgs = ['','','Skill 2 unlocks when any class reaches Level 5','Ultimate unlocks when any class reaches Level 8'];
@@ -4576,6 +4680,10 @@ function activateAbility(slotIdx) {
     return;
   }
 
+  if(!G.combatActive || !G.enemy) {
+    flashAbilityDenied(slotIdx, `${ab.name}: no target — AUTO armed, will fire once combat starts.`);
+  }
+
   // Turn ON — fire immediately if ready, then loop
   // For basic attacks: rate-limit the initial fire to atkSpeed interval
   if(isAbilityReady(ab)) {
@@ -4589,9 +4697,17 @@ function activateAbility(slotIdx) {
         fireAbility(ab);
       }
     } else {
-      fireAbility(ab);
-      startCDBarAnimation(slotIdx, ab);
+      const manaCost = MANA_COSTS[ab.type] || 0;
+      if(manaCost > 0 && G.mana < manaCost) {
+        flashAbilityDenied(slotIdx, `${ab.name}: not enough mana (need ${manaCost}) — AUTO armed, will fire once you have enough.`);
+      } else {
+        fireAbility(ab);
+        startCDBarAnimation(slotIdx, ab);
+      }
     }
+  } else if(ab.type !== 'basic' && G.combatActive && G.enemy) {
+    const remaining = Math.max(0, Math.ceil(((G.abilityCDs[ab.id]||0) - Date.now())/1000));
+    flashAbilityDenied(slotIdx, `${ab.name}: still on cooldown (${remaining}s) — AUTO armed, will fire when ready.`);
   }
 
   if(ab.type === 'basic') {
@@ -5933,7 +6049,7 @@ function updateAutoWaveBtn() {
     btn.style.background = 'rgba(58,204,122,0.15)';
     btn.style.boxShadow = '0 0 10px rgba(58,204,122,0.4)';
     btn.style.borderColor = 'var(--green)';
-    btn.innerHTML = 'Auto ON';
+    btn.innerHTML = 'Auto-Next: ON';
   } else {
     btn.style.background = '';
     btn.style.boxShadow = '';
@@ -6868,6 +6984,7 @@ function showAccountMenu() {
 }
 
 function initGame() {
+  setAdScreenActive(true);
   setArenaBg();
   // Just show the name screen — actual save loading happens in startGame()
   // when the player clicks Begin Journey. We do load profile info for display only.
@@ -6977,7 +7094,11 @@ function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){
   const numVal = parseInt(dmg) || 0;
   // Scale size slightly with damage magnitude
   const sizeBonus = Math.min(8, Math.floor(Math.log2(Math.max(1, numVal)) * 0.8));
-  const baseSize = isCrit ? 24 : (isSE ? 18 : 14);
+  // The arena canvas has no max-width, so on a wide desktop window it
+  // renders much larger than on a phone — bump the font size to match or
+  // these end up tiny relative to the arena, same issue as the HUD text.
+  const desktopMult = window.innerWidth >= 900 ? 1.4 : 1.0;
+  const baseSize = Math.round((isCrit ? 24 : (isSE ? 18 : 14)) * desktopMult);
   const vx = (Math.random() - 0.5) * 1.2; // slight arc
   const vy = -(2.4 + Math.random() * 0.8);
   // Crits pop: start big, settle
@@ -6998,7 +7119,7 @@ function spawnHealNumber(x,y,amt){
     x, y, vy:-2.0,
     text:`+${amt} HP`,
     life:1, decay:0.018,
-    size:16, color:'#3acc7a',
+    size: window.innerWidth >= 900 ? 22 : 16, color:'#3acc7a',
     bold:true,
     glow:'#3acc7a'
   });
@@ -7541,7 +7662,36 @@ const _tick = {
   heal: 0,          // heal slot accumulator
   running: false,
   manaStarved: {},  // per-slot ms spent unable to afford mana while AUTO (key: slotIdx or 'heal')
+  stalemate: 0,     // accumulator ms — see stalemate watchdog below
 };
+
+// ── STALEMATE WATCHDOG ──
+// Nothing previously stopped combat from running forever with zero
+// outgoing damage — e.g. a player with only Heal armed on AUTO and no
+// attack ability toggled on. Auto-healing kept HP topped up indefinitely
+// while the enemy just stood there, with no signal that nothing was
+// actually progressing. This doesn't end the fight or touch damage/heal
+// numbers — it just checks in periodically and, if too long has passed
+// since the player last dealt damage while still in active combat, nudges
+// them to actually attack. Throttled so it can only fire once per
+// cooldown window rather than spamming the log every check.
+const STALEMATE_CHECK_MS = 5000;
+const STALEMATE_THRESHOLD_MS = 20000;
+const STALEMATE_NUDGE_COOLDOWN_MS = 25000;
+let _lastStalemateNudge = 0;
+function checkCombatStalemate() {
+  if(!G.combatActive || !G.enemy || G.enemy.hp <= 0 || G.hp <= 0) return;
+  const lastDmg = G._lastDamageTime || 0;
+  const idleFor = Date.now() - lastDmg;
+  if(idleFor < STALEMATE_THRESHOLD_MS) return;
+  if(Date.now() - _lastStalemateNudge < STALEMATE_NUDGE_COOLDOWN_MS) return;
+  _lastStalemateNudge = Date.now();
+  const hasAttackArmed = G.autoSlots[0] || Object.keys(G.autoSlots).some(k => k !== 'heal' && !isNaN(Number(k)));
+  const msg = hasAttackArmed
+    ? `<span style="color:#ffaa44">Still fighting — no damage landed in a while. Check that your attack ability is actually reaching the enemy.</span>`
+    : `<span style="color:#ffaa44">You haven't attacked in a while — tap an attack ability to actually damage the enemy. Healing alone won't end the fight.</span>`;
+  log(msg);
+}
 
 // Configurable AUTO mana behavior (see menu → Combat). When ON, an AUTO
 // ability/heal that can't afford its mana cost for AUTO_MANA_STARVE_MS
@@ -7638,6 +7788,13 @@ function masterTick(ts) {
     if(_tick.status >= 500) {
       _tick.status = 0;
       tickStatusEffects();
+    }
+
+    // ── Stalemate watchdog ──
+    _tick.stalemate += dt;
+    if(_tick.stalemate >= STALEMATE_CHECK_MS) {
+      _tick.stalemate = 0;
+      checkCombatStalemate();
     }
 
     // ── Enemy attack (was setInterval with random interval) ──
@@ -7758,7 +7915,7 @@ function startMasterTick() {
   _tick.running = true;
   _tick.lastTs = 0;
   _tick.mana = 0; _tick.status = 0; _tick.boss = 0;
-  _tick.enemyAtk = 0;
+  _tick.enemyAtk = 0; _tick.stalemate = 0;
   _tick.enemyAtkDelay = G.inBoss ? 1200 + Math.random()*600 : 1800 + Math.random()*1200;
   requestAnimationFrame(masterTick);
 }
@@ -10052,242 +10209,6 @@ function chooseMutation(mutationId) {
   renderTrinityModal();
 }
 
-function renderTrinitySimulate() {
-  return `
-    <div style="background:rgba(245,225,175,0.92);border:1px solid #3acc7a44;border-radius:10px;padding:12px;margin-bottom:12px;">
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#3acc7a;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">
-         Simulate Waves
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Instantly simulate waves using your exact current stats. Results apply immediately.</div>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-        <input type="number" id="simulate-count" value="10" min="1" max="500" style="width:80px;background:rgba(245,225,175,0.7);border:1px solid rgba(200,155,60,0.35);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;font-family:'Lato',sans-serif;outline:none;">
-        <span style="font-size:11px;color:var(--muted);">waves to simulate</span>
-      </div>
-      <button onclick="simulateWaves()" style="width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #3acc7a;background:rgba(58,204,122,0.08);color:#3acc7a;cursor:pointer;">
-        Simulate Now
-      </button>
-      <div id="simulate-results" style="margin-top:8px;"></div>
-    </div>`;
-}
-
-function mapSimulateWaves() {
-  const count = parseInt(document.getElementById('map-simulate-count').value) || 10;
-  const results = document.getElementById('map-simulate-results');
-  if(results) results.innerHTML = '<div style="color:var(--muted);font-size:11px;text-align:center;padding:4px;">Simulating...</div>';
-
-  setTimeout(() => {
-    try {
-    if(!G.buffs) G.buffs = {};
-    const st = getStats();
-    let simHp = G.hp; // track player HP through simulation
-    let totalGold = 0, totalXP = 0, lootFound = [], totalDmg = 0;
-    let wavesSurvived = 0;
-    let died = false;
-    const drCap = getDRCap ? getDRCap() : 0.70;
-    const warriorDR = G.playerClass === 'warrior' ? 0.10 : 0;
-
-    const baseWave = Math.max(1, MAP.currentSegWave || G.wave || 1);
-    for(let w = 0; w < count; w++) {
-      const wave = baseWave + w;
-      const enemy = rollEnemy(wave);
-
-      // Simulate the fight — player hits enemy, enemy hits back
-      // Estimate how many enemy hits player takes based on time-to-kill
-      const avgPlayerHit = Math.max(1, Math.floor(st.attack * 0.85));
-      const hitsToKill = Math.ceil(enemy.hp / avgPlayerHit);
-      // Enemy attacks every ~2.5s on average, player kills in hitsToKill / atkSpeed seconds
-      const fightDuration = hitsToKill / Math.max(0.5, st.atkSpeed || 2.0);
-      const enemyHitsLanded = Math.max(1, Math.floor(fightDuration / 2.5));
-
-      // Calculate damage taken per enemy hit
-      const defReduction = Math.min(drCap, (st.defense||8) * 0.008) * (1 - warriorDR);
-      const avgEnemyHit = Math.max(1, Math.floor(enemy.attack * (1 - defReduction)));
-
-      // Lifesteal/spellvamp recovery
-      const stealPct = G.playerClass === 'mage'
-        ? Math.min(35, st.spellVamp||0)
-        : Math.min(35, st.lifeSteal||0);
-      const healPerHit = Math.floor(avgPlayerHit * stealPct / 100);
-      const totalHealDuringFight = healPerHit * hitsToKill;
-
-      // Net HP change this wave
-      const dmgTaken = avgEnemyHit * enemyHitsLanded;
-      const netHpChange = totalHealDuringFight - dmgTaken;
-      simHp = Math.min(G.maxHp, simHp + netHpChange);
-
-      // Thorns reflect
-      const thornsPct = getThorns ? getThorns() : 0;
-      // (Thorns doesn't affect survival calculation, just a bonus)
-
-      if(simHp <= 0) {
-        // Player dies this wave
-        died = true;
-        break;
-      }
-
-      // Survived this wave
-      wavesSurvived++;
-      totalDmg += enemy.hp;
-      totalGold += enemy.gold;
-      totalXP += wave * 12;
-      // Small HP restore between waves (10% from nextWave)
-      simHp = Math.min(G.maxHp, simHp + Math.floor(G.maxHp * 0.10));
-
-      // Loot drop
-      const dropChance = {easy:0.12,medium:0.18,hard:0.28,extreme:0.40}[MAP.difficulty||'easy']||0.15;
-      if(Math.random() < dropChance + wave * 0.004) {
-        const slot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
-        const item = rollItem(slot, wave, false);
-        const existing = G.equipment[slot];
-        const newScore = Object.values(item.stats||{}).reduce((a,b)=>a+b,0);
-        const eqScore  = existing ? Object.values(existing.stats||{}).reduce((a,b)=>a+b,0) : 0;
-        if(newScore > eqScore) {
-          if(existing) totalGold += existing.sellVal;
-          G.equipment[slot] = item;
-          lootFound.push(item);
-        } else {
-          totalGold += item.sellVal;
-        }
-      }
-    }
-
-    if(died) {
-      // Player died — apply partial results and show death notification inline
-      G.gold += totalGold;
-      awardXP(totalXP);
-      trinityEarnXP(totalDmg);
-      G.wave = baseWave + wavesSurvived;
-      G.kills += wavesSurvived;
-      G.runStats.totalGold += totalGold;
-      const newSt = getStats();
-      G.maxHp = newSt.maxHp; G.hp = 1;
-      updateEquipUI(); updateStatsPanel(); updateResourceBar(); updateHpBar();
-      saveGame();
-      if(results) results.innerHTML = `
-        <div style="background:rgba(245,225,175,0.6);border:1px solid rgba(200,48,42,0.2);border-radius:8px;padding:10px;font-size:11px;">
-          <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:#e83a3a;margin-bottom:6px;"> Died on Wave ${baseWave + wavesSurvived}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
-            <span style="color:var(--muted);">Survived</span><span style="color:#e83a3a;font-family:'Jim Nightshade',cursive;">${wavesSurvived}/${count} waves</span>
-            <span style="color:var(--muted);">Gold earned</span><span style="color:#ffdd44;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(totalGold)}</span>
-            <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(totalXP)}</span>
-            ${lootFound.length>0?`<span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Jim Nightshade',cursive;">${lootFound.length} pieces</span>`:''}
-          </div>
-          <div style="margin-top:8px;">
-            <button onclick="location.reload()" style="font-family:'Jim Nightshade',cursive;font-size:14px;padding:0;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;min-height:72px;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-width:120px;">Play Again</button>
-          </div>
-        </div>`;
-      return;
-    }
-
-    // Survived all waves — apply results
-    G.hp = Math.max(1, Math.floor(simHp));
-    G.gold += totalGold;
-    awardXP(totalXP);
-    trinityEarnXP(totalDmg);
-    G.wave = baseWave + wavesSurvived;
-    G.kills += wavesSurvived;
-    G.runStats.totalGold += totalGold;
-    const newSt = getStats();
-    G.maxHp = newSt.maxHp; G.hp = Math.min(G.hp, G.maxHp);
-    G.maxMana = newSt.mana||100;
-    updateHpBar(); updateManaBar(); updateResourceBar(); updateStatsPanel(); updateEquipUI();
-    saveGame();
-
-    if(results) results.innerHTML = `
-      <div style="background:rgba(245,225,175,0.6);border:1px solid rgba(58,158,90,0.2);border-radius:8px;padding:10px;font-size:11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;">
-        <span style="color:var(--muted);">Survived</span><span style="color:#3acc7a;font-family:'Jim Nightshade',cursive;">${wavesSurvived}/${count} waves</span>
-        <span style="color:var(--muted);">HP remaining</span><span style="color:${G.hp/G.maxHp>0.5?'#3acc7a':'#e83a3a'};font-family:'Jim Nightshade',cursive;">${Math.floor(G.hp)}/${G.maxHp}</span>
-        <span style="color:var(--muted);">Gold earned</span><span style="color:#ffdd44;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(totalGold)}</span>
-        <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(totalXP)}</span>
-        <span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Jim Nightshade',cursive;">${lootFound.length} piece${lootFound.length!==1?'s':''}</span>
-        ${lootFound.length>0?`<span style="color:var(--muted);grid-column:1/-1;margin-top:2px;">Auto-equipped: ${lootFound.map(i=>`<span style="color:${(i.tier||i.rarity).color}">${i.name}</span>`).join(', ')}</span>`:''}
-      </div>`;
-    } catch(e) {
-      console.error('Simulate error:', e);
-      if(results) results.innerHTML = `<div style="color:#e83a3a;font-size:11px;padding:4px;">Simulation error: ${e.message}</div>`;
-    }
-  }, 20);
-}
-
-function simulateWaves() {
-  const count = parseInt(document.getElementById('simulate-count').value) || 10;
-  const results = document.getElementById('simulate-results');
-  if(results) results.innerHTML = '<div style="color:var(--muted);font-size:11px;text-align:center;">Simulating...</div>';
-
-  setTimeout(() => {
-    const st = getStats();
-    let totalGold = 0;
-    let totalXP = 0;
-    let lootFound = [];
-    let totalDmg = 0;
-
-    for(let w = 0; w < count; w++) {
-      const wave = (MAP.currentSegWave||G.wave||1) + w;
-      const enemy = rollEnemy(wave);
-      const playerLv = G.playerLevel || 1;
-
-      // Estimate kills needed (avg 1.2 enemies per wave for simplicity)
-      const enemiesPerWave = 1;
-      for(let e = 0; e < enemiesPerWave; e++) {
-        // Simulate damage until enemy dies
-        let enemyHp = enemy.hp;
-        const avgHit = Math.floor(st.attack * 0.85 * 1.0); // basic attack avg
-        const hitsNeeded = Math.ceil(enemyHp / Math.max(1, avgHit));
-        const dmgDealt = enemyHp;
-        totalDmg += dmgDealt;
-
-        // Gold + XP
-        totalGold += enemy.gold;
-        const xpGain = wave * 12;
-        totalXP += xpGain;
-
-        // Loot drop chance
-        const dropChance = {easy:0.12,medium:0.18,hard:0.28,extreme:0.40}[MAP.difficulty||'easy']||0.15;
-        if(Math.random() < dropChance + wave * 0.004) {
-          const slot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
-          const item = rollItem(slot, wave, false);
-          // Auto-equip if better
-          const existing = G.equipment[slot];
-          const newScore = Object.values(item.stats||{}).reduce((a,b)=>a+b,0);
-          const eqScore = existing ? Object.values(existing.stats||{}).reduce((a,b)=>a+b,0) : 0;
-          if(newScore > eqScore) {
-            if(existing) totalGold += existing.sellVal;
-            G.equipment[slot] = item;
-            lootFound.push(item);
-          } else {
-            totalGold += item.sellVal;
-          }
-        }
-      }
-    }
-
-    // Apply results
-    G.gold += totalGold;
-    awardXP(totalXP);
-    trinityEarnXP(totalDmg);
-
-    // Update HP/mana with new gear
-    const newSt = getStats();
-    G.maxHp = newSt.maxHp;
-    G.hp = Math.min(G.hp, G.maxHp);
-    G.maxMana = newSt.mana||100;
-    updateHpBar(); updateManaBar(); updateResourceBar(); updateStatsPanel(); updateEquipUI();
-    saveGame();
-
-    if(results) results.innerHTML = `
-      <div style="background:rgba(245,225,175,0.6);border:1px solid rgba(200,155,60,0.25);border-radius:8px;padding:10px;font-size:11px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-          <span style="color:var(--muted);">Waves</span><span style="color:var(--text);font-family:'Jim Nightshade',cursive;">${count}</span>
-          <span style="color:var(--muted);">Gold earned</span><span style="color:#ffdd44;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(totalGold)}</span>
-          <span style="color:var(--muted);">XP earned</span><span style="color:#8888ff;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(totalXP)}</span>
-          <span style="color:var(--muted);">Gear upgraded</span><span style="color:#3acc7a;font-family:'Jim Nightshade',cursive;">${lootFound.length} pieces</span>
-          <span style="color:var(--muted);">Trinity XP</span><span style="color:#ffdd44;font-family:'Jim Nightshade',cursive;">+${numberWithCommas(Math.floor(totalDmg))}</span>
-        </div>
-        ${lootFound.length>0?`<div style="margin-top:6px;font-size:10px;color:var(--muted);">Auto-equipped: ${lootFound.map(i=>`<span style="color:${(i.tier||i.rarity).color}">${i.name}</span>`).join(', ')}</div>`:''}
-      </div>`;
-  }, 50);
-}
-
 // ── TRINITY XP EARN ──
 function trinityEarnXP(dmgDealt) {
   if(!sbUser || !trinityData) return;
@@ -10554,6 +10475,7 @@ const AA = {
 };
 
 function aaOpen() {
+  setAdScreenActive(false);
   document.getElementById('map-screen').classList.add('hidden');
   document.getElementById('active-arena-screen').classList.add('open');
   AA.open = true;
@@ -11437,7 +11359,7 @@ function menuToggleAutoPauseMana() {
 function menuToggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
   const btn = document.getElementById('menu-auto-wave');
-  if(btn) btn.textContent = 'Auto Wave: ' + (autoWaveEnabled ? 'ON' : 'OFF');
+  if(btn) btn.textContent = 'Auto-Advance Waves: ' + (autoWaveEnabled ? 'ON' : 'OFF');
   if(btn) btn.style.color = autoWaveEnabled ? '#2e9e58' : '#4e5468';
   if(btn) btn.style.borderColor = autoWaveEnabled ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
   // If toggled on and between waves, fire immediately
