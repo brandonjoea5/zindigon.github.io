@@ -371,7 +371,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   border-radius:12px;
   box-shadow:0 0 0 9999px rgba(10,6,2,0.72);
   pointer-events:none;
-  transition:left 0.25s ease,top 0.25s ease,width 0.25s ease,height 0.25s ease;
+  transition:left 0.25s ease,top 0.25s ease,width 0.25s ease,height 0.25s ease,opacity 0.2s ease;
 }
 #ability-tutorial .tut-bubble{
   position:absolute;
@@ -381,6 +381,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   padding:14px 16px;
   pointer-events:all;
   box-shadow:0 10px 30px rgba(0,0,0,0.55);
+  transition:opacity 0.2s ease;
 }
 #ability-tutorial .tut-bubble h4{
   font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;letter-spacing:0.05em;
@@ -391,7 +392,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 #ability-tutorial .tut-tap-hint{
   font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);opacity:0.95;letter-spacing:0.04em;
 }
-#ability-tutorial .tut-arrow-svg{ position:absolute; pointer-events:none; }
+#ability-tutorial .tut-arrow-svg{ position:absolute; pointer-events:none; transition:opacity 0.2s ease; }
 @keyframes tutPulse{
   0%,100%{ box-shadow:0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4); }
   50%{ box-shadow:0 0 0 7px rgba(232,184,75,0.9), 0 0 30px rgba(232,184,75,0.7); }
@@ -1865,7 +1866,7 @@ try {
   <img id="story-intro-sprite" src="" alt="Your character" style="position:absolute;left:10%;bottom:0;height:60%;max-height:520px;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.6));">
   <div id="story-intro-dialogue" style="position:absolute;top:7%;left:50%;width:min(560px,88vw);background:rgba(20,12,4,0.88);border:1px solid rgba(200,155,60,0.4);border-radius:14px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.55);animation:storyIntroDrop 0.6s cubic-bezier(.2,.9,.3,1) both;">
     <div style="font-family:'Jim Nightshade',cursive;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">A voice echoes from above</div>
-    <p id="story-intro-text" style="font-size:14px;line-height:1.65;color:#f2e6cf;margin-bottom:16px;">These monsters have invaded our lands, opening rifts all over the city of natural men. I call upon you now, so help protect this city and rid it of these beasts. Fight your way toward a rift, and liberate the people.</p>
+    <p id="story-intro-text" style="font-size:14px;line-height:1.65;color:#f2e6cf;margin-bottom:16px;">These monsters have invaded our lands, opening rifts throughout the city. I call upon you now: protect its people, fight your way to the rift, and drive the invaders back.</p>
     <div style="text-align:right;">
       <button onclick="continueFromStoryIntro()" style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;padding:9px 26px;border:none;border-radius:8px;background:var(--gold);color:#241505;cursor:pointer;letter-spacing:0.06em;">Continue →</button>
     </div>
@@ -2414,6 +2415,11 @@ try {
     <div id="mobile-panel-log" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:var(--panel);overflow-y:auto;padding-bottom:60px;"><div id="log-lines"></div></div>
     <div id="mobile-panel-lb" class="hidden" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:var(--panel);overflow-y:auto;padding-bottom:60px;"><div id="ingame-lb-content" style="padding:16px;"></div></div>
 
+    <!-- AUTO mana pause/resume banner — sits right above the ability bar so
+         it's impossible to miss when AUTO stops firing on its own; a low-mana
+         pause otherwise looks identical to "my controls stopped working". -->
+    <div id="auto-mana-banner" class="hidden" style="text-align:center;font-family:'Jim Nightshade',cursive;font-size:11px;padding:5px 10px;letter-spacing:0.03em;transition:opacity 0.25s ease;"></div>
+
     <!-- ABILITY LOADOUT -->
     <div id="loadout-area">
       <div class="ability-slot" id="slot-basic" onclick="activateAbility(0)" title="Basic Attack">
@@ -2501,6 +2507,7 @@ try {
     <div id="vendor-resets" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
       <button onclick="refreshVendorStock()" id="vendor-refresh-btn" style="width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;padding:10px;border-radius:8px;border:1px solid rgba(200,155,60,0.25);color:var(--muted);background:transparent;cursor:pointer;">Refresh Stock — <span id="vendor-refresh-cost">30g</span></button>
     </div>
+    <div style="text-align:center;font-size:9px;color:var(--muted);margin-top:8px;font-style:italic;">Nothing here worth it? Saving your gold for a better shop later is a fine choice too.</div>
     <div class="modal-btns">
       <button style="flex:1;font-family:'Jim Nightshade',cursive;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid rgba(200,155,60,0.25);color:var(--muted);background:transparent;" onclick="closeVendor()">Leave Shop</button>
     </div>
@@ -2526,6 +2533,7 @@ try {
     <h4 id="tut-title">Tutorial</h4>
     <p id="tut-desc">Description</p>
     <div class="tut-tap-hint" id="tut-hint">Tap the highlighted button</div>
+    <button id="tut-skip-step" onclick="skipTutStep()" class="hidden" style="display:block;width:100%;margin-top:8px;font-family:'Jim Nightshade',cursive;font-size:10px;background:rgba(232,184,75,0.12);border:1px solid rgba(232,184,75,0.4);color:#e8b84b;padding:6px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Stuck? Tap here to skip this step →</button>
     <div style="text-align:right;margin-top:8px;">
       <button onclick="endTutorial()" style="font-family:'Jim Nightshade',cursive;font-size:10px;background:transparent;border:1px solid rgba(200,155,60,0.25);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Skip Tutorial</button>
     </div>
@@ -2807,17 +2815,30 @@ const SKILL_TREE = {
 // nothing unless you're Ice imbue, but it looked identical to every other
 // option with no hint that it was dead weight for most builds. Grey those
 // out (with an explanation) rather than letting players waste points on them.
+// NOTE: this list originally only covered the 3 stats the passive Skill
+// Tree's "Effects" branch offers (dotDamage/burnDuration/freezeDuration).
+// Equipment can roll a wider set of the same kind of stat (poisonDuration,
+// electricDot, slowStrength too — see STAT_KEYS), which do nothing for a
+// build whose imbue doesn't apply that status (see applyImbueEffect) —
+// e.g. an Electric Warrior seeing Freeze/Poison duration gear at the
+// merchant. Extended so the same relevance table (and isEffectStatRelevantForImbue)
+// covers both passives AND item stats from one source of truth.
 const IMBUE_RELEVANT_EFFECT_STATS = {
   fire:     ['dotDamage','burnDuration'],
-  poison:   ['dotDamage'],
-  electric: ['dotDamage'],
-  water:    [], // applies Slow, tracked by slowStrength — no Effects passive boosts that
-  ice:      ['freezeDuration'],
+  poison:   ['dotDamage','poisonDuration'],
+  electric: ['dotDamage','electricDot'],
+  water:    ['slowStrength'], // applies Slow, tracked by slowStrength
+  ice:      ['freezeDuration','slowStrength'],
   grass:    [], rock: [], wind: [], // apply no status effect at all
 };
+// All "effect" stat keys an item can roll — used to filter irrelevant ones
+// out of item generation entirely (see rollItem) and to flag any that slip
+// through (e.g. pre-existing saved gear) for the "not useful" UI labeling.
+const ITEM_EFFECT_STAT_KEYS = ['dotDamage','burnDuration','poisonDuration','freezeDuration','electricDot','slowStrength'];
 function isEffectStatRelevantForImbue(statKey, imbue) {
   const relevant = IMBUE_RELEVANT_EFFECT_STATS[imbue];
   if(!relevant) return true; // unknown/unset imbue — don't grey anything out
+  if(!ITEM_EFFECT_STAT_KEYS.includes(statKey)) return true; // not an effect stat — always relevant
   return relevant.includes(statKey);
 }
 
@@ -3045,6 +3066,7 @@ let G = {
   playerName: '',
   hp:200, maxHp:200,
   gold:0, kills:0, wave:1,
+  usedFreeVendorRefresh:false, // first-ever vendor stock refresh is free — see refreshVendorStock()
   xp:0, xpToNext:40, playerLevel:1, skillPoints:0, passivePoints:0,
   baseStats:{...BASE_STATS},
   skillLevels:{},
@@ -3418,6 +3440,7 @@ function saveGame() {
       classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
       abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
       selectedTitle: playerSelectedTitle,
+      usedFreeVendorRefresh: G.usedFreeVendorRefresh,
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
   } catch(e){ console.error('saveGame error:', e); }
@@ -3452,6 +3475,7 @@ function loadGame(name) {
     if(save.abilityLevels) G.abilityLevels = save.abilityLevels;
     if(save.loadout)  G.loadout  = save.loadout;
     if(save.healLoadout) healLoadout = save.healLoadout;
+    G.usedFreeVendorRefresh = !!save.usedFreeVendorRefresh;
     return true;
   } catch(e){ return false; }
 }
@@ -3669,6 +3693,14 @@ function rollEnemy(wave) {
     const enemyLv = 1;
     const hpBase = Math.floor(30 * Math.pow(enemyLv, 1.85));
     const atkBase = Math.floor(3  * Math.pow(enemyLv, 1.40));
+    // The formula above gives this Wolf only ~21 HP — a single basic attack
+    // (avg ~15-18 dmg at level 1, up to ~28 on a high roll/heavier basic)
+    // can one-shot it before the "abilities auto-fire" lesson the attack
+    // tutorial step is built around ever gets to play out, and before the
+    // player even sees AUTO visibly firing more than once. Give this
+    // specific standardized fight a flat HP floor so it reliably takes
+    // ~2-3 hits across every class's starting basic attack.
+    const tutorialHpFloor = 55;
     return {
       name: wolfType.name, id: wolfType.id,
       type: wolfType.id,
@@ -3677,7 +3709,7 @@ function rollEnemy(wave) {
       resistance: null,
       enragedColor: null,
       level: enemyLv,
-      hp: Math.floor(hpBase * wolfType.hpM), maxHp: Math.floor(hpBase * wolfType.hpM),
+      hp: tutorialHpFloor, maxHp: tutorialHpFloor,
       attack: Math.floor(atkBase * wolfType.atkM),
       defense: Math.floor(2 + enemyLv * 0.5),
       gold: Math.floor(4 + enemyLv * 2),
@@ -4506,6 +4538,11 @@ function stopAllAutoSlots(save=false) {
     }
   });
   G.autoSlots = {};
+  // Don't let a stale "paused for mana" flag survive into whatever gets
+  // restored next (wave transition, boss entry, etc.) — it would fire a
+  // misleading "Mana recovered" toast on the first successful cast even
+  // though this fresh activation was never actually paused.
+  if(typeof _tick !== 'undefined' && _tick.manaPaused) _tick.manaPaused = {};
   updateLoadoutUI();
   updateHealSlotUI();
 }
@@ -4560,7 +4597,7 @@ function earnClassXP(cls, amount) {
     if(currentXP >= needed){
       G.classLv[cls]++;
       G.classCP[cls] = (G.classCP[cls]||0) + 1;
-      log(`<span style="color:${CLASS_COLORS[cls]}"> ${cls.charAt(0).toUpperCase()+cls.slice(1)} class reached Level ${G.classLv[cls]}!</span>`);
+      log(`<span style="color:${CLASS_COLORS[cls]}"> ${cls.charAt(0).toUpperCase()+cls.slice(1)} Mastery increased to ${G.classLv[cls]}!</span>`);
       updateClassXPPanel();
     } else break;
   }
@@ -4696,6 +4733,26 @@ function closeAbilityPicker() {
 const SLOT_IDS = ['slot-basic','slot-reg1','slot-reg2','slot-ult'];
 const SLOT_LABELS = ['Attack','Skill 1','Skill 2','Ultimate'];
 
+// Battle Cry (the warrior heal) was the one ability that told you exactly
+// what AUTO was doing — "standing by until HP drops below 80%" — while every
+// other AUTO'd ability just sat there with an AUTO badge and no indication
+// of whether it was actively working, waiting on mana, waiting on a target,
+// or on cooldown. Give every slot the same kind of direct state text.
+function getAbilityAutoStateText(slotIdx, ab) {
+  if(!G.autoSlots[slotIdx]) return null; // AUTO off — no status line to show
+  if(!ab) return null;
+  if(!G.combatActive || !G.enemy) return 'Waiting for a valid target';
+  const manaCost = MANA_COSTS[ab.type] || 0;
+  if(manaCost > 0 && G.mana < manaCost) {
+    return _tick.manaPaused && _tick.manaPaused[slotIdx] ? 'Paused — low mana' : 'Waiting for mana';
+  }
+  if(ab.type !== 'basic') {
+    const remaining = (G.abilityCDs[ab.id] || 0) - Date.now();
+    if(remaining > 0) return `Cooldown: ${Math.ceil(remaining/1000)}s`;
+  }
+  return 'AUTO enabled';
+}
+
 function updateLoadoutUI() {
   SLOT_IDS.forEach((sid,i)=>{
     const el = document.getElementById(sid);
@@ -4721,7 +4778,8 @@ function updateLoadoutUI() {
     const manaCost = ab ? (MANA_COSTS[ab.type]||0) : 0;
     const manaStarved = manaCost > 0 && G.mana < manaCost;
     el.classList.toggle('mana-starved', !!(unlocked && manaStarved));
-    el.title = manaStarved ? `Not enough mana (need ${manaCost}, have ${Math.floor(G.mana)})` : '';
+    const stateText = unlocked ? getAbilityAutoStateText(i, ab) : null;
+    el.title = stateText || (manaStarved ? `Not enough mana (need ${manaCost}, have ${Math.floor(G.mana)})` : '');
     const elemDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
     el.innerHTML = unlocked ? `
       ${isAutoOn ? '<div class="auto-badge">AUTO</div>' : ''}
@@ -4735,6 +4793,7 @@ function updateLoadoutUI() {
         <div style="position:absolute;bottom:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:${ab?color:'transparent'};box-shadow:${ab?'0 0 4px '+color:'none'};border:1px solid rgba(0,0,0,0.3);"></div>
       </div>
       <div class="ab-slot-label" style="text-shadow:0 1px 3px rgba(0,0,0,1),0 0 6px rgba(0,0,0,0.9);color:#fff;font-weight:900;">${ab ? ab.name : 'Assign'}</div>
+      ${stateText ? `<div class="ab-state-text" style="font-size:7px;line-height:1.1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,1);opacity:0.85;">${stateText}</div>` : ''}
     ` : `
       <div class="ab-icon-wrap">
         <div class="ab-icon-empty">–</div>
@@ -4799,16 +4858,35 @@ function updateClassXPPanel() {
     skills.forEach((sk,i)=>{
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
       const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
+      // A "not useful" label was easy to miss, and the button still spent a
+      // permanent point for nothing. Disable the button by default and say
+      // exactly why (e.g. "Requires an Ice imbue") — but leave a small,
+      // explicit escape hatch for a player who deliberately wants an
+      // off-build/experimental pick, rather than silently blocking them.
       const rowStyle = irrelevant ? 'opacity:0.45;' : '';
-      const rowTitle = irrelevant ? ` title="Doesn't affect your current ${G.playerImbue||''} imbue — you can still invest, but it won't do anything for your build."` : '';
-      html+=`<div class="skill-row" style="${rowStyle}"${rowTitle}><div><div class="skill-name">${sk.name}${irrelevant?' <span style="font-size:9px;color:var(--muted);font-style:italic;">(not useful for your build)</span>':''}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
-        <button class="skill-btn" ${G.passivePoints<1||lvl>=10?'disabled':''} onclick="upgradeSkill('${el}',${i})">+</button></div>`;
+      const rowTitle = irrelevant ? ` title="Requires an imbue that applies this effect — doesn't affect your current ${G.playerImbue||''} build."` : '';
+      const disabledAttr = (G.passivePoints<1||lvl>=10||irrelevant) ? 'disabled' : '';
+      html+=`<div class="skill-row" style="${rowStyle}"${rowTitle}><div><div class="skill-name">${sk.name}${irrelevant?` <span style="font-size:9px;color:var(--muted);font-style:italic;">(Requires ${requiredImbueLabelForEffectStat(sk.stat)})</span>`:''}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <button class="skill-btn" ${disabledAttr} onclick="upgradeSkill('${el}',${i})">+</button>
+          ${irrelevant && G.passivePoints>=1 && lvl<10 ? `<span onclick="upgradeSkill('${el}',${i},true)" style="font-size:8px;color:var(--muted);text-decoration:underline;cursor:pointer;">invest anyway</span>` : ''}
+        </div></div>`;
     });
     html+='</div>';
   });
 
   document.querySelectorAll('#panel-skills').forEach(el=>{ el.innerHTML=html; });
   const mps=document.getElementById('mobile-panel-skills');if(mps)mps.innerHTML=html;
+}
+
+// Which imbue(s) would make an "Effects" passive stat actually do something —
+// used to tell the player exactly why a greyed-out passive is disabled.
+function requiredImbueLabelForEffectStat(statKey) {
+  const imbues = Object.keys(IMBUE_RELEVANT_EFFECT_STATS).filter(im => IMBUE_RELEVANT_EFFECT_STATS[im].includes(statKey));
+  if(!imbues.length) return 'a different imbue';
+  const names = imbues.map(i=>i.charAt(0).toUpperCase()+i.slice(1));
+  const article = /^[AEIOU]/.test(names[0]) ? 'an' : 'a';
+  return `${article} ${names.join(' or ')} imbue`;
 }
 
 // ═══════════════════════════════════════════════
@@ -4844,6 +4922,31 @@ const STAT_BOOST_OPTIONS = [
   { key:'mana',        label:'Mana',         amount:10,   icon:'',  display:'+10' },
   { key:'manaRegen',   label:'Mana Regen',   amount:1,    icon:'',  display:'+1/s' },
 ];
+
+// The level-up Step 1 stat grid showed all 12 options at once with no
+// guidance — a brand new player has no basis to judge "Spell Vamp" against
+// "CDR" against "DOT Damage" on their first level-up. Surface 2-3 build-
+// appropriate call-outs (class + imbue) above the full list so there's a
+// sane default while still leaving every option available below for
+// players who want to plan differently.
+function getRecommendedStatKeys() {
+  const cls = G.playerClass;
+  const imbue = G.playerImbue;
+  const recs = ['attack']; // universal — damage is always useful early
+
+  if(cls === 'mage') recs.push('mana');
+  else if(cls === 'warrior') recs.push('defense');
+  else if(cls === 'rogue') recs.push('critChance');
+  else recs.push('mana');
+
+  const dotImbues = ['fire','poison','electric'];
+  if(dotImbues.includes(imbue)) recs.push('dotDamage');
+  else if(cls === 'rogue') recs.push('atkSpeed');
+  else if(cls === 'mage') recs.push('spellVamp');
+  else recs.push('lifeSteal');
+
+  return [...new Set(recs)].slice(0,3).filter(k => STAT_BOOST_OPTIONS.some(o=>o.key===k));
+}
 // ── BOSS DAMAGE MILESTONES ──
 const BOSS_MILESTONES = [
   { dmg:1000,      gold:50,    xp:15,  icon:'', label:'1K' },
@@ -5862,7 +5965,14 @@ function rollItem(slot, waveMod=1, vendorCap=false) {
   const statPool = [...(SLOT_STAT_POOLS[slot]||STAT_KEYS)];
   // Filter out CDR for lower tiers
   const canHaveCDR = CDR_ELIGIBLE_TIERS.includes(tier.name);
-  const filteredPool = canHaveCDR ? statPool : statPool.filter(s=>s!=='cdr');
+  let filteredPool = canHaveCDR ? statPool : statPool.filter(s=>s!=='cdr');
+  // Never roll an "effect" stat (burn/poison/freeze/electric-dot/slow duration
+  // or strength) that does nothing for the player's current imbue — e.g. an
+  // Electric Warrior would otherwise see Freeze/Poison duration gear that's
+  // pure dead weight. See IMBUE_RELEVANT_EFFECT_STATS / applyImbueEffect.
+  if(G.playerImbue) {
+    filteredPool = filteredPool.filter(s => isEffectStatRelevantForImbue(s, G.playerImbue));
+  }
 
   const stats = {};
   const count = tier.statCount;
@@ -5910,8 +6020,9 @@ function buildComparisonHTML(newItem) {
     let deltaHtml = '';
     if (delta > 0) deltaHtml = `<span class="compare-delta delta-up">+${delta}</span>`;
     else if (delta < 0) deltaHtml = `<span class="compare-delta delta-down">${delta}</span>`;
-    newCol += `<div class="compare-stat-row">
-      <span class="compare-stat-label">${STAT_LABELS[k]||k}</span>
+    const irrelevant = !isEffectStatRelevantForImbue(k, G.playerImbue);
+    newCol += `<div class="compare-stat-row"${irrelevant?' style="opacity:0.5;" title="Doesn\'t benefit your '+(G.playerImbue||'')+' build"':''}>
+      <span class="compare-stat-label">${STAT_LABELS[k]||k}${irrelevant?' <span style="font-size:9px;font-style:italic;">(not useful)</span>':''}</span>
       <span style="display:flex;align-items:center;">
         <span class="compare-stat-val ${delta>0?'positive':delta<0?'negative':'neutral'}">${val>0?'+'+val:val}</span>
         ${deltaHtml}
@@ -6295,6 +6406,27 @@ function closeItemModal(){
 let vendorStock=[];
 let vendorResetCount = 0;
 const VENDOR_RESET_BASE_COST = 30;
+const VENDOR_STARTER_ITEM_PRICE = 15;
+
+// rollItem()'s price floor (Math.max(5,...) sellVal, +15 flat in buyVal) means
+// no rolled item can ever cost less than ~26g. Early-game gold income can't
+// keep pace with that — a new player could hit their very first shop with
+// ~20g and find every item (and the refresh) priced out of reach, making the
+// whole screen something they can only leave. Guarantee at least one
+// genuinely affordable item any time that happens, regardless of wave or
+// vendor visit number, by discounting the cheapest rolled item down toward
+// a small starter price — capped at whatever gold the player actually has,
+// so it's never a false promise.
+function ensureAffordableVendorItem() {
+  if(!vendorStock.length) return;
+  if(vendorStock.some(v => v.item.buyVal <= G.gold)) return; // already fine
+  let cheapest = vendorStock[0];
+  vendorStock.forEach(v => { if(v.item.buyVal < cheapest.item.buyVal) cheapest = v; });
+  const discounted = Math.max(0, Math.min(cheapest.item.buyVal, VENDOR_STARTER_ITEM_PRICE, G.gold));
+  cheapest.item.buyVal = discounted;
+  cheapest.buyVal = discounted;
+  cheapest.item.isStarterDeal = true;
+}
 
 function openVendor(){
   stopEnemyAutoAttack();
@@ -6302,6 +6434,7 @@ function openVendor(){
   G.combatActive = false;
   vendorResetCount = 0;
   vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
+  ensureAffordableVendorItem();
   renderVendor();
   document.getElementById('vendor-modal').classList.remove('hidden');
   document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
@@ -6309,25 +6442,36 @@ function openVendor(){
 }
 
 function refreshVendorStock() {
-  const cost = Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount));
+  // A new player's first-ever refresh is free — they haven't learned yet
+  // whether the stock is worth paying to reroll, and charging for that
+  // first look (on top of already-tight starting gold) just adds another
+  // way the first shop visit can feel like a dead end.
+  const isFreeRefresh = !G.usedFreeVendorRefresh;
+  const cost = isFreeRefresh ? 0 : Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount));
   if(G.gold < cost) {
     log(`<span style="color:#cc4444">Need ${cost}g to refresh the merchant.</span>`);
     return;
   }
   G.gold -= cost;
   vendorResetCount++;
+  if(isFreeRefresh) G.usedFreeVendorRefresh = true;
   vendorStock = SLOTS.slice().sort(()=>Math.random()-0.5).slice(0,5).map(slot=>{const item=rollItem(slot,G.wave,true);return{slot,buyVal:item.buyVal,item};});
+  ensureAffordableVendorItem();
   updateResourceBar();
   document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   renderVendor();
-  log(`<span class="log-sys">Merchant refreshed!</span>`);
+  log(isFreeRefresh
+    ? `<span class="log-sys">Your first merchant refresh is on the house! Stock refreshed.</span>`
+    : `<span class="log-sys">Merchant refreshed!</span>`);
   playSound('vendor');
 }
 function renderVendor(){
-  // Update refresh cost display
-  const nextCost = Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount));
+  // Update refresh cost display — the very first refresh is always free
+  const nextCost = G.usedFreeVendorRefresh
+    ? Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount))
+    : 0;
   const costEl = document.getElementById('vendor-refresh-cost');
-  if(costEl) costEl.textContent = `${nextCost}g`;
+  if(costEl) costEl.textContent = G.usedFreeVendorRefresh ? `${nextCost}g` : 'FREE';
   const refreshBtn = document.getElementById('vendor-refresh-btn');
   if(refreshBtn) {
     const canAfford = G.gold >= nextCost;
@@ -6340,12 +6484,15 @@ function renderVendor(){
     const canAfford = G.gold >= v.item.buyVal;
     // Show top stats
     const statEntries = Object.entries(v.item.stats||{}).slice(0,3);
-    const statsHtml = statEntries.map(([k,val])=>
-      `<span style="font-size:10px;color:#3acc7a;margin-right:6px;">+${val} ${STAT_LABELS[k]||k}</span>`
-    ).join('');
+    const statsHtml = statEntries.map(([k,val])=>{
+      const irrelevant = !isEffectStatRelevantForImbue(k, G.playerImbue);
+      return irrelevant
+        ? `<span style="font-size:10px;color:var(--muted);margin-right:6px;opacity:0.6;" title="Doesn't benefit your ${G.playerImbue||''} build">+${val} ${STAT_LABELS[k]||k} <span style="font-style:italic;">(not useful for your build)</span></span>`
+        : `<span style="font-size:10px;color:#3acc7a;margin-right:6px;">+${val} ${STAT_LABELS[k]||k}</span>`;
+    }).join('');
     return `<div class="vendor-item" style="${glow}">
       <div style="flex:1;">
-        <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:${t.color};">${v.item.name||v.slot}</div>
+        <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:${t.color};">${v.item.name||v.slot}${v.item.isStarterDeal?' <span style="font-size:9px;color:#3acc7a;font-weight:700;">★ STARTER DEAL</span>':''}</div>
         <div style="font-size:10px;color:var(--muted);margin:2px 0;">${t.name} · ${v.slot}</div>
         <div style="margin-top:2px;">${statsHtml}</div>
       </div>
@@ -6502,11 +6649,20 @@ function updateSkillPanel(){
   const mps=document.getElementById('mobile-panel-skills');if(mps)mps.innerHTML=html;
 }
 
-function upgradeSkill(el,idx){
+function upgradeSkill(el,idx,force){
   if(G.passivePoints<1)return;
+  const sk=SKILL_TREE[el][idx];
+  // Block spending a permanent point on a passive that does nothing for the
+  // player's current imbue, unless they explicitly opted in via the
+  // "invest anyway" link (see updateClassXPPanel) — the greyed-out label
+  // alone still let new players waste points by accident.
+  const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
+  if(irrelevant && !force) {
+    log(`<span style="color:#cc8844">${sk.name} requires ${requiredImbueLabelForEffectStat(sk.stat)} to do anything — not spending your point on it.</span>`);
+    return;
+  }
   G.passivePoints--;
   const key=`${el}_${idx}`;G.skillLevels[key]=(G.skillLevels[key]||0)+1;
-  const sk=SKILL_TREE[el][idx];
   log(`<span style="color:#8888ff">Upgraded ${sk.name} to Lv${G.skillLevels[key]}</span>`);
   updateClassXPPanel();updateStatsPanel();updateResourceBar();
   refreshAutoAttackSpeeds();
@@ -7267,20 +7423,55 @@ const _tick = {
 
 // Configurable AUTO mana behavior (see menu → Combat). When ON, an AUTO
 // ability/heal that can't afford its mana cost for AUTO_MANA_STARVE_MS
-// straight gets toggled off automatically with a log message, instead of
-// sitting there silently doing nothing every tick forever. When OFF, AUTO
-// stays on and keeps quietly retrying every tick until mana recovers
-// (previous behavior) — the .mana-starved slot indicator still shows either way.
+// straight goes into a visibly-paused state (banner above the ability bar)
+// and resumes itself — no re-tap needed — the moment mana recovers enough
+// to afford it again, with its own "resumed" banner. Previously this fully
+// disabled AUTO and required the player to notice and re-tap it manually,
+// which read as "my controls stopped working" since low mana is silent
+// otherwise. When OFF, AUTO stays on and keeps quietly retrying every tick
+// until mana recovers with no banner at all (previous legacy behavior) —
+// the .mana-starved slot indicator still shows either way.
 let autoPauseOnLowMana = true;
 const AUTO_MANA_STARVE_MS = 3000;
+// Slots currently sitting in the visible "paused for mana" state (key:
+// slotIdx or 'heal'). While true here, the per-slot poll below skips firing
+// even once mana is technically sufficient again, until we've shown the
+// resume banner — see the resume check at the top of each poll loop.
+_tick.manaPaused = {};
+
+function showAutoManaBanner(text, color) {
+  const banner = document.getElementById('auto-mana-banner');
+  if(!banner) return;
+  banner.textContent = text;
+  banner.style.color = color;
+  banner.classList.remove('hidden');
+  banner.style.opacity = '1';
+  clearTimeout(showAutoManaBanner._t);
+  showAutoManaBanner._t = setTimeout(() => {
+    banner.style.opacity = '0';
+    setTimeout(() => banner.classList.add('hidden'), 250);
+  }, 3200);
+}
 
 function handleAutoManaStarved(slotKey, elapsedMs, abilityName) {
+  if(_tick.manaPaused[slotKey]) return; // already paused and waiting on the resume check
   _tick.manaStarved[slotKey] = (_tick.manaStarved[slotKey] || 0) + elapsedMs;
   if(!autoPauseOnLowMana) return;
   if(_tick.manaStarved[slotKey] < AUTO_MANA_STARVE_MS) return;
   _tick.manaStarved[slotKey] = 0;
-  delete G.autoSlots[slotKey];
-  log(`<span style="color:#4488ff">AUTO paused: not enough mana for ${abilityName}. Tap it again once mana refills.</span>`);
+  _tick.manaPaused[slotKey] = true;
+  log(`<span style="color:#4488ff">AUTO paused: not enough mana for ${abilityName}.</span>`);
+  showAutoManaBanner('AUTO paused to regenerate mana.', '#63b3ff');
+  markDirty(['loadout','healSlot']);
+}
+
+// Called once a paused slot's ability is affordable again — clears the
+// pause and announces the resume, then lets the caller fire normally.
+function resumeAutoManaSlot(slotKey, abilityName) {
+  _tick.manaPaused[slotKey] = false;
+  _tick.manaStarved[slotKey] = 0;
+  log(`<span style="color:#3acc7a">Mana recovered — AUTO resumed for ${abilityName}.</span>`);
+  showAutoManaBanner('Mana recovered — AUTO resumed.', '#3acc7a');
   markDirty(['loadout','healSlot']);
 }
 
@@ -7349,6 +7540,7 @@ function masterTick(ts) {
           handleAutoManaStarved(slotIdx, 250, ab.name);
           continue;
         }
+        if(_tick.manaPaused[slotIdx]) resumeAutoManaSlot(slotIdx, ab.name);
         _tick.manaStarved[slotIdx] = 0;
         fireAbility(ab);
         startCDBarAnimation(slotIdx, ab);
@@ -7373,6 +7565,7 @@ function masterTick(ts) {
         if(G.hp < G.maxHp * AUTO_HEAL_HP_PCT && isHealReady()) {
           const manaCost = MANA_COSTS[healAb.type] || 0;
           if(manaCost === 0 || G.mana >= manaCost) {
+            if(_tick.manaPaused['heal']) resumeAutoManaSlot('heal', healAb.name);
             _tick.manaStarved['heal'] = 0;
             doHeal(healAb);
           } else {
@@ -7668,6 +7861,24 @@ function startHealCDBar(ab) {
   requestAnimationFrame(tick);
 }
 
+// Mirrors getAbilityAutoStateText but for the heal slot's own cooldown
+// system (healCD/isHealReady, separate from G.abilityCDs — see comments at
+// isHealReady) and its HP-threshold gate instead of a target check.
+function getHealAutoStateText(ab, healManaStarved) {
+  if(!G.autoSlots['heal']) return null;
+  if(!ab) return null;
+  if(!G.combatActive || !G.enemy) return 'Waiting for a valid target';
+  if(healManaStarved) {
+    return _tick.manaPaused && _tick.manaPaused['heal'] ? 'Paused — low mana' : 'Waiting for mana';
+  }
+  if(G.hp >= G.maxHp * AUTO_HEAL_HP_PCT) return `Waiting for HP below ${Math.round(AUTO_HEAL_HP_PCT*100)}%`;
+  if(!isHealReady()) {
+    const remaining = healCD - Date.now();
+    if(remaining > 0) return `Cooldown: ${Math.ceil(remaining/1000)}s`;
+  }
+  return 'AUTO enabled';
+}
+
 function updateHealSlotUI() {
   const slot = document.getElementById('slot-heal');
   if (!slot) return;
@@ -7687,9 +7898,8 @@ function updateHealSlotUI() {
   const healManaCost = MANA_COSTS.heal;
   const healManaStarved = !!ab && G.mana < healManaCost;
   slot.classList.toggle('mana-starved', healManaStarved);
-  slot.title = healManaStarved ? `Not enough mana (need ${healManaCost}, have ${Math.floor(G.mana)})`
-    : healStandingBy ? `AUTO Heal is on — standing by until your HP drops below ${Math.round(AUTO_HEAL_HP_PCT*100)}%`
-    : '';
+  const healStateText = getHealAutoStateText(ab, healManaStarved);
+  slot.title = healStateText || (healManaStarved ? `Not enough mana (need ${healManaCost}, have ${Math.floor(G.mana)})` : '');
   const healDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
   const healAutoBadge = isHealAuto ? `<div class="auto-badge"${healStandingBy?' style="opacity:0.55;"':''}>${healStandingBy?'AUTO •':'AUTO'}</div>` : '';
   const healNoMpBadge = healManaStarved ? '<div class="no-mana-badge">NO MP</div>' : '';
@@ -7700,6 +7910,7 @@ function updateHealSlotUI() {
     <div class="ab-slot-label" style="color:#fff;text-shadow:0 1px 3px rgba(0,0,0,1),0 0 8px rgba(0,0,0,0.8);font-weight:900;">Heal</div>
     <div class="ab-icon">${ab?(ab.imbue?elemLogoHTML(ab.imbue,22):'◆'):'＋'}</div>
     <div class="ab-name" style="color:#fff;font-size:${ab ? '9px' : '8px'};text-shadow:0 1px 3px rgba(0,0,0,1);font-weight:700;">${ab ? ab.name : 'Tap to assign'}</div>
+    ${healStateText ? `<div class="ab-state-text" style="font-size:7px;line-height:1.1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,1);opacity:0.85;">${healStateText}</div>` : ''}
     <div style="font-size:8px;color:${healManaStarved?'#ff8888':'#fff'};font-family:'Jim Nightshade',cursive;text-shadow:0 1px 2px rgba(0,0,0,1);font-weight:700;">${healManaCost} mana</div>
     <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:${color}"></div></div>
   `;
@@ -8778,13 +8989,35 @@ function renderSPPopup() {
     const imbueColor = IMBUE_COLORS[G.playerImbue||'']||color;
 
     html += `<div style="margin-bottom:14px;">
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:${color};margin-bottom:8px;letter-spacing:0.08em;">
-        ${CLASS_ICONS[cls]} ${cls.toUpperCase()} — Level ${lv}
+      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:${color};margin-bottom:8px;letter-spacing:0.08em;" title="Class Mastery — separate from your Character Level, which is what just leveled up to earn this point">
+        ${CLASS_ICONS[cls]} ${cls.toUpperCase()} — Mastery ${lv}
         ${G.playerImbue?`<span style="color:${imbueColor};font-size:10px;margin-left:6px;">${IMBUE_ICONS[G.playerImbue]||''} ${G.playerImbue}</span>`:''}
       </div>`;
 
     // Stat boosts — tap any to spend 1 skill point
     html += `<div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Tap a stat to invest 1 skill point (${spPending} remaining — tap multiple times)</div>`;
+
+    // Recommended picks for this build, shown above the full list
+    const recommendedKeys = getRecommendedStatKeys();
+    if(recommendedKeys.length) {
+      html += `<div style="font-size:9px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">★ Recommended for your build</div>`;
+      html += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:10px;">`;
+      recommendedKeys.forEach(key => {
+        const opt = STAT_BOOST_OPTIONS.find(o=>o.key===key);
+        if(!opt) return;
+        html += `<div onclick="spBoostStat('${opt.key}')" style="background:rgba(232,184,75,0.18);border:1.5px solid var(--gold);border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:border-color 0.15s;">
+          <span style="font-size:16px;">${opt.icon}</span>
+          <div>
+            <div style="font-size:11px;color:var(--text);">${opt.label}</div>
+            <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#3acc7a;">${opt.display}</div>
+            <div style="font-size:9px;color:var(--muted);">Current: ${typeof G.baseStats[opt.key]==='number'?G.baseStats[opt.key].toFixed(opt.amount<1?1:0):0}</div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      html += `<div style="font-size:9px;color:var(--muted);margin-bottom:4px;">All stats</div>`;
+    }
+
     html += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;">`;
     STAT_BOOST_OPTIONS.forEach(opt => {
       html += `<div onclick="spBoostStat('${opt.key}')" style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,155,60,0.25);border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:border-color 0.15s;"
@@ -8844,17 +9077,17 @@ function renderSPPopup() {
       skills.forEach((sk,i) => {
         const key=`${elKey}_${i}`;
         const lvl=G.skillLevels[key]||0;
-        const canUp = passivePending >= 1 && lvl < 10;
         const irrelevant = elKey === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
-        const opacity = irrelevant ? 0.4 : (canUp?1:0.5);
-        const rowTitle = irrelevant ? ` title="Doesn't affect your current ${G.playerImbue||''} imbue — you can still invest, but it won't do anything for your build."` : '';
+        const canUp = passivePending >= 1 && lvl < 10 && !irrelevant;
+        const opacity = irrelevant ? 0.45 : (canUp?1:0.5);
+        const rowTitle = irrelevant ? ` title="Requires ${requiredImbueLabelForEffectStat(sk.stat)} — doesn't affect your current ${G.playerImbue||''} build."` : '';
         html += `<div onclick="${canUp?`spSpendPassive('${elKey}',${i})`:''}"${rowTitle} style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,155,60,0.25);border-radius:7px;padding:7px 10px;margin-bottom:3px;cursor:${canUp?'pointer':'default'};display:flex;justify-content:space-between;align-items:center;opacity:${opacity};"
           ${canUp?`onmouseover="this.style.borderColor='#8888ff'" onmouseout="this.style.borderColor='var(--border)'"`:''}>
           <div>
-            <div style="font-size:11px;color:var(--text);">${sk.name}${irrelevant?' <span style="font-size:9px;color:var(--muted);font-style:italic;">(not useful for your build)</span>':''}</div>
+            <div style="font-size:11px;color:var(--text);">${sk.name}${irrelevant?` <span style="font-size:9px;color:var(--muted);font-style:italic;">(Requires ${requiredImbueLabelForEffectStat(sk.stat)})</span>`:''}</div>
             <div style="font-size:9px;color:var(--muted);">Lv${lvl} · +${(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div>
           </div>
-          ${canUp?`<span style="font-size:12px;color:#8888ff;">+</span>`:`<span style="font-size:9px;color:var(--muted);">${lvl>=10?'MAX':''}</span>`}
+          ${canUp?`<span style="font-size:12px;color:#8888ff;">+</span>`:irrelevant && passivePending>=1 && lvl<10?`<span onclick="event.stopPropagation();spSpendPassive('${elKey}',${i},true)" style="font-size:8px;color:var(--muted);text-decoration:underline;cursor:pointer;">invest anyway</span>`:`<span style="font-size:9px;color:var(--muted);">${lvl>=10?'MAX':''}</span>`}
         </div>`;
       });
       html += '</div>';
@@ -8903,10 +9136,10 @@ function spUpgradeAbility(abId) {
   renderSPPopup();
 }
 
-function spSpendPassive(el, idx) {
+function spSpendPassive(el, idx, force) {
   if(passivePending <= 0) return;
   const before = G.passivePoints;
-  upgradeSkill(el, idx);
+  upgradeSkill(el, idx, force);
   if(G.passivePoints < before) passivePending = Math.max(0, passivePending - 1);
   if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
   renderSPPopup();
@@ -9099,8 +9332,42 @@ function showTutStep(step) {
   const s = TUT_STEPS[step];
   if(!s) { endTutorial(); return; }
 
+  // The "Manage Loadout" button lives inside the collapsible side menu,
+  // which sits off-screen (left:-280px) until opened. Its bounding rect
+  // was still non-zero-size when closed (full height, just shifted left),
+  // so the old "is this even visible" check below never caught it — the
+  // tutorial would spotlight/point at an off-screen box while the button
+  // the player actually needed to open was still hidden inside the menu.
+  // Open the menu first so the spotlight lands on the real, visible button.
+  //
+  // #side-menu animates `left` with a CSS transition (0.25s). Reading
+  // getBoundingClientRect() synchronously right after setting style.left
+  // does NOT return the final position — a transitioning property's used
+  // value (what layout queries see) interpolates from the old value over
+  // the transition's duration, so an immediate read here still sees the
+  // menu essentially at its old off-screen position. That made the
+  // visibility check below immediately treat the just-opened menu as
+  // still hidden and cascade-skip the rest of the tutorial. Give the
+  // transition time to finish before measuring/rendering against it.
+  if(s.slotId === 'loadout-btn' && typeof openMenu === 'function') {
+    openMenu();
+    setTimeout(() => renderTutStep(step, s), 260);
+    return;
+  }
+
+  renderTutStep(step, s);
+}
+
+function renderTutStep(step, s) {
   const el = document.getElementById(s.slotId);
   if(!el) { endTutorial(); return; }
+
+  // Bring the spotlight/bubble/arrow back after advanceTutStep() faded them
+  // out on the previous tap — see the comment there for why.
+  ['tut-spotlight','tut-bubble','tut-arrow'].forEach(id => {
+    const node = document.getElementById(id);
+    if(node) node.style.opacity = '1';
+  });
 
   // Get element position
   const rect = el.getBoundingClientRect();
@@ -9156,8 +9423,14 @@ function showTutStep(step) {
     path.setAttribute('d','M30,0 Q30,50 30,65');
   }
 
-  // Check if element is visible on screen — if not, skip this step
-  if(rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0) {
+  // Check if element is visible on screen — if not, skip this step.
+  // Checks both axes now — the old version only checked vertical bounds,
+  // which missed the side-menu's closed (off-screen-left) position entirely
+  // (see the openMenu() call above for the actual fix to that case; this
+  // horizontal check just makes the escape hatch correct too, for any other
+  // panel-based target).
+  if(rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0
+     || rect.right <= 0 || rect.left >= window.innerWidth) {
     tutStep++;
     if(tutStep < TUT_STEPS.length) showTutStep(tutStep);
     else endTutorial();
@@ -9174,6 +9447,14 @@ function showTutStep(step) {
   el.style.boxShadow = '0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4)';
   el.style.zIndex = '301';
 
+  // Show a "stuck? skip this step" escape hatch after a few seconds, in
+  // case a step still can't be completed for some reason we didn't
+  // anticipate — previously the only way out was "Skip Tutorial" entirely.
+  const skipBtn = document.getElementById('tut-skip-step');
+  if(skipBtn) skipBtn.classList.add('hidden');
+  clearTimeout(_tutSkipStepTimer);
+  _tutSkipStepTimer = setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 6000);
+
   // Intercept tap on target — this ONLY detects that the tap happened and
   // advances the tutorial. It must NOT also call activateAbility/activateHeal
   // itself: every target here already has its own inline onclick wired up,
@@ -9186,25 +9467,56 @@ function showTutStep(step) {
     if (handled) return;
     handled = true;
     e.stopPropagation();
-    // Clean up this step's highlight
-    el.style.animation = '';
-    el.style.boxShadow = '';
-    el.style.zIndex = '';
-    el.removeEventListener('click', handler);
-    el.removeEventListener('touchend', handler);
-    // Confirm what the (already-fired) real action actually did
-    setTimeout(() => showTutConfirmToast(s), 50);
-    // Next step
-    tutStep++;
-    if(tutStep < TUT_STEPS.length) {
-      setTimeout(()=>showTutStep(tutStep), 900);
-    } else {
-      endTutorial();
-    }
+    advanceTutStep(el, s, true);
   };
 
   el.addEventListener('click', handler);
   el.addEventListener('touchend', handler);
+  _tutCurrentHandler = { el, handler };
+}
+
+let _tutSkipStepTimer = null;
+let _tutCurrentHandler = null;
+
+function advanceTutStep(el, s, showConfirm) {
+  // Clean up this step's highlight
+  el.style.animation = '';
+  el.style.boxShadow = '';
+  el.style.zIndex = '';
+  clearTimeout(_tutSkipStepTimer);
+  const skipBtn = document.getElementById('tut-skip-step');
+  if(skipBtn) skipBtn.classList.add('hidden');
+  // Hide the spotlight/bubble/arrow immediately instead of leaving the just-
+  // completed step's instruction text ("Tap the Attack button now") visible
+  // for the ~900ms gap before the next step renders — a fast kill (e.g. the
+  // 21hp tutorial Wolf) could otherwise make it look like the tutorial never
+  // registered the tap at all. renderTutStep() fades them back in.
+  ['tut-spotlight','tut-bubble','tut-arrow'].forEach(id => {
+    const node = document.getElementById(id);
+    if(node) node.style.opacity = '0';
+  });
+  if(_tutCurrentHandler && _tutCurrentHandler.el === el) {
+    el.removeEventListener('click', _tutCurrentHandler.handler);
+    el.removeEventListener('touchend', _tutCurrentHandler.handler);
+    _tutCurrentHandler = null;
+  }
+  if(showConfirm) setTimeout(() => showTutConfirmToast(s), 50);
+  // Next step
+  tutStep++;
+  if(tutStep < TUT_STEPS.length) {
+    setTimeout(()=>showTutStep(tutStep), 900);
+  } else {
+    endTutorial();
+  }
+}
+
+function skipTutStep() {
+  const s = TUT_STEPS[tutStep];
+  if(!s) { endTutorial(); return; }
+  const el = document.getElementById(s.slotId);
+  if(!el) { endTutorial(); return; }
+  log('<span style="color:var(--muted)">Tutorial step skipped.</span>');
+  advanceTutStep(el, s, false);
 }
 
 function showTutConfirmToast(s) {
@@ -9234,6 +9546,10 @@ function endTutorial() {
   tutActive = false;
   document.getElementById('ability-tutorial').classList.add('hidden');
   document.getElementById('ability-tutorial').classList.remove('active');
+  clearTimeout(_tutSkipStepTimer);
+  const skipBtn = document.getElementById('tut-skip-step');
+  if(skipBtn) skipBtn.classList.add('hidden');
+  _tutCurrentHandler = null;
   localStorage.setItem(TUT_KEY, '1');
   // Clean up any remaining highlights
   TUT_STEPS.forEach(s => {
@@ -9877,7 +10193,7 @@ function buildStatsPanelHTML() {
 
 function buildUpgradesPanelHTML() {
   // Class XP bars
-  let html = '<div class="panel-title" style="position:static;"> Class Levels</div>';
+  let html = '<div class="panel-title" style="position:static;" title="Separate from your Character Level — earned by using this class in combat.">Class Mastery</div>';
   html += '<div class="class-xp-section">';
   CLASS_NAMES.forEach(cls => {
     const lv = G.classLv[cls]||0;
@@ -9890,7 +10206,7 @@ function buildUpgradesPanelHTML() {
     html += `<div class="class-xp-row">
       <span class="cxp-icon">${CLASS_ICONS[cls]}</span>
       <div class="cxp-info">
-        <div class="cxp-name"><span>${cls.charAt(0).toUpperCase()+cls.slice(1)}</span><span>Lv${lv}</span></div>
+        <div class="cxp-name"><span>${cls.charAt(0).toUpperCase()+cls.slice(1)}</span><span title="Class Mastery Level">Mastery ${lv}</span></div>
         <div class="cxp-bar-track"><div class="cxp-bar-fill" style="width:${pct}%;background:${color}"></div></div>
       </div>
       ${cp>0?`<span class="cxp-pts">${cp}cp</span>`:'<span class="cxp-pts" style="opacity:0.3">0</span>'}
@@ -9912,9 +10228,16 @@ function buildUpgradesPanelHTML() {
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${color}">${elEmoji[el]||''} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
     skills.forEach((sk,i)=>{
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
-      html+=`<div class="skill-row">
-        <div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
-        <button class="skill-btn" ${G.passivePoints<1||lvl>=10?'disabled':''} onclick="upgradeSkillMobile('${el}',${i})">+</button>
+      const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
+      const rowStyle = irrelevant ? 'opacity:0.45;' : '';
+      const rowTitle = irrelevant ? ` title="Requires an imbue that applies this effect — doesn't affect your current ${G.playerImbue||''} build."` : '';
+      const disabledAttr = (G.passivePoints<1||lvl>=10||irrelevant) ? 'disabled' : '';
+      html+=`<div class="skill-row" style="${rowStyle}"${rowTitle}>
+        <div><div class="skill-name">${sk.name}${irrelevant?` <span style="font-size:9px;color:var(--muted);font-style:italic;">(Requires ${requiredImbueLabelForEffectStat(sk.stat)})</span>`:''}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <button class="skill-btn" ${disabledAttr} onclick="upgradeSkillMobile('${el}',${i})">+</button>
+          ${irrelevant && G.passivePoints>=1 && lvl<10 ? `<span onclick="upgradeSkillMobile('${el}',${i},true)" style="font-size:8px;color:var(--muted);text-decoration:underline;cursor:pointer;">invest anyway</span>` : ''}
+        </div>
       </div>`;
     });
     html+='</div>';
@@ -9922,8 +10245,8 @@ function buildUpgradesPanelHTML() {
   return html;
 }
 
-function upgradeSkillMobile(el, idx) {
-  upgradeSkill(el, idx);
+function upgradeSkillMobile(el, idx, force) {
+  upgradeSkill(el, idx, force);
 }
 
 function mobileInspectGear(slot) {
@@ -10885,6 +11208,9 @@ function menuToggleAutoPauseMana() {
   if(btn) btn.style.color = autoPauseOnLowMana ? '#2e9e58' : '#4e5468';
   if(btn) btn.style.borderColor = autoPauseOnLowMana ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
   _tick.manaStarved = {};
+  // Turning the feature off mid-pause shouldn't leave a slot stuck waiting
+  // on a resume check that will now never run.
+  if(!autoPauseOnLowMana) _tick.manaPaused = {};
 }
 
 function menuToggleAutoWave() {
