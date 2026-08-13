@@ -8,7 +8,7 @@
 <!-- v2.7.0 -->
 
 <!-- SEO Meta Tags -->
-<meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, and Ice abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
+<meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
 <meta name="keywords" content="free browser RPG, browser game, elemental RPG, fantasy RPG online, mage warrior rogue, wave survival game, free online RPG, no download game, Zindigon">
 <meta name="author" content="Zindigon Enterprises">
 <meta name="robots" content="index, follow">
@@ -34,7 +34,7 @@
   "@context": "https://schema.org",
   "@type": "VideoGame",
   "name": "Elemental Rift",
-  "description": "A free browser-based RPG where players choose from Mage, Warrior, or Rogue classes and master elemental abilities including Fire, Water, Grass, Poison, Electric, and Ice. Survive waves of enemies, collect gear, and compete on a global leaderboard.",
+  "description": "A free browser-based RPG where players choose from Mage, Warrior, or Rogue classes and master elemental abilities including Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind. Survive waves of enemies, collect gear, and compete on a global leaderboard.",
   "genre": ["RPG", "Action", "Browser Game", "Survival"],
   "gamePlatform": "Web Browser",
   "applicationCategory": "Game",
@@ -310,6 +310,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   0%,100%{ box-shadow:0 0 8px 1px rgba(232,184,75,0.35); }
   50%{ box-shadow:0 0 16px 4px rgba(232,184,75,0.75); }
 }
+@keyframes storyIntroDrop{
+  0%{ transform:translate(-50%,-160%); opacity:0; }
+  100%{ transform:translate(-50%,0); opacity:1; }
+}
+#story-intro-dialogue{ transform:translate(-50%,0); }
 .auto-badge{
   position:absolute;
   top:2px;
@@ -328,6 +333,96 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   z-index:2;
   pointer-events:none;
 }
+/* Proactive "can't afford this" indicator — shown on an ability/heal slot
+   BEFORE the player taps it, whenever current mana is below that slot's
+   cost. Previously the only feedback was a log line AFTER a failed tap
+   (or, for AUTO slots, nothing at all — they just silently stopped firing
+   every tick with no visual change), which is why running out of mana felt
+   like the game had broken rather than like an expected resource limit. */
+.ability-slot.mana-starved{
+  filter:grayscale(0.6);
+}
+.ability-slot .no-mana-badge{
+  position:absolute;
+  bottom:2px;
+  left:2px;
+  font-family:'Jim Nightshade',cursive;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:0.02em;
+  color:#fff;
+  background:#4488ff;
+  border:1px solid rgba(0,0,0,0.35);
+  border-radius:5px;
+  padding:1px 4px;
+  line-height:1.4;
+  box-shadow:0 0 5px rgba(68,136,255,0.9);
+  z-index:2;
+  pointer-events:none;
+}
+/* Ability tutorial overlay — previously had NO layout CSS at all (position:static,
+   z-index:auto), so the spotlight/bubble/arrow never actually rendered as an
+   overlay; only the glow set directly on the target button was ever visible. */
+#ability-tutorial{
+  position:fixed; inset:0; z-index:400; pointer-events:none;
+}
+#ability-tutorial .tut-spotlight{
+  position:absolute;
+  border-radius:12px;
+  box-shadow:0 0 0 9999px rgba(10,6,2,0.72);
+  pointer-events:none;
+  transition:left 0.25s ease,top 0.25s ease,width 0.25s ease,height 0.25s ease;
+}
+#ability-tutorial .tut-bubble{
+  position:absolute;
+  background:rgba(20,12,4,0.95);
+  border:1px solid rgba(200,155,60,0.5);
+  border-radius:12px;
+  padding:14px 16px;
+  pointer-events:all;
+  box-shadow:0 10px 30px rgba(0,0,0,0.55);
+}
+#ability-tutorial .tut-bubble h4{
+  font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;letter-spacing:0.05em;
+}
+#ability-tutorial .tut-bubble p{
+  font-size:12px;line-height:1.5;color:#f2e6cf;margin-bottom:10px;
+}
+#ability-tutorial .tut-tap-hint{
+  font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);opacity:0.95;letter-spacing:0.04em;
+}
+#ability-tutorial .tut-arrow-svg{ position:absolute; pointer-events:none; }
+@keyframes tutPulse{
+  0%,100%{ box-shadow:0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4); }
+  50%{ box-shadow:0 0 0 7px rgba(232,184,75,0.9), 0 0 30px rgba(232,184,75,0.7); }
+}
+.tut-bounce{ animation:tutBounce 1s ease-in-out infinite; }
+@keyframes tutBounce{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(6px); }
+}
+/* Tutorial action confirmation toast */
+.tut-confirm-toast{
+  position:fixed;
+  top:14%;
+  left:50%;
+  transform:translate(-50%,-12px);
+  z-index:410;
+  background:rgba(20,12,4,0.95);
+  border:1px solid rgba(120,220,150,0.5);
+  border-radius:10px;
+  padding:10px 18px;
+  font-family:'Jim Nightshade',cursive;
+  font-size:12px;
+  color:#a8f0c0;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.25s ease, transform 0.25s ease;
+  max-width:min(360px,86vw);
+  text-align:center;
+}
+.tut-confirm-toast.show{ opacity:1; transform:translate(-50%,0); }
 .ab-slot-label{font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
 .ab-icon{font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;}
 .ab-name{font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--text);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
@@ -1141,11 +1236,27 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://kryfuceztfzccsidkzog.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyeWZ1Y2V6dGZ6Y2NzaWRrem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODY1MjIsImV4cCI6MjA5MzY2MjUyMn0.c_pmdXWHLQYh1dwkCwhqpW7lpgIzK13UUq2ZW53XhAs';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// sb/sbUser/sbProfile are declared unconditionally so every guard clause
+// elsewhere in the file (e.g. `if(!sbUser) return;`) works correctly even
+// if the Supabase CDN script above fails to load (blocked domain, offline,
+// ad blocker, slow/dropped connection). Without this try/catch, a failed
+// CDN load left sbUser completely UNDECLARED, so every ability activation
+// crashed with "sbUser is not defined" inside trinityEarnXP — which is what
+// was silently blocking AUTO from ever turning on for affected players.
+let sb = null;
 let sbUser = null; // current signed-in user
 let sbProfile = null; // players row
+try {
+  const SUPABASE_URL = 'https://kryfuceztfzccsidkzog.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyeWZ1Y2V6dGZ6Y2NzaWRrem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODY1MjIsImV4cCI6MjA5MzY2MjUyMn0.c_pmdXWHLQYh1dwkCwhqpW7lpgIzK13UUq2ZW53XhAs';
+  if (typeof supabase !== 'undefined') {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } else {
+    console.warn('Supabase failed to load — continuing in guest/offline mode.');
+  }
+} catch (err) {
+  console.warn('Supabase init failed — continuing in guest/offline mode.', err);
+}
 </script>
 <style>
 /* ══════════════════════════════════════════════════════
@@ -1528,12 +1639,12 @@ let sbProfile = null; // players row
   <h3>Choose Your Class</h3>
   <p>Pick from three classes: Mage, Warrior, or Rogue. Each class has unique abilities, playstyles, and imbue combinations.</p>
   <ul>
-    <li>Mage — Spell caster with Spell Vamp. Choose Fire, Water, or Grass elemental imbue.</li>
-    <li>Warrior — Sword and Shield with Life Steal. Choose Poison, Electric, or Ice imbue.</li>
-    <li>Rogue — Dual daggers or bow with Life Steal. Choose Poison, Electric, or Ice imbue.</li>
+    <li>Mage — Spell caster with Spell Vamp. Choose Fire, Water, Grass, Rock, or Wind elemental imbue.</li>
+    <li>Warrior — Sword and Shield with Life Steal. Choose Poison, Electric, Ice, Rock, or Wind imbue.</li>
+    <li>Rogue — Dual daggers or bow with Life Steal. Choose Poison, Electric, Ice, Rock, or Wind imbue.</li>
   </ul>
   <h3>Elemental Abilities</h3>
-  <p>Master six elemental types: Fire (burn damage over time), Water (slows and weakens enemies), Grass (heals on hit), Poison (stacking DOT), Electric (AOE chain damage), and Ice (freeze and slow). Additional elements include Rock and Wind.</p>
+  <p>Master eight elemental types: Fire (burn damage over time), Water (slows and weakens enemies), Grass (heals on hit), Poison (stacking DOT), Electric (AOE chain damage), Ice (freeze and slow), Rock (stuns and defense shredding), and Wind (attack speed and evasion).</p>
   <h3>Game Features</h3>
   <ul>
     <li>Wave survival combat against increasingly powerful enemies</li>
@@ -1707,7 +1818,7 @@ let sbProfile = null; // players row
   ">Continue as <span id="continue-name"></span></button>
   <div class="name-input-wrap" style="width:100%;max-width:340px;margin-bottom:4px;display:none;"></div>
   <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
-    <button id="start-btn" onclick="startGame()" style="width:100%;font-size:18px;letter-spacing:0.08em;min-height:88px;padding:0;">Begin Journey</button>
+    <button id="start-btn" onclick="beginJourneyClicked()" style="width:100%;font-size:18px;letter-spacing:0.08em;min-height:88px;padding:0;">Begin Journey</button>
     <button onclick="openTrinityShop()" style="
       width:100%;font-family:'Jim Nightshade',cursive;font-size:20px;padding:12px;
       background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;
@@ -1746,6 +1857,19 @@ let sbProfile = null; // players row
   <p style="font-size:13px;color:var(--text-light);text-align:center;max-width:320px;">Your starting class determines your first abilities. You can mix and match later.</p>
 
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:480px;" id="class-cards"></div>
+</div>
+
+<!-- STORY INTRO — shown once, right after character creation, before difficulty select -->
+<div id="story-intro" class="hidden" style="position:fixed;inset:0;z-index:161;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Arena/Arena_City.png') center center/cover no-repeat;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:linear-gradient(rgba(10,6,2,0.6),rgba(10,6,2,0.3) 42%,rgba(10,6,2,0.7));"></div>
+  <img id="story-intro-sprite" src="" alt="Your character" style="position:absolute;left:10%;bottom:0;height:60%;max-height:520px;filter:drop-shadow(0 12px 24px rgba(0,0,0,0.6));">
+  <div id="story-intro-dialogue" style="position:absolute;top:7%;left:50%;width:min(560px,88vw);background:rgba(20,12,4,0.88);border:1px solid rgba(200,155,60,0.4);border-radius:14px;padding:18px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.55);animation:storyIntroDrop 0.6s cubic-bezier(.2,.9,.3,1) both;">
+    <div style="font-family:'Jim Nightshade',cursive;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">A voice echoes from above</div>
+    <p id="story-intro-text" style="font-size:14px;line-height:1.65;color:#f2e6cf;margin-bottom:16px;">These monsters have invaded our lands, opening rifts all over the city of natural men. I call upon you now, so help protect this city and rid it of these beasts. Fight your way toward a rift, and liberate the people.</p>
+    <div style="text-align:right;">
+      <button onclick="continueFromStoryIntro()" style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;padding:9px 26px;border:none;border-radius:8px;background:var(--gold);color:#241505;cursor:pointer;letter-spacing:0.06em;">Continue →</button>
+    </div>
+  </div>
 </div>
 
 <!-- LEVEL UP POPUP — batch invest mode -->
@@ -2109,11 +2233,17 @@ let sbProfile = null; // players row
         background:rgba(245,225,175,0.5);cursor:pointer;letter-spacing:0.06em;
         border-radius:6px;transition:all 0.15s;
       ">▶ Auto Wave: OFF</button>
+      <button id="menu-auto-mana-pause" onclick="menuToggleAutoPauseMana()" title="When ON, an AUTO ability that can't afford its mana cost for a few seconds turns itself off with a message instead of silently doing nothing." style="
+        width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;padding:10px;margin-top:6px;
+        border:1px solid rgba(46,158,88,0.7);color:#2e9e58;
+        background:rgba(245,225,175,0.5);cursor:pointer;letter-spacing:0.06em;
+        border-radius:6px;transition:all 0.15s;
+      ">▶ Pause AUTO on Low Mana: ON</button>
     </div>
     <!-- Loadout manager -->
     <div style="padding:12px 16px;border-bottom:1px solid var(--metal-edge);">
       <div style="font-family:'Jim Nightshade',cursive;font-size:10px;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;font-weight:700;">Abilities</div>
-      <button onclick="openSlotSelector();closeMenu();" style="
+      <button id="loadout-btn" onclick="openSlotSelector();closeMenu();" style="
         width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;padding:10px;
         border:1px solid rgba(180,140,60,0.35);color:var(--text-light);
         background:rgba(245,225,175,0.5);cursor:pointer;letter-spacing:0.06em;
@@ -2168,14 +2298,14 @@ let sbProfile = null; // players row
       <div style="width:16px;height:2px;background:var(--gold);"></div>
     </div>
     <div class="res-group">
-      <div class="res-item"><span class="res-label">Wave</span><span class="res-val" id="wave-num">1</span></div>
+      <div class="res-item" title="Progress through your current difficulty path — resets to 1 each time you pick a new path from the map, separate from your Character Level"><span class="res-label">Wave</span><span class="res-val" id="wave-num">1</span></div>
       <div class="res-item"><span class="res-label">Gold</span><span class="res-val" id="gold-val">0</span></div>
       <div class="res-item"><span class="res-label">Kills</span><span class="res-val" id="kills-val">0</span></div>
 
     </div>
     <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:180px;min-width:80px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--gold);letter-spacing:0.05em;">Lv <span id="player-level-display">1</span></span>
+        <span style="font-family:'Jim Nightshade',cursive;font-size:9px;color:var(--gold);letter-spacing:0.05em;" title="Character Level — earns Skill Points &amp; Passive Points. Separate from your Class Mastery level in the Skills panel.">Char Lv <span id="player-level-display">1</span></span>
         <span style="font-size:9px;color:#8888ff;font-family:'Jim Nightshade',cursive;" id="xp-bar-text">0/80</span>
       </div>
       <div style="height:6px;background:rgba(245,225,175,0.9);border-radius:3px;overflow:hidden;">
@@ -2325,6 +2455,9 @@ let sbProfile = null; // players row
       <div id="wave-choice-title" style="font-family:'Jim Nightshade',cursive;font-size:22px;font-weight:700;color:#fff;letter-spacing:0.12em;text-align:center;margin-bottom:8px;text-shadow:0 2px 8px rgba(0,0,0,1),0 0 20px rgba(0,0,0,0.8);"></div>
       <button id="wc-next" onclick="hideWaveChoice();nextWave();" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);transition:filter 0.15s,transform 0.15s;">Next Wave</button>
       <button id="wc-boss" onclick="startBossAttempt()" style="width:100%;max-width:380px;font-family:'Jim Nightshade',cursive;font-size:20px;font-weight:700;padding:20px 24px;border:none;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;cursor:pointer;letter-spacing:0.08em;min-height:130px;text-shadow:0 1px 3px rgba(0,0,0,0.6);animation:bossPulse 2s ease-in-out infinite;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:12px;letter-spacing:0.06em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
+      <div id="wc-boss-info" style="display:none;max-width:380px;width:100%;font-size:11px;line-height:1.5;color:var(--muted);text-align:center;background:rgba(0,0,0,0.3);border:1px solid rgba(200,155,60,0.25);border-radius:8px;padding:10px 14px;margin-top:-6px;">
+        The boss never attacks back — it's a pure DPS check with zero risk to your run. Deal damage for 60 seconds; hitting gold thresholds (starting at 1,000 dmg) pays out bonus gold and XP on top of your score. Your build, gear, and current wave are untouched either way, and you can try again anytime the option shows up.
+      </div>
 
     </div>
   </div>
@@ -2405,6 +2538,7 @@ let sbProfile = null; // players row
     </defs>
     <path id="tut-arrow-path" d="M30,0 Q30,50 30,65" stroke="#e8b84b" stroke-width="3" fill="none" marker-end="url(#arrowhead)" class="tut-bounce"/>
   </svg>
+  <div class="tut-confirm-toast" id="tut-confirm-toast"></div>
 </div>
 
 <!-- BOSS RESULTS -->
@@ -2667,6 +2801,25 @@ const SKILL_TREE = {
   effects:  [{name:'Lingering',stat:'dotDamage',per:3},{name:'Prolonged',stat:'burnDuration',per:0.5},{name:'Deep Freeze',stat:'freezeDuration',per:0.3}],
   utility:  [{name:'Mana Well',stat:'mana',per:10},{name:'Flow',stat:'manaRegen',per:1},{name:'Haste',stat:'atkSpeed',per:0.05}],
 };
+
+// The "Effects" passives only matter if your imbue actually applies that
+// status (see applyImbueEffect) — e.g. Deep Freeze (freezeDuration) does
+// nothing unless you're Ice imbue, but it looked identical to every other
+// option with no hint that it was dead weight for most builds. Grey those
+// out (with an explanation) rather than letting players waste points on them.
+const IMBUE_RELEVANT_EFFECT_STATS = {
+  fire:     ['dotDamage','burnDuration'],
+  poison:   ['dotDamage'],
+  electric: ['dotDamage'],
+  water:    [], // applies Slow, tracked by slowStrength — no Effects passive boosts that
+  ice:      ['freezeDuration'],
+  grass:    [], rock: [], wind: [], // apply no status effect at all
+};
+function isEffectStatRelevantForImbue(statKey, imbue) {
+  const relevant = IMBUE_RELEVANT_EFFECT_STATS[imbue];
+  if(!relevant) return true; // unknown/unset imbue — don't grey anything out
+  return relevant.includes(statKey);
+}
 
 // ── ENEMY ROSTER ──
 // type, displayName, baseHpMult, baseAtkMult, special, resistance(imbue or null)
@@ -3319,6 +3472,14 @@ function loadGame(name) {
       document.getElementById('continue-name').textContent = save.playerName;
       // name-input removed
       continueBtn.classList.remove('hidden');
+      // "Begin Journey" and "Continue as X" used to look like two flavors of
+      // the same action, but Begin Journey actually assigns a BRAND NEW
+      // random guest name and loads whatever save matches THAT name (almost
+      // always none) — so clicking it here silently orphans the existing
+      // save with zero warning, rather than "starting a new chapter" of it.
+      // Relabel it honestly and confirm before letting that happen.
+      const startBtn = document.getElementById('start-btn');
+      if(startBtn) startBtn.textContent = 'New Guest Character';
     }
   } catch(e){ console.error('checkExistingSave error:', e); }
 })();
@@ -3327,9 +3488,21 @@ function continueGame() {
   try {
     const raw = localStorage.getItem('elementalRift_v3');
     if(!raw) { startGame(); return; }
-    JSON.parse(raw); // validate — throws if corrupt, caught below
+    const save = JSON.parse(raw); // validate — throws if corrupt, caught below
+    if(save.playerName) G.playerName = save.playerName; // so startGame() loads THIS save, not a new random guest
     startGame();
   } catch(e){ console.error('continueGame error:', e); startGame(); }
+}
+
+function beginJourneyClicked() {
+  const continueBtn = document.getElementById('continue-btn');
+  const hasExistingSave = continueBtn && !continueBtn.classList.contains('hidden');
+  if(hasExistingSave) {
+    const savedName = document.getElementById('continue-name').textContent;
+    const ok = confirm(`This starts a brand-new guest character and won't be linked to your saved progress as "${savedName}". Your old save stays on this device, but this button won't return to it — use "Continue as ${savedName}" for that instead. Start a new guest character anyway?`);
+    if(!ok) return;
+  }
+  startGame();
 }
 
 function startGame() {
@@ -3483,6 +3656,36 @@ function getPlayerPower() {
 // ENEMIES
 // ═══════════════════════════════════════════════
 function rollEnemy(wave) {
+  // Standardize the very first enemy every player ever fights. This fight
+  // doubles as the ability tutorial (see spawnEnemy's `if(G.kills===0)`),
+  // so leaving it randomized meant one new player's tutorial enemy could be
+  // a Wolf (0.7x HP) and another's a Golem (2.0x HP) or an enraged variant
+  // with a damage-resistance gimmick — wildly different first impressions
+  // and difficulty depending only on class/imbue-independent RNG. Fixed to
+  // a plain, no-gimmick Wolf at level 1 so every class's first fight (and
+  // the tutorial pacing built around it) is identical and fair.
+  if((G.kills||0) === 0) {
+    const wolfType = ENEMY_TYPES.find(e => e.id === 'wolf') || ENEMY_TYPES[0];
+    const enemyLv = 1;
+    const hpBase = Math.floor(30 * Math.pow(enemyLv, 1.85));
+    const atkBase = Math.floor(3  * Math.pow(enemyLv, 1.40));
+    return {
+      name: wolfType.name, id: wolfType.id,
+      type: wolfType.id,
+      icon: wolfType.icon,
+      special: wolfType.special,
+      resistance: null,
+      enragedColor: null,
+      level: enemyLv,
+      hp: Math.floor(hpBase * wolfType.hpM), maxHp: Math.floor(hpBase * wolfType.hpM),
+      attack: Math.floor(atkBase * wolfType.atkM),
+      defense: Math.floor(2 + enemyLv * 0.5),
+      gold: Math.floor(4 + enemyLv * 2),
+      xp: 0,
+      statusEffects: {},
+      frozenUntil: 0,
+    };
+  }
   // Enemy level rolls between playerLevel-2 and playerLevel+8
   // Range widens at higher levels so enemies stay challenging as player scales
   const playerLv = G.playerLevel || 1;
@@ -3687,6 +3890,12 @@ function startBossAttempt() {
   startBossTimer();
   // Boss does NOT attack — pure DPS race
   drawArena();
+  // Regular waves restore whatever AUTO slots were saved by the previous
+  // nextWave()'s stopAllAutoSlots(true) (see spawnEnemy) — this optional
+  // boss fight is entered the same way (from the same between-waves screen)
+  // but was missing the matching restore call, so AUTO silently dropped
+  // every time a player queued up the boss challenge.
+  setTimeout(restoreAutoSlots, 400);
 }
 
 function startBossTimer() {
@@ -3713,7 +3922,10 @@ function updateBossTimerUI() {
 function numberWithCommas(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 
 function onBossPhaseKill() {
-  stopAllAutoSlots();
+  // save=true so a fresh boss phase (or the next regular wave) can restore
+  // whatever was running — this used to wipe AUTO with no way back, which
+  // meant AUTO silently died every time a boss phase transitioned.
+  stopAllAutoSlots(true);
   if(!G.inBoss) {
     // Boss wave (map system) — single kill = segment complete
     G.kills++;
@@ -3746,6 +3958,7 @@ function onBossPhaseKill() {
   updateEnemyUI();
   startEnemyAutoAttack();
   drawArena();
+  setTimeout(restoreAutoSlots, 400);
 }
 
 function endBossAttempt() {
@@ -3848,6 +4061,10 @@ function closeBossResults() {
   G.enemy = null;
   updateEnemyUI();
   drawArena();
+  // Boss milestones can award XP that levels the player up mid-fight — show
+  // that level-up popup now that the results screen is out of the way,
+  // instead of it racing to stack on top of this modal.
+  setTimeout(()=>tryShowLevelUpPopup(), 200);
 }
 
 // ── LEADERBOARD (JSONBin) ──
@@ -4472,6 +4689,7 @@ function closeAbilityPicker() {
   pickerSlot = -1;
   // Resume enemy attacks if in combat
   if(G.combatActive && G.enemy && !G.enemyAttackInterval) startEnemyAutoAttack();
+  setTimeout(()=>tryShowLevelUpPopup(), 200);
 }
 
 // ── LOADOUT UI ──
@@ -4501,9 +4719,13 @@ function updateLoadoutUI() {
     const lockMsg = ['','','Lv5 class','Lv8 class'][i]||'';
     el.style.opacity = unlocked ? '1' : '0.4';
     const manaCost = ab ? (MANA_COSTS[ab.type]||0) : 0;
+    const manaStarved = manaCost > 0 && G.mana < manaCost;
+    el.classList.toggle('mana-starved', !!(unlocked && manaStarved));
+    el.title = manaStarved ? `Not enough mana (need ${manaCost}, have ${Math.floor(G.mana)})` : '';
     const elemDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
     el.innerHTML = unlocked ? `
       ${isAutoOn ? '<div class="auto-badge">AUTO</div>' : ''}
+      ${manaStarved ? '<div class="no-mana-badge">NO MP</div>' : ''}
       <div class="ab-icon-wrap">
         <div class="ab-icon-circle" style="border-color:${ab?color+'88':'rgba(200,155,60,0.25)'};">
           ${ab && ab.imbue ? elemLogoHTML(ab.imbue, 28) : ab ? '<span style="font-size:18px;opacity:0.7;color:rgba(255,220,140,0.6);">◆</span>' : '<span style="font-size:22px;color:rgba(200,155,60,0.3);">+</span>'}
@@ -4526,10 +4748,11 @@ function updateLoadoutUI() {
 function updateClassXPPanel() {
   // Render into both desktop right col and mobile skills panel
   let html = '<div class="panel-title">Skill Tree</div>';
-  html += `<div class="sp-display">${G.passivePoints} Passive Points</div>`;
+  html += `<div class="sp-display" title="Earned from your Character Level, not Class Mastery">${G.passivePoints} Passive Points (from Character Level)</div>`;
 
   // Class XP bars
-  html += '<div class="panel-title" style="position:static;margin-top:4px;">Class Levels</div>';
+  html += '<div class="panel-title" style="position:static;margin-top:4px;" title="Separate from your Character Level above — this tracks how much you\'ve used this class in combat.">Class Mastery</div>';
+  html += '<div style="font-size:9px;color:var(--muted);text-align:center;padding:0 0 4px;font-style:italic;">Earned by using this class\'s abilities. Unlocks ability upgrades — not the same as your Character Level.</div>';
   html += '<div class="class-xp-section">';
   // Only show the player's own class
   const activeCls = [G.playerClass||'mage'];
@@ -4549,11 +4772,11 @@ function updateClassXPPanel() {
         <div class="cxp-name">
           <span style="color:${color}">${cls.charAt(0).toUpperCase()+cls.slice(1)}</span>
           ${G.playerImbue?`<span style="color:${imbueColor};font-size:9px;display:inline-flex;align-items:center;gap:2px;">${elemLogoHTML(G.playerImbue,12)} ${G.playerImbue}</span>`:''}
-          <span>Lv${lv}</span>
+          <span title="Class Mastery Level (separate from Character Level)">Mastery ${lv}</span>
         </div>
         <div class="cxp-bar-track"><div class="cxp-bar-fill" style="width:${pct}%;background:${color}"></div></div>
       </div>
-      ${cp>0?`<span class="cxp-pts">${cp}cp</span>`:'<span class="cxp-pts" style="opacity:0.3">0</span>'}
+      ${cp>0?`<span class="cxp-pts" title="Class Points — spend below to upgrade this class's abilities">${cp}cp</span>`:'<span class="cxp-pts" style="opacity:0.3" title="Class Points — earned from Class Mastery, spent on ability upgrades">0</span>'}
     </div>`;
   });
   html += '</div>';
@@ -4575,7 +4798,10 @@ function updateClassXPPanel() {
     html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]||'#88aacc'}">${elEmoji[el]||''} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
     skills.forEach((sk,i)=>{
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
-      html+=`<div class="skill-row"><div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
+      const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
+      const rowStyle = irrelevant ? 'opacity:0.45;' : '';
+      const rowTitle = irrelevant ? ` title="Doesn't affect your current ${G.playerImbue||''} imbue — you can still invest, but it won't do anything for your build."` : '';
+      html+=`<div class="skill-row" style="${rowStyle}"${rowTitle}><div><div class="skill-name">${sk.name}${irrelevant?' <span style="font-size:9px;color:var(--muted);font-style:italic;">(not useful for your build)</span>':''}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
         <button class="skill-btn" ${G.passivePoints<1||lvl>=10?'disabled':''} onclick="upgradeSkill('${el}',${i})">+</button></div>`;
     });
     html+='</div>';
@@ -6056,7 +6282,7 @@ function closeItemModal(){
     return;
   }
   if(spPending > 0 && !spPopupOpen) {
-    setTimeout(()=>showSPPopup(), 200);
+    setTimeout(()=>tryShowLevelUpPopup(), 200);
     return;
   }
   if(G.combatActive && G.enemy && G.enemy.hp > 0 && !G.enemyAttackInterval) {
@@ -6187,6 +6413,7 @@ function closeVendor(){
       if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
     }
   }
+  setTimeout(()=>tryShowLevelUpPopup(), 200);
 }
 
 // ═══════════════════════════════════════════════
@@ -6210,12 +6437,20 @@ function updateHpBar(){
   const nums = document.getElementById('hp-nums');
   if(bar){ bar.style.width = displayPct + '%'; bar.style.background = barColor; }
   if(nums){ nums.textContent = `${Math.max(0,Math.floor(G.hp))}/${G.maxHp}${G.hp > G.maxHp ? ' ':''}`; }
+  // Keep the heal slot's "standing by" vs "about to fire" indicator in sync
+  // with HP as it changes (see AUTO_HEAL_HP_PCT in updateHealSlotUI).
+  if(typeof updateHealSlotUI === 'function') updateHealSlotUI();
 }
 
 function updateResourceBar(){
   document.getElementById('gold-val').textContent=G.gold;
   document.getElementById('kills-val').textContent=G.kills;
-  document.getElementById('wave-num').textContent=G.wave;
+  // Show "current / total" for this difficulty path (e.g. "3/8") instead of
+  // a bare number — a bare wave count gave no sense of how close to the
+  // path's boss you were, and looked like a progress reset every time a
+  // new path started back at 1 with no context that it was a NEW path.
+  const waveEl = document.getElementById('wave-num');
+  if(waveEl) waveEl.textContent = MAP.totalWaves > 0 ? `${G.wave}/${MAP.totalWaves}` : G.wave;
 
   updateXPBar();
 }
@@ -6225,14 +6460,14 @@ function updateStatsPanel(){
   const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'var(--gold)',utility:'#3acc7a'};
   let html=`<div class="panel-title"> ${G.playerName||'Wanderer'}</div>`;
   html+=`<div class="stat-row"><span class="stat-label">Class</span><span class="stat-val" style="color:${CLASS_COLORS[G.playerClass]||'#aaa'}">${CLASS_ICONS[G.playerClass]||''} ${(G.playerClass||'—').charAt(0).toUpperCase()+(G.playerClass||'').slice(1)} · ${(G.playerImbue||'—').charAt(0).toUpperCase()+(G.playerImbue||'').slice(1)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Attack</span><span class="stat-val">${Math.floor(s.attack)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Atk Speed</span><span class="stat-val">${(s.atkSpeed||1).toFixed(2)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Crit %</span><span class="stat-val">${(s.critChance||0).toFixed(1)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Crit Dmg</span><span class="stat-val">${Math.floor(s.critDmg||150)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Defense</span><span class="stat-val">${Math.floor(s.defense||8)}</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Life Steal</span><span class="stat-val">${(s.lifeSteal||0).toFixed(1)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">Spell Vamp</span><span class="stat-val">${(s.spellVamp||0).toFixed(1)}%</span></div>`;
-  html+=`<div class="stat-row"><span class="stat-label">DOT Dmg</span><span class="stat-val">+${Math.floor(s.dotDamage||0)}</span></div>`;
+  html+=`<div class="stat-row" title="Base damage dealt by your basic attack and abilities before crit/multipliers"><span class="stat-label">Attack</span><span class="stat-val">${Math.floor(s.attack)}</span></div>`;
+  html+=`<div class="stat-row" title="How many times per second your basic attack fires when set to AUTO"><span class="stat-label">Atk Speed</span><span class="stat-val">${(s.atkSpeed||1).toFixed(2)}</span></div>`;
+  html+=`<div class="stat-row" title="Chance for a hit to land as a critical strike"><span class="stat-label">Crit %</span><span class="stat-val">${(s.critChance||0).toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row" title="Damage multiplier applied when a hit crits (150% = 1.5x damage)"><span class="stat-label">Crit Dmg</span><span class="stat-val">${Math.floor(s.critDmg||150)}%</span></div>`;
+  html+=`<div class="stat-row" title="Reduces incoming damage — roughly 0.8% less damage taken per point, capped at 70%"><span class="stat-label">Defense</span><span class="stat-val">${Math.floor(s.defense||8)}</span></div>`;
+  html+=`<div class="stat-row" title="Heals you for a % of damage dealt with PHYSICAL abilities (Warrior/Rogue). See Spell Vamp for magic classes."><span class="stat-label">Life Steal</span><span class="stat-val">${(s.lifeSteal||0).toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row" title="Heals you for a % of damage dealt with MAGIC abilities (Mage). See Life Steal for physical classes."><span class="stat-label">Spell Vamp</span><span class="stat-val">${(s.spellVamp||0).toFixed(1)}%</span></div>`;
+  html+=`<div class="stat-row" title="Boosts damage-over-time ticks (Burn, Poison, Electric). Does nothing for imbues with no status effect, like Rock, Wind, or Grass."><span class="stat-label">DOT Dmg</span><span class="stat-val">+${Math.floor(s.dotDamage||0)}</span></div>`;
   html+=`<div class="panel-title">Equipment</div>`;
   const activeSlots = G.playerClass === 'warrior' ? SLOTS_WARRIOR : SLOTS_BASE;
   html+=`<div class="equip-grid">`+activeSlots.map(slot=>{
@@ -7027,7 +7262,27 @@ const _tick = {
   slots: {},        // per-slot accumulators { slotIdx: ms }
   heal: 0,          // heal slot accumulator
   running: false,
+  manaStarved: {},  // per-slot ms spent unable to afford mana while AUTO (key: slotIdx or 'heal')
 };
+
+// Configurable AUTO mana behavior (see menu → Combat). When ON, an AUTO
+// ability/heal that can't afford its mana cost for AUTO_MANA_STARVE_MS
+// straight gets toggled off automatically with a log message, instead of
+// sitting there silently doing nothing every tick forever. When OFF, AUTO
+// stays on and keeps quietly retrying every tick until mana recovers
+// (previous behavior) — the .mana-starved slot indicator still shows either way.
+let autoPauseOnLowMana = true;
+const AUTO_MANA_STARVE_MS = 3000;
+
+function handleAutoManaStarved(slotKey, elapsedMs, abilityName) {
+  _tick.manaStarved[slotKey] = (_tick.manaStarved[slotKey] || 0) + elapsedMs;
+  if(!autoPauseOnLowMana) return;
+  if(_tick.manaStarved[slotKey] < AUTO_MANA_STARVE_MS) return;
+  _tick.manaStarved[slotKey] = 0;
+  delete G.autoSlots[slotKey];
+  log(`<span style="color:#4488ff">AUTO paused: not enough mana for ${abilityName}. Tap it again once mana refills.</span>`);
+  markDirty(['loadout','healSlot']);
+}
 
 function masterTick(ts) {
   if(!_tick.running) return;
@@ -7042,7 +7297,10 @@ function masterTick(ts) {
       const max = getMaxMana();
       if(G.mana < max) {
         G.mana = Math.min(max, G.mana + getManaRegen() / 10);
-        markDirty(['mana']);
+        // Also refresh loadout/heal slot UI so the "can't afford" indicator
+        // (see .mana-starved) clears itself as soon as mana regens back up,
+        // instead of staying stuck showing NO MP after it's usable again.
+        markDirty(['mana','loadout','healSlot']);
       }
     }
 
@@ -7087,22 +7345,38 @@ function masterTick(ts) {
         const ab = ABILITIES[abId];
         if(!ab || !isAbilityReady(ab)) continue;
         const manaCost = MANA_COSTS[ab.type] || 0;
-        if(manaCost > 0 && G.mana < manaCost) continue;
+        if(manaCost > 0 && G.mana < manaCost) {
+          handleAutoManaStarved(slotIdx, 250, ab.name);
+          continue;
+        }
+        _tick.manaStarved[slotIdx] = 0;
         fireAbility(ab);
         startCDBarAnimation(slotIdx, ab);
       }
     }
 
     // ── Heal auto-slot (was its own setInterval) ──
+    // This used to check isAbilityReady(healAb) (a table that heal casts
+    // never populate — heal tracks its cooldown separately via healCD/
+    // isHealReady()) and call activateHeal(), the manual TOGGLE handler.
+    // Since AUTO was already on, that toggle call turned it right back OFF
+    // on the very next 250ms tick — so AUTO Heal looked like it turned on
+    // but silently died almost immediately, and never actually respected
+    // the "only heal below 80% HP" behavior described in activateHeal()'s
+    // own comments. Fixed to check the real cooldown, respect the HP
+    // threshold, and cast directly instead of toggling.
     if(G.autoSlots['heal'] === 'master') {
       _tick.heal += dt;
       const healAb = healLoadout ? ABILITIES[healLoadout] : null;
       if(healAb && _tick.heal >= 250) {
         _tick.heal = 0;
-        if(isAbilityReady(healAb)) {
+        if(G.hp < G.maxHp * AUTO_HEAL_HP_PCT && isHealReady()) {
           const manaCost = MANA_COSTS[healAb.type] || 0;
           if(manaCost === 0 || G.mana >= manaCost) {
-            activateHeal();
+            _tick.manaStarved['heal'] = 0;
+            doHeal(healAb);
+          } else {
+            handleAutoManaStarved('heal', 250, healAb.name);
           }
         }
       }
@@ -7255,6 +7529,7 @@ function spendMana(amount) {
   if (G.mana < amount) return false;
   G.mana -= amount;
   updateManaBar();
+  markDirty(['loadout','healSlot']);
   return true;
 }
 
@@ -7273,6 +7548,7 @@ function updateManaBar() {
 // ── HEAL SYSTEM ──
 let healLoadout = null; // heal ability id
 let healCD = 0;
+const AUTO_HEAL_HP_PCT = 0.8; // AUTO only fires below this — matches the original (unimplemented) design comments below
 
 function isHealReady() {
   if (!healLoadout) return false;
@@ -7300,8 +7576,12 @@ function activateHeal() {
     updateHealSlotUI();
     return;
   }
-  // Try to fire immediately
-  if(isHealReady() && G.mana >= MANA_COSTS.heal) {
+  // Try to fire immediately — but not at full HP, where a heal is pure
+  // wasted mana. This was previously unconditional, so tapping Heal while
+  // topped off silently burned 30 mana for zero benefit.
+  if(G.hp >= G.maxHp) {
+    log('<span style="color:#666">Already at full health — no mana spent.</span>');
+  } else if(isHealReady() && G.mana >= MANA_COSTS.heal) {
     doHeal(ab);
   }
   // Set up auto — fires when HP < 80%, CD ready, mana available
@@ -7396,18 +7676,31 @@ function updateHealSlotUI() {
   // Dim heal slot between waves
   slot.style.opacity = (G.combatActive && G.enemy) ? '1' : '0.45';
   const isHealAuto = !!G.autoSlots['heal'];
-  if(isHealAuto){ slot.classList.add('active-ability'); slot.style.boxShadow=`0 0 10px 1px ${color}`; slot.style.background=`${color}18`; }
-  else { slot.classList.remove('active-ability'); slot.style.boxShadow=''; slot.style.background=''; }
+  // AUTO only actually casts once HP drops below AUTO_HEAL_HP_PCT — while
+  // above that it's "standing by", not stuck/broken. Show that distinctly
+  // (dimmer, no pulse) instead of an identical-looking AUTO glow that gives
+  // no hint about whether it's about to do anything.
+  const healStandingBy = isHealAuto && G.hp >= G.maxHp * AUTO_HEAL_HP_PCT;
+  if(isHealAuto && !healStandingBy){ slot.classList.add('active-ability'); slot.style.boxShadow=`0 0 10px 1px ${color}`; slot.style.background=`${color}18`; }
+  else { slot.classList.remove('active-ability'); slot.style.boxShadow=isHealAuto?`0 0 4px 1px ${color}88`:''; slot.style.background=isHealAuto?`${color}0c`:''; }
   slot.style.borderColor = color;
+  const healManaCost = MANA_COSTS.heal;
+  const healManaStarved = !!ab && G.mana < healManaCost;
+  slot.classList.toggle('mana-starved', healManaStarved);
+  slot.title = healManaStarved ? `Not enough mana (need ${healManaCost}, have ${Math.floor(G.mana)})`
+    : healStandingBy ? `AUTO Heal is on — standing by until your HP drops below ${Math.round(AUTO_HEAL_HP_PCT*100)}%`
+    : '';
   const healDot = ab ? `<div style="position:absolute;top:3px;left:4px;width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 4px ${color};"></div>` : '';
-  const healAutoBadge = isHealAuto ? '<div class="auto-badge">AUTO</div>' : '';
+  const healAutoBadge = isHealAuto ? `<div class="auto-badge"${healStandingBy?' style="opacity:0.55;"':''}>${healStandingBy?'AUTO •':'AUTO'}</div>` : '';
+  const healNoMpBadge = healManaStarved ? '<div class="no-mana-badge">NO MP</div>' : '';
   slot.innerHTML = `
     ${healDot}
     ${healAutoBadge}
+    ${healNoMpBadge}
     <div class="ab-slot-label" style="color:#fff;text-shadow:0 1px 3px rgba(0,0,0,1),0 0 8px rgba(0,0,0,0.8);font-weight:900;">Heal</div>
     <div class="ab-icon">${ab?(ab.imbue?elemLogoHTML(ab.imbue,22):'◆'):'＋'}</div>
     <div class="ab-name" style="color:#fff;font-size:${ab ? '9px' : '8px'};text-shadow:0 1px 3px rgba(0,0,0,1);font-weight:700;">${ab ? ab.name : 'Tap to assign'}</div>
-    <div style="font-size:8px;color:#fff;font-family:'Jim Nightshade',cursive;text-shadow:0 1px 2px rgba(0,0,0,1);font-weight:700;">30 mana</div>
+    <div style="font-size:8px;color:${healManaStarved?'#ff8888':'#fff'};font-family:'Jim Nightshade',cursive;text-shadow:0 1px 2px rgba(0,0,0,1);font-weight:700;">${healManaCost} mana</div>
     <div class="ab-cd-bar"><div class="ab-cd-fill" id="cd-fill-heal" style="width:0%;background:${color}"></div></div>
   `;
 }
@@ -7513,7 +7806,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const accessToken = params.get('access_token');
   const type = params.get('type');
 
-  if(accessToken && type === 'recovery') {
+  if(accessToken && type === 'recovery' && sb) {
     // Set the session from the token so updateUser works
     sb.auth.setSession({ access_token: accessToken, refresh_token: params.get('refresh_token') || '' })
       .then(() => {
@@ -7566,7 +7859,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initGame();
   }, 5000);
 
-  // Check if already signed in
+  // Check if already signed in. If the Supabase CDN failed to load, `sb` is
+  // null (see its declaration above) — treat that exactly like "not signed
+  // in" instead of throwing, so guests aren't stuck waiting on the 5s
+  // failsafe timeout above just because a CDN script didn't load.
+  if(!sb) {
+    _authReady = true;
+    _tryDismiss();
+    return;
+  }
   sb.auth.getSession().then(({ data: { session } }) => {
     if(session) {
       sbUser = session.user;
@@ -8215,17 +8516,17 @@ function showClassSelection() {
     <div onclick="selectClass('mage')" style="background:rgba(245,225,175,0.92);border:1px solid ${CLASS_COLORS.mage}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${CLASS_COLORS.mage}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
       <div style="font-size:32px;margin-bottom:6px;"></div>
       <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${CLASS_COLORS.mage};margin-bottom:4px;">Mage</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Spell caster · Spell Vamp<br>Fire · Water · Grass imbues</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Spell caster · Spell Vamp<br>Fire · Water · Grass · Rock · Wind imbues</div>
     </div>
     <div onclick="selectClass('warrior')" style="background:rgba(245,225,175,0.92);border:1px solid ${CLASS_COLORS.warrior}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${CLASS_COLORS.warrior}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
       <div style="font-size:32px;margin-bottom:6px;"></div>
       <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${CLASS_COLORS.warrior};margin-bottom:4px;">Warrior</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Sword &amp; Shield · Life Steal<br>Poison · Electric · Ice imbues</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Sword &amp; Shield · Life Steal<br>Poison · Electric · Ice · Rock · Wind imbues</div>
     </div>
     <div onclick="selectClass('rogue')" style="background:rgba(245,225,175,0.92);border:1px solid ${CLASS_COLORS.rogue}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;transition:all 0.2s;" onmouseover="this.style.background='${CLASS_COLORS.rogue}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
       <div style="font-size:32px;margin-bottom:6px;"></div>
       <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${CLASS_COLORS.rogue};margin-bottom:4px;">Rogue</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Daggers or Bow · Life Steal<br>Poison · Electric · Ice imbues</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.5;">Daggers or Bow · Life Steal<br>Poison · Electric · Ice · Rock · Wind imbues</div>
     </div>`;
   screen.classList.remove('hidden');
 }
@@ -8244,12 +8545,12 @@ function selectClass(cls) {
       <div onclick="selectRogueWeapon('dagger')" style="background:rgba(245,225,175,0.92);border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
         <div style="font-size:32px;margin-bottom:6px;"></div>
         <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${color};">Dual Daggers</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">Hits twice per attack<br>Less damage per hit<br>Higher attack speed</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">2 hits per attack, 65% attack dmg each (130% total)<br>Same attack speed as Bow<br>More consistent, more crit rolls per attack</div>
       </div>
       <div onclick="selectRogueWeapon('bow')" style="background:rgba(245,225,175,0.92);border:1px solid ${color}44;border-radius:12px;padding:16px 10px;cursor:pointer;text-align:center;" onmouseover="this.style.background='${color}15'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
-        
+
         <div style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;color:${color};">Bow</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">Ranged single shot<br>Moderate damage<br>Fast attack speed</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5;">1 hit per attack, 75% attack dmg (75% total)<br>Same attack speed as Daggers<br>Bigger single hits, more variance</div>
       </div>`;
     return;
   }
@@ -8332,6 +8633,28 @@ function selectImbue(imbue) {
   updateLoadoutUI();
   updateHealSlotUI();
   saveGame();
+  showStoryIntro();
+}
+
+// ── STORY INTRO — one-time cutscene between character creation and the first difficulty pick ──
+function showStoryIntro() {
+  const cls = G.playerClass;
+  const spriteUrl = cls === 'rogue'
+    ? (G.rogueWeapon === 'bow'
+        ? 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png'
+        : 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Dagger.png')
+    : cls === 'warrior'
+      ? 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Warrior.png'
+      : 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Mage.png';
+  const sprite = document.getElementById('story-intro-sprite');
+  if (sprite) sprite.src = spriteUrl;
+  const screen = document.getElementById('story-intro');
+  if (screen) screen.classList.remove('hidden');
+}
+
+function continueFromStoryIntro() {
+  const screen = document.getElementById('story-intro');
+  if (screen) screen.classList.add('hidden');
   showMapScreen(true);
 }
 
@@ -8343,6 +8666,28 @@ let spPending = 0;      // queued skill points (class invest + stat boost)
 let passivePending = 0; // queued passive points
 let spPopupOpen = false;
 let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
+
+// Modals that must never have the level-up popup stacked on top of them.
+// awardXP() used to guess with a hard-coded setTimeout+one-retry check against
+// only item-modal — if the player took longer than ~1.4s to close it (or if a
+// different modal like boss-results was open, e.g. after a boss-milestone XP
+// award), the level-up popup would fire anyway and stack on top. Instead we
+// check every blocking modal right before showing, and each modal's own close
+// handler calls tryShowLevelUpPopup() so a pending level-up always surfaces
+// the moment the screen is actually free — no stacking, no guessing.
+const LEVEL_UP_BLOCKING_MODAL_IDS = ['item-modal','vendor-modal','boss-results-modal','ability-picker-modal'];
+function anyBlockingModalOpen() {
+  return LEVEL_UP_BLOCKING_MODAL_IDS.some(id => {
+    const el = document.getElementById(id);
+    return el && !el.classList.contains('hidden');
+  });
+}
+function tryShowLevelUpPopup() {
+  if(spPending <= 0 && passivePending <= 0) return;
+  if(spPopupOpen) return;
+  if(anyBlockingModalOpen()) return; // will retry from that modal's close handler
+  triggerLevelUpPopup();
+}
 
 function awardXP(amount) {
   G.xp += amount;
@@ -8362,14 +8707,7 @@ function awardXP(amount) {
       // Will be shown from onEnemyDeath / closeSPPopup chain
       return;
     }
-    setTimeout(() => {
-      const itemModal = document.getElementById('item-modal');
-      if(itemModal && !itemModal.classList.contains('hidden')) {
-        setTimeout(()=>{ if(spPending>0&&!spPopupOpen) triggerLevelUpPopup(); }, 500);
-        return;
-      }
-      triggerLevelUpPopup();
-    }, 900);
+    setTimeout(() => tryShowLevelUpPopup(), 900);
   }
 }
 
@@ -8381,6 +8719,11 @@ function triggerLevelUpPopup() {
   }
   if(spPopupOpen) return;
   spPopupOpen = true;
+  // Remember whether this level-up started with BOTH currencies pending, so
+  // the step indicator stays consistent ("Step 2 of 2") even after step 1's
+  // points hit zero mid-session, instead of flickering off right when it
+  // matters most.
+  spPopupHadBoth = spPending > 0 && passivePending > 0;
   playSound('level_up');
   renderSPPopup();
   document.getElementById('sp-popup').classList.remove('hidden');
@@ -8399,6 +8742,7 @@ function updateXPBar() {
 // sp popup state
 let spStep = 1; // 1=pick class, 2=pick class investment, 3=pick stat
 let spChosenClass = null;
+let spPopupHadBoth = false; // true if this level-up opened with both skill + passive points pending
 
 function showSPPopup() {
   triggerLevelUpPopup();
@@ -8415,6 +8759,16 @@ function renderSPPopup() {
   if(passEl) passEl.textContent = passivePending > 0 ? `${passivePending} passive pt${passivePending>1?'s':''}` : '';
 
   let html = '';
+
+  // Guided flow: when BOTH a skill point and a passive point are pending
+  // (very common on level 2, the player's first real level-up), showing the
+  // stat grid + ability upgrades + the entire 4-category passive skill tree
+  // all at once was overwhelming for a first-time player. Instead, gate them
+  // into two clear steps — spend the skill point first, then the passive
+  // point appears once that's done — with a small step indicator.
+  if(spPopupHadBoth && spPending > 0) {
+    html += `<div style="text-align:center;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-bottom:10px;text-transform:uppercase;">Step 1 of 2 — Skill Point</div>`;
+  }
 
   // ── CLASS LEVEL-UP (if skill points pending) ──
   if(spPending > 0 && G.playerClass) {
@@ -8473,9 +8827,15 @@ function renderSPPopup() {
   }
 
   // ── PASSIVE SKILLS (if passive points pending) ──
-  if(passivePending > 0) {
+  // Gated behind spPending being fully spent first (see showingBoth above) —
+  // keeps the first level-up to one decision at a time instead of dumping
+  // the whole passive skill tree on screen alongside the skill point choice.
+  if(passivePending > 0 && spPending <= 0) {
     const elEmoji={offense:'',defense:'',effects:'',utility:''};
-    html += `<div style="${spPending>0?'margin-top:16px;padding-top:14px;border-top:1px solid var(--border);':''}">
+    if(spPopupHadBoth) {
+      html += `<div style="text-align:center;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-bottom:10px;text-transform:uppercase;">Step 2 of 2 — Passive Point</div>`;
+    }
+    html += `<div>
       <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#8888ff;margin-bottom:8px;letter-spacing:0.08em;">Passive Skills — ${passivePending} point${passivePending>1?'s':''} to invest</div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Tap any skill to invest 1 passive point</div>`;
     Object.entries(SKILL_TREE).forEach(([elKey, skills]) => {
@@ -8485,10 +8845,13 @@ function renderSPPopup() {
         const key=`${elKey}_${i}`;
         const lvl=G.skillLevels[key]||0;
         const canUp = passivePending >= 1 && lvl < 10;
-        html += `<div onclick="${canUp?`spSpendPassive('${elKey}',${i})`:''}" style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,155,60,0.25);border-radius:7px;padding:7px 10px;margin-bottom:3px;cursor:${canUp?'pointer':'default'};display:flex;justify-content:space-between;align-items:center;opacity:${canUp?1:0.5};"
+        const irrelevant = elKey === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
+        const opacity = irrelevant ? 0.4 : (canUp?1:0.5);
+        const rowTitle = irrelevant ? ` title="Doesn't affect your current ${G.playerImbue||''} imbue — you can still invest, but it won't do anything for your build."` : '';
+        html += `<div onclick="${canUp?`spSpendPassive('${elKey}',${i})`:''}"${rowTitle} style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,155,60,0.25);border-radius:7px;padding:7px 10px;margin-bottom:3px;cursor:${canUp?'pointer':'default'};display:flex;justify-content:space-between;align-items:center;opacity:${opacity};"
           ${canUp?`onmouseover="this.style.borderColor='#8888ff'" onmouseout="this.style.borderColor='var(--border)'"`:''}>
           <div>
-            <div style="font-size:11px;color:var(--text);">${sk.name}</div>
+            <div style="font-size:11px;color:var(--text);">${sk.name}${irrelevant?' <span style="font-size:9px;color:var(--muted);font-style:italic;">(not useful for your build)</span>':''}</div>
             <div style="font-size:9px;color:var(--muted);">Lv${lvl} · +${(sk.per*(lvl+1)).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div>
           </div>
           ${canUp?`<span style="font-size:12px;color:#8888ff;">+</span>`:`<span style="font-size:9px;color:var(--muted);">${lvl>=10?'MAX':''}</span>`}
@@ -8811,24 +9174,30 @@ function showTutStep(step) {
   el.style.boxShadow = '0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4)';
   el.style.zIndex = '301';
 
-  // Intercept tap on target
+  // Intercept tap on target — this ONLY detects that the tap happened and
+  // advances the tutorial. It must NOT also call activateAbility/activateHeal
+  // itself: every target here already has its own inline onclick wired up,
+  // so calling the action again here fired it twice per tap (toggle ON then
+  // immediately back OFF), which is why AUTO never visibly turned on until a
+  // second tap. Guarded with `handled` because click + touchend can both
+  // fire for a single tap on touch devices.
+  let handled = false;
   const handler = (e) => {
+    if (handled) return;
+    handled = true;
     e.stopPropagation();
-    // Clean up this step
+    // Clean up this step's highlight
     el.style.animation = '';
     el.style.boxShadow = '';
     el.style.zIndex = '';
     el.removeEventListener('click', handler);
     el.removeEventListener('touchend', handler);
-    // Fire the real action
-    if(s.slotId === 'slot-basic') activateAbility(0);
-    else if(s.slotId === 'slot-reg1') activateAbility(1);
-    else if(s.slotId === 'slot-heal') activateHeal();
-    else if(s.slotId === 'loadout-btn') { /* just advance */ }
+    // Confirm what the (already-fired) real action actually did
+    setTimeout(() => showTutConfirmToast(s), 50);
     // Next step
     tutStep++;
     if(tutStep < TUT_STEPS.length) {
-      setTimeout(()=>showTutStep(tutStep), 400);
+      setTimeout(()=>showTutStep(tutStep), 900);
     } else {
       endTutorial();
     }
@@ -8836,6 +9205,29 @@ function showTutStep(step) {
 
   el.addEventListener('click', handler);
   el.addEventListener('touchend', handler);
+}
+
+function showTutConfirmToast(s) {
+  const toast = document.getElementById('tut-confirm-toast');
+  if (!toast) return;
+  let msg = '';
+  if (s.slotId === 'slot-basic' || s.slotId === 'slot-reg1') {
+    const slotIdx = s.slotId === 'slot-basic' ? 0 : 1;
+    const abId = G.loadout[slotIdx];
+    const ab = abId ? ABILITIES[abId] : null;
+    const isAuto = !!G.autoSlots[slotIdx];
+    if (ab) msg = isAuto ? `${ab.name} is now set to AUTO and will attack continuously.` : `${ab.name} activated.`;
+  } else if (s.slotId === 'slot-heal') {
+    const ab = healLoadout ? ABILITIES[healLoadout] : null;
+    const isAuto = !!G.autoSlots['heal'];
+    if (ab) msg = isAuto ? `${ab.name} healed you and is now set to AUTO — it fires again when your HP drops low.` : `${ab.name} used.`;
+  } else if (s.slotId === 'loadout-btn') {
+    msg = 'Loadout menu ready. Swap abilities here anytime.';
+  }
+  if (!msg) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2400);
 }
 
 function endTutorial() {
@@ -10486,6 +10878,15 @@ function closeMenuPanel() {
   document.getElementById('menu-panel').style.display = 'none';
 }
 
+function menuToggleAutoPauseMana() {
+  autoPauseOnLowMana = !autoPauseOnLowMana;
+  const btn = document.getElementById('menu-auto-mana-pause');
+  if(btn) btn.textContent = '▶ Pause AUTO on Low Mana: ' + (autoPauseOnLowMana ? 'ON' : 'OFF');
+  if(btn) btn.style.color = autoPauseOnLowMana ? '#2e9e58' : '#4e5468';
+  if(btn) btn.style.borderColor = autoPauseOnLowMana ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
+  _tick.manaStarved = {};
+}
+
 function menuToggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
   const btn = document.getElementById('menu-auto-wave');
@@ -10509,10 +10910,12 @@ function showWaveChoice(title, showBoss) {
   const overlay = document.getElementById('wave-choice-overlay');
   const titleEl = document.getElementById('wave-choice-title');
   const bossBtn = document.getElementById('wc-boss');
+  const bossInfo = document.getElementById('wc-boss-info');
   const nextBtn = document.getElementById('wc-next');
   if(!overlay) return;
   titleEl.textContent = title || 'What will you do?';
   bossBtn.style.display = showBoss ? 'block' : 'none';
+  if(bossInfo) bossInfo.style.display = showBoss ? 'block' : 'none';
   // Only show Next Wave if there are more waves remaining
   const hasMoreWaves = MAP.currentSegWave < MAP.totalWaves;
   if(nextBtn) nextBtn.style.display = hasMoreWaves ? 'block' : 'none';
