@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.15.0 -->
+<!-- v3.16.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -2083,7 +2083,7 @@ window.watchAdStatus = function(ins) {
 // silently drift out of sync with what's actually deployed. This is what
 // lets a quick glance at the name screen confirm whether the latest
 // commit is actually live.
-const GAME_VERSION = '3.15.0';
+const GAME_VERSION = '3.16.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -2778,9 +2778,9 @@ const GAME_VERSION = '3.15.0';
 <div id="ability-tutorial" class="hidden">
   <div class="tut-spotlight" id="tut-spotlight"></div>
   <div class="tut-bubble" id="tut-bubble">
-    <h4 id="tut-title">Tutorial</h4>
-    <p id="tut-desc">Description</p>
-    <div class="tut-tap-hint" id="tut-hint">Tap the highlighted button</div>
+    <h4 id="tut-title"></h4>
+    <p id="tut-desc"></p>
+    <div class="tut-tap-hint" id="tut-hint"></div>
     <button id="tut-skip-step" onclick="skipTutStep()" class="hidden" style="display:block;width:100%;margin-top:8px;font-family:'Jim Nightshade',cursive;font-size:10px;background:rgba(232,184,75,0.12);border:1px solid rgba(232,184,75,0.4);color:#e8b84b;padding:6px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Stuck? Tap here to skip this step →</button>
     <div style="text-align:right;margin-top:8px;">
       <button onclick="endTutorial()" style="font-family:'Jim Nightshade',cursive;font-size:10px;background:transparent;border:1px solid rgba(200,155,60,0.25);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Skip Tutorial</button>
@@ -3830,6 +3830,15 @@ function saveGame() {
       // never spawn something new out of thin air.
       combatActive: !!(G.combatActive && G.enemy && G.enemy.hp > 0),
       enemySnapshot: (G.combatActive && G.enemy && G.enemy.hp > 0) ? G.enemy : null,
+      // Which ability slots (and heal) were on AUTO — a refresh mid-fight
+      // restored the exact enemy/HP/mana correctly (see above) but silently
+      // dropped combat automation, since it was never saved at all. That's
+      // a real surprise for a player who expects their AUTO'd abilities to
+      // keep firing after Continue, not go quiet. Restored via the same
+      // G.savedAutoSlots/restoreAutoSlots() mechanism already used to carry
+      // AUTO across wave transitions — see resumeLiveCombat().
+      autoSlotsSnapshot: Object.keys(G.autoSlots).map(Number).filter(k => !isNaN(k)),
+      healAutoSnapshot: !!G.autoSlots['heal'],
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
   } catch(e){ console.error('saveGame error:', e); }
@@ -3896,6 +3905,17 @@ function loadGame(name) {
     // these; nothing between here and there touches G.enemy/G.combatActive.
     G.combatActive = !!save.combatActive && !!save.enemySnapshot;
     G.enemy = G.combatActive ? save.enemySnapshot : null;
+    // Hand off any saved AUTO state to the existing restoreAutoSlots()
+    // mechanism (already used to carry AUTO across wave transitions) —
+    // resumeLiveCombat() calls it once the resumed fight is fully set up.
+    // Only meaningful when we're actually resuming a live fight; harmless
+    // otherwise since restoreAutoSlots() itself no-ops without one.
+    if(G.combatActive && Array.isArray(save.autoSlotsSnapshot) && save.autoSlotsSnapshot.length) {
+      G.savedAutoSlots = save.autoSlotsSnapshot;
+    }
+    if(G.combatActive && save.healAutoSnapshot) {
+      G.healWasAuto = true;
+    }
     return true;
   } catch(e){ return false; }
 }
@@ -4030,6 +4050,14 @@ function loadFromData(data) {
     }
     G.combatActive = !!save.combatActive && !!save.enemySnapshot;
     G.enemy = G.combatActive ? save.enemySnapshot : null;
+    // See the matching comment in loadGame() — hands saved AUTO state off
+    // to the existing restoreAutoSlots() mechanism.
+    if(G.combatActive && Array.isArray(save.autoSlotsSnapshot) && save.autoSlotsSnapshot.length) {
+      G.savedAutoSlots = save.autoSlotsSnapshot;
+    }
+    if(G.combatActive && save.healAutoSnapshot) {
+      G.healWasAuto = true;
+    }
     return true;
   } catch(e) { console.error('loadFromData error:', e); return false; }
 }
@@ -4085,6 +4113,11 @@ function resumeLiveCombat() {
   hidePotionBtn();
   drawArena();
   startEnemyAutoAttack();
+  // Restore whichever ability/heal slots were on AUTO before the refresh —
+  // see the matching comment in saveGame()/loadGame(). Deferred slightly so
+  // combat state (loadout UI, masterTick) has settled first, same pattern
+  // already used to restore AUTO after a boss-fight transition.
+  setTimeout(restoreAutoSlots, 400);
 }
 
 // ═══════════════════════════════════════════════
@@ -5431,6 +5464,19 @@ function updateLoadoutUI() {
 function updateClassXPPanel() {
   // Render into both desktop right col and mobile skills panel
   let html = '<div class="panel-title">Skill Tree</div>';
+  // Skill Points (stat boosts) and Passive Points are BOTH earned together
+  // from your Character Level, but this panel used to only ever show
+  // Passive Points — Skill Points had no visible home anywhere except the
+  // level-up popup itself. That made the "N pts" HUD badge (which correctly
+  // totals both currencies) look wrong to a player checking this panel:
+  // e.g. Character Level 2 grants exactly 1 of each, so a player who'd
+  // already spent neither would see the HUD say "2 pts" while this panel
+  // only ever accounted for 1 of them. Show both here so the numbers add
+  // up no matter which screen a player checks, and make it tappable so an
+  // unspent Skill Point is actually reachable from here too.
+  if(G.skillPoints > 0) {
+    html += `<div class="sp-display" style="cursor:pointer;" onclick="openLevelUpVoluntarily()" title="Stat boost — from your Character Level, spent via the level-up popup. Tap to spend.">${G.skillPoints} Skill Point${G.skillPoints!==1?'s':''} (stat boost, unspent — tap to spend)</div>`;
+  }
   html += `<div class="sp-display" title="Earned from your Character Level, not Class Mastery">${G.passivePoints} Passive Points (from Character Level)</div>`;
 
   // Class XP bars
@@ -10521,7 +10567,26 @@ function renderTutStep(step, s) {
     if (handled) return;
     handled = true;
     e.stopPropagation();
-    advanceTutStep(el, s, true);
+    // Defer one tick so the SAME tap's real action handler (this element's
+    // own onclick — activateAbility()/activateHeal()/openSlotSelector())
+    // has definitely finished running first, then verify the step's
+    // condition actually became true before declaring success. Previously
+    // this advanced (and showed a success toast) unconditionally on any
+    // tap, regardless of whether the real action actually took effect —
+    // e.g. activateHeal() silently no-ops without setting AUTO if combat
+    // had already ended right as the tap landed. That let a tutorial step
+    // show "Battle Cry used" (not "...now set to AUTO") and still advance,
+    // leaving AUTO never actually enabled despite the tutorial claiming
+    // success, and leaving whatever comes next (e.g. opening the Loadout
+    // menu) sitting on screen with no clear reason once the player moved on.
+    setTimeout(() => {
+      if (isTutStepAlreadySatisfied(s)) {
+        advanceTutStep(el, s, true);
+      } else {
+        handled = false;
+        log('<span style="color:var(--muted)">That didn\'t go through — try tapping it again.</span>');
+      }
+    }, 0);
   };
 
   el.addEventListener('click', handler);
