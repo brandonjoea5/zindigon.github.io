@@ -3844,7 +3844,13 @@ function loadGame(name) {
     if (!sbUser && save.playerName !== name) return false;
     // Require a class to be set — otherwise treat as new game
     if (!save.playerClass || !save.playerImbue) return false;
-    G.playerName = save.playerName;
+    // Only adopt the save's stored name for guests. When signed in,
+    // G.playerName is already the real account name (sbProfile.username, set
+    // in onAuthReady) — the local save's name field can be a stale guest
+    // name left over from before this account ever signed in on this
+    // device, and blindly restoring it here would silently rename the
+    // player back to that old guest identity on every Continue.
+    if(!sbUser) G.playerName = save.playerName;
     G.maxHp = save.maxHp || 200;
     G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
     // Mana wasn't persisted at all before — every reload silently reset it
@@ -3927,7 +3933,15 @@ function continueGame() {
     const raw = localStorage.getItem('elementalRift_v3');
     if(!raw) { startGame(); return; }
     const save = JSON.parse(raw); // validate — throws if corrupt, caught below
-    if(save.playerName) G.playerName = save.playerName; // so startGame() loads THIS save, not a new random guest
+    // Only borrow the save's playerName for the loadGame() name-match check
+    // when playing as a guest — so startGame() loads THIS save, not a new
+    // random guest. Signed-in players are already correctly identified via
+    // sbProfile.username (set in onAuthReady); overwriting that with
+    // whatever guest name is sitting in the local save blob would silently
+    // rename the account back to the old guest name the instant Continue is
+    // clicked, even though the button now correctly displays the real
+    // signed-in name beforehand.
+    if(save.playerName && !(sbUser && sbProfile)) G.playerName = save.playerName;
     startGame();
   } catch(e){ console.error('continueGame error:', e); startGame(); }
 }
@@ -9019,6 +9033,14 @@ function onAuthReady() {
     document.getElementById('player-name-display').textContent = sbProfile.username;
     const idEl = document.getElementById('name-screen-identity');
     if(idEl) idEl.textContent = `Signed in as ${sbProfile.username}`;
+    // The "Continue as X" button's name was set once by checkExistingSave()
+    // at page load, straight from the local save's (possibly stale/guest)
+    // playerName — before auth had a chance to resolve. Once we know the
+    // real signed-in identity, the button needs to reflect it too, since
+    // loadGame() itself already treats the signed-in account as owning
+    // whatever save is being continued regardless of the name stored in it.
+    const continueNameEl = document.getElementById('continue-name');
+    if(continueNameEl) continueNameEl.textContent = sbProfile.username;
     // Load trinity data (orbs, artifacts) as soon as we know who the player is
     loadTrinity().catch(()=>{});
     // Load titles
