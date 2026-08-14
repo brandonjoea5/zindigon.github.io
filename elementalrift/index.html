@@ -2065,6 +2065,7 @@ try {
 
   </div>
   <div style="font-size:12px;color:var(--text-light);text-align:center;max-width:320px;">Final wave of each path has a chance to spawn a Boss with bonus rewards</div>
+  <div id="map-hp-restore-note" style="display:none;font-size:11px;color:#3acc7a;text-align:center;max-width:320px;margin-top:2px;">Starting a new path fully restores your HP and mana.</div>
   <div id="map-boss-section" class="hidden" style="margin-top:4px;text-align:center;">
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">— or —</div>
     <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;padding:14px 32px;border:none;cursor:pointer;animation:bossPulse 2s ease-in-out infinite;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-height:130px;letter-spacing:0.06em;;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:11px;letter-spacing:0.04em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
@@ -2446,6 +2447,15 @@ try {
       <div style="height:6px;background:rgba(245,225,175,0.9);border-radius:3px;overflow:hidden;">
         <div id="xp-bar-fill" style="height:100%;background:linear-gradient(90deg,#8855ff,var(--gold));border-radius:3px;width:0%;transition:width 0.4s;"></div>
       </div>
+    </div>
+    <!-- Skill/passive point indicator — leveling up used to force the
+         stat-allocation popup open immediately, which reliably collided
+         with the merchant/path-complete sequence right after a final kill
+         (multiple modals piling up at once). Points are now just queued
+         silently and shown here as a small, voluntary badge instead —
+         tap it whenever you actually want to spend them. -->
+    <div id="sp-available-badge" class="hidden" onclick="openLevelUpVoluntarily()" style="cursor:pointer;display:flex;align-items:center;gap:3px;background:rgba(136,136,255,0.18);border:1px solid #8888ff;border-radius:10px;padding:3px 8px;font-family:'Jim Nightshade',cursive;font-size:9px;color:#8888ff;white-space:nowrap;animation:tutBounce 1.6s ease-in-out infinite;" title="You have points to spend — tap to open">
+      <span id="sp-available-text">1 pt</span>
     </div>
     <span id="player-name-display" style="font-size:11px;color:var(--gold);font-family:'Jim Nightshade',cursive;cursor:pointer;" onclick="showAccountMenu()" title="Account"></span>
   </div>
@@ -3360,7 +3370,20 @@ const DIFF_CONFIG = {
 // of letting the normal level/type RNG decide, so two different level-1
 // characters get a comparably hard Easy run instead of one facing a ~450 HP
 // enemy and the other a ~1,200 HP one on the same wave.
-const EASY_WAVE_HP_BUDGET = { 1: [50, 80], 2: [100, 180], 3: [300, 500] };
+//
+// This used to be a flat HP range (e.g. wave 1 = 50-80 HP), tuned around a
+// fresh level-1 character's baseline damage. That works exactly once: any
+// player who already has a level or two of stat points, gear, or ability
+// upgrades — which is the common case for anyone replaying Easy rather
+// than a brand-new character's very first run — deals meaningfully more
+// DPS than that baseline, so the same flat HP band melts in 1-2 hits.
+// Reported directly: a Wind mage's basic attack (Gale Strike) alone killed
+// both of Easy's first two waves almost instantly while at full HP, and
+// only wave 3 felt like it mattered. Instead of a flat HP number, target a
+// number of SECONDS of the player's own current basic-attack DPS — so the
+// pacing holds regardless of how strong the character already is by the
+// time they're on this Easy run.
+const EASY_WAVE_SECONDS = { 1: [4, 6], 2: [7, 10], 3: [12, 18] };
 
 let MAP = {
   difficulty: null,
@@ -3406,6 +3429,14 @@ function showMapScreen(isFirst=false) {
   // Show boss attempt option if wave >= 3
   const bossSection = document.getElementById('map-boss-section');
   if(bossSection) bossSection.classList.toggle('hidden', G.wave < 3);
+  // Only surface the "starting a new path restores you" note when it's
+  // actually relevant — a player arriving here at partial HP/mana (this was
+  // reported as confusing: finishing a path at e.g. 135/200 HP with no
+  // indication of whether a new path carries that damage over or not).
+  // selectDifficulty() below always fully restores both, so this is purely
+  // reassurance, not a warning.
+  const restoreNote = document.getElementById('map-hp-restore-note');
+  if(restoreNote) restoreNote.style.display = (G.hp < G.maxHp || G.mana < getMaxMana()) ? 'block' : 'none';
 }
 
 function selectDifficulty(diff) {
@@ -3947,13 +3978,23 @@ function rollEnemy(wave) {
   // Golem on the exact same wave 3, purely from the enemy-level/type RNG
   // above — making Easy's difficulty depend on luck rather than the
   // player's build or understanding. Clamp each of Easy's 3 waves to a
-  // narrow effective-HP band (attack is renormalized to match, so a
-  // naturally hard-hitting type doesn't stay disproportionately dangerous
-  // once its HP is scaled down, or vice versa), regardless of which enemy
-  // type or level rolled.
+  // target duration of the player's OWN current basic-attack DPS (attack is
+  // renormalized to match, so a naturally hard-hitting type doesn't stay
+  // disproportionately dangerous once its HP is scaled down, or vice
+  // versa), regardless of which enemy type or level rolled, and regardless
+  // of how strong the player's build already is.
   if(MAP.difficulty === 'easy') {
-    const budget = EASY_WAVE_HP_BUDGET[Math.min(3, segWave)] || EASY_WAVE_HP_BUDGET[3];
-    const targetHp = Math.floor(budget[0] + Math.random() * (budget[1] - budget[0]));
+    const st = getStats();
+    // Rough basic-attack-only DPS: attack * hits-per-second * ~0.85 (the
+    // basic ability dmgMult band every class/imbue sits in). Deliberately
+    // ignores crit/lifesteal/abilities-on-top — those only make a real
+    // fight faster than this floor, never slower, which is fine; this is a
+    // duration FLOOR against the weakest thing a player is always doing
+    // (auto basic attack), not an attempt to model the whole build.
+    const approxDps = Math.max(6, (st.attack||18) * (st.atkSpeed||2.0) * 0.85);
+    const secRange = EASY_WAVE_SECONDS[Math.min(3, segWave)] || EASY_WAVE_SECONDS[3];
+    const targetSeconds = secRange[0] + Math.random() * (secRange[1] - secRange[0]);
+    const targetHp = Math.floor(approxDps * targetSeconds);
     const hpScale = targetHp / Math.max(1, baseHp);
     baseAtk = Math.max(1, Math.round(baseAtk * hpScale));
     baseHp = targetHp;
@@ -5757,18 +5798,17 @@ function onEnemyDeath() {
     drawArena();
     saveGame();
 
-    if(spPending > 0 && !spPopupOpen) {
-      // Enemy just died — safe to show level-up popup now
-      G._pendingWaveComplete = true;
-      setTimeout(() => triggerLevelUpPopup(), 400);
-      // Safety net: if popup never closes, unstick after 30s
-      setTimeout(() => {
-        if(G._pendingWaveComplete && !G.enemy && !G.combatActive) {
-          G._pendingWaveComplete = false;
-          onSegmentWaveComplete();
-        }
-      }, 30000);
-    } else if(spPopupOpen || passivePending > 0) {
+    updateSPAvailableBadge();
+    if(spPopupOpen) {
+      // Player already had the level-up popup open manually right as this
+      // kill landed — leave it alone and let closeSPPopup() resume the
+      // wave-complete flow once they're done, instead of yanking it away
+      // mid-interaction. Points earned no longer force this popup open on
+      // their own (see awardXP) — a level-up in the middle of the final
+      // kill → merchant → path-complete sequence used to auto-pop this
+      // screen right on top of that sequence, which is exactly the pile-up
+      // players reported. Now it only ever opens when tapped voluntarily
+      // from the "N pt" badge (see openLevelUpVoluntarily/sp-available-badge).
       G._pendingWaveComplete = true;
       setTimeout(() => {
         if(G._pendingWaveComplete && !G.enemy && !G.combatActive) {
@@ -6838,6 +6878,7 @@ function updateResourceBar(){
   if(waveEl) waveEl.textContent = MAP.totalWaves > 0 ? `${G.wave}/${MAP.totalWaves}` : G.wave;
 
   updateXPBar();
+  if(typeof updateSPAvailableBadge === 'function') updateSPAvailableBadge();
 }
 
 function updateStatsPanel(){
@@ -7114,15 +7155,36 @@ function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){
     glow: isCrit ? '#ffaa00' : null,
   });
 }
+// A multi-hit ability (e.g. a 4-hit Cyclone) fires spellVamp/lifeSteal
+// separately per hit, each calling this within milliseconds of the last —
+// which used to spawn a separate "+1 HP" floating number per hit, so one
+// ability cast could throw up 4 overlapping heal numbers at once. Batch
+// same-source heals landing within a short window into a single combined
+// number instead of spawning one per tick.
+let _healNumberBuffer = null; // { x, y, amt, batchAt }
+const HEAL_NUMBER_BATCH_MS = 180;
 function spawnHealNumber(x,y,amt){
-  damageNumbers.push({
-    x, y, vy:-2.0,
-    text:`+${amt} HP`,
-    life:1, decay:0.018,
-    size: window.innerWidth >= 900 ? 22 : 16, color:'#3acc7a',
-    bold:true,
-    glow:'#3acc7a'
-  });
+  if(amt <= 0) return;
+  if(_healNumberBuffer && (Date.now() - _healNumberBuffer.batchAt) < HEAL_NUMBER_BATCH_MS) {
+    _healNumberBuffer.amt += amt;
+    _healNumberBuffer.x = x; _healNumberBuffer.y = y;
+    return;
+  }
+  const buf = { x, y, amt, batchAt: Date.now() };
+  _healNumberBuffer = buf;
+  setTimeout(() => {
+    if(_healNumberBuffer !== buf) return;
+    _healNumberBuffer = null;
+    damageNumbers.push({
+      x: buf.x, y: buf.y, vy:-2.0,
+      text:`+${buf.amt} HP`,
+      life:1, decay:0.018,
+      size: window.innerWidth >= 900 ? 22 : 16, color:'#3acc7a',
+      bold:true,
+      glow:'#3acc7a'
+    });
+    startAnimLoop();
+  }, HEAL_NUMBER_BATCH_MS);
 }
 function triggerPlayerLunge(tx,ty,sx,sy){lungeAnim={progress:0,startX:sx,startY:sy,targetX:tx,targetY:ty};}
 function triggerEnemyLunge(ex,ey,px,py){enemyLungeAnim={progress:0,startX:ex,startY:ey,targetX:px,targetY:py,offsetX:0,offsetY:0};}
@@ -9213,11 +9275,60 @@ function anyBlockingModalOpen() {
     return el && !el.classList.contains('hidden');
   });
 }
+
+// Every one of these sits in its own local stacking context (map-screen,
+// sp-popup, vendor-modal, etc. are direct children near the top of <body>)
+// while the ability bar the tutorial points at lives inside #loadout-area,
+// which creates ITS OWN local stacking context (via backdrop-filter). A
+// child's z-index only ever competes within its own stacking context, so
+// boosting the target ability slot's z-index (see renderTutStep) can make
+// it PAINT above these overlays visually in some cases but can never win a
+// real hit-test against them — a real tap at that screen position still
+// lands on the overlay on top, not the button underneath. That's exactly
+// why a tutorial step could show its glowing prompt right through the
+// stat-allocation screen, the shop, or the between-wave choice screen, yet
+// tapping the "highlighted" button did nothing at all. See isTutorialBlocked().
+const TUTORIAL_BLOCKING_IDS = ['sp-popup','vendor-modal','item-modal','boss-results-modal','ability-picker-modal','map-screen'];
+function isTutorialBlocked() {
+  if(document.getElementById('wave-boss-prompt')) return true;
+  const waveChoice = document.getElementById('wave-choice-overlay');
+  if(waveChoice && waveChoice.style.display && waveChoice.style.display !== 'none') return true;
+  return TUTORIAL_BLOCKING_IDS.some(id => {
+    const el = document.getElementById(id);
+    return el && !el.classList.contains('hidden');
+  });
+}
+// Leveling up used to force the stat-allocation popup open the moment it was
+// safe to (as soon as combat/other modals cleared) — but "as soon as it's
+// safe" kept landing at the exact moment a final kill was ALSO trying to
+// show the merchant and the path-complete screen, piling three separate
+// interruptions on top of each other right when the player most wanted to
+// see their result. Points are now just queued silently (see awardXP) and
+// surfaced as a small "N pt" badge (see updateSPAvailableBadge) that the
+// player taps whenever they actually want to spend them — this function is
+// kept only as that voluntary entry point, and as a courtesy retry for the
+// rare case where the player had it open already when a kill landed (see
+// onEnemyDeath / closeSPPopup).
 function tryShowLevelUpPopup() {
+  updateSPAvailableBadge();
+}
+
+function openLevelUpVoluntarily() {
   if(spPending <= 0 && passivePending <= 0) return;
-  if(spPopupOpen) return;
-  if(anyBlockingModalOpen()) return; // will retry from that modal's close handler
   triggerLevelUpPopup();
+}
+
+function updateSPAvailableBadge() {
+  const badge = document.getElementById('sp-available-badge');
+  if(!badge) return;
+  const total = (spPending||0) + (passivePending||0);
+  if(total > 0 && !spPopupOpen) {
+    const text = document.getElementById('sp-available-text');
+    if(text) text.textContent = `${total} pt${total>1?'s':''}`;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
 }
 
 function awardXP(amount) {
@@ -9232,14 +9343,7 @@ function awardXP(amount) {
     spPending++;       // one skill investment per level
     passivePending++;  // one passive investment per level
   }
-  if(spPending > 0 && !spPopupOpen) {
-    // Never interrupt active combat — wait until enemy is dead
-    if(G.combatActive && G.enemy && G.enemy.hp > 0) {
-      // Will be shown from onEnemyDeath / closeSPPopup chain
-      return;
-    }
-    setTimeout(() => tryShowLevelUpPopup(), 900);
-  }
+  updateSPAvailableBadge();
 }
 
 function triggerLevelUpPopup() {
@@ -9250,6 +9354,7 @@ function triggerLevelUpPopup() {
   }
   if(spPopupOpen) return;
   spPopupOpen = true;
+  updateSPAvailableBadge();
   // Remember whether this level-up started with BOTH currencies pending, so
   // the step indicator stays consistent ("Step 2 of 2") even after step 1's
   // points hit zero mid-session, instead of flickering off right when it
@@ -9469,6 +9574,7 @@ function closeSPPopup() {
   document.getElementById('sp-popup').classList.add('hidden');
   spPopupOpen = false;
   updateXPBar();
+  updateSPAvailableBadge();
   saveGame();
   // Resume deferred wave completion (enemy died while level-up popup was pending)
   if(G._pendingWaveComplete) {
@@ -9665,9 +9771,47 @@ function isTutStepAlreadySatisfied(s) {
   return false;
 }
 
+let _tutBlockPoll = null;
+
+// Pauses the tutorial while some other full-screen UI (level-up, vendor,
+// between-wave choice, map screen, etc.) is covering the ability bar the
+// current step points at — see the big comment on isTutorialBlocked() for
+// why the step's own "boosted z-index" trick can't reliably win against
+// these. Hides whatever's currently on screen instead of leaving a
+// glowing prompt for a button the player literally cannot reach, and
+// polls until the blocking UI clears, then re-renders the same step fresh
+// (correct position, a real re-attached tap listener) rather than assuming
+// nothing changed while it was hidden.
+function pauseTutorialForModal(step) {
+  ['tut-spotlight','tut-bubble','tut-arrow'].forEach(id => {
+    const node = document.getElementById(id);
+    if(node) node.style.opacity = '0';
+  });
+  clearTimeout(_tutSkipStepTimer);
+  clearInterval(_tutStateWatcher);
+  const skipBtn = document.getElementById('tut-skip-step');
+  if(skipBtn) skipBtn.classList.add('hidden');
+  if(_tutCurrentHandler) {
+    _tutCurrentHandler.el.removeEventListener('click', _tutCurrentHandler.handler);
+    _tutCurrentHandler.el.removeEventListener('touchend', _tutCurrentHandler.handler);
+    _tutCurrentHandler = null;
+  }
+  clearInterval(_tutBlockPoll);
+  _tutBlockPoll = setInterval(() => {
+    if(!tutActive) { clearInterval(_tutBlockPoll); _tutBlockPoll = null; return; }
+    if(!isTutorialBlocked()) {
+      clearInterval(_tutBlockPoll);
+      _tutBlockPoll = null;
+      showTutStep(step);
+    }
+  }, 400);
+}
+
 function showTutStep(step) {
   const s = TUT_STEPS[step];
   if(!s) { endTutorial(); return; }
+
+  if(isTutorialBlocked()) { pauseTutorialForModal(step); return; }
 
   // If the underlying action this step asks for was already performed —
   // e.g. the ability got AUTO'd on (or the loadout got opened) before this
@@ -9839,10 +9983,22 @@ function renderTutStep(step, s) {
   // clicks on the target element. Covers any case where the step's
   // condition becomes true without a fresh click on `el` being the thing
   // that satisfied it (the click handler above already covers the normal
-  // tap case; this catches anything else).
+  // tap case; this catches anything else). Also watches for some OTHER
+  // full-screen UI (level-up, vendor, between-wave choice, map screen...)
+  // popping up mid-step — e.g. the enemy dying and the between-wave choice
+  // screen appearing right while this step is showing — and pauses instead
+  // of leaving a prompt pointing at a button the player can no longer
+  // actually reach (see isTutorialBlocked()/pauseTutorialForModal()).
   clearInterval(_tutStateWatcher);
   _tutStateWatcher = setInterval(() => {
-    if (!handled && isTutStepAlreadySatisfied(s)) {
+    if (handled) return;
+    if (isTutorialBlocked()) {
+      handled = true;
+      clearInterval(_tutStateWatcher);
+      pauseTutorialForModal(step);
+      return;
+    }
+    if (isTutStepAlreadySatisfied(s)) {
       handled = true;
       clearInterval(_tutStateWatcher);
       advanceTutStep(el, s, true);
@@ -9925,6 +10081,8 @@ function endTutorial() {
   document.getElementById('ability-tutorial').classList.remove('active');
   clearTimeout(_tutSkipStepTimer);
   clearInterval(_tutStateWatcher);
+  clearInterval(_tutBlockPoll);
+  _tutBlockPoll = null;
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   _tutCurrentHandler = null;
