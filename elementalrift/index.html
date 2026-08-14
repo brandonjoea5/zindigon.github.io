@@ -1716,6 +1716,36 @@ try {
 </script>
 <body>
 
+<script>
+// Every ad unit's own inline <script> used to call adsbygoogle.push({})
+// immediately at parse time, regardless of whether its container was
+// actually visible. #map-screen (and #ad-sidebar, below its min-width/
+// min-height media query) start out hidden via CSS (display:none) —
+// pushing a *responsive* unit while its box has zero measurable width is
+// exactly what produces the AdSense console error "No slot size for
+// availableWidth=0", and the slot can end up permanently blank even once
+// the screen is later shown. This helper defers the push until the ad's
+// own element is actually laid out (offsetParent !== null is a reliable
+// "not display:none, and no display:none ancestor" check — a real
+// 0-width-but-visible box is a different, harmless case this deliberately
+// doesn't wait on), then pushes exactly once. Defined up front, before any
+// ad unit's own markup, so every placement below can call it immediately.
+// Call as pushAdWhenVisible(document.currentScript.previousElementSibling)
+// from each ad unit's own inline script.
+window.pushAdWhenVisible = function(ins) {
+  if (!ins || ins._adPushed) return;
+  function tryPush() {
+    if (ins._adPushed) return true;
+    if (ins.offsetParent === null) return false;
+    ins._adPushed = true;
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
+    return true;
+  }
+  if (tryPush()) return;
+  const poll = setInterval(() => { if (tryPush()) clearInterval(poll); }, 300);
+};
+</script>
+
 <!-- Sidebar ad, shown beside the name/map menu screens only — a fixed
      300x250 unit (no auto/full-width-responsive), so AdSense can't render
      it any larger than its declared box. Never shown during gameplay. -->
@@ -1724,7 +1754,7 @@ try {
        style="display:inline-block;width:300px;height:250px"
        data-ad-client="ca-pub-2900666268471871"
        data-ad-slot="9972731543"></ins>
-  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  <script>pushAdWhenVisible(document.currentScript.previousElementSibling);</script>
 </div>
 <script>
 // An ad slot that AdSense couldn't fill sets data-ad-status="unfilled" on
@@ -1979,7 +2009,7 @@ try {
          data-ad-slot="9509982523"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    <script>pushAdWhenVisible(document.currentScript.previousElementSibling);</script>
   </div>
   <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);">v3.0.0 · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
@@ -2090,7 +2120,7 @@ try {
          data-ad-slot="9509982523"
          data-ad-format="auto"
          data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    <script>pushAdWhenVisible(document.currentScript.previousElementSibling);</script>
   </div>
 </div>
 
@@ -4711,11 +4741,10 @@ function activateAbility(slotIdx) {
   const ab = ABILITIES[abId];
   if(!ab) return;
 
-  // ALL slots toggle — tap to activate auto, tap again to deactivate
+  // ALL slots toggle — tap to activate auto, tap again to deactivate.
+  // All auto slots (basic or skill/ult) are now polled by masterTick, not
+  // timer handles, so turning off is just clearing the flag.
   if(G.autoSlots[slotIdx]){
-    // Turn OFF auto
-    const handle = G.autoSlots[slotIdx];
-    if(handle && handle !== true) { clearInterval(handle); clearTimeout(handle); }
     delete G.autoSlots[slotIdx];
     updateLoadoutUI();
     return;
@@ -4751,33 +4780,19 @@ function activateAbility(slotIdx) {
     flashAbilityDenied(slotIdx, `${ab.name}: still on cooldown (${remaining}s) — AUTO armed, will fire when ready.`);
   }
 
-  if(ab.type === 'basic') {
-    // Self-scheduling setTimeout — recalculates attack speed on every hit
-    function scheduleNextBasic() {
-      if(!G.autoSlots[slotIdx]) return;
-      const ms = Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0)));
-      // Schedule next tick first — fire() latency won't stack onto the interval
-      G.autoSlots[slotIdx] = setTimeout(() => {
-        scheduleNextBasic(); // schedule next BEFORE firing
-        if(!G.combatActive || !G.enemy) {
-          clearTimeout(G.autoSlots[slotIdx]);
-          delete G.autoSlots[slotIdx];
-          updateLoadoutUI();
-          return;
-        }
-        fireAbility(ab);
-      }, ms);
-    }
-    G.autoSlots[slotIdx] = true;
-    // Fire immediately on activation, then start the loop
-    if(G.combatActive && G.enemy) fireAbility(ab);
-    scheduleNextBasic();
-  } else {
-    // Skills/ults — polled by masterTick every 250ms
-    G.autoSlots[slotIdx] = 'master';
-    _tick.slots[slotIdx] = 0;
-    if(!_tick.running) startMasterTick();
-  }
+  // Basics used to run their own self-scheduling setTimeout chain here,
+  // separate from the masterTick poll used for skills/ults. That chain had
+  // to correctly re-arm itself across every wave-transition stop/restore
+  // cycle, and with 6+ call sites able to trigger a restore, it could
+  // silently fail to re-establish while the masterTick-polled skill in
+  // another slot kept working fine — exactly the "Cyclone stayed AUTO but
+  // Gale Strike silently stopped" bug reported. Basics now share the exact
+  // same polling mechanism as skills (just with a per-slot interval derived
+  // from attack speed instead of a flat 250ms), so there's only one
+  // mechanism to keep alive across wave transitions, not two.
+  G.autoSlots[slotIdx] = 'master';
+  _tick.slots[slotIdx] = 0;
+  if(!_tick.running) startMasterTick();
 
   updateLoadoutUI();
 }
@@ -4808,7 +4823,10 @@ function stopAllAutoSlots(save=false) {
       G.healWasAuto = healActive;
     }
   }
-  // Clear timer handles (basic attacks=setTimeout, skills='master', basics=true)
+  // All auto slots (basic, skill/ult, heal) are 'master'-flagged and polled
+  // by masterTick — no per-slot timer handles to clear anymore. This loop
+  // is kept as a defensive no-op in case anything ever stores a real timer
+  // ID here again.
   Object.values(G.autoSlots).forEach(id => {
     if(id && id !== true && id !== 'master') {
       clearInterval(id);
@@ -4838,24 +4856,12 @@ function restoreAutoSlots() {
     if(!ab) return;
     // Fire immediately if ready
     if(isAbilityReady(ab)) fireAbility(ab);
-    if(ab.type === 'basic') {
-      function scheduleRestoreBasic() {
-        if(!G.autoSlots[slotIdx]) return;
-        const ms = Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0)));
-        G.autoSlots[slotIdx] = setTimeout(() => {
-          scheduleRestoreBasic();
-          if(!G.combatActive || !G.enemy){ delete G.autoSlots[slotIdx]; markDirty(['loadout']); return; }
-          fireAbility(ab);
-        }, ms);
-      }
-      G.autoSlots[slotIdx] = true;
-      if(G.combatActive && G.enemy) fireAbility(ab);
-      scheduleRestoreBasic();
-    } else {
-      startCDBarAnimation(slotIdx, ab);
-      G.autoSlots[slotIdx] = 'master';
-      _tick.slots[slotIdx] = 0;
-    }
+    // Basics and skills/ults now share the same masterTick poll (see
+    // activateAbility) — one mechanism to re-arm here instead of two.
+    if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+    G.autoSlots[slotIdx] = 'master';
+    _tick.slots[slotIdx] = 0;
+    if(!_tick.running) startMasterTick();
   });
   if(G.healWasAuto && !G.autoSlots['heal']) activateHeal();
   G.savedAutoSlots = null;
@@ -6099,6 +6105,17 @@ function updateAutoWaveBtn() {
 }
 
 function nextWave() {
+  // Hard guard: stale/duplicate auto-advance timers (from setNextBtnActive's
+  // own 600ms timer, toggleAutoWave, AND onSegmentWaveComplete's timer all
+  // being able to independently call this) must never be allowed to spawn
+  // a wave beyond the path's limit. If the path is already done, route into
+  // the normal completion flow (vendor/boss-prompt) instead of spawning.
+  if(MAP.currentSegWave >= MAP.totalWaves) {
+    setNextBtnActive(false);
+    setBossBtnActive(false);
+    onSegmentWaveComplete();
+    return;
+  }
   stopAllAutoSlots(true); // save=true so slots restore on next enemy
   setNextBtnActive(false);
   setBossBtnActive(false);
@@ -7711,7 +7728,12 @@ function playSound(type, options={}) {
 // ── MASTER TICK ──
 // Single rAF loop replaces: enemyAttackInterval, manaRegenInterval,
 // statusTickInterval, bossTimerInterval, autoSlot skill polling.
-// Basic attack setTimeout chains stay — they self-schedule correctly.
+// Basic-attack AUTO also polls here now (dynamic per-slot interval derived
+// from attack speed) instead of running its own self-scheduling setTimeout
+// chain — that chain had to independently survive every wave-transition
+// stop/restore cycle and could silently fail to re-arm while a masterTick-
+// polled skill in another slot kept working, which read as "AUTO randomly
+// turns itself off for basic attacks but not skills."
 
 const _tick = {
   lastTs: 0,
@@ -7890,18 +7912,27 @@ function masterTick(ts) {
     for(const key in G.autoSlots) {
       if(key === 'heal' || isNaN(Number(key))) continue;
       const slotIdx = Number(key);
-      if(G.autoSlots[slotIdx] === true) continue; // basic attack — managed by setTimeout
-      if(G.autoSlots[slotIdx] !== 'master') continue; // only handle master-tick slots
+      if(G.autoSlots[slotIdx] !== 'master') continue; // only handle master-tick-polled slots
+      const abId = G.loadout[slotIdx];
+      if(!abId) continue;
+      const ab = ABILITIES[abId];
+      if(!ab) continue;
+      // Basics (Gale Strike, etc.) share this same poll as skills/ults —
+      // previously they ran a separate self-scheduling setTimeout chain that
+      // had to survive every wave-transition stop/restore cycle on its own,
+      // which could silently fail while a skill's masterTick slot kept
+      // working fine. Basics poll at their real attack-speed interval;
+      // skills/ults poll at a fixed fine-grained 250ms since their actual
+      // pacing comes from ability cooldowns via isAbilityReady below.
+      const isBasic = ab.type === 'basic';
+      const pollMs = isBasic ? Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0))) : 250;
       _tick.slots[slotIdx] = (_tick.slots[slotIdx] || 0) + dt;
-      if(_tick.slots[slotIdx] >= 250) {
+      if(_tick.slots[slotIdx] >= pollMs) {
         _tick.slots[slotIdx] = 0;
-        const abId = G.loadout[slotIdx];
-        if(!abId) continue;
-        const ab = ABILITIES[abId];
-        if(!ab || !isAbilityReady(ab)) continue;
+        if(!isBasic && !isAbilityReady(ab)) continue;
         const manaCost = MANA_COSTS[ab.type] || 0;
         if(manaCost > 0 && G.mana < manaCost) {
-          handleAutoManaStarved(slotIdx, 250, ab.name);
+          handleAutoManaStarved(slotIdx, pollMs, ab.name);
           continue;
         }
         // Mana priority: Emergency Heal outranks offensive AUTO abilities.
@@ -7918,14 +7949,14 @@ function masterTick(ts) {
           const healAboutToFire = G.autoSlots['heal'] === 'master' && healAbForReserve &&
             healCostForReserve > 0 && isHealReady() && G.hp < G.maxHp * AUTO_HEAL_HP_PCT;
           if(healAboutToFire && (G.mana - manaCost) < healCostForReserve) {
-            handleAutoManaStarved(slotIdx, 250, ab.name);
+            handleAutoManaStarved(slotIdx, pollMs, ab.name);
             continue;
           }
         }
         if(_tick.manaPaused[slotIdx]) resumeAutoManaSlot(slotIdx, ab.name, manaCost);
         _tick.manaStarved[slotIdx] = 0;
         fireAbility(ab);
-        startCDBarAnimation(slotIdx, ab);
+        if(!isBasic) startCDBarAnimation(slotIdx, ab);
       }
     }
 
@@ -9724,6 +9755,15 @@ const TUT_STEPS = [
     desc: 'Tap to toggle auto — it will fire automatically every time the cooldown resets. Tap again to turn off.',
     hint: 'Tap Skill 1 to try it',
     waitForTap: 'slot-reg1',
+    // This step used to render the instant the basic-attack step completed
+    // — often right as Wave 1's "cleared" overlay was covering the ability
+    // bar. Reactively
+    // detecting that overlay (isTutorialBlocked) still leaves a brief window
+    // where the prompt renders before the overlay appears and has to wait up
+    // to 400ms to notice and pause — during which taps land on the overlay,
+    // not the ability slot. Gating this step to never even attempt to render
+    // until Wave 2 has actually begun removes that race entirely.
+    minSegWave: 2,
   },
   {
     slotId: 'slot-heal',
@@ -9807,9 +9847,28 @@ function pauseTutorialForModal(step) {
   }, 400);
 }
 
+let _tutMinWavePoll = null;
+
 function showTutStep(step) {
   const s = TUT_STEPS[step];
   if(!s) { endTutorial(); return; }
+
+  // Hold this step until the wave it's meant for has actually started.
+  // Skipped entirely if the player already satisfied the step's condition
+  // on their own — no reason to make them wait just to advance past it.
+  if (s.minSegWave && !isTutStepAlreadySatisfied(s) &&
+      (((MAP.currentSegWave||0) < s.minSegWave) || !G.combatActive || !G.enemy)) {
+    clearInterval(_tutMinWavePoll);
+    _tutMinWavePoll = setInterval(() => {
+      if(!tutActive) { clearInterval(_tutMinWavePoll); _tutMinWavePoll = null; return; }
+      if((MAP.currentSegWave||0) >= s.minSegWave && G.combatActive && G.enemy) {
+        clearInterval(_tutMinWavePoll);
+        _tutMinWavePoll = null;
+        showTutStep(step);
+      }
+    }, 400);
+    return;
+  }
 
   if(isTutorialBlocked()) { pauseTutorialForModal(step); return; }
 
@@ -10083,6 +10142,8 @@ function endTutorial() {
   clearInterval(_tutStateWatcher);
   clearInterval(_tutBlockPoll);
   _tutBlockPoll = null;
+  clearInterval(_tutMinWavePoll);
+  _tutMinWavePoll = null;
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   _tutCurrentHandler = null;
