@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.11.0 -->
+<!-- v3.15.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -2083,7 +2083,7 @@ window.watchAdStatus = function(ins) {
 // silently drift out of sync with what's actually deployed. This is what
 // lets a quick glance at the name screen confirm whether the latest
 // commit is actually live.
-const GAME_VERSION = '3.11.0';
+const GAME_VERSION = '3.15.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -4498,7 +4498,16 @@ function onBossPhaseKill() {
     const t = dropItem.tier||dropItem.rarity;
     log(`<span style="color:${t.color};font-weight:700;">Boss Drop: ${dropItem.name}!</span>`);
     G.combatActive=false; G.enemy=null;
-    updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena(); saveGame();
+    updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena();
+    // Same defensive guard as onEnemyDeath() — flag path completion before
+    // this save, not only inside onSegmentWaveComplete() a moment later, so
+    // a save taken in between can never look like an unflagged, already-
+    // finished path. See the long comment in onEnemyDeath() for why that
+    // matters (a delayed onSegmentWaveComplete() call is the actual
+    // exploitable case there; this call site runs it synchronously right
+    // after, so the window here is effectively nil, but the guard is free).
+    if(MAP.currentSegWave >= MAP.totalWaves) MAP.segmentComplete = true;
+    saveGame();
     // Show loot then trigger proper segment completion (vendor or map screen)
     setTimeout(()=>showItemModal(dropItem,'vendor_buy'), 500);
     onSegmentWaveComplete();
@@ -4538,48 +4547,53 @@ async function showBossResults() {
   const name = G.playerName;
   const isGuest = !(sbUser && sbProfile);
 
-  // Local device cache still gives us something to show in the "Leaderboard"
-  // list immediately, before the real fetch resolves — but it must NEVER be
-  // used to compute a displayed RANK. It's just this device's own history
-  // (or a stale copy of a past real fetch); a guest's very first attempt, or
-  // a re-attempt with a lower score than a previously-cached one under the
-  // same name, could trivially "rank" as #1 even though the real leaderboard
-  // (visible right below it) shows plenty of higher scores. Guests never
-  // submit a score at all, so they can never have a real rank.
+  // The local device cache is only ever a same-instant placeholder for the
+  // very first paint, before the real leaderboard fetch below resolves. It
+  // must NEVER have this run's own score merged into it before being shown
+  // as "the Leaderboard": for a guest, that score was never submitted
+  // anywhere, so inserting it (and sorting it to the top, if it happens to
+  // be the only/highest entry under that name) makes an unranked guest
+  // LOOK like verified 1st place directly underneath a rank display that
+  // simultaneously says "sign in to receive a rank" — the exact
+  // contradiction reported. The cache is just a cached copy of the last
+  // real fetch (see saveLocalLeaderboard below); leave it as-is here.
   const localLB = getLocalLeaderboard();
-  const existingLocal = localLB.findIndex(e => e.name === name);
-  if (existingLocal >= 0) {
-    if (score > localLB[existingLocal].score) localLB[existingLocal] = {name, score, wave:G.wave, date: new Date().toLocaleDateString()};
-  } else {
-    localLB.push({name, score, wave:G.wave, date: new Date().toLocaleDateString()});
-  }
-  localLB.sort((a,b) => b.score - a.score);
-  localStorage.setItem('elementalRift_leaderboard', JSON.stringify(localLB.slice(0,20)));
 
   // Show results right away — rank state is 'guest' (never ranked) or
   // 'pending' (signed in, waiting on the real leaderboard fetch below).
   renderBossResultsModal(score, name, localLB, isGuest ? 'guest' : 'pending');
 
-  if (isGuest) return; // nothing to submit or fetch for a guest — done.
+  if (!isGuest) {
+    // Post score to Supabase (upsert — keeps best score only)
+    postSupabaseLeaderboard(score).catch(()=>{});
+  }
 
-  // Post score to Supabase (upsert — keeps best score only)
-  postSupabaseLeaderboard(score).catch(()=>{});
-
-  // Fetch fresh leaderboard from Supabase and update modal with the REAL rank
+  // Fetch the REAL leaderboard for everyone, guests included — it's a
+  // public read, not tied to being signed in, so a guest can still see
+  // genuine competition instead of only their own local cache. Only
+  // signed-in players get a personalized rank computed from it, since only
+  // their score was actually submitted into it above.
   const rankEl = document.getElementById('boss-rank-display');
   try {
     const liveBoard = await fetchSupabaseLeaderboard();
     if(liveBoard && liveBoard.length > 0) {
-      const myRank = liveBoard.findIndex(e=>e.name===name)+1;
       const lbSection = document.getElementById('boss-lb-section');
-      if(lbSection) lbSection.innerHTML = buildLBHtml(liveBoard, name, 10);
-      if(rankEl) rankEl.textContent = myRank > 0 ? `Rank #${myRank}` : 'Outside the Top 20';
+      // Guests are never actually in this board — pass a highlight name
+      // that can't match anything, instead of their own name, so a
+      // same-named real entry (however unlikely) is never mistaken for
+      // "that's me" styling on an unranked guest run.
+      if(lbSection) lbSection.innerHTML = buildLBHtml(liveBoard, isGuest ? null : name, 10);
       saveLocalLeaderboard(liveBoard);
-    } else if(rankEl) {
+      if(!isGuest) {
+        const myRank = liveBoard.findIndex(e=>e.name===name)+1;
+        if(rankEl) rankEl.textContent = myRank > 0 ? `Rank #${myRank}` : 'Outside the Top 20';
+      }
+      // Guests: rankEl stays "Sign in to receive a leaderboard rank".
+    } else if(!isGuest && rankEl) {
       rankEl.textContent = 'Rank unavailable';
     }
   } catch(e) {
-    if(rankEl) rankEl.textContent = 'Rank unavailable';
+    if(!isGuest && rankEl) rankEl.textContent = 'Rank unavailable';
   }
 }
 
@@ -6127,6 +6141,20 @@ function onEnemyDeath() {
     refreshMobilePanel();
     syncMobileLog();
     drawArena();
+    // If this kill just finished the FINAL wave of the path, flag it complete
+    // right now, before this save — not only later inside
+    // onSegmentWaveComplete() below. That call can be delayed up to 30
+    // SECONDS (see the spPopupOpen branch just below) while combatActive is
+    // already false and MAP.currentSegWave already equals totalWaves. A
+    // refresh anywhere in that window previously saw "not in combat, not
+    // yet marked complete, wave==total" — a state resumeFromSave() doesn't
+    // recognize as done, so it fell through to spawnNextSegmentWave(),
+    // which blindly incremented PAST the total and spawned a brand new
+    // enemy on an already-finished, already-rewarded path (wave "4/3") —
+    // reopening the exact reward-farming exploit Round 12 was meant to
+    // close. onSegmentWaveComplete() still runs as normal afterward and
+    // re-sets this same flag to the same value, so this is a no-op there.
+    if(MAP.currentSegWave >= MAP.totalWaves) MAP.segmentComplete = true;
     saveGame();
 
     updateSPAvailableBadge();
