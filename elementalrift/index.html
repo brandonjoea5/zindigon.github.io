@@ -374,6 +374,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   border-radius:12px;
   box-shadow:0 0 0 9999px rgba(10,6,2,0.72);
   pointer-events:none;
+  opacity:0;
   transition:left 0.25s ease,top 0.25s ease,width 0.25s ease,height 0.25s ease,opacity 0.2s ease;
 }
 #ability-tutorial .tut-bubble{
@@ -384,6 +385,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   padding:14px 16px;
   pointer-events:all;
   box-shadow:0 10px 30px rgba(0,0,0,0.55);
+  opacity:0;
   transition:opacity 0.2s ease;
 }
 #ability-tutorial .tut-bubble h4{
@@ -395,7 +397,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
 #ability-tutorial .tut-tap-hint{
   font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);opacity:0.95;letter-spacing:0.04em;
 }
-#ability-tutorial .tut-arrow-svg{ position:absolute; pointer-events:none; transition:opacity 0.2s ease; }
+#ability-tutorial .tut-arrow-svg{ position:absolute; pointer-events:none; opacity:0; transition:opacity 0.2s ease; }
 @keyframes tutPulse{
   0%,100%{ box-shadow:0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4); }
   50%{ box-shadow:0 0 0 7px rgba(232,184,75,0.9), 0 0 30px rgba(232,184,75,0.7); }
@@ -1725,18 +1727,25 @@ try {
 // exactly what produces the AdSense console error "No slot size for
 // availableWidth=0", and the slot can end up permanently blank even once
 // the screen is later shown. This helper defers the push until the ad's
-// own element is actually laid out (offsetParent !== null is a reliable
-// "not display:none, and no display:none ancestor" check — a real
-// 0-width-but-visible box is a different, harmless case this deliberately
-// doesn't wait on), then pushes exactly once. Defined up front, before any
-// ad unit's own markup, so every placement below can call it immediately.
-// Call as pushAdWhenVisible(document.currentScript.previousElementSibling)
-// from each ad unit's own inline script.
+// own element is actually laid out AND has a real measurable width, then
+// pushes exactly once. Defined up front, before any ad unit's own markup,
+// so every placement below can call it immediately. Call as
+// pushAdWhenVisible(document.currentScript.previousElementSibling) from
+// each ad unit's own inline script.
 window.pushAdWhenVisible = function(ins) {
   if (!ins || ins._adPushed) return;
   function tryPush() {
     if (ins._adPushed) return true;
-    if (ins.offsetParent === null) return false;
+    // offsetParent !== null only rules out display:none up the ancestor
+    // chain — it does NOT guarantee the element has actually been given a
+    // nonzero width yet (e.g. the moment a screen's .hidden class is
+    // removed, before that reveal's layout has fully settled, or while an
+    // ancestor's own width is still resolving). The "No slot size for
+    // availableWidth=0" error was still occurring after checking
+    // offsetParent alone, so check the real rendered width too — Google's
+    // own AdSense troubleshooting guidance is to confirm actual width, not
+    // just visibility, before calling push().
+    if (ins.offsetParent === null || ins.offsetWidth === 0) return false;
     ins._adPushed = true;
     (window.adsbygoogle = window.adsbygoogle || []).push({});
     return true;
@@ -3620,6 +3629,17 @@ function showWaveBossPrompt() {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  // Proactively pause the tutorial the instant this modal appears, instead
+  // of waiting on its own ~400ms state-watcher poll to notice.
+  // isTutorialBlocked() already treats #wave-boss-prompt as blocking, but
+  // during that brief poll window the tutorial's spotlight and live tap
+  // listener for whatever step is active (e.g. "tap Heal" right as the
+  // final wave's kill triggers this prompt) could still visually conflict
+  // with a modal that's meant to already own the screen — exactly the
+  // "Heal tutorial conflicts with the Boss Awaits screen" report. This
+  // resumes the same step automatically once the player picks Fight or
+  // Skip and the modal closes (see the poll in pauseTutorialForModal).
+  if (typeof tutActive !== 'undefined' && tutActive) pauseTutorialForModal(tutStep);
 }
 
 function acceptWaveBoss() {
@@ -4515,6 +4535,17 @@ function fireAbility(ab) {
     if(dmgResult.roll > bestRoll) bestRoll = dmgResult.roll;
     if(G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
   }
+  // The enemy HP bar/number only ever refreshed as an incidental side
+  // effect of enemyAttack() marking 'enemy' dirty when the enemy hit the
+  // player back — outgoing damage from fireAbility() never triggered a
+  // display update on its own. Short regular fights masked this (the
+  // enemy usually attacked back at least once before dying, or died and
+  // blanked the display anyway), but a slow-attacking wave boss made it
+  // obvious: the combat log kept recording real damage while the visible
+  // HP bar sat frozen at full for tens of seconds. Mark it dirty here so
+  // every hit reflects on screen within the next frame, regardless of
+  // whether or when the enemy attacks back.
+  markDirty(['enemy']);
   // Roll quality flags
   const isMaxRoll = bestRoll >= 1.15;  // top ~13% — near-max roll
   const isPerfect = isMaxRoll && isCrit; // max roll + crit = gold
@@ -9926,16 +9957,40 @@ function renderTutStep(step, s) {
   const el = document.getElementById(s.slotId);
   if(!el) { endTutorial(); return; }
 
+  // Get element position
+  const rect = el.getBoundingClientRect();
+  const pad = 8;
+
+  // Check if element is visible on screen — if not, skip this step. This
+  // check used to run much later, AFTER the spotlight/bubble/arrow had
+  // already been faded to visible and positioned from this very same
+  // (zero-sized) rect, with the real title/desc/hint text only getting set
+  // even after that. A skip here used to leave the tutorial bubble sitting
+  // on screen, fully visible, still showing its raw HTML placeholder text
+  // ("Tutorial" / "Description" / "Tap the highlighted button") instead of
+  // either real copy or nothing at all — exactly what got reported as
+  // "the first tutorial card displays placeholder text." Checking and
+  // bailing out FIRST, before touching opacity or content at all, means
+  // the bubble is only ever shown once we know it has something real to
+  // show. Checks both axes — the old version only checked vertical bounds,
+  // which missed the side-menu's closed (off-screen-left) position entirely
+  // (see the openMenu() call above for the actual fix to that case; this
+  // horizontal check just makes the escape hatch correct too, for any other
+  // panel-based target).
+  if(rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0
+     || rect.right <= 0 || rect.left >= window.innerWidth) {
+    tutStep++;
+    if(tutStep < TUT_STEPS.length) showTutStep(tutStep);
+    else endTutorial();
+    return;
+  }
+
   // Bring the spotlight/bubble/arrow back after advanceTutStep() faded them
   // out on the previous tap — see the comment there for why.
   ['tut-spotlight','tut-bubble','tut-arrow'].forEach(id => {
     const node = document.getElementById(id);
     if(node) node.style.opacity = '1';
   });
-
-  // Get element position
-  const rect = el.getBoundingClientRect();
-  const pad = 8;
 
   // Spotlight
   const spotlight = document.getElementById('tut-spotlight');
@@ -9985,20 +10040,6 @@ function renderTutStep(step, s) {
   } else {
     arrow.style.transform = 'scaleY(-1)';
     path.setAttribute('d','M30,0 Q30,50 30,65');
-  }
-
-  // Check if element is visible on screen — if not, skip this step.
-  // Checks both axes now — the old version only checked vertical bounds,
-  // which missed the side-menu's closed (off-screen-left) position entirely
-  // (see the openMenu() call above for the actual fix to that case; this
-  // horizontal check just makes the escape hatch correct too, for any other
-  // panel-based target).
-  if(rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0
-     || rect.right <= 0 || rect.left >= window.innerWidth) {
-    tutStep++;
-    if(tutStep < TUT_STEPS.length) showTutStep(tutStep);
-    else endTutorial();
-    return;
   }
 
   // Content
