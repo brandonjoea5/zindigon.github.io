@@ -932,7 +932,14 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 }
 .modal-overlay.centered{align-items:center;padding:16px;}
 .modal{
-  background:url("https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Scroll.png") center center/cover no-repeat;
+  /* Solid fallback color so the modal (and any text/buttons inside it) stays
+     legible even if the remote scroll-texture image is slow or fails to load
+     — on a flaky mobile connection the modal would otherwise render fully
+     transparent, letting whatever's behind it (including reddish combat
+     flash effects) show through and potentially wash out same-hued text. */
+  background-color:var(--panel-solid);
+  background-image:url("https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Scroll.png");
+  background-position:center center;background-size:cover;background-repeat:no-repeat;
   border:none;
   border-radius:12px 12px 0 0;
   padding:24px 20px 20px;
@@ -968,6 +975,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .btn-equip{filter:hue-rotate(80deg);}
 .btn-sell{filter:hue-rotate(-20deg);}
 .btn-close-m{filter:grayscale(0.4);}
+/* Boss Results "Continue" button — uses the same opaque button-sprite +
+   solid white text treatment as every other working modal button in the
+   game (rather than a transparent/outline style), so it can never blend
+   invisibly into whatever is rendered behind the modal. */
+.btn-boss-continue{filter:hue-rotate(150deg) saturate(1.3);}
 
 .compare-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
 .compare-col{
@@ -1993,6 +2005,7 @@ window.watchAdStatus = function(ins) {
     <div style="font-family:'Jim Nightshade',cursive;font-size:15px;color:#fff;letter-spacing:0.06em;text-shadow:0 1px 3px rgba(0,0,0,0.5);" id="welcome-name-text"></div>
     <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;text-shadow:0 1px 2px rgba(0,0,0,0.4);" id="welcome-title-text"></div>
   </div>
+  <div id="name-screen-identity" style="font-size:11px;color:rgba(255,255,255,0.6);text-align:center;text-shadow:0 1px 2px rgba(0,0,0,0.5);margin-bottom:2px;"></div>
   <button id="continue-btn" class="hidden" onclick="continueGame()" style="
     width:100%;max-width:340px;
     background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;
@@ -2002,6 +2015,26 @@ window.watchAdStatus = function(ins) {
     text-shadow:0 1px 3px rgba(0,0,0,0.6);
     transition:filter 0.15s,transform 0.15s;
   ">Continue as <span id="continue-name"></span></button>
+  <!-- "Not {username}? Log In" — only shown when signed in, lets a player
+       switch to a different account without hunting for a sign-out control.
+       See updateNameScreenAuthUI(). -->
+  <button id="switch-account-link" class="hidden" onclick="signOut()" style="background:transparent;border:none;color:rgba(255,255,255,0.55);font-size:11px;text-decoration:underline;cursor:pointer;padding:2px 0 4px;font-family:inherit;">
+    Not <span id="switch-account-name"></span>? <span style="color:var(--gold);">Log In</span>
+  </button>
+  <!-- "Log In" — only shown when NOT signed in. The full Sign In / Create
+       Account flow already existed (see #auth-modal) but had no way to
+       reach it from this screen at all — guest players had no path to an
+       account, which meant their name could never appear on the real
+       leaderboard. See updateNameScreenAuthUI(). -->
+  <button id="login-entry-btn" class="hidden" onclick="showAuthModal()" style="
+    width:100%;max-width:340px;
+    background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;
+    color:#fff;font-family:'Jim Nightshade',cursive;font-size:16px;
+    padding:0;border:none;cursor:pointer;letter-spacing:0.08em;
+    min-height:70px;
+    text-shadow:0 1px 3px rgba(0,0,0,0.6);
+    transition:filter 0.15s,transform 0.15s;
+  ">Log In <span style="font-size:11px;font-weight:400;opacity:0.85;">— save your name to the leaderboard</span></button>
   <div class="name-input-wrap" style="width:100%;max-width:340px;margin-bottom:4px;display:none;"></div>
   <div style="display:flex;flex-direction:column;gap:4px;width:100%;">
     <button id="start-btn" onclick="beginJourneyClicked()" style="width:100%;font-size:18px;letter-spacing:0.08em;min-height:88px;padding:0;">Begin Journey</button>
@@ -2139,7 +2172,7 @@ const GAME_VERSION = '3.11.0';
   <div id="map-hp-restore-note" style="display:none;font-size:11px;color:#3acc7a;text-align:center;max-width:320px;margin-top:2px;">Starting a new path fully restores your HP and mana.</div>
   <div id="map-boss-section" class="hidden" style="margin-top:4px;text-align:center;">
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">— or —</div>
-    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt();" style="font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;padding:14px 32px;border:none;cursor:pointer;animation:bossPulse 2s ease-in-out infinite;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-height:130px;letter-spacing:0.06em;;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:11px;letter-spacing:0.04em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
+    <button onclick="document.getElementById('map-screen').classList.add('hidden');startBossAttempt(true);" style="font-family:'Jim Nightshade',cursive;font-size:14px;font-weight:700;padding:14px 32px;border:none;cursor:pointer;animation:bossPulse 2s ease-in-out infinite;background:url('https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Buttons/Button_Basic.png') center/100% 100% no-repeat;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.6);min-height:130px;letter-spacing:0.06em;;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">Boss Attempt<span style="font-size:11px;letter-spacing:0.04em;opacity:0.85;font-weight:400;">60 Second Damage Race</span></button>
     <div style="font-size:11px;color:var(--muted);margin-top:6px;">Compete for the leaderboard · Earn milestone rewards</div>
   </div>
 
@@ -2770,7 +2803,7 @@ const GAME_VERSION = '3.11.0';
     <div class="modal-title" style="color:var(--boss);"> Boss Attempt Complete</div>
     <div id="boss-result-content"></div>
     <div class="modal-btns">
-      <button style="flex:1;font-family:'Jim Nightshade',cursive;font-size:13px;padding:12px;border-radius:8px;cursor:pointer;border:1px solid var(--boss);color:var(--boss);background:rgba(255,34,102,0.08);" onclick="closeBossResults()">Continue</button>
+      <button class="btn-boss-continue" onclick="closeBossResults()">Continue</button>
     </div>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted);">
       Full leaderboard &amp; more at <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.8);text-decoration:none;font-family:'Jim Nightshade',cursive;">zindigon.com/Games</a>
@@ -3489,6 +3522,18 @@ function showMapScreen(isFirst=false) {
   G.enemy = null;
   G.combatActive = false;
   G.inBoss = false;
+  // Being on the map screen means "no active path right now" by definition
+  // — clear MAP fully instead of leaving the just-finished path's
+  // difficulty/wave numbers sitting around stale. Without this, a save
+  // taken while the player was on this exact screen (deciding what to do
+  // next) still looked like "path in progress at wave N", so resuming it
+  // could auto-advance past the end of a path that was actually already
+  // fully wrapped up and abandoned.
+  MAP.difficulty = null;
+  MAP.totalWaves = 0;
+  MAP.currentSegWave = 0;
+  MAP.segmentComplete = false;
+  MAP.pendingBoss = false;
   hideWaveChoice();
   document.getElementById('map-screen').classList.remove('hidden');
   const title = document.getElementById('map-title');
@@ -3508,6 +3553,7 @@ function showMapScreen(isFirst=false) {
   // reassurance, not a warning.
   const restoreNote = document.getElementById('map-hp-restore-note');
   if(restoreNote) restoreNote.style.display = (G.hp < G.maxHp || G.mana < getMaxMana()) ? 'block' : 'none';
+  saveGame();
 }
 
 function selectDifficulty(diff) {
@@ -3622,26 +3668,12 @@ function spawnNextSegmentWave() {
     MAP.pendingBoss = false;
     spawnEnemy();
   }
-}
-
-// Used only by resumeFromSave() to restore an in-progress path after a
-// reload/crash — spawns for the wave MAP.currentSegWave is ALREADY set to,
-// instead of spawnNextSegmentWave()'s normal "increment then spawn" (which
-// is correct when finishing a wave and advancing to the next one, but would
-// skip straight past whatever wave was live at save time). The specific
-// enemy/HP that was live at save time isn't recoverable — only the
-// difficulty/wave position is persisted (see saveGame()) — so this starts a
-// fresh enemy for that same wave rather than silently dropping the player
-// back to "no path selected".
-function resumeSegmentWave() {
-  G.wave = MAP.currentSegWave;
-  MAP.isBossWave = MAP.difficulty === 'extreme'
-    ? (MAP.currentSegWave % 5 === 0)
-    : MAP.currentSegWave === MAP.totalWaves;
-  renderWaveTimeline();
-  if(typeof updateResourceBar === 'function') updateResourceBar();
-  MAP.pendingBoss = false;
-  spawnEnemy();
+  // Capture the new wave position (and the fresh enemy spawnEnemy() just
+  // set as the atomic combat snapshot) immediately — every wave transition
+  // goes through here, including starting a brand-new path from
+  // selectDifficulty(), so this is the one place that keeps a refresh from
+  // ever landing on a stale wave number from an earlier path/wave.
+  saveGame();
 }
 
 function startBossWave() {
@@ -3653,6 +3685,7 @@ function startBossWave() {
   startEnemyAutoAttack();
   drawArena();
   log(`<span style="color:#ff2277;font-weight:600;"> Wave Boss! Defeat it for bonus loot!</span>`);
+  saveGame();
 }
 
 function showWaveBossPrompt() {
@@ -3714,6 +3747,10 @@ function onSegmentWaveComplete() {
 
   if(pathDone || extremeVendor) {
     MAP.segmentComplete = pathDone;
+    // Persist segmentComplete the instant it flips, before anything else
+    // can happen (a refresh right here must never re-spawn the wave that
+    // was JUST cleared and rewarded — see the exploit note in saveGame()).
+    saveGame();
     if(MAP.pendingBoss) {
       MAP.pendingBoss = false;
       showWaveBossPrompt();
@@ -3727,6 +3764,11 @@ function onSegmentWaveComplete() {
     setNextBtnActive(true);
     showPotionBtn();
     if(G.wave >= 3) setBossBtnActive(true);
+    // Same reasoning as above: this wave was just cleared and rewarded,
+    // combatActive is already false at this point — save now so a refresh
+    // during the between-wave pause resumes here (via spawnNextSegmentWave
+    // advancing to the NEXT wave) instead of re-fighting this one.
+    saveGame();
     // setNextBtnActive(true) above already schedules its own auto-advance
     // timer when autoWaveEnabled — this used to ALSO schedule a second,
     // independent one right here. Two timers racing to both call
@@ -3763,13 +3805,31 @@ function saveGame() {
       // mobile tab eviction) mid-path silently discarded the entire run:
       // difficulty and wave progress reverted to "no path selected" even
       // though gear/gold/character progress all survived fine (those were
-      // already saved above). Only the difficulty/wave *position* is kept,
-      // not the live enemy's exact instance/HP — resuming re-spawns a fresh
-      // enemy for the wave the player was on (see resumeSegmentWave()),
-      // which loses mid-fight enemy damage but not the path itself.
+      // already saved above).
       mapDifficulty: MAP.difficulty,
       mapTotalWaves: MAP.totalWaves,
       mapCurrentSegWave: MAP.currentSegWave,
+      // segmentComplete is the ONLY reliable signal that a path has
+      // actually been fully cleared and is just waiting on the vendor/map
+      // screen, as opposed to still being mid-fight on that same wave
+      // number — currentSegWave alone is ambiguous between those two (a
+      // path that just finished wave 3 of 3 and a path still fighting wave
+      // 3 of 3 look identical without this). Getting this wrong previously
+      // let a refresh land on an already-completed wave and silently
+      // re-spawn a fresh enemy on it — killable again for another full set
+      // of gold/XP/kills, repeatably, forever, on every refresh.
+      mapSegmentComplete: !!MAP.segmentComplete,
+      // combatActive + the exact live enemy (identity/HP/status) must be
+      // saved and restored TOGETHER as one atomic snapshot — never the
+      // wave position alone. If combat isn't currently active, no enemy
+      // snapshot is saved at all: resuming must never invent a fresh
+      // enemy for a wave whose real enemy already died and was already
+      // rewarded (see the exploit above), it must instead either restore
+      // the exact fight that was actually happening, or defer to the
+      // normal "advance to the next wave" flow, or show the map/vendor —
+      // never spawn something new out of thin air.
+      combatActive: !!(G.combatActive && G.enemy && G.enemy.hp > 0),
+      enemySnapshot: (G.combatActive && G.enemy && G.enemy.hp > 0) ? G.enemy : null,
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
   } catch(e){ console.error('saveGame error:', e); }
@@ -3818,11 +3878,18 @@ function loadGame(name) {
     // started one yet), not mid-path, so leave MAP at its fresh-boot
     // defaults and let resumeFromSave() send them back to the map screen
     // exactly like it already does for saves from before this existed.
-    if(save.mapDifficulty && save.mapTotalWaves > 0 && save.mapCurrentSegWave > 0) {
+    if(save.mapDifficulty && save.mapTotalWaves > 0) {
       MAP.difficulty = save.mapDifficulty;
       MAP.totalWaves = save.mapTotalWaves;
-      MAP.currentSegWave = save.mapCurrentSegWave;
+      MAP.currentSegWave = save.mapCurrentSegWave || 0;
+      MAP.segmentComplete = !!save.mapSegmentComplete;
     }
+    // combatActive + enemySnapshot are an atomic pair — see saveGame() for
+    // why the wave position alone can never be trusted to mean "still
+    // fighting". resumeFromSave() is the only thing that should act on
+    // these; nothing between here and there touches G.enemy/G.combatActive.
+    G.combatActive = !!save.combatActive && !!save.enemySnapshot;
+    G.enemy = G.combatActive ? save.enemySnapshot : null;
     return true;
   } catch(e){ return false; }
 }
@@ -3941,11 +4008,14 @@ function loadFromData(data) {
     if(save.abilityLevels) G.abilityLevels = save.abilityLevels;
     if(save.loadout)       G.loadout       = save.loadout;
     if(save.healLoadout)   healLoadout     = save.healLoadout;
-    if(save.mapDifficulty && save.mapTotalWaves > 0 && save.mapCurrentSegWave > 0) {
+    if(save.mapDifficulty && save.mapTotalWaves > 0) {
       MAP.difficulty = save.mapDifficulty;
       MAP.totalWaves = save.mapTotalWaves;
-      MAP.currentSegWave = save.mapCurrentSegWave;
+      MAP.currentSegWave = save.mapCurrentSegWave || 0;
+      MAP.segmentComplete = !!save.mapSegmentComplete;
     }
+    G.combatActive = !!save.combatActive && !!save.enemySnapshot;
+    G.enemy = G.combatActive ? save.enemySnapshot : null;
     return true;
   } catch(e) { console.error('loadFromData error:', e); return false; }
 }
@@ -3953,19 +4023,54 @@ function loadFromData(data) {
 function resumeFromSave() {
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
   updateResourceBar(); updateManaBar();
-  // If we have a segment in progress, resume it on the SAME wave rather than
-  // advancing past it — spawnNextSegmentWave() increments currentSegWave
-  // before spawning (that's correct for its normal caller, finishing a wave
-  // and moving to the next one), which would silently skip the very wave
-  // the player was mid-fight on when they reloaded. resumeSegmentWave()
-  // spawns for the wave already recorded in MAP.currentSegWave instead.
-  if(MAP.difficulty && MAP.totalWaves > 0 && MAP.currentSegWave > 0) {
-    resumeSegmentWave();
+  // Decide what to resume INTO. The wave number (MAP.currentSegWave) alone
+  // can never be trusted here — it looks identical whether the player is
+  // still mid-fight on that wave or already finished it. The two signals
+  // that actually disambiguate this (both set atomically in saveGame()):
+  //   - MAP.segmentComplete: the path was already fully cleared and is
+  //     just waiting on the vendor/map screen. MUST NEVER spawn an enemy —
+  //     that would let an already-rewarded wave be killed again for a
+  //     free repeat of its gold/XP/kills, every time the page reloads.
+  //   - G.combatActive + G.enemy (restored together by loadGame(), see
+  //     there): the exact enemy that was alive at save time. If present,
+  //     resume THAT SAME fight in place rather than spawning anything new.
+  // Neither signal present just means "between waves, not yet complete" —
+  // safe to advance normally via spawnNextSegmentWave(), which increments
+  // past whatever wave was last cleared instead of re-fighting it.
+  if(MAP.segmentComplete) {
+    showMapScreen(false);
+  } else if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+    resumeLiveCombat();
   } else if(MAP.difficulty && MAP.totalWaves > 0) {
     spawnNextSegmentWave();
   } else {
     showMapScreen(false);
   }
+}
+
+// Restores the EXACT fight that was in progress at save time — same enemy,
+// same HP/status — instead of spawnEnemy()'s normal random roll. G.enemy is
+// already set to the persisted snapshot by loadGame()/loadFromData(); this
+// just wires up the rest of what a live fight needs (UI, arena draw, the
+// enemy's attack timer) without generating a new enemy or re-granting any
+// reward for a wave that hasn't actually been won yet.
+function resumeLiveCombat() {
+  if(!_tick.running) startMasterTick();
+  G._deathInProgress = false;
+  G._enemyDeathInProgress = false;
+  G.combatActive = true;
+  G._lastDamageTime = Date.now();
+  renderWaveTimeline();
+  updateEnemyUI();
+  updateResourceBar();
+  log(`<span class="log-sys">Resuming your fight with ${escHtml(G.enemy.name)}...</span>`);
+  if(IS_MOBILE()) mobileTab('arena');
+  setNextBtnActive(false);
+  setBossBtnActive(false);
+  safeHide('spawn-btn');
+  hidePotionBtn();
+  drawArena();
+  startEnemyAutoAttack();
 }
 
 // ═══════════════════════════════════════════════
@@ -4303,8 +4408,13 @@ function rollBoss(level, infinite=false) {
   };
 }
 
-function startBossAttempt() {
+function startBossAttempt(fromMap = false) {
   if (G.combatActive) return;
+  // Remember whether this attempt was launched from the standalone map-screen
+  // "Boss Attempt" button (not tied to any active difficulty path) versus the
+  // mid-path between-waves button, so closeBossResults() can send the player
+  // back to the right screen afterward instead of always assuming mid-path.
+  G._bossEntryFromMap = !!fromMap;
   G.inBoss = true;
   G.bossLevel = 1;
   G.bossDmgDealt = 0;
@@ -4412,8 +4522,16 @@ function endBossAttempt() {
 async function showBossResults() {
   const score = G.bossDmgDealt;
   const name = G.playerName;
+  const isGuest = !(sbUser && sbProfile);
 
-  // Show modal immediately with local data — don't block on network
+  // Local device cache still gives us something to show in the "Leaderboard"
+  // list immediately, before the real fetch resolves — but it must NEVER be
+  // used to compute a displayed RANK. It's just this device's own history
+  // (or a stale copy of a past real fetch); a guest's very first attempt, or
+  // a re-attempt with a lower score than a previously-cached one under the
+  // same name, could trivially "rank" as #1 even though the real leaderboard
+  // (visible right below it) shows plenty of higher scores. Guests never
+  // submit a score at all, so they can never have a real rank.
   const localLB = getLocalLeaderboard();
   const existingLocal = localLB.findIndex(e => e.name === name);
   if (existingLocal >= 0) {
@@ -4422,32 +4540,44 @@ async function showBossResults() {
     localLB.push({name, score, wave:G.wave, date: new Date().toLocaleDateString()});
   }
   localLB.sort((a,b) => b.score - a.score);
-  const localRank = localLB.findIndex(e=>e.name===name)+1;
   localStorage.setItem('elementalRift_leaderboard', JSON.stringify(localLB.slice(0,20)));
 
-  // Show results right away with local data
-  renderBossResultsModal(score, name, localLB, localRank);
+  // Show results right away — rank state is 'guest' (never ranked) or
+  // 'pending' (signed in, waiting on the real leaderboard fetch below).
+  renderBossResultsModal(score, name, localLB, isGuest ? 'guest' : 'pending');
+
+  if (isGuest) return; // nothing to submit or fetch for a guest — done.
 
   // Post score to Supabase (upsert — keeps best score only)
-  if(sbUser && sbProfile) {
-    postSupabaseLeaderboard(score).catch(()=>{});
-  }
+  postSupabaseLeaderboard(score).catch(()=>{});
 
-  // Fetch fresh leaderboard from Supabase and update modal
+  // Fetch fresh leaderboard from Supabase and update modal with the REAL rank
+  const rankEl = document.getElementById('boss-rank-display');
   try {
     const liveBoard = await fetchSupabaseLeaderboard();
     if(liveBoard && liveBoard.length > 0) {
       const myRank = liveBoard.findIndex(e=>e.name===name)+1;
       const lbSection = document.getElementById('boss-lb-section');
       if(lbSection) lbSection.innerHTML = buildLBHtml(liveBoard, name, 10);
-      const rankEl = document.getElementById('boss-rank-display');
-      if(rankEl && myRank > 0) rankEl.textContent = `Rank #${myRank}`;
+      if(rankEl) rankEl.textContent = myRank > 0 ? `Rank #${myRank}` : 'Outside the Top 20';
       saveLocalLeaderboard(liveBoard);
+    } else if(rankEl) {
+      rankEl.textContent = 'Rank unavailable';
     }
-  } catch(e) {}
+  } catch(e) {
+    if(rankEl) rankEl.textContent = 'Rank unavailable';
+  }
 }
 
-function renderBossResultsModal(score, name, leaderboard, myRank) {
+function renderBossResultsModal(score, name, leaderboard, rankState) {
+  // rankState is one of: 'guest' (never ranked — no score submitted),
+  // 'pending' (signed in, real rank still loading), or a positive number
+  // (a confirmed real rank). Never derive displayed rank text from the
+  // local-only cache — see showBossResults() for why.
+  const rankText = rankState === 'guest' ? 'Sign in to receive a leaderboard rank'
+    : rankState === 'pending' ? 'Calculating your rank…'
+    : (typeof rankState === 'number' && rankState > 0) ? `Rank #${rankState}`
+    : 'Rank unavailable';
   // Build milestone summary
   const claimed = G.bossRewardsClaimed;
   let milestoneHTML = '';
@@ -4470,7 +4600,7 @@ function renderBossResultsModal(score, name, leaderboard, myRank) {
   let html = `
     <div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:6px;">Total Damage Dealt</div>
     <div class="boss-result-score">${numberWithCommas(score)}</div>
-    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;" id="boss-rank-display">Rank #${myRank}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px;" id="boss-rank-display">${rankText}</div>
     ${milestoneHTML}
     <div class="panel-title" style="position:static;margin-bottom:8px;"> Leaderboard</div>
   <div id="boss-lb-section">` + buildLBHtml(leaderboard, name, 10) + `</div>`;
@@ -4485,14 +4615,25 @@ function closeBossResults() {
   G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3));
   updateHpBar();
   renderIngameLB();
-  // Show next wave button — let player initiate, don't auto-spawn
-  setNextBtnActive(true);
-  if(G.wave >= 3) setBossBtnActive(true);
-  showPotionBtn();
   G.combatActive = false;
   G.enemy = null;
   updateEnemyUI();
   drawArena();
+  if (G._bossEntryFromMap) {
+    // Launched from the standalone map-screen button, not mid-path — this
+    // attempt has no bearing on any difficulty path, so Continue must return
+    // to the difficulty map (Easy/Medium/Hard/Extreme/Boss Attempt), not the
+    // mid-path "next wave ready" HUD (which previously showed regardless of
+    // entry point and left the player stuck re-triggering the boss race).
+    G._bossEntryFromMap = false;
+    showMapScreen(false);
+  } else {
+    // Entered mid-path (between-waves choice overlay) — resume the normal
+    // "ready for next wave" flow exactly as before.
+    setNextBtnActive(true);
+    if(G.wave >= 3) setBossBtnActive(true);
+    showPotionBtn();
+  }
   // Boss milestones can award XP that levels the player up mid-fight — show
   // that level-up popup now that the results screen is out of the way,
   // instead of it racing to stack on top of this modal.
@@ -4572,6 +4713,16 @@ async function postLeaderboard(data) {
 
 function getLocalLeaderboard() {
   try { return JSON.parse(localStorage.getItem('elementalRift_leaderboard')||'[]'); } catch { return []; }
+}
+
+// Persist a freshly-fetched REAL leaderboard locally so the next "instant
+// preview" shown before a live fetch resolves (see showBossResults) is an
+// actual snapshot of the real board rather than going stale. This function
+// was referenced but never defined — meaning the local cache was silently
+// never updated with real data, and the resulting ReferenceError was always
+// swallowed by the calling try/catch.
+function saveLocalLeaderboard(board) {
+  try { localStorage.setItem('elementalRift_leaderboard', JSON.stringify((board||[]).slice(0,20))); } catch {}
 }
 
 
@@ -7019,7 +7170,7 @@ function closeVendor(){
   G.buyingVendorItem = false;
   if(MAP.segmentComplete){
     MAP.segmentComplete = false;
-    showMapScreen(false);
+    showMapScreen(false); // resets MAP fully and saves — see showMapScreen()
   } else {
     if(G.enemy && G.enemy.hp > 0){
       G.combatActive = true;
@@ -7030,6 +7181,7 @@ function closeVendor(){
       if(G.wave>=3) setBossBtnActive(true);
       if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
     }
+    saveGame();
   }
   setTimeout(()=>tryShowLevelUpPopup(), 200);
 }
@@ -7217,6 +7369,30 @@ function showAccountMenu() {
   menu.classList.toggle('hidden');
 }
 
+// Toggles the name-screen's login/account UI: "Log In" when no account is
+// signed in (the only way to ever reach #auth-modal used to be an
+// unreachable fallback deep in the password-reset flow — new players had
+// no path to creating an account at all, so their name could never appear
+// on the real leaderboard), or "Signed in as X" + a "Not X? Log In" link
+// to switch accounts when one is. Called from initGame() (every time the
+// name screen shows) and onAuthReady() (right after signing in/up).
+function updateNameScreenAuthUI() {
+  const loginBtn = document.getElementById('login-entry-btn');
+  const switchLink = document.getElementById('switch-account-link');
+  const switchName = document.getElementById('switch-account-name');
+  const idEl = document.getElementById('name-screen-identity');
+  if(sbProfile) {
+    if(loginBtn) loginBtn.classList.add('hidden');
+    if(switchLink) switchLink.classList.remove('hidden');
+    if(switchName) switchName.textContent = sbProfile.username;
+    if(idEl) idEl.textContent = `Signed in as ${sbProfile.username}`;
+  } else {
+    if(loginBtn) loginBtn.classList.remove('hidden');
+    if(switchLink) switchLink.classList.add('hidden');
+    if(idEl) idEl.textContent = '';
+  }
+}
+
 function initGame() {
   setAdScreenActive(true);
   setArenaBg();
@@ -7228,6 +7404,7 @@ function initGame() {
     G.playerName = sbProfile.username;
     document.getElementById('player-name-display').textContent = sbProfile.username;
   }
+  updateNameScreenAuthUI();
   loadNameScreenLB();
   // Show continue button if a valid save exists
   const raw = localStorage.getItem('elementalRift_v3');
@@ -7923,6 +8100,7 @@ const _tick = {
   running: false,
   manaStarved: {},  // per-slot ms spent unable to afford mana while AUTO (key: slotIdx or 'heal')
   stalemate: 0,     // accumulator ms — see stalemate watchdog below
+  autosave: 0,      // accumulator ms — periodic mid-fight save, see masterTick
 };
 
 // ── STALEMATE WATCHDOG ──
@@ -8176,6 +8354,24 @@ function masterTick(ts) {
     }
   }
 
+  // ── Periodic mid-fight autosave ──
+  // The discrete saveGame() calls elsewhere (wave transitions, leveling,
+  // equipping, etc.) leave a real gap during a single long fight: nothing
+  // re-saved the enemy's current HP while it was slowly getting chipped
+  // down, so a refresh/crash mid-fight could still roll back a
+  // significant amount of progress on that one enemy even though the wave
+  // position itself was correct. Throttled to every ~3s so it doesn't
+  // hammer localStorage every frame.
+  if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+    _tick.autosave += dt;
+    if(_tick.autosave >= 3000) {
+      _tick.autosave = 0;
+      saveGame();
+    }
+  } else {
+    _tick.autosave = 0;
+  }
+
   requestAnimationFrame(masterTick);
 }
 
@@ -8184,7 +8380,7 @@ function startMasterTick() {
   _tick.running = true;
   _tick.lastTs = 0;
   _tick.mana = 0; _tick.status = 0; _tick.boss = 0;
-  _tick.enemyAtk = 0; _tick.stalemate = 0;
+  _tick.enemyAtk = 0; _tick.stalemate = 0; _tick.autosave = 0;
   _tick.enemyAtkDelay = G.inBoss ? 1200 + Math.random()*600 : 1800 + Math.random()*1200;
   requestAnimationFrame(masterTick);
 }
@@ -8817,6 +9013,7 @@ function dismissLoader() {
 }
 
 function onAuthReady() {
+  updateNameScreenAuthUI();
   if(sbProfile) {
     G.playerName = sbProfile.username;
     document.getElementById('player-name-display').textContent = sbProfile.username;
@@ -9528,7 +9725,20 @@ function openLevelUpVoluntarily() {
 function updateSPAvailableBadge() {
   const badge = document.getElementById('sp-available-badge');
   if(!badge) return;
-  const total = (spPending||0) + (passivePending||0);
+  // Use the real spendable currencies (G.skillPoints/G.passivePoints)
+  // rather than spPending/passivePending. Those two counters are a
+  // separate, redundant "queued since the popup last opened" tracker used
+  // only to drive the SP popup's own guided step-by-step flow — they can
+  // drift out of sync with the real currency whenever a point is spent
+  // through a path that updates the currency but never touches them. The
+  // mobile Skills panel is exactly that path: its upgradeSkillMobile()
+  // spends a real passive point via upgradeSkill() (G.passivePoints--)
+  // without going through passivePending at all, which left this badge
+  // permanently stuck showing a point that had already been spent — the
+  // panel itself correctly showed 0 remaining, but the badge above it kept
+  // counting a point that no longer existed. The real currency is always
+  // correct here regardless of which UI was used to spend from it.
+  const total = (G.skillPoints||0) + (G.passivePoints||0);
   if(total > 0 && !spPopupOpen) {
     const text = document.getElementById('sp-available-text');
     if(text) text.textContent = `${total} pt${total>1?'s':''}`;
@@ -9790,6 +10000,16 @@ function spSpendPassive(el, idx, force) {
   const before = G.passivePoints;
   upgradeSkill(el, idx, force);
   if(G.passivePoints < before) passivePending = Math.max(0, passivePending - 1);
+  // upgradeSkill() above already calls updateResourceBar() internally, which
+  // refreshes the "N pts" HUD badge — but it does so BEFORE passivePending
+  // is decremented on the line above, so that refresh reads the stale
+  // pre-spend total and the badge is left one point too high. Nothing after
+  // that point re-synced it except closeSPPopup() (only reached once every
+  // pending point is gone), so spending down to a mix like "0 skill, 0
+  // passive but badge still showing 2" could sit there indefinitely.
+  // Explicitly refresh with the now-current numbers regardless of which
+  // branch runs below.
+  updateSPAvailableBadge();
   if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
   renderSPPopup();
 }
