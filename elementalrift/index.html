@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v2.7.0 -->
+<!-- v3.11.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1738,20 +1738,31 @@ window.pushAdWhenVisible = function(ins) {
     if (ins._adPushed) return true;
     // offsetParent !== null only rules out display:none up the ancestor
     // chain — it does NOT guarantee the element has actually been given a
-    // nonzero width yet (e.g. the moment a screen's .hidden class is
-    // removed, before that reveal's layout has fully settled, or while an
-    // ancestor's own width is still resolving). The "No slot size for
-    // availableWidth=0" error was still occurring after checking
-    // offsetParent alone, so check the real rendered width too — Google's
-    // own AdSense troubleshooting guidance is to confirm actual width, not
-    // just visibility, before calling push().
-    if (ins.offsetParent === null || ins.offsetWidth === 0) return false;
+    // nonzero width yet. Check both offsetWidth AND getBoundingClientRect()
+    // width (the latter is what AdSense's own measurement is documented to
+    // use) rather than relying on either alone.
+    if (ins.offsetParent === null) return false;
+    if (ins.offsetWidth === 0) return false;
+    if (ins.getBoundingClientRect().width === 0) return false;
     ins._adPushed = true;
     (window.adsbygoogle = window.adsbygoogle || []).push({});
     return true;
   }
-  if (tryPush()) return;
-  const poll = setInterval(() => { if (tryPush()) clearInterval(poll); }, 300);
+  // The very first attempt for an ad unit that's already visible at parse
+  // time (e.g. name-screen's, whose inline <script> runs synchronously
+  // while the browser is still mid-parse of the rest of the document) used
+  // to check width immediately, forcing a layout pass against a document
+  // that isn't fully parsed yet. Even though this element's own subtree is
+  // already complete by that point, defer the first real check past two
+  // animation frames — a well-established way to guarantee at least one
+  // full layout+paint cycle has actually happened — instead of trusting a
+  // forced-synchronous-reflow read taken mid-parse. Elements hidden at
+  // this point (map-screen) still fall through to the same interval poll
+  // below once actually revealed later.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (tryPush()) return;
+    const poll = setInterval(() => { if (tryPush()) clearInterval(poll); }, 300);
+  }));
 };
 </script>
 
@@ -2020,9 +2031,20 @@ window.pushAdWhenVisible = function(ins) {
          data-full-width-responsive="true"></ins>
     <script>pushAdWhenVisible(document.currentScript.previousElementSibling);</script>
   </div>
-  <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);">v3.0.0 · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
+  <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);"><span id="game-version-footer">v3.0.0</span> · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
+// Single source of truth for the visible version stamp on the opening
+// (name) screen — bump GAME_VERSION each update instead of hunting for
+// hardcoded "vX.Y.Z" text in the HTML, so the on-screen number can never
+// silently drift out of sync with what's actually deployed. This is what
+// lets a quick glance at the name screen confirm whether the latest
+// commit is actually live.
+const GAME_VERSION = '3.11.0';
+(function(){
+  const el = document.getElementById('game-version-footer');
+  if(el) el.textContent = 'v' + GAME_VERSION;
+})();
 // No shards on name screen — background asset handles visuals
 </script>
 
@@ -3675,7 +3697,19 @@ function onSegmentWaveComplete() {
     setNextBtnActive(true);
     showPotionBtn();
     if(G.wave >= 3) setBossBtnActive(true);
-    if(autoWaveEnabled) setTimeout(()=>{ if(autoWaveEnabled) nextWave(); }, 600);
+    // setNextBtnActive(true) above already schedules its own auto-advance
+    // timer when autoWaveEnabled — this used to ALSO schedule a second,
+    // independent one right here. Two timers racing to both call
+    // nextWave() ~600ms later was the actual root cause of an intermittent
+    // "merchant opens over a still-alive enemy" bug: if one of the two
+    // timers got delayed (e.g. by tab throttling) until just after the
+    // other had already advanced to the next wave and spawned a fresh
+    // enemy, the delayed one fired nextWave() again while that enemy was
+    // very much alive and mid-fight, producing the "Spawn blocked: enemy
+    // still active, clearing" warning and a corrupted, stuck vendor state.
+    // nextWave() itself now also guards against exactly this (see below),
+    // but removing the redundant timer here means the race mostly doesn't
+    // happen in the first place.
   }
 }
 
@@ -6136,11 +6170,27 @@ function updateAutoWaveBtn() {
 }
 
 function nextWave() {
-  // Hard guard: stale/duplicate auto-advance timers (from setNextBtnActive's
-  // own 600ms timer, toggleAutoWave, AND onSegmentWaveComplete's timer all
-  // being able to independently call this) must never be allowed to spawn
-  // a wave beyond the path's limit. If the path is already done, route into
-  // the normal completion flow (vendor/boss-prompt) instead of spawning.
+  // Hard guard #1: a stale/duplicate auto-advance timer firing AFTER
+  // another one already advanced the wave must never spawn a fresh enemy
+  // on top of one that's already alive and being fought. This is the
+  // scenario that produced "Spawn blocked: enemy still active, clearing"
+  // together with a merchant screen opening over a still-alive final-wave
+  // enemy — a delayed duplicate timer (see onSegmentWaveComplete) called
+  // this again after the wave had already correctly advanced and spawned,
+  // and this used to have no way to tell "the path is genuinely finished"
+  // apart from "we're mid-fight on the wave we just entered" since both
+  // look identical from currentSegWave/totalWaves alone. If there's a
+  // live enemy in an active fight right now, this call is definitely
+  // stale — ignore it.
+  if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+    return;
+  }
+  // Hard guard #2: stale/duplicate auto-advance timers (from
+  // setNextBtnActive's own 600ms timer, toggleAutoWave, AND
+  // onSegmentWaveComplete all being able to reach this) must never be
+  // allowed to spawn a wave beyond the path's limit. If the path is
+  // already done, route into the normal completion flow (vendor/
+  // boss-prompt) instead of spawning.
   if(MAP.currentSegWave >= MAP.totalWaves) {
     setNextBtnActive(false);
     setBossBtnActive(false);
