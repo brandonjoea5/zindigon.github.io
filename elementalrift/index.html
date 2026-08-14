@@ -1719,19 +1719,27 @@ try {
 <body>
 
 <script>
-// Every ad unit's own inline <script> used to call adsbygoogle.push({})
-// immediately at parse time, regardless of whether its container was
-// actually visible. #map-screen (and #ad-sidebar, below its min-width/
-// min-height media query) start out hidden via CSS (display:none) —
-// pushing a *responsive* unit while its box has zero measurable width is
-// exactly what produces the AdSense console error "No slot size for
-// availableWidth=0", and the slot can end up permanently blank even once
-// the screen is later shown. This helper defers the push until the ad's
-// own element is actually laid out AND has a real measurable width, then
-// pushes exactly once. Defined up front, before any ad unit's own markup,
-// so every placement below can call it immediately. Call as
-// pushAdWhenVisible(document.currentScript.previousElementSibling) from
-// each ad unit's own inline script.
+// adsbygoogle.push({}) is NOT scoped to one <ins> — it's a page-wide
+// signal that tells Google's script "go scan the whole document for any
+// unprocessed ins.adsbygoogle elements and initialize all of them right
+// now." Every earlier version of this fix gated WHEN each ad's own push()
+// call fired on THAT element's own visibility/width, but that never
+// actually solved the problem: the moment ANY one of the three ad units on
+// this page (e.g. the name-screen one, visible immediately at load) became
+// visible and called push(), that single call would ALSO sweep in and try
+// to initialize the OTHER two <ins> elements sitting elsewhere in the DOM
+// — including map-screen's, which is display:none (0 width) at that exact
+// moment — because they already carried the "adsbygoogle" class the
+// scanner looks for, even though nothing had gated *them* individually
+// yet. That's why "No slot size for availableWidth=0" kept recurring no
+// matter how carefully the per-element push timing was tightened.
+//
+// The actual fix: don't let an <ins> carry the "adsbygoogle" class AT ALL
+// until the instant it's individually confirmed visible. Each ad unit's
+// markup below uses a harmless placeholder class ("adsbygoogle-slot")
+// instead, so Google's scanner can't find it — regardless of how many
+// push() calls happen elsewhere on the page — until this helper adds the
+// real class right before pushing for that specific element.
 window.pushAdWhenVisible = function(ins) {
   if (!ins || ins._adPushed) return;
   function tryPush() {
@@ -1745,6 +1753,12 @@ window.pushAdWhenVisible = function(ins) {
     if (ins.offsetWidth === 0) return false;
     if (ins.getBoundingClientRect().width === 0) return false;
     ins._adPushed = true;
+    // Only now does this element become discoverable to AdSense's
+    // page-wide scan — see the block comment above for why this ordering
+    // is the actual fix, not just another visibility check.
+    ins.classList.remove('adsbygoogle-slot');
+    ins.classList.add('adsbygoogle');
+    if (typeof window.watchAdStatus === 'function') window.watchAdStatus(ins);
     (window.adsbygoogle = window.adsbygoogle || []).push({});
     return true;
   }
@@ -1768,9 +1782,11 @@ window.pushAdWhenVisible = function(ins) {
 
 <!-- Sidebar ad, shown beside the name/map menu screens only — a fixed
      300x250 unit (no auto/full-width-responsive), so AdSense can't render
-     it any larger than its declared box. Never shown during gameplay. -->
+     it any larger than its declared box. Never shown during gameplay.
+     Starts with a harmless placeholder class, not "adsbygoogle" — see the
+     pushAdWhenVisible comment above for why. -->
 <div id="ad-sidebar">
-  <ins class="adsbygoogle"
+  <ins class="adsbygoogle-slot"
        style="display:inline-block;width:300px;height:250px"
        data-ad-client="ca-pub-2900666268471871"
        data-ad-slot="9972731543"></ins>
@@ -1782,29 +1798,23 @@ window.pushAdWhenVisible = function(ins) {
 // <style>) instead of leaving an empty box that still intercepts clicks.
 // Filled slots get data-ad-status="filled" the same way, so this also
 // covers the normal case, just doing nothing extra for it.
-(function() {
-  function watch(ins) {
-    if (!ins || ins._adStatusWatched) return;
-    ins._adStatusWatched = true;
-    const check = () => {
-      const container = ins.closest('.ad-inflow, #ad-sidebar');
-      if (container) container.classList.toggle('ad-unfilled', ins.getAttribute('data-ad-status') === 'unfilled');
-    };
-    check();
-    new MutationObserver(check).observe(ins, { attributes: true, attributeFilter: ['data-ad-status'] });
-  }
-  function scan() { document.querySelectorAll('ins.adsbygoogle').forEach(watch); }
-  // This script tag runs before name-screen/map-screen (further down the
-  // page) have been parsed, so their <ins> units don't exist yet at this
-  // point — wait for the full DOM before scanning. All ad units are part
-  // of the initial page HTML (never created later via innerHTML), so one
-  // scan after DOMContentLoaded covers every placement.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scan);
-  } else {
-    scan();
-  }
-})();
+//
+// Exposed as window.watchAdStatus so pushAdWhenVisible can attach this the
+// instant it adds the real "adsbygoogle" class to an ad unit — a plain
+// DOMContentLoaded scan for ins.adsbygoogle (the old approach) would miss
+// map-screen's and the sidebar's units entirely, since neither carries
+// that class until they're individually pushed, which can happen long
+// after DOMContentLoaded.
+window.watchAdStatus = function(ins) {
+  if (!ins || ins._adStatusWatched) return;
+  ins._adStatusWatched = true;
+  const check = () => {
+    const container = ins.closest('.ad-inflow, #ad-sidebar');
+    if (container) container.classList.toggle('ad-unfilled', ins.getAttribute('data-ad-status') === 'unfilled');
+  };
+  check();
+  new MutationObserver(check).observe(ins, { attributes: true, attributeFilter: ['data-ad-status'] });
+};
 </script>
 
 <!-- Hidden crawlable content for search engines -->
@@ -2023,7 +2033,7 @@ window.pushAdWhenVisible = function(ins) {
        taller-than-expected responsive creative just extends this screen's
        own scroll area instead of ever covering a button. -->
   <div class="ad-inflow">
-    <ins class="adsbygoogle"
+    <ins class="adsbygoogle-slot"
          style="display:block"
          data-ad-client="ca-pub-2900666268471871"
          data-ad-slot="9509982523"
@@ -2145,7 +2155,7 @@ const GAME_VERSION = '3.11.0';
   <!-- In-flow ad — see the matching comment on name-screen's copy of this
        block for why this is real document content, not a fixed overlay. -->
   <div class="ad-inflow">
-    <ins class="adsbygoogle"
+    <ins class="adsbygoogle-slot"
          style="display:block"
          data-ad-client="ca-pub-2900666268471871"
          data-ad-slot="9509982523"
