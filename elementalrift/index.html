@@ -3624,6 +3624,26 @@ function spawnNextSegmentWave() {
   }
 }
 
+// Used only by resumeFromSave() to restore an in-progress path after a
+// reload/crash — spawns for the wave MAP.currentSegWave is ALREADY set to,
+// instead of spawnNextSegmentWave()'s normal "increment then spawn" (which
+// is correct when finishing a wave and advancing to the next one, but would
+// skip straight past whatever wave was live at save time). The specific
+// enemy/HP that was live at save time isn't recoverable — only the
+// difficulty/wave position is persisted (see saveGame()) — so this starts a
+// fresh enemy for that same wave rather than silently dropping the player
+// back to "no path selected".
+function resumeSegmentWave() {
+  G.wave = MAP.currentSegWave;
+  MAP.isBossWave = MAP.difficulty === 'extreme'
+    ? (MAP.currentSegWave % 5 === 0)
+    : MAP.currentSegWave === MAP.totalWaves;
+  renderWaveTimeline();
+  if(typeof updateResourceBar === 'function') updateResourceBar();
+  MAP.pendingBoss = false;
+  spawnEnemy();
+}
+
 function startBossWave() {
   // Wave boss — real HP, attacks player, drops loot on kill
   G.enemy = rollBoss(1 + Math.floor(G.wave/5), false);
@@ -3729,7 +3749,7 @@ function onSegmentWaveComplete() {
 function saveGame() {
   try {
     const save = {
-      playerName:G.playerName, hp:G.hp, maxHp:G.maxHp,
+      playerName:G.playerName, hp:G.hp, maxHp:G.maxHp, mana:G.mana,
       gold:G.gold, kills:G.kills, wave:G.wave,
       xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
       spPending, passivePending,
@@ -3739,6 +3759,17 @@ function saveGame() {
       abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
       selectedTitle: playerSelectedTitle,
       usedFreeVendorRefresh: G.usedFreeVendorRefresh,
+      // Active-path progress — without this, refreshing (or a crash, or
+      // mobile tab eviction) mid-path silently discarded the entire run:
+      // difficulty and wave progress reverted to "no path selected" even
+      // though gear/gold/character progress all survived fine (those were
+      // already saved above). Only the difficulty/wave *position* is kept,
+      // not the live enemy's exact instance/HP — resuming re-spawns a fresh
+      // enemy for the wave the player was on (see resumeSegmentWave()),
+      // which loses mid-fight enemy damage but not the path itself.
+      mapDifficulty: MAP.difficulty,
+      mapTotalWaves: MAP.totalWaves,
+      mapCurrentSegWave: MAP.currentSegWave,
     };
     localStorage.setItem('elementalRift_v3', JSON.stringify(save));
   } catch(e){ console.error('saveGame error:', e); }
@@ -3756,6 +3787,12 @@ function loadGame(name) {
     G.playerName = save.playerName;
     G.maxHp = save.maxHp || 200;
     G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
+    // Mana wasn't persisted at all before — every reload silently reset it
+    // to whatever G's default was, regardless of what the player actually
+    // had. Just store the raw value here; resumeFromSave() refreshes the
+    // mana bar against the real computed max once baseStats/equipment
+    // (set further down in this function) are in place.
+    if(typeof save.mana === 'number') G.mana = Math.max(0, save.mana);
     G.gold = save.gold;
     G.xp = save.xp||0; G.xpToNext = save.xpToNext||40; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
     spPending = save.spPending||0; passivePending = save.passivePending||0;
@@ -3774,6 +3811,18 @@ function loadGame(name) {
     if(save.loadout)  G.loadout  = save.loadout;
     if(save.healLoadout) healLoadout = save.healLoadout;
     G.usedFreeVendorRefresh = !!save.usedFreeVendorRefresh;
+    // Restore active-path position (difficulty + which wave was in
+    // progress) — see the matching comment in saveGame(). Only restore if
+    // it actually looks like a path was underway; a wave value of 0 means
+    // the player was on the map-screen choosing a difficulty (or hadn't
+    // started one yet), not mid-path, so leave MAP at its fresh-boot
+    // defaults and let resumeFromSave() send them back to the map screen
+    // exactly like it already does for saves from before this existed.
+    if(save.mapDifficulty && save.mapTotalWaves > 0 && save.mapCurrentSegWave > 0) {
+      MAP.difficulty = save.mapDifficulty;
+      MAP.totalWaves = save.mapTotalWaves;
+      MAP.currentSegWave = save.mapCurrentSegWave;
+    }
     return true;
   } catch(e){ return false; }
 }
@@ -3871,6 +3920,7 @@ function loadFromData(data) {
     G.playerName = save.playerName || G.playerName;
     G.maxHp = save.maxHp || 200;
     G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
+    if(typeof save.mana === 'number') G.mana = Math.max(0, save.mana);
     G.gold = save.gold || 0;
     G.xp = save.xp||0; G.xpToNext = save.xpToNext||40;
     G.playerLevel = save.playerLevel||1;
@@ -3891,15 +3941,27 @@ function loadFromData(data) {
     if(save.abilityLevels) G.abilityLevels = save.abilityLevels;
     if(save.loadout)       G.loadout       = save.loadout;
     if(save.healLoadout)   healLoadout     = save.healLoadout;
+    if(save.mapDifficulty && save.mapTotalWaves > 0 && save.mapCurrentSegWave > 0) {
+      MAP.difficulty = save.mapDifficulty;
+      MAP.totalWaves = save.mapTotalWaves;
+      MAP.currentSegWave = save.mapCurrentSegWave;
+    }
     return true;
   } catch(e) { console.error('loadFromData error:', e); return false; }
 }
 
 function resumeFromSave() {
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
-  updateResourceBar();
-  // If we have a segment in progress use segment system, else spawn directly
-  if(MAP.difficulty && MAP.totalWaves > 0) {
+  updateResourceBar(); updateManaBar();
+  // If we have a segment in progress, resume it on the SAME wave rather than
+  // advancing past it — spawnNextSegmentWave() increments currentSegWave
+  // before spawning (that's correct for its normal caller, finishing a wave
+  // and moving to the next one), which would silently skip the very wave
+  // the player was mid-fight on when they reloaded. resumeSegmentWave()
+  // spawns for the wave already recorded in MAP.currentSegWave instead.
+  if(MAP.difficulty && MAP.totalWaves > 0 && MAP.currentSegWave > 0) {
+    resumeSegmentWave();
+  } else if(MAP.difficulty && MAP.totalWaves > 0) {
     spawnNextSegmentWave();
   } else {
     showMapScreen(false);
@@ -4950,6 +5012,7 @@ function earnClassXP(cls, amount) {
   if(!G.classXP[cls] && G.classXP[cls]!==0) return;
   G.classXP[cls] = (G.classXP[cls]||0) + amount;
   const maxLv = CLASS_XP_TO_LEVEL.length - 1;
+  let leveledUp = false;
   while(G.classLv[cls] < maxLv) {
     const needed = CLASS_XP_TO_LEVEL[G.classLv[cls]+1] - CLASS_XP_TO_LEVEL[G.classLv[cls]];
     const currentXP = G.classXP[cls] - CLASS_XP_TO_LEVEL[G.classLv[cls]];
@@ -4957,10 +5020,32 @@ function earnClassXP(cls, amount) {
       G.classLv[cls]++;
       G.classCP[cls] = (G.classCP[cls]||0) + 1;
       log(`<span style="color:${CLASS_COLORS[cls]}"> ${cls.charAt(0).toUpperCase()+cls.slice(1)} Mastery increased to ${G.classLv[cls]}!</span>`);
-      updateClassXPPanel();
+      leveledUp = true;
     } else break;
   }
   updateClassXPPanel();
+  // Class Mastery level feeds directly into derived stats in getStats() —
+  // e.g. a Warrior's max HP includes +8 per Mastery level — but G.maxHp/
+  // G.hp are cached snapshots of getStats(), only refreshed at specific
+  // call sites (equip/unequip, spending a stat or passive point). This is
+  // the one that was missing: Mastery levels up automatically and silently
+  // during normal combat (this function runs on every ability use), so the
+  // real max HP was already higher than what the HP bar displayed the
+  // instant Mastery leveled up. The stale display only "caught up" whenever
+  // some unrelated action (equipping a totally unrelated item) happened to
+  // call getStats() again — surfacing as a sudden, unexplained HP jump that
+  // looked tied to that action instead of the Mastery level-up that
+  // actually caused it. Only matters for the player's OWN class, since
+  // getStats() only applies class-mastery bonuses for G.playerClass.
+  if(leveledUp && cls === G.playerClass) {
+    const st = getStats();
+    const oldMax = G.maxHp;
+    G.maxHp = st.maxHp;
+    if(G.maxHp > oldMax) G.hp += (G.maxHp - oldMax);
+    G.hp = Math.min(G.hp, G.maxHp);
+    updateHpBar();
+    updateStatsPanel();
+  }
 }
 
 function isAbilityUnlocked(abId) {
@@ -9456,6 +9541,7 @@ function updateSPAvailableBadge() {
 function awardXP(amount) {
   G.xp += amount;
   updateXPBar();
+  let leveledUp = false;
   while (G.xp >= G.xpToNext) {
     G.xp -= G.xpToNext;
     G.playerLevel = (G.playerLevel||1) + 1;
@@ -9464,8 +9550,24 @@ function awardXP(amount) {
     G.passivePoints++;
     spPending++;       // one skill investment per level
     passivePending++;  // one passive investment per level
+    leveledUp = true;
   }
   updateSPAvailableBadge();
+  // Re-sync the HP/mana bars against derived stats right at the moment of
+  // level-up rather than waiting for some unrelated later action (equipping
+  // gear, spending a stat point) to recompute them — see the matching fix
+  // in earnClassXP() for the concrete bug report this covers (max HP
+  // display stayed stale after leveling until an unrelated equip action
+  // triggered a recompute and everything "jumped" at once).
+  if(leveledUp) {
+    const st = getStats();
+    const oldMax = G.maxHp;
+    G.maxHp = st.maxHp;
+    if(G.maxHp > oldMax) G.hp += (G.maxHp - oldMax);
+    G.hp = Math.min(G.hp, G.maxHp);
+    updateHpBar();
+    updateStatsPanel();
+  }
 }
 
 function triggerLevelUpPopup() {
@@ -9920,6 +10022,8 @@ function pauseTutorialForModal(step) {
   });
   clearTimeout(_tutSkipStepTimer);
   clearInterval(_tutStateWatcher);
+  document.removeEventListener('click', _tutGlobalTapCheck, true);
+  document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   if(_tutCurrentHandler) {
@@ -10059,10 +10163,31 @@ function renderTutStep(step, s) {
   spotlight.style.width  = (rect.width + pad*2) + 'px';
   spotlight.style.height = (rect.height + pad*2) + 'px';
 
+  // Content — set BEFORE measuring the bubble below. Copy length varies a lot
+  // per step (the Heal step's description is much longer than the others),
+  // so the bubble's real rendered height varies too. Content has to be in
+  // place first so the height we measure next reflects what will actually
+  // be on screen.
+  document.getElementById('tut-title').textContent = s.title;
+  document.getElementById('tut-desc').textContent  = s.desc;
+  document.getElementById('tut-hint').textContent  = s.hint;
+
   // Bubble — position above or below depending on space
   const bubble = document.getElementById('tut-bubble');
   const bubbleW = 240;
-  const bubbleH = 130;
+  bubble.style.width = bubbleW + 'px';
+  // Measure the bubble's ACTUAL height instead of assuming a fixed 130px.
+  // That fixed guess was shorter than the real rendered height for
+  // longer-copy steps (Heal's description wraps to more lines), so the
+  // bubble sat lower/higher than expected and overlapped the very button
+  // it was pointing at. Since #tut-bubble has pointer-events:all (so its
+  // own tap-hint text is legible/interactive), that overlap could swallow
+  // a tap aimed at the glowing target underneath before it ever reached the
+  // ability slot's own click handler — this is the most likely explanation
+  // for reports of a tutorial step "not detecting" an action that visibly
+  // succeeded (see the Heal step bug report: mana spent, HP restored, but
+  // the tutorial never advanced).
+  const bubbleH = bubble.getBoundingClientRect().height || 130;
   const spaceAbove = rect.top - pad;
   const spaceBelow = window.innerHeight - rect.bottom - pad;
 
@@ -10084,7 +10209,6 @@ function renderTutStep(step, s) {
 
   bubble.style.left = bubbleLeft + 'px';
   bubble.style.top  = bubbleTop + 'px';
-  bubble.style.width = bubbleW + 'px';
 
   // Arrow
   const arrow = document.getElementById('tut-arrow');
@@ -10101,11 +10225,6 @@ function renderTutStep(step, s) {
     arrow.style.transform = 'scaleY(-1)';
     path.setAttribute('d','M30,0 Q30,50 30,65');
   }
-
-  // Content
-  document.getElementById('tut-title').textContent = s.title;
-  document.getElementById('tut-desc').textContent  = s.desc;
-  document.getElementById('tut-hint').textContent  = s.hint;
 
   // Pulse the target element
   el.style.animation = 'tutPulse 1s ease-in-out infinite';
@@ -10164,11 +10283,41 @@ function renderTutStep(step, s) {
       advanceTutStep(el, s, true);
     }
   }, 400);
+
+  // Second, independent safety net — catches the action succeeding even when
+  // NEITHER of the above catches it: the tap on `el` never actually reaches
+  // `el`'s own listeners (e.g. it lands on the tutorial's own bubble/spotlight
+  // overlay instead — see the bubble-height fix above for one way that could
+  // happen), and the 400ms poll hasn't had a chance to run yet. Reported
+  // symptom this covers: Heal's mana got spent and HP visibly rose (proving
+  // the tap DID land on the real button and DID fire it), yet the tutorial
+  // sat stuck on "Tap Heal to restore health" until the 6-second skip
+  // fallback appeared — meaning nothing on `el` itself, and no interval tick,
+  // ever ran afterward. A capture-phase listener on `document` runs before
+  // any handler further down the tree could stop the event, so as long as
+  // SOME click/touchend happens anywhere on the page, we get a chance to
+  // notice the underlying condition became true — independent of exactly
+  // which element the tap hit or whether `el`'s own listeners are intact.
+  document.removeEventListener('click', _tutGlobalTapCheck, true);
+  document.removeEventListener('touchend', _tutGlobalTapCheck, true);
+  _tutGlobalTapCheck = () => {
+    if (handled) return;
+    if (isTutStepAlreadySatisfied(s)) {
+      handled = true;
+      clearInterval(_tutStateWatcher);
+      document.removeEventListener('click', _tutGlobalTapCheck, true);
+      document.removeEventListener('touchend', _tutGlobalTapCheck, true);
+      advanceTutStep(el, s, true);
+    }
+  };
+  document.addEventListener('click', _tutGlobalTapCheck, true);
+  document.addEventListener('touchend', _tutGlobalTapCheck, true);
 }
 
 let _tutSkipStepTimer = null;
 let _tutCurrentHandler = null;
 let _tutStateWatcher = null;
+let _tutGlobalTapCheck = null;
 
 function advanceTutStep(el, s, showConfirm) {
   // Clean up this step's highlight
@@ -10177,6 +10326,8 @@ function advanceTutStep(el, s, showConfirm) {
   el.style.zIndex = '';
   clearTimeout(_tutSkipStepTimer);
   clearInterval(_tutStateWatcher);
+  document.removeEventListener('click', _tutGlobalTapCheck, true);
+  document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   // Hide the spotlight/bubble/arrow immediately instead of leaving the just-
@@ -10241,6 +10392,8 @@ function endTutorial() {
   document.getElementById('ability-tutorial').classList.remove('active');
   clearTimeout(_tutSkipStepTimer);
   clearInterval(_tutStateWatcher);
+  document.removeEventListener('click', _tutGlobalTapCheck, true);
+  document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   clearInterval(_tutBlockPoll);
   _tutBlockPoll = null;
   clearInterval(_tutMinWavePoll);
