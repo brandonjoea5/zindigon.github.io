@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.16.0 -->
+<!-- v3.17.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -2083,7 +2083,7 @@ window.watchAdStatus = function(ins) {
 // silently drift out of sync with what's actually deployed. This is what
 // lets a quick glance at the name screen confirm whether the latest
 // commit is actually live.
-const GAME_VERSION = '3.16.0';
+const GAME_VERSION = '3.17.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -10280,6 +10280,14 @@ const TUT_STEPS = [
     desc: 'This is your heal. Tapping it heals you immediately and turns on auto-heal, which fires again whenever your HP drops low. Costs 30 mana and has a cooldown.',
     hint: 'Tap Heal to restore health',
     waitForTap: 'slot-heal',
+    // Heal is disabled between waves (activateHeal() silently no-ops with
+    // "Can only heal during combat" outside of combat) — if this step
+    // rendered right after a wave-clear, the highlighted button would do
+    // nothing when tapped. Hold the step until the next wave's combat has
+    // actually started, same mechanism as slot-reg1's minSegWave gate below,
+    // but keyed on combat state rather than a specific wave number since
+    // this step can legitimately show up after any wave.
+    waitForCombat: true,
   },
   {
     slotId: 'loadout-btn',
@@ -10364,29 +10372,42 @@ function showTutStep(step) {
   const s = TUT_STEPS[step];
   if(!s) { endTutorial(); return; }
 
-  // Hold this step until the wave it's meant for has actually started.
-  // Skipped entirely if the player already satisfied the step's condition
-  // on their own — no reason to make them wait just to advance past it.
-  if (s.minSegWave && !isTutStepAlreadySatisfied(s) &&
-      (((MAP.currentSegWave||0) < s.minSegWave) || !G.combatActive || !G.enemy)) {
-    clearInterval(_tutMinWavePoll);
-    _tutMinWavePoll = setInterval(() => {
-      if(!tutActive) { clearInterval(_tutMinWavePoll); _tutMinWavePoll = null; return; }
-      if((MAP.currentSegWave||0) >= s.minSegWave && G.combatActive && G.enemy) {
-        clearInterval(_tutMinWavePoll);
-        _tutMinWavePoll = null;
-        showTutStep(step);
-      }
-    }, 400);
-    return;
+  // Hold this step until the wave/combat state it's meant for has actually
+  // arrived. minSegWave gates on a specific wave number (used when the step
+  // must not render until a later wave has begun); waitForCombat gates on
+  // combat simply being active regardless of which wave that is (used for
+  // steps whose action is impossible between waves, like Heal). Skipped
+  // entirely if the player already satisfied the step's condition on their
+  // own — no reason to make them wait just to advance past it.
+  if ((s.minSegWave || s.waitForCombat) && !isTutStepAlreadySatisfied(s)) {
+    const waveReady = !s.minSegWave || (MAP.currentSegWave||0) >= s.minSegWave;
+    const combatReady = G.combatActive && G.enemy;
+    if (!waveReady || !combatReady) {
+      clearInterval(_tutMinWavePoll);
+      _tutMinWavePoll = setInterval(() => {
+        if(!tutActive) { clearInterval(_tutMinWavePoll); _tutMinWavePoll = null; return; }
+        const waveReadyNow = !s.minSegWave || (MAP.currentSegWave||0) >= s.minSegWave;
+        if(waveReadyNow && G.combatActive && G.enemy) {
+          clearInterval(_tutMinWavePoll);
+          _tutMinWavePoll = null;
+          showTutStep(step);
+        }
+      }, 400);
+      return;
+    }
   }
-
-  if(isTutorialBlocked()) { pauseTutorialForModal(step); return; }
 
   // If the underlying action this step asks for was already performed —
   // e.g. the ability got AUTO'd on (or the loadout got opened) before this
   // step ever rendered — skip straight to the next step instead of asking
   // the player to repeat a tap that would undo what they already did.
+  // Checked BEFORE isTutorialBlocked(): a step's own completing tap can be
+  // what opens a blocking modal (Loadout's tap both sets the "opened" flag
+  // AND opens the ability-picker modal in the same synchronous call), so if
+  // blocked-status were checked first, the tutorial would pause-for-modal
+  // on a step that had, in that same instant, already been satisfied —
+  // and previously stay hidden indefinitely instead of completing once the
+  // modal is later closed.
   if (isTutStepAlreadySatisfied(s)) {
     log(`<span style="color:var(--muted)">${s.title.trim()} already set up — moving on.</span>`);
     tutStep++;
@@ -10394,6 +10415,8 @@ function showTutStep(step) {
     else endTutorial();
     return;
   }
+
+  if(isTutorialBlocked()) { pauseTutorialForModal(step); return; }
 
   // The Heal step can otherwise ask for something impossible: a player who
   // reaches this step at full HP (nothing to heal) or below the mana cost
@@ -10606,16 +10629,22 @@ function renderTutStep(step, s) {
   clearInterval(_tutStateWatcher);
   _tutStateWatcher = setInterval(() => {
     if (handled) return;
-    if (isTutorialBlocked()) {
-      handled = true;
-      clearInterval(_tutStateWatcher);
-      pauseTutorialForModal(step);
-      return;
-    }
+    // Satisfaction is checked before blocked-status for the same reason as
+    // in showTutStep() above: the tap that satisfies a step (e.g. opening
+    // Loadout) can be the very same tap that opens a blocking modal. If
+    // blocked-status won that race, the step would pause-for-modal instead
+    // of completing, and could be left waiting on a modal-close that never
+    // re-triggers this exact watcher.
     if (isTutStepAlreadySatisfied(s)) {
       handled = true;
       clearInterval(_tutStateWatcher);
       advanceTutStep(el, s, true);
+      return;
+    }
+    if (isTutorialBlocked()) {
+      handled = true;
+      clearInterval(_tutStateWatcher);
+      pauseTutorialForModal(step);
     }
   }, 400);
 
