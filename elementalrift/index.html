@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.18.0 -->
+<!-- v3.19.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -2083,7 +2083,7 @@ window.watchAdStatus = function(ins) {
 // silently drift out of sync with what's actually deployed. This is what
 // lets a quick glance at the name screen confirm whether the latest
 // commit is actually live.
-const GAME_VERSION = '3.18.0';
+const GAME_VERSION = '3.19.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -3787,6 +3787,7 @@ function onSegmentWaveComplete() {
 // Full save snapshot — shared by localStorage (saveGame) and cloud (cloudSave).
 function buildSaveObject() {
   return {
+    savedAt: Date.now(),
     playerName:G.playerName, hp:G.hp, maxHp:G.maxHp, mana:G.mana,
     gold:G.gold, kills:G.kills, wave:G.wave,
     xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
@@ -4367,6 +4368,17 @@ function spawnEnemy() {
     G._pendingPoisonSpread = null;
     startStatusTick();
   }
+  // Ice Shatter: the shard carried from the last frozen kill hits on sight.
+  if(G._pendingIceShatter) {
+    G._pendingIceShatter = null;
+    const shatterDmg = Math.floor(G.enemy.maxHp * 0.50);
+    G.enemy.hp -= shatterDmg;
+    if(G.inBoss) G.bossDmgDealt += shatterDmg;
+    const ex = canvas.width*.72, ey = canvas.height*.60;
+    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-65, shatterDmg, true, false, '#88eeff');
+    combatLog(`Shatter! ${shatterDmg}`, 'crit');
+    if(G.enemy.hp <= 0) { setTimeout(onEnemyDeath, 200); }
+  }
   // Baseline for the stalemate watchdog (see masterTick) — a fresh fight
   // starts the clock at "no damage dealt yet" rather than inheriting a
   // stale timestamp from whatever the player was doing before this spawn.
@@ -4881,10 +4893,12 @@ function fireAbility(ab) {
   const isPerfect = isMaxRoll && isCrit; // max roll + crit = gold
 
   // Healing — mage uses spellVamp, warrior/rogue use lifeSteal
+  const healMult = getTrinityBonuses()._healMult || 1;
   const stealPct = Math.min(35, ab.isMagic ? (st.spellVamp||0) : (st.lifeSteal||0));
   let healAmt = stealPct>0 ? Math.max(1,Math.ceil(totalDmg*stealPct/100)) : 0;
   if(ab.healPct) healAmt += Math.max(1, Math.ceil(totalDmg * ab.healPct/100));
   if(ab.flatHeal) healAmt += ab.flatHeal;
+  healAmt = Math.floor(healAmt * healMult);
   if(healAmt>0){ const hpCap=G.maxHp*(1+getOverhealCap()); G.hp=Math.min(hpCap,G.hp+healAmt); updateHpBar(); }
 
   // Set cooldown
@@ -5057,14 +5071,8 @@ function fireAbility(ab) {
     if(G.inBoss) G.bossDmgDealt += execBonus;
   }
   // Combat is single-target, so "chain"/"spread" effects below land on the
-  // same enemy rather than a second one.
-  if(hasMutation('ice_shatter') && G.enemy && G.enemy.hp <= 0 && G.enemy.statusEffects?.frozen) {
-    const shatterDmg = Math.floor(G.enemy.maxHp * 2.0);
-    G.enemy.hp -= shatterDmg;
-    if(G.inBoss) G.bossDmgDealt += shatterDmg;
-    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-65, shatterDmg, true, false, '#88eeff');
-    combatLog(`Shatter! ${shatterDmg}`, 'crit');
-  }
+  // same enemy rather than a second one. Ice Shatter is handled in
+  // onEnemyDeath()/spawnEnemy() instead — see G._pendingIceShatter.
   if(hasMutation('shockwave') && G.playerClass === 'warrior' && G.enemy && G.enemy.hp > 0) {
     G._warriorHitCount = (G._warriorHitCount||0) + 1;
     if(G._warriorHitCount >= 5) {
@@ -5695,21 +5703,21 @@ const TRINITY_NODES = {
   atk_4: { id:'atk_4', lane:'attack',  name:'Elemental Mastery',cost:25, desc:'+30% elemental damage. Status effects deal double damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.30, elementalOnly:true, dotMult:2.0 }, requires:'atk_3' },
   atk_5: { id:'atk_5', lane:'attack',  name:'Apex Predator',    cost:40, desc:'+50% all damage. 10% chance any hit triggers a free 3x echo.', effect:{ type:'mutation_node', id:'wild_magic', chance:0.10, mult:3, bonusAtk:0.50 }, requires:'atk_4' },
 
-  def_1: { id:'def_1', lane:'defense', name:'Iron Will',        cost:3,  desc:'+20 max HP and +8% damage reduction.', effect:{ type:'stat_flat', stats:{ maxHp:20 }, pct:{ defense:0.08 } } },
+  def_1: { id:'def_1', lane:'defense', name:'Iron Will',        cost:3,  desc:'+20 max HP and +8% damage reduction.', effect:{ type:'stat_flat', stats:{ maxHp:20 }, flatDR:0.08 } },
   def_2: { id:'def_2', lane:'defense', name:'Resilience',       cost:8,  desc:'+50 max HP. Healing restores 20% more.', effect:{ type:'stat_flat', stats:{ maxHp:50 }, healMult:1.20 }, requires:'def_1' },
   def_3: { id:'def_3', lane:'defense', name:'Thorns',           cost:15, desc:'Reflect 20% of incoming damage back at enemies.', effect:{ type:'thorns', pct:0.20 }, requires:'def_2' },
-  def_4: { id:'def_4', lane:'defense', name:'Elemental Guard',  cost:25, desc:'+15% resistance to all elemental damage. Thorns 35%.', effect:{ type:'thorns', pct:0.35, elemResist:0.15 }, requires:'def_3' },
+  def_4: { id:'def_4', lane:'defense', name:'Elemental Guard',  cost:25, desc:'+15% resistance to enraged elemental enemies. Thorns 35%.', effect:{ type:'thorns', pct:0.35, elemResist:0.15 }, requires:'def_3' },
   def_5: { id:'def_5', lane:'defense', name:'Undying',          cost:40, desc:'Once per run survive a killing blow at 1 HP. +100 max HP. Thorns 50%.', effect:{ type:'thorns', pct:0.50, dr_cap:0.85, undying:true, bonusHp:100 }, requires:'def_4' },
 
-  util_1: { id:'util_1', lane:'utility', name:'Keen Eye',         cost:3,  desc:'+15% XP gain and +10% gold from all sources.', effect:{ type:'utility', xpMult:1.15, goldMult:1.10 } },
+  util_1: { id:'util_1', lane:'utility', name:'Keen Eye',         cost:3,  desc:'XP gain +15%, gold +10% (raises your totals, doesn\'t stack with later utility nodes).', effect:{ type:'utility', xpMult:1.15, goldMult:1.10 } },
   util_2: { id:'util_2', lane:'utility', name:'Honor Bound',      cost:8,  desc:'Honorable Death grants +50% more Trinity Force XP.', effect:{ type:'utility', honorDeathTrinXP:1.50 }, requires:'util_1' },
   util_3: { id:'util_3', lane:'utility', name:"Survivor's Legacy", cost:15, desc:'Accidental deaths grant 25% of run damage as Trinity XP.', effect:{ type:'utility', deathTrinXPPct:0.25 }, requires:'util_2' },
-  util_4: { id:'util_4', lane:'utility', name:"Fortune's Favor",  cost:25, desc:'+30% XP, +25% gold. Vendor items 15% cheaper.', effect:{ type:'utility', xpMult:1.30, goldMult:1.25, vendorDiscount:0.15 }, requires:'util_3' },
-  util_5: { id:'util_5', lane:'utility', name:'Trinity Conduit',  cost:40, desc:'Trinity XP doubled from all sources. +50% gold. Honorable Death grants 3x Trinity XP.', effect:{ type:'utility', trinXPMult:2.0, goldMult:1.50, honorDeathTrinXP:3.0 }, requires:'util_4' },
+  util_4: { id:'util_4', lane:'utility', name:"Fortune's Favor",  cost:25, desc:'Raises your XP total to +30%, gold to +25%. Vendor items 15% cheaper.', effect:{ type:'utility', xpMult:1.30, goldMult:1.25, vendorDiscount:0.15 }, requires:'util_3' },
+  util_5: { id:'util_5', lane:'utility', name:'Trinity Conduit',  cost:40, desc:'Raises your gold total to +50%. Trinity XP doubled from all sources. Honorable Death grants 3x Trinity XP.', effect:{ type:'utility', trinXPMult:2.0, goldMult:1.50, honorDeathTrinXP:3.0 }, requires:'util_4' },
 };
 
 const TRINITY_ALIGNMENTS = { inferno:{id:'inferno',name:'Inferno',color:'#ff4d1a',desc:'',resonance:{class:'mage',imbue:'fire'}}, storm:{id:'storm',name:'Storm',color:'#ffdd00',desc:'',resonance:{class:'rogue',imbue:'electric'}}, void:{id:'void',name:'Void',color:'#aa55ff',desc:'',resonance:{class:'rogue',imbue:'poison'}}, nature:{id:'nature',name:'Nature',color:'#3dcc5a',desc:'',resonance:{class:'mage',imbue:'grass'}}, order:{id:'order',name:'Order',color:'#88eeff',desc:'',resonance:{class:'warrior',imbue:'ice'}}, chaos:{id:'chaos',name:'Chaos',color:'#e8b84b',desc:'',resonance:null} };
-const TRINITY_MUTATIONS = [ {id:'fireball_split',name:'Fireball Split',desc:'Fire spells split dealing 50% damage again.'}, {id:'poison_spread',name:'Plague Vector',desc:'Poisoned enemy death spreads stacks.'}, {id:'ice_shatter',name:'Ice Shatter',desc:'Killing frozen enemies explodes them for 200% HP.'}, {id:'shockwave',name:'Earthshaker',desc:'Every 5th warrior hit releases a shockwave.'}, {id:'arcane_echo',name:'Arcane Echo',desc:'15% chance any spell fires again at 60% power.'}, {id:'chain_lightning',name:'Chain Lightning',desc:'Electric hits chain to a second target.'}, {id:'execute',name:'Execute',desc:'Enemies below 20% HP take 50% more damage.'}, {id:'wild_magic',name:'Wild Magic',desc:'10% chance each hit deals 3x damage.'} ];
+const TRINITY_MUTATIONS = [ {id:'fireball_split',name:'Fireball Split',desc:'Fire spells split dealing 50% damage again.'}, {id:'poison_spread',name:'Plague Vector',desc:'Poisoned enemy death spreads stacks.'}, {id:'ice_shatter',name:'Ice Shatter',desc:'Killing a frozen enemy sends a shard into the next one for 50% of its max HP.'}, {id:'shockwave',name:'Earthshaker',desc:'Every 5th Warrior hit deals another 100% damage.'}, {id:'arcane_echo',name:'Arcane Echo',desc:'15% chance any spell fires again at 60% power.'}, {id:'chain_lightning',name:'Chain Lightning',desc:'25% chance an Electric hit deals another 50% damage.'}, {id:'execute',name:'Execute',desc:'Enemies below 20% HP take 50% more damage.'}, {id:'wild_magic',name:'Wild Magic',desc:'10% chance each hit deals 3x damage.'} ];
 
 const TRINITY_RANK_XP_PER_LEVEL = 50000;
 const TRINITY_ORB_THRESHOLD = 10000;
@@ -5746,16 +5754,10 @@ function getTrinityBonuses() {
     if(e.bonusAtk) { if(!bonuses._pct) bonuses._pct={}; bonuses._pct.attack = (bonuses._pct?.attack||0) + e.bonusAtk; }
     if(e.type === 'all_stats_pct') { bonuses._allPct = (bonuses._allPct||0) + e.pct; }
     if(e.type === 'stat_mult' && e.stat) { if(!bonuses._mult) bonuses._mult={}; bonuses._mult[e.stat] = (bonuses._mult[e.stat]||1) * e.mult; }
-    // Nodes like Iron Will attach a plain percentage map (e.g. pct:{defense:0.08})
-    // alongside their stat_flat effect — distinct from the single-stat 'pct'
-    // number used by stat_pct/thorns above. Previously only the object form's
-    // presence was ignored entirely, silently dropping Iron Will's advertised
-    // 8% damage reduction (defense is later converted into a % dmg reduction
-    // by enemyAttack(), so boosting it here is exactly how that node reduces
-    // incoming damage).
-    if(e.pct && typeof e.pct === 'object') {
-      Object.entries(e.pct).forEach(([k,v]) => { if(!bonuses._pct) bonuses._pct={}; bonuses._pct[k] = (bonuses._pct[k]||0) + v; });
-    }
+    // Iron Will's damage reduction is direct, not routed through the defense
+    // stat — defense only converts to ~0.008 reduction per point, so a %
+    // boost to it delivered a small fraction of the advertised number.
+    if(e.flatDR) bonuses._flatDR = (bonuses._flatDR||0) + e.flatDR;
     if(e.type === 'thorns') {
       bonuses._thorns = Math.max(bonuses._thorns||0, e.pct);
       if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap);
@@ -5891,7 +5893,8 @@ function enemyAttack() {
   }
 
   const st = getStats();
-  let rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008));
+  const flatDR = getTrinityBonuses()._flatDR || 0;
+  let rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008 + flatDR));
   // Elemental Guard's resistance applies against the enraged elemental
   // variants (Fire/Frost/Venomed/Charged) — see getElemResist()'s comment.
   if (G.enemy.resistance) {
@@ -5991,6 +5994,11 @@ function onEnemyDeath() {
   // Plague Vector: poison stacks on the kill carry into the next enemy.
   if(hasMutation('poison_spread') && G.enemy.statusEffects?.poison) {
     G._pendingPoisonSpread = { ...G.enemy.statusEffects.poison };
+  }
+  // Ice Shatter: killing a frozen enemy sends a shard forward that hits the
+  // next enemy on sight, instead of "exploding" an enemy already at 0 HP.
+  if(hasMutation('ice_shatter') && G.enemy.statusEffects?.frozen) {
+    G._pendingIceShatter = true;
   }
   G.enemy = null;
   try {
@@ -8881,6 +8889,14 @@ async function syncCloudSaveIntoLocal() {
       new Promise(resolve => setTimeout(() => resolve(undefined), 5000))
     ]);
     if(cloudData === undefined || !cloudData || !cloudData.playerClass) return;
+    // Only overwrite local progress if the cloud copy is actually newer —
+    // a save missing a timestamp (pre-savedAt local data, or a cloud write
+    // that failed partway) is treated as older than anything with one.
+    let localData = null;
+    try { localData = JSON.parse(localStorage.getItem('elementalRift_v3') || 'null'); } catch(e) {}
+    const localSavedAt = localData?.savedAt || 0;
+    const cloudSavedAt = cloudData.savedAt || 0;
+    if(localData && localSavedAt > cloudSavedAt) return;
     localStorage.setItem('elementalRift_v3', JSON.stringify(cloudData));
     updateContinueButtonUI();
   } catch(e) { console.error('syncCloudSaveIntoLocal error:', e); }
@@ -8926,12 +8942,16 @@ async function onAuthReady() {
 async function cloudSave() {
   if(!sb || !sbUser) return; // guest, or Supabase failed to load — use localStorage only
   const saveData = buildSaveObject();
-  await sb.from('player_saves').upsert({
+  const { error } = await sb.from('player_saves').upsert({
     player_id: sbUser.id,
     save_data: saveData,
     wave_reached: G.wave,
     updated_at: new Date().toISOString()
   }, { onConflict: 'player_id' });
+  // Supabase resolves with {error} instead of throwing — without this check
+  // a rejected write (RLS, bad payload, etc.) looked identical to a real
+  // save to every .catch() wrapped around this call.
+  if(error) throw error;
 }
 
 async function cloudLoad() {
@@ -8947,7 +8967,20 @@ async function cloudLoad() {
 async function postSupabaseLeaderboard(score) {
   if(!sbUser || !sbProfile) return;
   if(sbUser) await saveTrinity().catch(()=>{});
-  // Keep best score only — never let a worse attempt overwrite it.
+  // Atomic path: a single DB-side upsert that only writes if the new score
+  // is higher (see submit_leaderboard_score.sql) — closes the race where two
+  // near-simultaneous submissions (e.g. two open tabs) could both read the
+  // old best before either writes, letting a lower score win.
+  const { error: rpcError } = await sb.rpc('submit_leaderboard_score', {
+    p_player_id: sbUser.id,
+    p_username: sbProfile.username,
+    p_score: score,
+    p_wave: G.wave,
+  });
+  if(!rpcError) return;
+  // Fallback for as long as that function hasn't been created yet in
+  // Supabase — same read-then-write as before, not race-free, but keeps
+  // leaderboard submission working either way.
   const { data: existing } = await sb.from('leaderboard')
     .select('boss_damage')
     .eq('player_id', sbUser.id)
