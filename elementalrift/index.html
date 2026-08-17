@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.19.0 -->
+<!-- v3.20.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -336,12 +336,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   z-index:2;
   pointer-events:none;
 }
-/* Proactive "can't afford this" indicator — shown on an ability/heal slot
-   BEFORE the player taps it, whenever current mana is below that slot's
-   cost. Previously the only feedback was a log line AFTER a failed tap
-   (or, for AUTO slots, nothing at all — they just silently stopped firing
-   every tick with no visual change), which is why running out of mana felt
-   like the game had broken rather than like an expected resource limit. */
+/* Shows a low-mana warning on a slot before it's tapped, not just after. */
 .ability-slot.mana-starved{
   filter:grayscale(0.6);
 }
@@ -363,9 +358,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   z-index:2;
   pointer-events:none;
 }
-/* Ability tutorial overlay — previously had NO layout CSS at all (position:static,
-   z-index:auto), so the spotlight/bubble/arrow never actually rendered as an
-   overlay; only the glow set directly on the target button was ever visible. */
+/* Ability tutorial overlay layout — spotlight/bubble/arrow positioning. */
 #ability-tutorial{
   position:fixed; inset:0; z-index:400; pointer-events:none;
 }
@@ -407,9 +400,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(6px); }
 }
-/* Brief "that didn't work" shake for a tapped ability slot that can't fire
-   right now (still on cooldown, not enough mana, etc.) — available-looking
-   controls need SOME immediate reaction to a click, not silence. */
+/* Brief shake feedback when a tapped ability slot can't fire yet. */
 @keyframes abilityDenied{
   0%,100%{ transform:translateX(0); }
   20%{ transform:translateX(-4px); }
@@ -932,11 +923,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 }
 .modal-overlay.centered{align-items:center;padding:16px;}
 .modal{
-  /* Solid fallback color so the modal (and any text/buttons inside it) stays
-     legible even if the remote scroll-texture image is slow or fails to load
-     — on a flaky mobile connection the modal would otherwise render fully
-     transparent, letting whatever's behind it (including reddish combat
-     flash effects) show through and potentially wash out same-hued text. */
+  /* Solid fallback background so the modal stays legible if the texture image fails to load. */
   background-color:var(--panel-solid);
   background-image:url("https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Backgrounds/Background_Scroll.png");
   background-position:center center;background-size:cover;background-repeat:no-repeat;
@@ -975,10 +962,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 .btn-equip{filter:hue-rotate(80deg);}
 .btn-sell{filter:hue-rotate(-20deg);}
 .btn-close-m{filter:grayscale(0.4);}
-/* Boss Results "Continue" button — uses the same opaque button-sprite +
-   solid white text treatment as every other working modal button in the
-   game (rather than a transparent/outline style), so it can never blend
-   invisibly into whatever is rendered behind the modal. */
+/* Boss Results Continue button — opaque sprite + solid text, matches other modal buttons. */
 .btn-boss-continue{filter:hue-rotate(150deg) saturate(1.3);}
 
 .compare-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0;}
@@ -1268,13 +1252,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;trans
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// sb/sbUser/sbProfile are declared unconditionally so every guard clause
-// elsewhere in the file (e.g. `if(!sbUser) return;`) works correctly even
-// if the Supabase CDN script above fails to load (blocked domain, offline,
-// ad blocker, slow/dropped connection). Without this try/catch, a failed
-// CDN load left sbUser completely UNDECLARED, so every ability activation
-// crashed with "sbUser is not defined" inside trinityEarnXP — which is what
-// was silently blocking AUTO from ever turning on for affected players.
+// sb/sbUser/sbProfile declared here so guard clauses work even if the Supabase CDN fails to load.
 let sb = null;
 let sbUser = null; // current signed-in user
 let sbProfile = null; // players row
@@ -1651,28 +1629,7 @@ try {
 .rarity-epic      { color: #c070ff !important; text-shadow: 0 0 6px rgba(180,100,255,0.4) !important; }
 .rarity-legendary { color: #ffcc44 !important; text-shadow: 0 0 8px rgba(255,200,60,0.5) !important; }
 
-/* ── GOOGLE ADSENSE PLACEMENTS ──
-   Ads are ONLY ever shown on the calm, centered name-screen and map-screen
-   menus — NEVER during live gameplay, on any device. An earlier version
-   showed a "responsive" bottom banner throughout actual combat, reasoning
-   that CSS layering (ads sit below every real screen/modal) would keep it
-   out of the way. That reasoning was wrong in practice: a live-served
-   responsive ad creative rendered far taller than its reserved box and ate
-   clicks meant for the ability bar, making combat completely unplayable.
-   Do not reintroduce a fixed-position ad over the gameplay screen —
-   "outside the game container" is a hard requirement now, not a nice-to-
-   have.
-   The sidebar unit is a fixed, non-responsive 300x250 box (see the <ins>
-   tag — no data-ad-format/full-width-responsive), so its size is bounded
-   by AdSense itself; it's positioned beside the centered name/map card,
-   never over any button. The bottom unit IS responsive (variable height by
-   design), so it's placed as genuine in-flow HTML inside those two screens
-   instead of a fixed overlay — if it renders larger than expected it just
-   extends the screen's own scrollable area, and can never cover a button.
-   Visibility of the sidebar is toggled by JS via body.ad-ok at the handful
-   of screen-transition points (see setAdScreenActive()); the in-flow
-   bottom units need no JS at all — they're part of each screen's own DOM
-   and simply appear/disappear with that screen's normal .hidden toggle. */
+/* Ads only show on the name/map-screen menus, never during gameplay. Sidebar is a fixed 300x250 box; the bottom unit is in-flow so an oversized creative can't overlap buttons. Toggled via body.ad-ok in setAdScreenActive(). */
 #ad-sidebar{
   display:none;
   position:fixed;
@@ -1691,22 +1648,10 @@ try {
   text-align:center;
   overflow:hidden; /* extra safety: never let this grow wider than its column */
 }
-/* An ad slot AdSense couldn't fill sets data-ad-status="unfilled" on the
-   <ins> once it finishes processing (see the MutationObserver in the body
-   script below) — collapse the whole container in that case instead of
-   leaving an empty, still-clickable dead zone. An invisible ad eating
-   clicks is worse than no ad at all: the player has no idea why a button
-   stopped responding. */
+/* Collapses an ad slot's container if AdSense couldn't fill it, instead of leaving a dead click zone. */
 .ad-unfilled{ display:none !important; }
 
-/* ── DESKTOP HUD SCALING ──
-   Every HUD number/label above was sized for a phone screen held at arm's
-   length, but the whole #game shell has no max-width — on a real desktop
-   monitor it just stretches edge-to-edge, so that same tiny mobile text
-   sits in a much larger field of view and reads as illegible. Bump the
-   in-combat HUD text (Wave/Gold/Kills, HP/Mana numbers, level + XP,
-   bottom nav labels) up a notch once there's room for it; layout/positions
-   are untouched, only font-size changes. */
+/* Bumps in-combat HUD text size on desktop, where the shell has no max-width. */
 @media (min-width:900px){
   .res-label{ font-size:12px !important; }
   .res-val{ font-size:19px !important; }
@@ -1731,60 +1676,24 @@ try {
 <body>
 
 <script>
-// adsbygoogle.push({}) is NOT scoped to one <ins> — it's a page-wide
-// signal that tells Google's script "go scan the whole document for any
-// unprocessed ins.adsbygoogle elements and initialize all of them right
-// now." Every earlier version of this fix gated WHEN each ad's own push()
-// call fired on THAT element's own visibility/width, but that never
-// actually solved the problem: the moment ANY one of the three ad units on
-// this page (e.g. the name-screen one, visible immediately at load) became
-// visible and called push(), that single call would ALSO sweep in and try
-// to initialize the OTHER two <ins> elements sitting elsewhere in the DOM
-// — including map-screen's, which is display:none (0 width) at that exact
-// moment — because they already carried the "adsbygoogle" class the
-// scanner looks for, even though nothing had gated *them* individually
-// yet. That's why "No slot size for availableWidth=0" kept recurring no
-// matter how carefully the per-element push timing was tightened.
-//
-// The actual fix: don't let an <ins> carry the "adsbygoogle" class AT ALL
-// until the instant it's individually confirmed visible. Each ad unit's
-// markup below uses a harmless placeholder class ("adsbygoogle-slot")
-// instead, so Google's scanner can't find it — regardless of how many
-// push() calls happen elsewhere on the page — until this helper adds the
-// real class right before pushing for that specific element.
+// adsbygoogle.push({}) scans the whole page, not one <ins> — each ad stays a plain 'adsbygoogle-slot' placeholder until pushAdWhenVisible() adds the real class right before pushing, so one visible ad can't also initialize other hidden ones.
 window.pushAdWhenVisible = function(ins) {
   if (!ins || ins._adPushed) return;
   function tryPush() {
     if (ins._adPushed) return true;
-    // offsetParent !== null only rules out display:none up the ancestor
-    // chain — it does NOT guarantee the element has actually been given a
-    // nonzero width yet. Check both offsetWidth AND getBoundingClientRect()
-    // width (the latter is what AdSense's own measurement is documented to
-    // use) rather than relying on either alone.
+    // Checks both offsetWidth and getBoundingClientRect() width, not just offsetParent, before treating a slot as visible.
     if (ins.offsetParent === null) return false;
     if (ins.offsetWidth === 0) return false;
     if (ins.getBoundingClientRect().width === 0) return false;
     ins._adPushed = true;
-    // Only now does this element become discoverable to AdSense's
-    // page-wide scan — see the block comment above for why this ordering
-    // is the actual fix, not just another visibility check.
+    // Only now does this element get the real adsbygoogle class, so AdSense's scan can find it.
     ins.classList.remove('adsbygoogle-slot');
     ins.classList.add('adsbygoogle');
     if (typeof window.watchAdStatus === 'function') window.watchAdStatus(ins);
     (window.adsbygoogle = window.adsbygoogle || []).push({});
     return true;
   }
-  // The very first attempt for an ad unit that's already visible at parse
-  // time (e.g. name-screen's, whose inline <script> runs synchronously
-  // while the browser is still mid-parse of the rest of the document) used
-  // to check width immediately, forcing a layout pass against a document
-  // that isn't fully parsed yet. Even though this element's own subtree is
-  // already complete by that point, defer the first real check past two
-  // animation frames — a well-established way to guarantee at least one
-  // full layout+paint cycle has actually happened — instead of trusting a
-  // forced-synchronous-reflow read taken mid-parse. Elements hidden at
-  // this point (map-screen) still fall through to the same interval poll
-  // below once actually revealed later.
+  // Defers the first visibility check two animation frames so it runs after layout/paint, not mid-parse.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (tryPush()) return;
     const poll = setInterval(() => { if (tryPush()) clearInterval(poll); }, 300);
@@ -1805,18 +1714,7 @@ window.pushAdWhenVisible = function(ins) {
   <script>pushAdWhenVisible(document.currentScript.previousElementSibling);</script>
 </div>
 <script>
-// An ad slot that AdSense couldn't fill sets data-ad-status="unfilled" on
-// the <ins> once processed — collapse its container (see .ad-unfilled in
-// <style>) instead of leaving an empty box that still intercepts clicks.
-// Filled slots get data-ad-status="filled" the same way, so this also
-// covers the normal case, just doing nothing extra for it.
-//
-// Exposed as window.watchAdStatus so pushAdWhenVisible can attach this the
-// instant it adds the real "adsbygoogle" class to an ad unit — a plain
-// DOMContentLoaded scan for ins.adsbygoogle (the old approach) would miss
-// map-screen's and the sidebar's units entirely, since neither carries
-// that class until they're individually pushed, which can happen long
-// after DOMContentLoaded.
+// Collapses an ad's container if AdSense marks it unfilled; exposed as window.watchAdStatus for pushAdWhenVisible to attach.
 window.watchAdStatus = function(ins) {
   if (!ins || ins._adStatusWatched) return;
   ins._adStatusWatched = true;
@@ -2077,13 +1975,8 @@ window.watchAdStatus = function(ins) {
   <div style="position:absolute;bottom:16px;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.1em;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);"><span id="game-version-footer">v3.0.0</span> · <a href="https://zindigon.com/" target="_blank" style="color:rgba(255,255,255,0.4);text-decoration:none;">Zindigon Enterprises™</a></div>
 </div>
 <script>
-// Single source of truth for the visible version stamp on the opening
-// (name) screen — bump GAME_VERSION each update instead of hunting for
-// hardcoded "vX.Y.Z" text in the HTML, so the on-screen number can never
-// silently drift out of sync with what's actually deployed. This is what
-// lets a quick glance at the name screen confirm whether the latest
-// commit is actually live.
-const GAME_VERSION = '3.19.0';
+// Single source of truth for the version stamp on the name screen — bump with each release.
+const GAME_VERSION = '3.20.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -2825,9 +2718,7 @@ const CLASS_NAMES = ['mage','warrior','rogue'];
 const CLASS_COLORS = { mage:'#1ab3ff', warrior:'#e8b84b', rogue:'#3dcc5a' };
 const CLASS_ICONS  = { mage:'M', warrior:'W', rogue:'R' };
 
-// ── ASSET PRELOADER ──
-// Tracks critical assets and drives the loader progress bar.
-// dismissLoader() is blocked until all resolve (or 8s timeout).
+// Tracks critical assets and drives the loader bar; dismissLoader() waits for all (or an 8s timeout).
 const CLASS_SPRITES = {};
 const ARROW_IMG = new Image(); ARROW_IMG.src = 'https://kryfuceztfzccsidkzog.supabase.co/storage/v1/object/public/game-assets/Characters/Character_Rogue_Bow.png';
 
@@ -3058,19 +2949,7 @@ const SKILL_TREE = {
   utility:  [{name:'Mana Well',stat:'mana',per:10},{name:'Flow',stat:'manaRegen',per:1},{name:'Haste',stat:'atkSpeed',per:0.05}],
 };
 
-// The "Effects" passives only matter if your imbue actually applies that
-// status (see applyImbueEffect) — e.g. Deep Freeze (freezeDuration) does
-// nothing unless you're Ice imbue, but it looked identical to every other
-// option with no hint that it was dead weight for most builds. Grey those
-// out (with an explanation) rather than letting players waste points on them.
-// NOTE: this list originally only covered the 3 stats the passive Skill
-// Tree's "Effects" branch offers (dotDamage/burnDuration/freezeDuration).
-// Equipment can roll a wider set of the same kind of stat (poisonDuration,
-// electricDot, slowStrength too — see STAT_KEYS), which do nothing for a
-// build whose imbue doesn't apply that status (see applyImbueEffect) —
-// e.g. an Electric Warrior seeing Freeze/Poison duration gear at the
-// merchant. Extended so the same relevance table (and isEffectStatRelevantForImbue)
-// covers both passives AND item stats from one source of truth.
+// Greys out (with a reason) Effects passives/gear stats that do nothing for the player's imbue — see applyImbueEffect / isEffectStatRelevantForImbue.
 const IMBUE_RELEVANT_EFFECT_STATS = {
   fire:     ['dotDamage','burnDuration'],
   poison:   ['dotDamage','poisonDuration'],
@@ -3079,9 +2958,7 @@ const IMBUE_RELEVANT_EFFECT_STATS = {
   ice:      ['freezeDuration','slowStrength'],
   grass:    [], rock: [], wind: [], // apply no status effect at all
 };
-// All "effect" stat keys an item can roll — used to filter irrelevant ones
-// out of item generation entirely (see rollItem) and to flag any that slip
-// through (e.g. pre-existing saved gear) for the "not useful" UI labeling.
+// All 'effect' item stat keys — filters irrelevant ones out of generation and flags any that slip through.
 const ITEM_EFFECT_STAT_KEYS = ['dotDamage','burnDuration','poisonDuration','freezeDuration','electricDot','slowStrength'];
 function isEffectStatRelevantForImbue(statKey, imbue) {
   const relevant = IMBUE_RELEVANT_EFFECT_STATS[imbue];
@@ -3464,24 +3341,7 @@ const DIFF_CONFIG = {
   extreme:  { min:25,  max:25,  bossChance:1.0, lootCap:'Cosmic',   waveBonus:4.0, elitesOnly:true, bossEvery:5 },
 };
 
-// Easy is meant to be the low-variance intro path — every one of its 3
-// waves is clamped into a narrow effective-HP band (see rollEnemy) instead
-// of letting the normal level/type RNG decide, so two different level-1
-// characters get a comparably hard Easy run instead of one facing a ~450 HP
-// enemy and the other a ~1,200 HP one on the same wave.
-//
-// This used to be a flat HP range (e.g. wave 1 = 50-80 HP), tuned around a
-// fresh level-1 character's baseline damage. That works exactly once: any
-// player who already has a level or two of stat points, gear, or ability
-// upgrades — which is the common case for anyone replaying Easy rather
-// than a brand-new character's very first run — deals meaningfully more
-// DPS than that baseline, so the same flat HP band melts in 1-2 hits.
-// Reported directly: a Wind mage's basic attack (Gale Strike) alone killed
-// both of Easy's first two waves almost instantly while at full HP, and
-// only wave 3 felt like it mattered. Instead of a flat HP number, target a
-// number of SECONDS of the player's own current basic-attack DPS — so the
-// pacing holds regardless of how strong the character already is by the
-// time they're on this Easy run.
+// Easy's 3 waves are clamped to a duration based on the player's own basic-attack DPS instead of a flat HP range, so two level-1 characters get a comparably hard run.
 const EASY_WAVE_SECONDS = { 1: [4, 6], 2: [7, 10], 3: [12, 18] };
 
 let MAP = {
@@ -3493,12 +3353,7 @@ let MAP = {
   pendingBoss: false,
 };
 
-// Drives the fixed sidebar ad's visibility: it only shows beside the calm
-// name-screen/map-screen menus, never during live gameplay (see the
-// GOOGLE ADSENSE PLACEMENTS comment in <style>). Toggled at the handful of
-// screen transitions below. The in-flow bottom ad units need no JS at all
-// — they live inside name-screen's/map-screen's own DOM and simply
-// appear/disappear with those screens' normal .hidden toggle.
+// Drives the fixed sidebar ad's visibility — shown only beside the name/map menus, toggled at each screen transition.
 function setAdScreenActive(active) {
   document.body.classList.toggle('ad-ok', active);
 }
@@ -3517,13 +3372,7 @@ function showMapScreen(isFirst=false) {
   G.enemy = null;
   G.combatActive = false;
   G.inBoss = false;
-  // Being on the map screen means "no active path right now" by definition
-  // — clear MAP fully instead of leaving the just-finished path's
-  // difficulty/wave numbers sitting around stale. Without this, a save
-  // taken while the player was on this exact screen (deciding what to do
-  // next) still looked like "path in progress at wave N", so resuming it
-  // could auto-advance past the end of a path that was actually already
-  // fully wrapped up and abandoned.
+  // Being on the map screen means no active path — clear MAP fully so a save here can't resume as mid-path.
   MAP.difficulty = null;
   MAP.totalWaves = 0;
   MAP.currentSegWave = 0;
@@ -3540,12 +3389,7 @@ function showMapScreen(isFirst=false) {
   // Show boss attempt option if wave >= 3
   const bossSection = document.getElementById('map-boss-section');
   if(bossSection) bossSection.classList.toggle('hidden', G.wave < 3);
-  // Only surface the "starting a new path restores you" note when it's
-  // actually relevant — a player arriving here at partial HP/mana (this was
-  // reported as confusing: finishing a path at e.g. 135/200 HP with no
-  // indication of whether a new path carries that damage over or not).
-  // selectDifficulty() below always fully restores both, so this is purely
-  // reassurance, not a warning.
+  // Only shows the 'new path restores you' note when HP/mana are actually below full.
   const restoreNote = document.getElementById('map-hp-restore-note');
   if(restoreNote) restoreNote.style.display = (G.hp < G.maxHp || G.mana < getMaxMana()) ? 'block' : 'none';
   saveGame();
@@ -3562,11 +3406,7 @@ function selectDifficulty(diff) {
   G.combatActive = false;
   G.inBoss = false;
   G.buffs = G.buffs || {};
-  // A new path is a fresh expedition — fully restore HP and mana instead
-  // of silently carrying over whatever was left from the last fight. That
-  // previously let a player start a brand-new "Easy" path already at, say,
-  // 60/200 HP with no warning at all, turning the easiest difficulty into
-  // a near-death sprint.
+  // A new path always fully restores HP and mana instead of carrying over damage from the last fight.
   const neededRest = G.hp < G.maxHp || G.mana < getMaxMana();
   G.hp = G.maxHp;
   G.mana = getMaxMana();
@@ -3648,12 +3488,7 @@ function spawnNextSegmentWave() {
     ? (MAP.currentSegWave % 5 === 0)
     : MAP.currentSegWave === MAP.totalWaves;
   renderWaveTimeline();
-  // Some callers (e.g. nextWave()) update the resource bar BEFORE calling
-  // this function, so the "Wave N/Total" HUD text gets stamped with the
-  // stale wave number and only catches up whenever some unrelated event
-  // (a kill, a gold pickup) happens to call updateResourceBar() again —
-  // which made the counter look "one step behind" for the entire fight.
-  // Refresh it here too so it's always correct the instant a new wave starts.
+  // Refreshes the wave HUD text here too, not just on the next unrelated event, so it's never stale.
   if(typeof updateResourceBar === 'function') updateResourceBar();
 
   const bossChance = DIFF_CONFIG[MAP.difficulty].bossChance;
@@ -3664,11 +3499,7 @@ function spawnNextSegmentWave() {
     MAP.pendingBoss = false;
     spawnEnemy();
   }
-  // Capture the new wave position (and the fresh enemy spawnEnemy() just
-  // set as the atomic combat snapshot) immediately — every wave transition
-  // goes through here, including starting a brand-new path from
-  // selectDifficulty(), so this is the one place that keeps a refresh from
-  // ever landing on a stale wave number from an earlier path/wave.
+  // Captures the new wave + fresh enemy as the atomic combat snapshot the instant a wave starts.
   saveGame();
 }
 
@@ -3710,16 +3541,7 @@ function showWaveBossPrompt() {
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  // Proactively pause the tutorial the instant this modal appears, instead
-  // of waiting on its own ~400ms state-watcher poll to notice.
-  // isTutorialBlocked() already treats #wave-boss-prompt as blocking, but
-  // during that brief poll window the tutorial's spotlight and live tap
-  // listener for whatever step is active (e.g. "tap Heal" right as the
-  // final wave's kill triggers this prompt) could still visually conflict
-  // with a modal that's meant to already own the screen — exactly the
-  // "Heal tutorial conflicts with the Boss Awaits screen" report. This
-  // resumes the same step automatically once the player picks Fight or
-  // Skip and the modal closes (see the poll in pauseTutorialForModal).
+  // Pauses the tutorial immediately when this modal opens instead of waiting on its own poll; resumes the same step once it closes.
   if (typeof tutActive !== 'undefined' && tutActive) pauseTutorialForModal(tutStep);
 }
 
@@ -3743,8 +3565,7 @@ function onSegmentWaveComplete() {
 
   if(pathDone || extremeVendor) {
     MAP.segmentComplete = pathDone;
-    // Persist segmentComplete the instant it flips — a refresh here must
-    // never re-spawn the wave that was just cleared and rewarded.
+    // Persists segmentComplete immediately — a refresh must never re-spawn an already-cleared wave.
     saveGame();
     if(sbUser) saveTrinity().catch(()=>{});
     if(MAP.pendingBoss) {
@@ -3760,24 +3581,9 @@ function onSegmentWaveComplete() {
     setNextBtnActive(true);
     showPotionBtn();
     if(G.wave >= 3) setBossBtnActive(true);
-    // Same reasoning as above: this wave was just cleared and rewarded,
-    // combatActive is already false at this point — save now so a refresh
-    // during the between-wave pause resumes here (via spawnNextSegmentWave
-    // advancing to the NEXT wave) instead of re-fighting this one.
+    // Saves now so a refresh between waves resumes via spawnNextSegmentWave() instead of re-fighting this one.
     saveGame();
-    // setNextBtnActive(true) above already schedules its own auto-advance
-    // timer when autoWaveEnabled — this used to ALSO schedule a second,
-    // independent one right here. Two timers racing to both call
-    // nextWave() ~600ms later was the actual root cause of an intermittent
-    // "merchant opens over a still-alive enemy" bug: if one of the two
-    // timers got delayed (e.g. by tab throttling) until just after the
-    // other had already advanced to the next wave and spawned a fresh
-    // enemy, the delayed one fired nextWave() again while that enemy was
-    // very much alive and mid-fight, producing the "Spawn blocked: enemy
-    // still active, clearing" warning and a corrupted, stuck vendor state.
-    // nextWave() itself now also guards against exactly this (see below),
-    // but removing the redundant timer here means the race mostly doesn't
-    // happen in the first place.
+    // Avoids a second, redundant auto-advance timer that could race the first and double-call nextWave() — see nextWave()'s own guard below.
   }
 }
 
@@ -3815,9 +3621,7 @@ let _lastCloudSaveAt = 0;
 let _cloudSaveTimer = null;
 const CLOUD_SAVE_MIN_INTERVAL_MS = 8000;
 
-// Throttles cloudSave() so frequent local saves (every equip, every ~3s
-// mid-fight) don't spam Supabase — collapses bursts into one write per
-// CLOUD_SAVE_MIN_INTERVAL_MS, always landing a trailing save.
+// Throttles cloudSave() to one write per interval instead of spamming Supabase on every local save.
 function queueCloudSave() {
   if(!sbUser) return;
   const now = Date.now();
@@ -3841,9 +3645,7 @@ function saveGame() {
   } catch(e){ console.error('saveGame error:', e); }
 }
 
-// Flush an immediate (unthrottled) save before the tab is hidden/closed —
-// covers refresh, tab switch, and mobile backgrounding for both character
-// and Trinity progress.
+// Flushes an immediate save before the tab hides/closes — covers refresh, tab switch, backgrounding.
 function flushAllSaves() {
   if(!G.playerClass || !G.playerImbue) return; // no character in progress yet
   try { localStorage.setItem('elementalRift_v3', JSON.stringify(buildSaveObject())); } catch(e){}
@@ -3866,20 +3668,11 @@ function loadGame(name) {
     if (!sbUser && save.playerName !== name) return false;
     // Require a class to be set — otherwise treat as new game
     if (!save.playerClass || !save.playerImbue) return false;
-    // Only adopt the save's stored name for guests. When signed in,
-    // G.playerName is already the real account name (sbProfile.username, set
-    // in onAuthReady) — the local save's name field can be a stale guest
-    // name left over from before this account ever signed in on this
-    // device, and blindly restoring it here would silently rename the
-    // player back to that old guest identity on every Continue.
+    // Only borrows the save's playerName for guests — signed-in players keep their real account name.
     if(!sbUser) G.playerName = save.playerName;
     G.maxHp = save.maxHp || 200;
     G.hp = Math.max(1, Math.min(save.hp || G.maxHp, G.maxHp));
-    // Mana wasn't persisted at all before — every reload silently reset it
-    // to whatever G's default was, regardless of what the player actually
-    // had. Just store the raw value here; resumeFromSave() refreshes the
-    // mana bar against the real computed max once baseStats/equipment
-    // (set further down in this function) are in place.
+    // Persists mana directly; resumeFromSave() re-syncs the mana bar once stats are in place.
     if(typeof save.mana === 'number') G.mana = Math.max(0, save.mana);
     G.gold = save.gold;
     G.xp = save.xp||0; G.xpToNext = save.xpToNext||40; G.playerLevel = save.playerLevel||1; G.skillPoints = save.skillPoints||0; G.passivePoints = save.passivePoints||0;
@@ -3899,30 +3692,17 @@ function loadGame(name) {
     if(save.loadout)  G.loadout  = save.loadout;
     if(save.healLoadout) healLoadout = save.healLoadout;
     G.usedFreeVendorRefresh = !!save.usedFreeVendorRefresh;
-    // Restore active-path position (difficulty + which wave was in
-    // progress) — see the matching comment in saveGame(). Only restore if
-    // it actually looks like a path was underway; a wave value of 0 means
-    // the player was on the map-screen choosing a difficulty (or hadn't
-    // started one yet), not mid-path, so leave MAP at its fresh-boot
-    // defaults and let resumeFromSave() send them back to the map screen
-    // exactly like it already does for saves from before this existed.
+    // Restores the active path position only if a path was actually underway (wave > 0).
     if(save.mapDifficulty && save.mapTotalWaves > 0) {
       MAP.difficulty = save.mapDifficulty;
       MAP.totalWaves = save.mapTotalWaves;
       MAP.currentSegWave = save.mapCurrentSegWave || 0;
       MAP.segmentComplete = !!save.mapSegmentComplete;
     }
-    // combatActive + enemySnapshot are an atomic pair — see saveGame() for
-    // why the wave position alone can never be trusted to mean "still
-    // fighting". resumeFromSave() is the only thing that should act on
-    // these; nothing between here and there touches G.enemy/G.combatActive.
+    // combatActive + enemySnapshot restore together as an atomic pair — only resumeFromSave() acts on them.
     G.combatActive = !!save.combatActive && !!save.enemySnapshot;
     G.enemy = G.combatActive ? save.enemySnapshot : null;
-    // Hand off any saved AUTO state to the existing restoreAutoSlots()
-    // mechanism (already used to carry AUTO across wave transitions) —
-    // resumeLiveCombat() calls it once the resumed fight is fully set up.
-    // Only meaningful when we're actually resuming a live fight; harmless
-    // otherwise since restoreAutoSlots() itself no-ops without one.
+    // Hands saved AUTO state to restoreAutoSlots(), applied once resumeLiveCombat() sets up the fight.
     if(G.combatActive && Array.isArray(save.autoSlotsSnapshot) && save.autoSlotsSnapshot.length) {
       G.savedAutoSlots = save.autoSlotsSnapshot;
     }
@@ -3938,9 +3718,7 @@ function loadGame(name) {
 // ═══════════════════════════════════════════════
 // name-input removed — auth handles naming
 
-// Check for existing save on load
-// Shows "Continue as X" when a save exists. Re-run after cloud sync too,
-// since a signed-in player's save may only exist in the cloud on a new device.
+// Shows 'Continue as X' when a save exists; re-checked after cloud sync for cloud-only saves.
 function updateContinueButtonUI() {
   try {
     const raw = localStorage.getItem('elementalRift_v3');
@@ -3950,8 +3728,7 @@ function updateContinueButtonUI() {
       const continueBtn = document.getElementById('continue-btn');
       document.getElementById('continue-name').textContent = save.playerName;
       continueBtn.classList.remove('hidden');
-      // Begin Journey creates a brand-new guest character — relabel it
-      // honestly once a save exists, instead of implying it resumes one.
+      // Relabels Begin Journey once a save exists, since it now starts a new character rather than resuming.
       const startBtn = document.getElementById('start-btn');
       if(startBtn) startBtn.textContent = 'New Guest Character';
     }
@@ -3964,14 +3741,7 @@ function continueGame() {
     const raw = localStorage.getItem('elementalRift_v3');
     if(!raw) { startGame(); return; }
     const save = JSON.parse(raw); // validate — throws if corrupt, caught below
-    // Only borrow the save's playerName for the loadGame() name-match check
-    // when playing as a guest — so startGame() loads THIS save, not a new
-    // random guest. Signed-in players are already correctly identified via
-    // sbProfile.username (set in onAuthReady); overwriting that with
-    // whatever guest name is sitting in the local save blob would silently
-    // rename the account back to the old guest name the instant Continue is
-    // clicked, even though the button now correctly displays the real
-    // signed-in name beforehand.
+    // Only borrows the save's name for guests — signed-in players keep sbProfile.username.
     if(save.playerName && !(sbUser && sbProfile)) G.playerName = save.playerName;
     startGame();
   } catch(e){ console.error('continueGame error:', e); startGame(); }
@@ -4061,8 +3831,7 @@ function loadFromData(data) {
     }
     G.combatActive = !!save.combatActive && !!save.enemySnapshot;
     G.enemy = G.combatActive ? save.enemySnapshot : null;
-    // See the matching comment in loadGame() — hands saved AUTO state off
-    // to the existing restoreAutoSlots() mechanism.
+    // Hands saved AUTO state to restoreAutoSlots(), same as loadGame().
     if(G.combatActive && Array.isArray(save.autoSlotsSnapshot) && save.autoSlotsSnapshot.length) {
       G.savedAutoSlots = save.autoSlotsSnapshot;
     }
@@ -4076,20 +3845,7 @@ function loadFromData(data) {
 function resumeFromSave() {
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
   updateResourceBar(); updateManaBar();
-  // Decide what to resume INTO. The wave number (MAP.currentSegWave) alone
-  // can never be trusted here — it looks identical whether the player is
-  // still mid-fight on that wave or already finished it. The two signals
-  // that actually disambiguate this (both set atomically in saveGame()):
-  //   - MAP.segmentComplete: the path was already fully cleared and is
-  //     just waiting on the vendor/map screen. MUST NEVER spawn an enemy —
-  //     that would let an already-rewarded wave be killed again for a
-  //     free repeat of its gold/XP/kills, every time the page reloads.
-  //   - G.combatActive + G.enemy (restored together by loadGame(), see
-  //     there): the exact enemy that was alive at save time. If present,
-  //     resume THAT SAME fight in place rather than spawning anything new.
-  // Neither signal present just means "between waves, not yet complete" —
-  // safe to advance normally via spawnNextSegmentWave(), which increments
-  // past whatever wave was last cleared instead of re-fighting it.
+  // Resumes into the right place using segmentComplete + combatActive/enemy — never re-spawns a finished or already-active fight; otherwise advances via spawnNextSegmentWave().
   if(MAP.segmentComplete) {
     showMapScreen(false);
   } else if(G.combatActive && G.enemy && G.enemy.hp > 0) {
@@ -4101,12 +3857,7 @@ function resumeFromSave() {
   }
 }
 
-// Restores the EXACT fight that was in progress at save time — same enemy,
-// same HP/status — instead of spawnEnemy()'s normal random roll. G.enemy is
-// already set to the persisted snapshot by loadGame()/loadFromData(); this
-// just wires up the rest of what a live fight needs (UI, arena draw, the
-// enemy's attack timer) without generating a new enemy or re-granting any
-// reward for a wave that hasn't actually been won yet.
+// Resumes the exact fight from save time (same enemy/HP) instead of rolling a new one; grants no extra reward.
 function resumeLiveCombat() {
   if(!_tick.running) startMasterTick();
   G._deathInProgress = false;
@@ -4124,10 +3875,7 @@ function resumeLiveCombat() {
   hidePotionBtn();
   drawArena();
   startEnemyAutoAttack();
-  // Restore whichever ability/heal slots were on AUTO before the refresh —
-  // see the matching comment in saveGame()/loadGame(). Deferred slightly so
-  // combat state (loadout UI, masterTick) has settled first, same pattern
-  // already used to restore AUTO after a boss-fight transition.
+  // Restores whichever slots were on AUTO before the refresh, deferred until combat state has settled.
   setTimeout(restoreAutoSlots, 400);
 }
 
@@ -4180,12 +3928,7 @@ function getStats() {
     s.spellVamp = (s.spellVamp||0) + (G.classLv['mage']||0) * 0.2;
   }
 
-  // Trinity's flat maxHp/bonusHp bonuses (Iron Will, Resilience, Undying) are
-  // accumulated onto s.maxHp up above via the flatKeys loop — but nothing
-  // else in G.baseStats/equipment/skill-tree ever touches s.maxHp (they all
-  // use 'health', per STAT_KEYS), so this used to simply stomp those Trinity
-  // bonuses back to zero on every single stat computation instead of adding
-  // to health as intended.
+  // Adds Trinity's flat maxHp/bonusHp bonuses onto health instead of overwriting maxHp.
   s.maxHp = s.health + (s.maxHp||0);
   delete s.magicPower; delete s.armor; delete s.magicResist;
   // Apply active buffs
@@ -4210,26 +3953,13 @@ function getPlayerPower() {
 // ENEMIES
 // ═══════════════════════════════════════════════
 function rollEnemy(wave) {
-  // Standardize the very first enemy every player ever fights. This fight
-  // doubles as the ability tutorial (see spawnEnemy's `if(G.kills===0)`),
-  // so leaving it randomized meant one new player's tutorial enemy could be
-  // a Wolf (0.7x HP) and another's a Golem (2.0x HP) or an enraged variant
-  // with a damage-resistance gimmick — wildly different first impressions
-  // and difficulty depending only on class/imbue-independent RNG. Fixed to
-  // a plain, no-gimmick Wolf at level 1 so every class's first fight (and
-  // the tutorial pacing built around it) is identical and fair.
+  // Standardizes the very first enemy (a plain level-1 Wolf, no gimmick) so every player's tutorial fight is identical.
   if((G.kills||0) === 0) {
     const wolfType = ENEMY_TYPES.find(e => e.id === 'wolf') || ENEMY_TYPES[0];
     const enemyLv = 1;
     const hpBase = Math.floor(30 * Math.pow(enemyLv, 1.85));
     const atkBase = Math.floor(3  * Math.pow(enemyLv, 1.40));
-    // The formula above gives this Wolf only ~21 HP — a single basic attack
-    // (avg ~15-18 dmg at level 1, up to ~28 on a high roll/heavier basic)
-    // can one-shot it before the "abilities auto-fire" lesson the attack
-    // tutorial step is built around ever gets to play out, and before the
-    // player even sees AUTO visibly firing more than once. Give this
-    // specific standardized fight a flat HP floor so it reliably takes
-    // ~2-3 hits across every class's starting basic attack.
+    // Flat HP floor on the tutorial Wolf so it survives a few hits instead of one basic attack.
     const tutorialHpFloor = 55;
     return {
       name: wolfType.name, id: wolfType.id,
@@ -4253,12 +3983,7 @@ function rollEnemy(wave) {
   const playerLv = G.playerLevel || 1;
   const minLv = Math.max(1, playerLv - 2);
   const maxBonus = Math.min(12, 5 + Math.floor(playerLv / 15)); // +5 early, up to +12 at lv105
-  // Ramp the upper end of the roll in over the first few waves of a path
-  // instead of allowing the full spread immediately. Previously `wave` was
-  // accepted but never used, so wave 1 of "Easy" could roll exactly as hard
-  // as wave 10 — a fresh level-1 player could face anywhere from a level-1
-  // enemy up to a level-6 (or Ancient/enraged level-6, ~1150+ HP) enemy on
-  // their very first fight, then get a much easier second enemy right after.
+  // Ramps the enemy-level roll's upper bound in over a path's early waves instead of the full spread from wave 1.
   const segWave = Math.max(1, Math.floor(wave) || 1);
   const rampFactor = Math.min(1, segWave / 3); // wave 1 -> ~1/3 spread, wave 2 -> ~2/3, wave 3+ -> full
   const effectiveMaxBonus = Math.max(1, Math.round(maxBonus * rampFactor));
@@ -4284,11 +4009,7 @@ function rollEnemy(wave) {
   let r = Math.random()*totalW, acc=0, enemyType=pool[0];
   for(let i=0;i<pool.length;i++){acc+=weights[i];if(r<acc){enemyType=pool[i];break;}}
 
-  // Enraged variant chance scales with level gap (higher level enemies more likely enraged)
-  // — suppressed entirely on Easy (see the power-budget clamp below): a
-  // resistance/damage gimmick on a brand-new player's very first path was
-  // exactly the kind of RNG spike that made two identical-level characters
-  // have wildly different Easy runs.
+  // Enraged-variant chance scales with level gap; suppressed entirely on Easy.
   let variant = null;
   const enrageChance = 0.15 + Math.max(0, enemyLv - playerLv) * 0.05;
   if(MAP.difficulty !== 'easy' && Math.random() < enrageChance) {
@@ -4298,24 +4019,10 @@ function rollEnemy(wave) {
   let baseHp  = Math.floor(hpBase * enemyType.hpM * (variant?.prefix==='Ancient'?1.4:1));
   let baseAtk = Math.floor(atkBase * enemyType.atkM * (variant?.prefix==='Ancient'?1.3:1));
 
-  // Easy-mode power budget: two brand-new level-1 characters could
-  // previously land anywhere from a ~450 HP enemy to a ~1,200 HP Ancient
-  // Golem on the exact same wave 3, purely from the enemy-level/type RNG
-  // above — making Easy's difficulty depend on luck rather than the
-  // player's build or understanding. Clamp each of Easy's 3 waves to a
-  // target duration of the player's OWN current basic-attack DPS (attack is
-  // renormalized to match, so a naturally hard-hitting type doesn't stay
-  // disproportionately dangerous once its HP is scaled down, or vice
-  // versa), regardless of which enemy type or level rolled, and regardless
-  // of how strong the player's build already is.
+  // Easy-mode power budget: clamps each of Easy's 3 waves to a duration based on the player's own basic-attack DPS, regardless of enemy type/level rolled.
   if(MAP.difficulty === 'easy') {
     const st = getStats();
-    // Rough basic-attack-only DPS: attack * hits-per-second * ~0.85 (the
-    // basic ability dmgMult band every class/imbue sits in). Deliberately
-    // ignores crit/lifesteal/abilities-on-top — those only make a real
-    // fight faster than this floor, never slower, which is fine; this is a
-    // duration FLOOR against the weakest thing a player is always doing
-    // (auto basic attack), not an attempt to model the whole build.
+    // Rough basic-attack-only DPS floor — ignores crit/lifesteal/abilities, which only make a fight faster, never slower.
     const approxDps = Math.max(6, (st.attack||18) * (st.atkSpeed||2.0) * 0.85);
     const secRange = EASY_WAVE_SECONDS[Math.min(3, segWave)] || EASY_WAVE_SECONDS[3];
     const targetSeconds = secRange[0] + Math.random() * (secRange[1] - secRange[0]);
@@ -4323,9 +4030,7 @@ function rollEnemy(wave) {
     const hpScale = targetHp / Math.max(1, baseHp);
     baseAtk = Math.max(1, Math.round(baseAtk * hpScale));
     baseHp = targetHp;
-    // Re-derive level from the budgeted HP (inverting HP = 30*lv^1.85) so
-    // defense/gold/xp scale consistently with the clamped difficulty
-    // instead of the original, now-discarded random level roll.
+    // Re-derives level from the budgeted HP so defense/gold/xp stay consistent with the clamp.
     enemyLv = Math.max(1, Math.round(Math.pow(targetHp / 30, 1 / 1.85)));
   }
 
@@ -4379,9 +4084,7 @@ function spawnEnemy() {
     combatLog(`Shatter! ${shatterDmg}`, 'crit');
     if(G.enemy.hp <= 0) { setTimeout(onEnemyDeath, 200); }
   }
-  // Baseline for the stalemate watchdog (see masterTick) — a fresh fight
-  // starts the clock at "no damage dealt yet" rather than inheriting a
-  // stale timestamp from whatever the player was doing before this spawn.
+  // Baseline for the stalemate watchdog — a fresh fight starts the 'no damage dealt' clock fresh.
   G._lastDamageTime = Date.now();
   updateEnemyUI();
   log(`<span class="log-sys"> ${G.enemy.name} appears! ${G.enemy.resistance?'[resists '+G.enemy.resistance+']':''}</span>`);
@@ -4491,10 +4194,7 @@ function rollBoss(level, infinite=false) {
 
 function startBossAttempt(fromMap = false) {
   if (G.combatActive) return;
-  // Remember whether this attempt was launched from the standalone map-screen
-  // "Boss Attempt" button (not tied to any active difficulty path) versus the
-  // mid-path between-waves button, so closeBossResults() can send the player
-  // back to the right screen afterward instead of always assuming mid-path.
+  // Remembers whether this attempt came from the standalone Boss Attempt button vs mid-path, so Continue returns to the right screen.
   G._bossEntryFromMap = !!fromMap;
   G.inBoss = true;
   G.bossLevel = 1;
@@ -4513,11 +4213,7 @@ function startBossAttempt(fromMap = false) {
   startBossTimer();
   // Boss does NOT attack — pure DPS race
   drawArena();
-  // Regular waves restore whatever AUTO slots were saved by the previous
-  // nextWave()'s stopAllAutoSlots(true) (see spawnEnemy) — this optional
-  // boss fight is entered the same way (from the same between-waves screen)
-  // but was missing the matching restore call, so AUTO silently dropped
-  // every time a player queued up the boss challenge.
+  // Restores AUTO slots the same way regular waves do — this boss entry point was missing that call.
   setTimeout(restoreAutoSlots, 400);
 }
 
@@ -4545,9 +4241,7 @@ function updateBossTimerUI() {
 function numberWithCommas(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 
 function onBossPhaseKill() {
-  // save=true so a fresh boss phase (or the next regular wave) can restore
-  // whatever was running — this used to wipe AUTO with no way back, which
-  // meant AUTO silently died every time a boss phase transitioned.
+  // save=true so the next phase/wave can restore whatever AUTO was running instead of losing it.
   stopAllAutoSlots(true);
   if(!G.inBoss) {
     // Boss wave (map system) — single kill = segment complete
@@ -4565,13 +4259,7 @@ function onBossPhaseKill() {
     log(`<span style="color:${t.color};font-weight:700;">Boss Drop: ${dropItem.name}!</span>`);
     G.combatActive=false; G.enemy=null;
     updateEnemyUI(); updateResourceBar(); updateStatsPanel(); drawArena();
-    // Same defensive guard as onEnemyDeath() — flag path completion before
-    // this save, not only inside onSegmentWaveComplete() a moment later, so
-    // a save taken in between can never look like an unflagged, already-
-    // finished path. See the long comment in onEnemyDeath() for why that
-    // matters (a delayed onSegmentWaveComplete() call is the actual
-    // exploitable case there; this call site runs it synchronously right
-    // after, so the window here is effectively nil, but the guard is free).
+    // Flags path completion before this save too, not just later in onSegmentWaveComplete() — closes the same exploit window.
     if(MAP.currentSegWave >= MAP.totalWaves) MAP.segmentComplete = true;
     saveGame();
     // Show loot then trigger proper segment completion (vendor or map screen)
@@ -4613,20 +4301,10 @@ async function showBossResults() {
   const name = G.playerName;
   const isGuest = !(sbUser && sbProfile);
 
-  // The local device cache is only ever a same-instant placeholder for the
-  // very first paint, before the real leaderboard fetch below resolves. It
-  // must NEVER have this run's own score merged into it before being shown
-  // as "the Leaderboard": for a guest, that score was never submitted
-  // anywhere, so inserting it (and sorting it to the top, if it happens to
-  // be the only/highest entry under that name) makes an unranked guest
-  // LOOK like verified 1st place directly underneath a rank display that
-  // simultaneously says "sign in to receive a rank" — the exact
-  // contradiction reported. The cache is just a cached copy of the last
-  // real fetch (see saveLocalLeaderboard below); leave it as-is here.
+  // Never merges this run's own score into the local leaderboard cache before the real fetch resolves — an unsubmitted guest score would otherwise look like a verified rank.
   const localLB = getLocalLeaderboard();
 
-  // Show results right away — rank state is 'guest' (never ranked) or
-  // 'pending' (signed in, waiting on the real leaderboard fetch below).
+  // Shows results immediately; rank is 'guest' or 'pending' until the real leaderboard fetch resolves.
   renderBossResultsModal(score, name, localLB, isGuest ? 'guest' : 'pending');
 
   if (!isGuest) {
@@ -4634,20 +4312,13 @@ async function showBossResults() {
     await postSupabaseLeaderboard(score).catch(()=>{});
   }
 
-  // Fetch the REAL leaderboard for everyone, guests included — it's a
-  // public read, not tied to being signed in, so a guest can still see
-  // genuine competition instead of only their own local cache. Only
-  // signed-in players get a personalized rank computed from it, since only
-  // their score was actually submitted into it above.
+  // Fetches the real leaderboard for everyone (public read); only signed-in players get a personalized rank.
   const rankEl = document.getElementById('boss-rank-display');
   try {
     const liveBoard = await fetchSupabaseLeaderboard();
     if(liveBoard && liveBoard.length > 0) {
       const lbSection = document.getElementById('boss-lb-section');
-      // Guests are never actually in this board — pass a highlight name
-      // that can't match anything, instead of their own name, so a
-      // same-named real entry (however unlikely) is never mistaken for
-      // "that's me" styling on an unranked guest run.
+      // Guests use a highlight name that can't match anything, so no real entry is mistaken for 'that's me'.
       if(lbSection) lbSection.innerHTML = buildLBHtml(liveBoard, isGuest ? null : name, 10);
       saveLocalLeaderboard(liveBoard);
       if(!isGuest) {
@@ -4664,10 +4335,7 @@ async function showBossResults() {
 }
 
 function renderBossResultsModal(score, name, leaderboard, rankState) {
-  // rankState is one of: 'guest' (never ranked — no score submitted),
-  // 'pending' (signed in, real rank still loading), or a positive number
-  // (a confirmed real rank). Never derive displayed rank text from the
-  // local-only cache — see showBossResults() for why.
+  // rankState is 'guest', 'pending', or a real rank — never derived from the local-only cache.
   const rankText = rankState === 'guest' ? 'Sign in to receive a leaderboard rank'
     : rankState === 'pending' ? 'Calculating your rank…'
     : (typeof rankState === 'number' && rankState > 0) ? `Rank #${rankState}`
@@ -4714,23 +4382,16 @@ function closeBossResults() {
   updateEnemyUI();
   drawArena();
   if (G._bossEntryFromMap) {
-    // Launched from the standalone map-screen button, not mid-path — this
-    // attempt has no bearing on any difficulty path, so Continue must return
-    // to the difficulty map (Easy/Medium/Hard/Extreme/Boss Attempt), not the
-    // mid-path "next wave ready" HUD (which previously showed regardless of
-    // entry point and left the player stuck re-triggering the boss race).
+    // Standalone boss-attempt entry — Continue returns to the difficulty map, not the mid-path HUD.
     G._bossEntryFromMap = false;
     showMapScreen(false);
   } else {
-    // Entered mid-path (between-waves choice overlay) — resume the normal
-    // "ready for next wave" flow exactly as before.
+    // Entered mid-path — resumes the normal 'ready for next wave' flow.
     setNextBtnActive(true);
     if(G.wave >= 3) setBossBtnActive(true);
     showPotionBtn();
   }
-  // Boss milestones can award XP that levels the player up mid-fight — show
-  // that level-up popup now that the results screen is out of the way,
-  // instead of it racing to stack on top of this modal.
+  // Shows any level-up popup from boss milestone XP after this results screen closes, not on top of it.
   setTimeout(()=>tryShowLevelUpPopup(), 200);
 }
 
@@ -4843,11 +4504,7 @@ function fireAbility(ab) {
   }
   if(manaCost > 0) spendMana(manaCost);
 
-  // Tracks the last time the player actually dealt damage, independent of
-  // whether AUTO Heal/other AUTO abilities are firing — see the stalemate
-  // watchdog in masterTick() below, which nudges a player who's only
-  // auto-healing with no attack armed instead of letting combat sit
-  // indefinitely with zero outgoing damage.
+  // Tracks the last time real damage was dealt, independent of AUTO Heal — used by the stalemate watchdog.
   G._lastDamageTime = Date.now();
 
   const st = getStats();
@@ -4858,11 +4515,7 @@ function fireAbility(ab) {
   const defenseReduction = baseDR;
   const armorPen = ab.armorPen||0;
   const hits = ab.hits||1;
-  // Hoisted up from further down (used to only be declared right before the
-  // animation code near the end of this function) — the shatterBonus block
-  // below references ex/ey too, and being a `const` declared later in the
-  // same function, that was a temporal-dead-zone ReferenceError waiting to
-  // happen every single time Shatter Strike/Shatter Point actually procced.
+  // Hoisted so the shatterBonus block below can reference ex/ey without a temporal-dead-zone error.
   const W=canvas.width,H=canvas.height;
   const px=W*.25,py=H*.62,ex=W*.72,ey=H*.60;
 
@@ -4877,16 +4530,7 @@ function fireAbility(ab) {
     if(dmgResult.roll > bestRoll) bestRoll = dmgResult.roll;
     if(G.inBoss) { G.bossDmgDealt += dmg; checkBossMilestones(); }
   }
-  // The enemy HP bar/number only ever refreshed as an incidental side
-  // effect of enemyAttack() marking 'enemy' dirty when the enemy hit the
-  // player back — outgoing damage from fireAbility() never triggered a
-  // display update on its own. Short regular fights masked this (the
-  // enemy usually attacked back at least once before dying, or died and
-  // blanked the display anyway), but a slow-attacking wave boss made it
-  // obvious: the combat log kept recording real damage while the visible
-  // HP bar sat frozen at full for tens of seconds. Mark it dirty here so
-  // every hit reflects on screen within the next frame, regardless of
-  // whether or when the enemy attacks back.
+  // Marks the enemy display dirty on outgoing damage too, not just when it hits back — keeps the HP bar in sync every hit.
   markDirty(['enemy']);
   // Roll quality flags
   const isMaxRoll = bestRoll >= 1.15;  // top ~13% — near-max roll
@@ -5110,10 +4754,7 @@ function fireAbility(ab) {
   return true;
 }
 
-// Brief visual+log nudge for a tap that looked available but couldn't
-// actually do anything right now — cooldown remaining, out of combat, etc.
-// Available-looking controls silently doing nothing on click reads as
-// broken; this makes sure every failed tap gets SOME immediate reaction.
+// Brief visual+log nudge for a tap that can't do anything right now (cooldown, out of combat, etc.).
 function flashAbilityDenied(slotIdx, message) {
   const el = document.getElementById(SLOT_IDS[slotIdx]);
   if(el) {
@@ -5136,9 +4777,7 @@ function activateAbility(slotIdx) {
   const ab = ABILITIES[abId];
   if(!ab) return;
 
-  // ALL slots toggle — tap to activate auto, tap again to deactivate.
-  // All auto slots (basic or skill/ult) are now polled by masterTick, not
-  // timer handles, so turning off is just clearing the flag.
+  // All auto slots toggle the same way — tap to activate, tap again to clear the flag.
   if(G.autoSlots[slotIdx]){
     delete G.autoSlots[slotIdx];
     updateLoadoutUI();
@@ -5175,16 +4814,7 @@ function activateAbility(slotIdx) {
     flashAbilityDenied(slotIdx, `${ab.name}: still on cooldown (${remaining}s) — AUTO armed, will fire when ready.`);
   }
 
-  // Basics used to run their own self-scheduling setTimeout chain here,
-  // separate from the masterTick poll used for skills/ults. That chain had
-  // to correctly re-arm itself across every wave-transition stop/restore
-  // cycle, and with 6+ call sites able to trigger a restore, it could
-  // silently fail to re-establish while the masterTick-polled skill in
-  // another slot kept working fine — exactly the "Cyclone stayed AUTO but
-  // Gale Strike silently stopped" bug reported. Basics now share the exact
-  // same polling mechanism as skills (just with a per-slot interval derived
-  // from attack speed instead of a flat 250ms), so there's only one
-  // mechanism to keep alive across wave transitions, not two.
+  // Basics share the same masterTick poll as skills/ults instead of their own setTimeout chain, so there's one AUTO mechanism to keep alive across wave transitions.
   G.autoSlots[slotIdx] = 'master';
   _tick.slots[slotIdx] = 0;
   if(!_tick.running) startMasterTick();
@@ -5218,10 +4848,7 @@ function stopAllAutoSlots(save=false) {
       G.healWasAuto = healActive;
     }
   }
-  // All auto slots (basic, skill/ult, heal) are 'master'-flagged and polled
-  // by masterTick — no per-slot timer handles to clear anymore. This loop
-  // is kept as a defensive no-op in case anything ever stores a real timer
-  // ID here again.
+  // All auto slots are master-ticked now; this loop is a defensive no-op for any stray timer IDs.
   Object.values(G.autoSlots).forEach(id => {
     if(id && id !== true && id !== 'master') {
       clearInterval(id);
@@ -5229,10 +4856,7 @@ function stopAllAutoSlots(save=false) {
     }
   });
   G.autoSlots = {};
-  // Don't let a stale "paused for mana" flag survive into whatever gets
-  // restored next (wave transition, boss entry, etc.) — it would fire a
-  // misleading "Mana recovered" toast on the first successful cast even
-  // though this fresh activation was never actually paused.
+  // Clears a stale 'paused for mana' flag before restoring, so a fresh activation doesn't show a misleading resume toast.
   if(typeof _tick !== 'undefined' && _tick.manaPaused) _tick.manaPaused = {};
   updateLoadoutUI();
   updateHealSlotUI();
@@ -5282,19 +4906,7 @@ function earnClassXP(cls, amount) {
     } else break;
   }
   updateClassXPPanel();
-  // Class Mastery level feeds directly into derived stats in getStats() —
-  // e.g. a Warrior's max HP includes +8 per Mastery level — but G.maxHp/
-  // G.hp are cached snapshots of getStats(), only refreshed at specific
-  // call sites (equip/unequip, spending a stat or passive point). This is
-  // the one that was missing: Mastery levels up automatically and silently
-  // during normal combat (this function runs on every ability use), so the
-  // real max HP was already higher than what the HP bar displayed the
-  // instant Mastery leveled up. The stale display only "caught up" whenever
-  // some unrelated action (equipping a totally unrelated item) happened to
-  // call getStats() again — surfacing as a sudden, unexplained HP jump that
-  // looked tied to that action instead of the Mastery level-up that
-  // actually caused it. Only matters for the player's OWN class, since
-  // getStats() only applies class-mastery bonuses for G.playerClass.
+  // Refreshes cached maxHp/HP right after a Mastery level-up, since it happens silently mid-combat and getStats() only recomputes at specific call sites.
   if(leveledUp && cls === G.playerClass) {
     const st = getStats();
     const oldMax = G.maxHp;
@@ -5436,11 +5048,7 @@ function closeAbilityPicker() {
 const SLOT_IDS = ['slot-basic','slot-reg1','slot-reg2','slot-ult'];
 const SLOT_LABELS = ['Attack','Skill 1','Skill 2','Ultimate'];
 
-// Battle Cry (the warrior heal) was the one ability that told you exactly
-// what AUTO was doing — "standing by until HP drops below 80%" — while every
-// other AUTO'd ability just sat there with an AUTO badge and no indication
-// of whether it was actively working, waiting on mana, waiting on a target,
-// or on cooldown. Give every slot the same kind of direct state text.
+// Battle Cry told you exactly what AUTO was doing while every other AUTO'd ability just showed a bare badge — give every slot the same status text.
 function getAbilityAutoStateText(slotIdx, ab) {
   if(!G.autoSlots[slotIdx]) return null; // AUTO off — no status line to show
   if(!ab) return null;
@@ -5510,16 +5118,7 @@ function updateLoadoutUI() {
 function updateClassXPPanel() {
   // Render into both desktop right col and mobile skills panel
   let html = '<div class="panel-title">Skill Tree</div>';
-  // Skill Points (stat boosts) and Passive Points are BOTH earned together
-  // from your Character Level, but this panel used to only ever show
-  // Passive Points — Skill Points had no visible home anywhere except the
-  // level-up popup itself. That made the "N pts" HUD badge (which correctly
-  // totals both currencies) look wrong to a player checking this panel:
-  // e.g. Character Level 2 grants exactly 1 of each, so a player who'd
-  // already spent neither would see the HUD say "2 pts" while this panel
-  // only ever accounted for 1 of them. Show both here so the numbers add
-  // up no matter which screen a player checks, and make it tappable so an
-  // unspent Skill Point is actually reachable from here too.
+  // Shows both Skill Points and Passive Points here (not just Passive), and makes an unspent Skill Point tappable from this panel too.
   if(G.skillPoints > 0) {
     html += `<div class="sp-display" style="cursor:pointer;" onclick="openLevelUpVoluntarily()" title="Stat boost — from your Character Level, spent via the level-up popup. Tap to spend.">${G.skillPoints} Skill Point${G.skillPoints!==1?'s':''} (stat boost, unspent — tap to spend)</div>`;
   }
@@ -5574,11 +5173,7 @@ function updateClassXPPanel() {
     skills.forEach((sk,i)=>{
       const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
       const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
-      // A "not useful" label was easy to miss, and the button still spent a
-      // permanent point for nothing. Disable the button by default and say
-      // exactly why (e.g. "Requires an Ice imbue") — but leave a small,
-      // explicit escape hatch for a player who deliberately wants an
-      // off-build/experimental pick, rather than silently blocking them.
+      // Disables the button and states why a passive is off-build, but leaves an explicit opt-in for a deliberate off-build pick.
       const rowStyle = irrelevant ? 'opacity:0.45;' : '';
       const rowTitle = irrelevant ? ` title="Requires an imbue that applies this effect — doesn't affect your current ${G.playerImbue||''} build."` : '';
       const disabledAttr = (G.passivePoints<1||lvl>=10||irrelevant) ? 'disabled' : '';
@@ -5639,12 +5234,7 @@ const STAT_BOOST_OPTIONS = [
   { key:'manaRegen',   label:'Mana Regen',   amount:1,    icon:'',  display:'+1/s' },
 ];
 
-// The level-up Step 1 stat grid showed all 12 options at once with no
-// guidance — a brand new player has no basis to judge "Spell Vamp" against
-// "CDR" against "DOT Damage" on their first level-up. Surface 2-3 build-
-// appropriate call-outs (class + imbue) above the full list so there's a
-// sane default while still leaving every option available below for
-// players who want to plan differently.
+// Surfaces 2-3 build-appropriate stat call-outs above the full 12-option grid on first level-up.
 function getRecommendedStatKeys() {
   const cls = G.playerClass;
   const imbue = G.playerImbue;
@@ -5692,12 +5282,7 @@ const TRINITY_LANES = {
 
 const TRINITY_NODES = {
   atk_1: { id:'atk_1', lane:'attack',  name:'Raw Power',        cost:3,  desc:'+12% base attack damage on all abilities.', effect:{ type:'stat_pct', stat:'attack', pct:0.12 } },
-  // elementalOnly nodes deal their % bonus only to abilities that actually
-  // carry an imbue (ab.imbue truthy) — see getAbilityDmg(). Previously this
-  // was a plain stat_pct on 'attack' like Raw Power, which boosted every
-  // ability including warrior/rogue's purely physical basics (imbue:null) —
-  // exactly the "elemental-only" nodes that weren't elemental-only in
-  // practice.
+  // elementalOnly nodes only boost abilities that carry an imbue (see getAbilityDmg) — not warrior/rogue's purely physical basics.
   atk_2: { id:'atk_2', lane:'attack',  name:'Elemental Edge',   cost:8,  desc:'Elemental abilities deal +18% damage. Imbue effects last 20% longer.', effect:{ type:'stat_pct', stat:'attack', pct:0.18, elementalOnly:true, imbueDurMult:1.20 }, requires:'atk_1' },
   atk_3: { id:'atk_3', lane:'attack',  name:'Critical Focus',   cost:15, desc:'+10% crit chance, +20% crit damage.', effect:{ type:'stat_flat', stats:{ critChance:10, critDmg:20 } }, requires:'atk_2' },
   atk_4: { id:'atk_4', lane:'attack',  name:'Elemental Mastery',cost:25, desc:'+30% elemental damage. Status effects deal double damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.30, elementalOnly:true, dotMult:2.0 }, requires:'atk_3' },
@@ -5762,9 +5347,7 @@ function getTrinityBonuses() {
       bonuses._thorns = Math.max(bonuses._thorns||0, e.pct);
       if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap);
       if(e.undying) bonuses._undying = true;
-      // Elemental Guard bundles its elemental-resistance bonus into the same
-      // thorns-type effect as its thorns-% upgrade — previously only the
-      // thorns portion was ever read out of it.
+      // Elemental Guard's resistance bonus is bundled into the same thorns-type effect as its thorns upgrade.
       if(e.elemResist) bonuses._elemResist = Math.max(bonuses._elemResist||0, e.elemResist);
     }
     if(e.type === 'overheal') { bonuses._overhealCap = Math.max(bonuses._overhealCap||0, e.cap); }
@@ -5810,24 +5393,12 @@ function getDRCap() {
   const b = getTrinityBonuses();
   return b._dr_cap || 0.70;
 }
-// Elemental Guard's "+15% resistance to all elemental damage". This game
-// doesn't otherwise tag any incoming damage as elemental vs physical — the
-// one place "elemental" already means something concrete is the enraged
-// prefix variants (Fire/Frost/Venomed/Charged), which are explicitly
-// elemental-themed enemies. Scoped there rather than to all incoming damage
-// so this stays a real, distinct effect instead of just becoming a second
-// copy of the flat defense stat.
+// getElemResist() only applies to the enraged elemental-prefix variants (Fire/Frost/Venomed/Charged) since the game has no general elemental-damage tagging.
 function getElemResist() {
   const b = getTrinityBonuses();
   return b._elemResist || 0;
 }
-// Keen Eye / Fortune's Favor / Trinity Conduit's "+gold from all sources" —
-// previously computed into bonuses._goldMult but no gold-granting call site
-// ever multiplied by it. Route every gold gain through here instead of
-// touching G.gold directly so the bonus actually applies everywhere the
-// node descriptions promise ("all sources": kills, boss milestones, selling
-// and auto-selling gear). Returns the actual (post-multiplier) amount
-// granted, so callers can log the real number instead of the pre-bonus one.
+// Routes all gold gains through here so Keen Eye/Fortune's Favor/Trinity Conduit's gold bonus applies everywhere. Returns the actual granted amount.
 function grantGold(amount) {
   if(!amount) return 0;
   const mult = getTrinityBonuses()._goldMult || 1;
@@ -5835,10 +5406,7 @@ function grantGold(amount) {
   G.gold += granted;
   return granted;
 }
-// Fortune's Favor's "Vendor items 15% cheaper" — previously computed into
-// bonuses._vendorDisc but no vendor price ever read it back out. Used for
-// both the displayed price and the amount actually charged so they always
-// match (see renderVendor()/buyVendorItem()).
+// Fortune's Favor's vendor discount — used for both displayed and charged price so they match.
 function getVendorPrice(item) {
   const disc = getTrinityBonuses()._vendorDisc || 0;
   return Math.max(1, Math.floor(item.buyVal * (1 - Math.min(0.75, disc))));
@@ -5895,8 +5463,7 @@ function enemyAttack() {
   const st = getStats();
   const flatDR = getTrinityBonuses()._flatDR || 0;
   let rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008 + flatDR));
-  // Elemental Guard's resistance applies against the enraged elemental
-  // variants (Fire/Frost/Venomed/Charged) — see getElemResist()'s comment.
+  // Elemental Guard's resistance applies only against the enraged elemental variants — see getElemResist().
   if (G.enemy.resistance) {
     const elemResist = getElemResist();
     if (elemResist > 0) rawDmg *= (1 - Math.min(0.75, elemResist));
@@ -5910,13 +5477,7 @@ function enemyAttack() {
     G.enemy.hp -= thornsDmg;
     const ex = canvas.width * 0.72, ey = canvas.height * 0.60;
     if (thornsDmg > 0) spawnDamageNumber(ex, ey - 30, thornsDmg, false, false, '#88cc00');
-    // Thorns reflected enough to kill the enemy outright. Route through the
-    // normal death flow right here instead of falling through to also deal
-    // this same attack's damage to the player — without this check, a
-    // thorns-killed enemy's hp sat at/below 0 but onEnemyDeath() was never
-    // called, so it stayed "active" (no reward, no next-wave transition)
-    // and kept attacking on every later cycle until something else, like an
-    // AUTO ability hit, happened to notice it was already dead.
+    // Thorns that kill the enemy route through the normal death flow immediately, instead of leaving a 0-HP enemy still 'active'.
     if (G.enemy.hp <= 0) {
       onEnemyDeath();
       return;
@@ -5961,11 +5522,7 @@ function enemyAttack() {
   triggerScreenShake(4, 0.2);
 
   if (G.hp <= 0) {
-    // Undying (def_5): once per run, survive a killing blow at 1 HP instead
-    // of dying. Previously trinityData/getTrinityBonuses() computed
-    // bonuses._undying but nothing ever read it back out at the actual
-    // lethal-damage check, so the node's signature effect silently did
-    // nothing.
+    // Undying (def_5): survives one killing blow per run at 1 HP.
     const tb = getTrinityBonuses();
     if (tb._undying && !G.undyingUsed) {
       G.undyingUsed = true;
@@ -6037,33 +5594,13 @@ function onEnemyDeath() {
     refreshMobilePanel();
     syncMobileLog();
     drawArena();
-    // If this kill just finished the FINAL wave of the path, flag it complete
-    // right now, before this save — not only later inside
-    // onSegmentWaveComplete() below. That call can be delayed up to 30
-    // SECONDS (see the spPopupOpen branch just below) while combatActive is
-    // already false and MAP.currentSegWave already equals totalWaves. A
-    // refresh anywhere in that window previously saw "not in combat, not
-    // yet marked complete, wave==total" — a state resumeFromSave() doesn't
-    // recognize as done, so it fell through to spawnNextSegmentWave(),
-    // which blindly incremented PAST the total and spawned a brand new
-    // enemy on an already-finished, already-rewarded path (wave "4/3") —
-    // reopening the exact reward-farming exploit Round 12 was meant to
-    // close. onSegmentWaveComplete() still runs as normal afterward and
-    // re-sets this same flag to the same value, so this is a no-op there.
+    // Flags path completion before this save if this kill just finished the final wave — avoids a refresh-window exploit that could resume and re-farm a finished path.
     if(MAP.currentSegWave >= MAP.totalWaves) MAP.segmentComplete = true;
     saveGame();
 
     updateSPAvailableBadge();
     if(spPopupOpen) {
-      // Player already had the level-up popup open manually right as this
-      // kill landed — leave it alone and let closeSPPopup() resume the
-      // wave-complete flow once they're done, instead of yanking it away
-      // mid-interaction. Points earned no longer force this popup open on
-      // their own (see awardXP) — a level-up in the middle of the final
-      // kill → merchant → path-complete sequence used to auto-pop this
-      // screen right on top of that sequence, which is exactly the pile-up
-      // players reported. Now it only ever opens when tapped voluntarily
-      // from the "N pt" badge (see openLevelUpVoluntarily/sp-available-badge).
+      // Leaves an already-open level-up popup alone on a kill; points are queued silently and only open this screen when tapped voluntarily.
       G._pendingWaveComplete = true;
       setTimeout(() => {
         if(G._pendingWaveComplete && !G.enemy && !G.combatActive) {
@@ -6303,54 +5840,13 @@ function setPotionBtnActive(active, label='') {
   }
 }
 
-function toggleAutoWave() {
-  autoWaveEnabled = !autoWaveEnabled;
-  updateAutoWaveBtn();
-  // Only fire nextWave if we're genuinely between waves (no active enemy, combat stopped)
-  if(autoWaveEnabled && !G.enemy && !G.combatActive && !G._enemyDeathInProgress) {
-    const btn = document.getElementById('next-btn');
-    if(btn && btn.style.pointerEvents !== 'none') nextWave();
-  }
-}
-
-function updateAutoWaveBtn() {
-  const btn = document.getElementById('next-btn');
-  if(!btn) return;
-  if(autoWaveEnabled) {
-    btn.style.background = 'rgba(58,204,122,0.15)';
-    btn.style.boxShadow = '0 0 10px rgba(58,204,122,0.4)';
-    btn.style.borderColor = 'var(--green)';
-    btn.innerHTML = 'Auto-Next: ON';
-  } else {
-    btn.style.background = '';
-    btn.style.boxShadow = '';
-    btn.style.borderColor = '';
-    btn.innerHTML = 'Next Wave';
-  }
-}
 
 function nextWave() {
-  // Hard guard #1: a stale/duplicate auto-advance timer firing AFTER
-  // another one already advanced the wave must never spawn a fresh enemy
-  // on top of one that's already alive and being fought. This is the
-  // scenario that produced "Spawn blocked: enemy still active, clearing"
-  // together with a merchant screen opening over a still-alive final-wave
-  // enemy — a delayed duplicate timer (see onSegmentWaveComplete) called
-  // this again after the wave had already correctly advanced and spawned,
-  // and this used to have no way to tell "the path is genuinely finished"
-  // apart from "we're mid-fight on the wave we just entered" since both
-  // look identical from currentSegWave/totalWaves alone. If there's a
-  // live enemy in an active fight right now, this call is definitely
-  // stale — ignore it.
+  // Guard: never spawn a new enemy while one is already alive and being fought — catches a stale/duplicate auto-advance timer.
   if(G.combatActive && G.enemy && G.enemy.hp > 0) {
     return;
   }
-  // Hard guard #2: stale/duplicate auto-advance timers (from
-  // setNextBtnActive's own 600ms timer, toggleAutoWave, AND
-  // onSegmentWaveComplete all being able to reach this) must never be
-  // allowed to spawn a wave beyond the path's limit. If the path is
-  // already done, route into the normal completion flow (vendor/
-  // boss-prompt) instead of spawning.
+  // Guard: never spawn past the path's wave limit — routes into the normal completion flow instead.
   if(MAP.currentSegWave >= MAP.totalWaves) {
     setNextBtnActive(false);
     setBossBtnActive(false);
@@ -6502,10 +5998,7 @@ function rollItem(slot, waveMod=1, vendorCap=false) {
   // Filter out CDR for lower tiers
   const canHaveCDR = CDR_ELIGIBLE_TIERS.includes(tier.name);
   let filteredPool = canHaveCDR ? statPool : statPool.filter(s=>s!=='cdr');
-  // Never roll an "effect" stat (burn/poison/freeze/electric-dot/slow duration
-  // or strength) that does nothing for the player's current imbue — e.g. an
-  // Electric Warrior would otherwise see Freeze/Poison duration gear that's
-  // pure dead weight. See IMBUE_RELEVANT_EFFECT_STATS / applyImbueEffect.
+  // Never rolls an effect stat (burn/poison/freeze/etc. duration) that does nothing for the player's current imbue.
   if(G.playerImbue) {
     filteredPool = filteredPool.filter(s => isEffectStatRelevantForImbue(s, G.playerImbue));
   }
@@ -6886,15 +6379,7 @@ let vendorResetCount = 0;
 const VENDOR_RESET_BASE_COST = 30;
 const VENDOR_STARTER_ITEM_PRICE = 15;
 
-// rollItem()'s price floor (Math.max(5,...) sellVal, +15 flat in buyVal) means
-// no rolled item can ever cost less than ~26g. Early-game gold income can't
-// keep pace with that — a new player could hit their very first shop with
-// ~20g and find every item (and the refresh) priced out of reach, making the
-// whole screen something they can only leave. Guarantee at least one
-// genuinely affordable item any time that happens, regardless of wave or
-// vendor visit number, by discounting the cheapest rolled item down toward
-// a small starter price — capped at whatever gold the player actually has,
-// so it's never a false promise.
+// Guarantees at least one affordable item in the shop, capped at what the player actually has.
 function ensureAffordableVendorItem() {
   if(!vendorStock.length) return;
   if(vendorStock.some(v => v.item.buyVal <= G.gold)) return; // already fine
@@ -6920,10 +6405,7 @@ function openVendor(){
 }
 
 function refreshVendorStock() {
-  // A new player's first-ever refresh is free — they haven't learned yet
-  // whether the stock is worth paying to reroll, and charging for that
-  // first look (on top of already-tight starting gold) just adds another
-  // way the first shop visit can feel like a dead end.
+  // A player's very first vendor refresh is free.
   const isFreeRefresh = !G.usedFreeVendorRefresh;
   const cost = isFreeRefresh ? 0 : Math.floor(VENDOR_RESET_BASE_COST * Math.pow(2, vendorResetCount));
   if(G.gold < cost) {
@@ -7073,10 +6555,7 @@ function updateHpBar(){
 function updateResourceBar(){
   document.getElementById('gold-val').textContent=G.gold;
   document.getElementById('kills-val').textContent=G.kills;
-  // Show "current / total" for this difficulty path (e.g. "3/8") instead of
-  // a bare number — a bare wave count gave no sense of how close to the
-  // path's boss you were, and looked like a progress reset every time a
-  // new path started back at 1 with no context that it was a NEW path.
+  // Shows 'current/total' for the difficulty path instead of a bare wave count.
   const waveEl = document.getElementById('wave-num');
   if(waveEl) waveEl.textContent = MAP.totalWaves > 0 ? `${G.wave}/${MAP.totalWaves}` : G.wave;
 
@@ -7113,31 +6592,10 @@ function updateStatsPanel(){
 
 function inspectGear(slot){const item=G.equipment[slot];if(item)showItemModal(item,'gear_inspect');}
 
-function updateSkillPanel(){
-  const sp=G.passivePoints;
-  const elColors={offense:'#e83a3a',defense:'#e8b84b',effects:'var(--gold)',utility:'#3acc7a'};
-  const elEmoji={offense:'',defense:'',effects:'',utility:''};
-  let html=`<div class="panel-title">Skill Tree</div><div class="sp-display">${sp} Skill Point${sp!==1?'s':''}</div>`;
-  Object.entries(SKILL_TREE).forEach(([el,skills])=>{
-    html+=`<div class="skill-section"><div class="skill-element-title" style="color:${elColors[el]}">${elEmoji[el]} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
-    skills.forEach((sk,i)=>{
-      const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
-      html+=`<div class="skill-row"><div><div class="skill-name">${sk.name}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
-        <button class="skill-btn" ${sp<1||lvl>=10?'disabled':''} onclick="upgradeSkill('${el}',${i})">+</button></div>`;
-    });
-    html+='</div>';
-  });
-  document.querySelectorAll('#panel-skills').forEach(el=>{ el.innerHTML=html; });
-  const mps=document.getElementById('mobile-panel-skills');if(mps)mps.innerHTML=html;
-}
-
 function upgradeSkill(el,idx,force){
   if(G.passivePoints<1)return;
   const sk=SKILL_TREE[el][idx];
-  // Block spending a permanent point on a passive that does nothing for the
-  // player's current imbue, unless they explicitly opted in via the
-  // "invest anyway" link (see updateClassXPPanel) — the greyed-out label
-  // alone still let new players waste points by accident.
+  // Blocks spending a point on an off-build passive unless the player explicitly opts in.
   const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
   if(irrelevant && !force) {
     log(`<span style="color:#cc8844">${sk.name} requires ${requiredImbueLabelForEffectStat(sk.stat)} to do anything — not spending your point on it.</span>`);
@@ -7227,13 +6685,7 @@ function showAccountMenu() {
   menu.classList.toggle('hidden');
 }
 
-// Toggles the name-screen's login/account UI: "Log In" when no account is
-// signed in (the only way to ever reach #auth-modal used to be an
-// unreachable fallback deep in the password-reset flow — new players had
-// no path to creating an account at all, so their name could never appear
-// on the real leaderboard), or "Signed in as X" + a "Not X? Log In" link
-// to switch accounts when one is. Called from initGame() (every time the
-// name screen shows) and onAuthReady() (right after signing in/up).
+// Toggles the name-screen login/account UI between 'Log In' and 'Signed in as X'.
 function updateNameScreenAuthUI() {
   const loginBtn = document.getElementById('login-entry-btn');
   const switchLink = document.getElementById('switch-account-link');
@@ -7254,8 +6706,7 @@ function updateNameScreenAuthUI() {
 function initGame() {
   setAdScreenActive(true);
   setArenaBg();
-  // Just show the name screen — actual save loading happens in startGame()
-  // when the player clicks Begin Journey. We do load profile info for display only.
+  // Just shows the name screen — save loading happens in startGame() when Begin Journey is clicked.
   document.getElementById('name-screen').classList.remove('hidden');
   document.getElementById('game').classList.add('hidden');
   if(sbProfile) {
@@ -7363,9 +6814,7 @@ function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){
   const numVal = parseInt(dmg) || 0;
   // Scale size slightly with damage magnitude
   const sizeBonus = Math.min(8, Math.floor(Math.log2(Math.max(1, numVal)) * 0.8));
-  // The arena canvas has no max-width, so on a wide desktop window it
-  // renders much larger than on a phone — bump the font size to match or
-  // these end up tiny relative to the arena, same issue as the HUD text.
+  // Bumps arena font size on desktop, where the canvas renders much larger than on a phone.
   const desktopMult = window.innerWidth >= 900 ? 1.4 : 1.0;
   const baseSize = Math.round((isCrit ? 24 : (isSE ? 18 : 14)) * desktopMult);
   const vx = (Math.random() - 0.5) * 1.2; // slight arc
@@ -7383,12 +6832,7 @@ function spawnDamageNumber(x,y,dmg,isCrit,isSE,color){
     glow: isCrit ? '#ffaa00' : null,
   });
 }
-// A multi-hit ability (e.g. a 4-hit Cyclone) fires spellVamp/lifeSteal
-// separately per hit, each calling this within milliseconds of the last —
-// which used to spawn a separate "+1 HP" floating number per hit, so one
-// ability cast could throw up 4 overlapping heal numbers at once. Batch
-// same-source heals landing within a short window into a single combined
-// number instead of spawning one per tick.
+// Batches same-source heal numbers landing within a short window into one combined number instead of stacking duplicates.
 let _healNumberBuffer = null; // { x, y, amt, batchAt }
 const HEAL_NUMBER_BATCH_MS = 180;
 function spawnHealNumber(x,y,amt){
@@ -7936,15 +7380,7 @@ function playSound(type, options={}) {
 
 
 
-// ── MASTER TICK ──
-// Single rAF loop replaces: enemyAttackInterval, manaRegenInterval,
-// statusTickInterval, bossTimerInterval, autoSlot skill polling.
-// Basic-attack AUTO also polls here now (dynamic per-slot interval derived
-// from attack speed) instead of running its own self-scheduling setTimeout
-// chain — that chain had to independently survive every wave-transition
-// stop/restore cycle and could silently fail to re-arm while a masterTick-
-// polled skill in another slot kept working, which read as "AUTO randomly
-// turns itself off for basic attacks but not skills."
+// Single rAF loop replaces the old enemy-attack/mana-regen/status-tick/boss-timer/auto-slot intervals; basic-attack AUTO polls here too now.
 
 const _tick = {
   lastTs: 0,
@@ -7961,16 +7397,7 @@ const _tick = {
   autosave: 0,      // accumulator ms — periodic mid-fight save, see masterTick
 };
 
-// ── STALEMATE WATCHDOG ──
-// Nothing previously stopped combat from running forever with zero
-// outgoing damage — e.g. a player with only Heal armed on AUTO and no
-// attack ability toggled on. Auto-healing kept HP topped up indefinitely
-// while the enemy just stood there, with no signal that nothing was
-// actually progressing. This doesn't end the fight or touch damage/heal
-// numbers — it just checks in periodically and, if too long has passed
-// since the player last dealt damage while still in active combat, nudges
-// them to actually attack. Throttled so it can only fire once per
-// cooldown window rather than spamming the log every check.
+// Nudges a player who's dealt no damage in a while (e.g. only auto-healing) — doesn't touch combat state, just a periodic reminder.
 const STALEMATE_CHECK_MS = 5000;
 const STALEMATE_THRESHOLD_MS = 20000;
 const STALEMATE_NUDGE_COOLDOWN_MS = 25000;
@@ -7989,22 +7416,10 @@ function checkCombatStalemate() {
   log(msg);
 }
 
-// Configurable AUTO mana behavior (see menu → Combat). When ON, an AUTO
-// ability/heal that can't afford its mana cost for AUTO_MANA_STARVE_MS
-// straight goes into a visibly-paused state (banner above the ability bar)
-// and resumes itself — no re-tap needed — the moment mana recovers enough
-// to afford it again, with its own "resumed" banner. Previously this fully
-// disabled AUTO and required the player to notice and re-tap it manually,
-// which read as "my controls stopped working" since low mana is silent
-// otherwise. When OFF, AUTO stays on and keeps quietly retrying every tick
-// until mana recovers with no banner at all (previous legacy behavior) —
-// the .mana-starved slot indicator still shows either way.
+// Configurable AUTO mana behavior — when on, a starved AUTO ability pauses visibly and resumes itself once affordable; when off it retries silently every tick.
 let autoPauseOnLowMana = true;
 const AUTO_MANA_STARVE_MS = 3000;
-// Slots currently sitting in the visible "paused for mana" state (key:
-// slotIdx or 'heal'). While true here, the per-slot poll below skips firing
-// even once mana is technically sufficient again, until we've shown the
-// resume banner — see the resume check at the top of each poll loop.
+// Slots currently in the visible 'paused for mana' state — skipped until the resume banner has shown.
 _tick.manaPaused = {};
 
 function showAutoManaBanner(text, color) {
@@ -8033,18 +7448,7 @@ function handleAutoManaStarved(slotKey, elapsedMs, abilityName) {
   markDirty(['loadout','healSlot']);
 }
 
-// Called once a paused slot's ability is affordable again — clears the
-// pause and announces the resume, then lets the caller fire normally.
-//
-// manaCost (optional) lets us tell a REAL resume apart from a one-off: the
-// caller fires immediately after this returns, spending manaCost. If mana
-// was only just barely enough for that one cast, it drops straight back
-// below cost and the per-slot status text (getAbilityAutoStateText) flips
-// to "Waiting for mana" within a quarter-second — directly contradicting
-// the "AUTO resumed" banner that's still fading on screen. Only claim a
-// real "resumed" when there's enough of a buffer that firing won't
-// immediately re-starve; otherwise say plainly that this is one cast and
-// it'll keep regenerating for the next.
+// Clears the pause and announces resume once affordable again; only claims a real resume if there's enough mana buffer to not immediately re-starve.
 function resumeAutoManaSlot(slotKey, abilityName, manaCost) {
   _tick.manaPaused[slotKey] = false;
   _tick.manaStarved[slotKey] = 0;
@@ -8072,9 +7476,7 @@ function masterTick(ts) {
       const max = getMaxMana();
       if(G.mana < max) {
         G.mana = Math.min(max, G.mana + getManaRegen() / 10);
-        // Also refresh loadout/heal slot UI so the "can't afford" indicator
-        // (see .mana-starved) clears itself as soon as mana regens back up,
-        // instead of staying stuck showing NO MP after it's usable again.
+        // Refreshes the loadout/heal UI so the 'can't afford' indicator clears as soon as mana regens.
         markDirty(['mana','loadout','healSlot']);
       }
     }
@@ -8093,14 +7495,7 @@ function masterTick(ts) {
       checkCombatStalemate();
     }
 
-    // ── Enemy attack (was setInterval with random interval) ──
-    // Suppressed while the opening ability tutorial is active: its
-    // instructions ("Tap the Attack button now", etc.) stayed on screen
-    // while the enemy kept attacking, mana kept draining, and waves kept
-    // completing underneath — so a step could go stale (or the player could
-    // take real damage) before they'd even finished reading it. The
-    // tutorial only ever runs on a brand-new player's very first fight, so
-    // this doesn't affect normal combat pacing at all once it's done.
+    // Enemy attack is suppressed while the opening tutorial is active, so instructions don't go stale mid-read.
     if(!G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0 && !tutActive) {
       _tick.enemyAtk += dt;
       if(_tick.enemyAtk >= _tick.enemyAtkDelay) {
@@ -8129,13 +7524,7 @@ function masterTick(ts) {
       if(!abId) continue;
       const ab = ABILITIES[abId];
       if(!ab) continue;
-      // Basics (Gale Strike, etc.) share this same poll as skills/ults —
-      // previously they ran a separate self-scheduling setTimeout chain that
-      // had to survive every wave-transition stop/restore cycle on its own,
-      // which could silently fail while a skill's masterTick slot kept
-      // working fine. Basics poll at their real attack-speed interval;
-      // skills/ults poll at a fixed fine-grained 250ms since their actual
-      // pacing comes from ability cooldowns via isAbilityReady below.
+      // Basics share this poll with skills/ults at their real attack-speed interval; skills/ults poll at a fixed 250ms.
       const isBasic = ab.type === 'basic';
       const pollMs = isBasic ? Math.max(100, Math.floor(1000 / (getStats().atkSpeed || 2.0))) : 250;
       _tick.slots[slotIdx] = (_tick.slots[slotIdx] || 0) + dt;
@@ -8147,14 +7536,7 @@ function masterTick(ts) {
           handleAutoManaStarved(slotIdx, pollMs, ab.name);
           continue;
         }
-        // Mana priority: Emergency Heal outranks offensive AUTO abilities.
-        // Without this, an offensive AUTO skill spends whatever mana just
-        // regenerated the instant it's affordable, so Heal (a bigger, less
-        // frequent cost) could never accumulate enough — the exact death
-        // spiral of "regen mana → offense spends it → can't afford heal →
-        // take more damage → repeat" reported with mana-hungry kits. Only
-        // reserves when Heal is actually armed, ready, and HP is low enough
-        // that it's about to want to fire — otherwise offense spends freely.
+        // Mana priority: an armed, ready, low-HP Heal outranks offensive AUTO abilities so it can actually accumulate enough mana to fire.
         if(manaCost > 0) {
           const healAbForReserve = healLoadout ? ABILITIES[healLoadout] : null;
           const healCostForReserve = healAbForReserve ? (MANA_COSTS[healAbForReserve.type] || 0) : 0;
@@ -8172,16 +7554,7 @@ function masterTick(ts) {
       }
     }
 
-    // ── Heal auto-slot (was its own setInterval) ──
-    // This used to check isAbilityReady(healAb) (a table that heal casts
-    // never populate — heal tracks its cooldown separately via healCD/
-    // isHealReady()) and call activateHeal(), the manual TOGGLE handler.
-    // Since AUTO was already on, that toggle call turned it right back OFF
-    // on the very next 250ms tick — so AUTO Heal looked like it turned on
-    // but silently died almost immediately, and never actually respected
-    // the "only heal below 80% HP" behavior described in activateHeal()'s
-    // own comments. Fixed to check the real cooldown, respect the HP
-    // threshold, and cast directly instead of toggling.
+    // Heal auto-slot checks its real cooldown and HP threshold directly now, instead of toggling itself back off every tick.
     if(G.autoSlots['heal'] === 'master') {
       _tick.heal += dt;
       const healAb = healLoadout ? ABILITIES[healLoadout] : null;
@@ -8212,14 +7585,7 @@ function masterTick(ts) {
     }
   }
 
-  // ── Periodic mid-fight autosave ──
-  // The discrete saveGame() calls elsewhere (wave transitions, leveling,
-  // equipping, etc.) leave a real gap during a single long fight: nothing
-  // re-saved the enemy's current HP while it was slowly getting chipped
-  // down, so a refresh/crash mid-fight could still roll back a
-  // significant amount of progress on that one enemy even though the wave
-  // position itself was correct. Throttled to every ~3s so it doesn't
-  // hammer localStorage every frame.
+  // Periodic mid-fight autosave (~3s) so a long single fight's progress isn't lost on refresh/crash.
   if(G.combatActive && G.enemy && G.enemy.hp > 0) {
     _tick.autosave += dt;
     if(_tick.autosave >= 3000) {
@@ -8411,9 +7777,7 @@ function activateHeal() {
     updateHealSlotUI();
     return;
   }
-  // Try to fire immediately — but not at full HP, where a heal is pure
-  // wasted mana. This was previously unconditional, so tapping Heal while
-  // topped off silently burned 30 mana for zero benefit.
+  // Skips firing at full HP, where a heal would just waste mana.
   if(G.hp >= G.maxHp) {
     log('<span style="color:#666">Already at full health — no mana spent.</span>');
   } else if(isHealReady() && G.mana >= MANA_COSTS.heal) {
@@ -8506,9 +7870,7 @@ function startHealCDBar(ab) {
   requestAnimationFrame(tick);
 }
 
-// Mirrors getAbilityAutoStateText but for the heal slot's own cooldown
-// system (healCD/isHealReady, separate from G.abilityCDs — see comments at
-// isHealReady) and its HP-threshold gate instead of a target check.
+// Mirrors getAbilityAutoStateText but for the heal slot's own cooldown/HP-threshold system.
 function getHealAutoStateText(ab, healManaStarved) {
   if(!G.autoSlots['heal']) return null;
   if(!ab) return null;
@@ -8532,10 +7894,7 @@ function updateHealSlotUI() {
   // Dim heal slot between waves
   slot.style.opacity = (G.combatActive && G.enemy) ? '1' : '0.45';
   const isHealAuto = !!G.autoSlots['heal'];
-  // AUTO only actually casts once HP drops below AUTO_HEAL_HP_PCT — while
-  // above that it's "standing by", not stuck/broken. Show that distinctly
-  // (dimmer, no pulse) instead of an identical-looking AUTO glow that gives
-  // no hint about whether it's about to do anything.
+  // Shows 'standing by' (dimmer, no pulse) distinctly from 'about to fire' for AUTO heal below the HP threshold.
   const healStandingBy = isHealAuto && G.hp >= G.maxHp * AUTO_HEAL_HP_PCT;
   if(isHealAuto && !healStandingBy){ slot.classList.add('active-ability'); slot.style.boxShadow=`0 0 10px 1px ${color}`; slot.style.background=`${color}18`; }
   else { slot.classList.remove('active-ability'); slot.style.boxShadow=isHealAuto?`0 0 4px 1px ${color}88`:''; slot.style.background=isHealAuto?`${color}0c`:''; }
@@ -8600,11 +7959,7 @@ function saveHealLoadout() {
 }
 function loadHealLoadout() {
   try {
-    // Don't clobber a heal already validly equipped for the current class
-    // (e.g. the default set in selectImbue) just because no saved
-    // per-class preference exists yet — this used to reset healLoadout to
-    // null right before the first wave spawned, making the tutorial's
-    // heal step open the assign-heal picker instead of actually healing.
+    // Keeps an already-valid per-class heal choice instead of resetting it just because no saved preference exists yet.
     if (healLoadout && ABILITIES[healLoadout] && ABILITIES[healLoadout].class === G.playerClass) return;
     const stored = localStorage.getItem('elementalRift_heal');
     healLoadout = (stored && ABILITIES[stored] && ABILITIES[stored].class === G.playerClass) ? stored : null;
@@ -8715,10 +8070,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initGame();
   }, 5000);
 
-  // Check if already signed in. If the Supabase CDN failed to load, `sb` is
-  // null (see its declaration above) — treat that exactly like "not signed
-  // in" instead of throwing, so guests aren't stuck waiting on the 5s
-  // failsafe timeout above just because a CDN script didn't load.
+  // Treats a null `sb` (Supabase CDN failed to load) the same as 'not signed in' instead of throwing.
   if(!sb) {
     _authReady = true;
     _tryDismiss();
@@ -8761,8 +8113,7 @@ async function authSubmit() {
       errEl.textContent = 'Display name must be 2-20 characters.';
       btn.textContent = 'Create Account'; btn.disabled = false; return;
     }
-    // Rendered via innerHTML on the leaderboard — escHtml() there covers
-    // display, but restrict input too so names can't contain markup at all.
+    // Restricts input charset too, not just display escaping, so names can't contain markup at all.
     if(!/^[A-Za-z0-9 _-]+$/.test(displayName)) {
       errEl.textContent = 'Display name can only use letters, numbers, spaces, - and _.';
       btn.textContent = 'Create Account'; btn.disabled = false; return;
@@ -8878,10 +8229,7 @@ function dismissLoader() {
   }
 }
 
-// Cloud is the source of truth once signed in — pulls the account's saved
-// character into localStorage so the existing loadGame()/Continue flow
-// picks it up unchanged. cloudSave()/cloudLoad() previously existed but
-// were never called, so signed-in progress never actually left the device.
+// Cloud is the source of truth once signed in — pulls the account's save into localStorage for the existing Continue flow.
 async function syncCloudSaveIntoLocal() {
   try {
     const cloudData = await Promise.race([
@@ -9018,10 +8366,7 @@ async function grantTitle(playerId, titleId) {
   );
 }
 
-// One-time admin scripts (season title grants, leaderboard wipe) used to
-// live here as window.* functions callable from any signed-in player's
-// console. Removed from the shipped client — run those as one-off scripts
-// against Supabase directly, gated by RLS/service role, not from browser JS.
+// Admin scripts (season titles, leaderboard wipe) removed from the client — run those against Supabase directly instead.
 
 // ── SIGN OUT ──
 function honorableDeath() {
@@ -9159,10 +8504,7 @@ function applyImbueEffect(enemy, effect, st, stacks=1) {
   if(!enemy.statusEffects) enemy.statusEffects = {};
   const now = Date.now();
   const dotBonus = (st.dotDamage||0);
-  // Elemental Mastery (atk_4): "status effects deal double damage" — applies
-  // to the DOT ticks below. Elemental Edge (atk_2): "imbue effects last 20%
-  // longer" — applies to every duration below. Both were previously computed
-  // into getTrinityBonuses() but never actually read anywhere.
+  // Elemental Mastery doubles DOT tick damage; Elemental Edge extends imbue durations 20%.
   const tb = getTrinityBonuses();
   const dotMult = tb._dotMult || 1;
   const durMult = tb._imbueDurMult || 1;
@@ -9528,18 +8870,7 @@ let passivePending = 0; // queued passive points
 let spPopupOpen = false;
 let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
 
-// Every one of these sits in its own local stacking context (map-screen,
-// sp-popup, vendor-modal, etc. are direct children near the top of <body>)
-// while the ability bar the tutorial points at lives inside #loadout-area,
-// which creates ITS OWN local stacking context (via backdrop-filter). A
-// child's z-index only ever competes within its own stacking context, so
-// boosting the target ability slot's z-index (see renderTutStep) can make
-// it PAINT above these overlays visually in some cases but can never win a
-// real hit-test against them — a real tap at that screen position still
-// lands on the overlay on top, not the button underneath. That's exactly
-// why a tutorial step could show its glowing prompt right through the
-// stat-allocation screen, the shop, or the between-wave choice screen, yet
-// tapping the "highlighted" button did nothing at all. See isTutorialBlocked().
+// Tutorial overlays and the ability bar sit in separate stacking contexts, so boosting a target's z-index can paint on top without winning a real hit-test — see isTutorialBlocked().
 const TUTORIAL_BLOCKING_IDS = ['sp-popup','vendor-modal','item-modal','boss-results-modal','ability-picker-modal','map-screen'];
 function isTutorialBlocked() {
   if(document.getElementById('wave-boss-prompt')) return true;
@@ -9550,17 +8881,7 @@ function isTutorialBlocked() {
     return el && !el.classList.contains('hidden');
   });
 }
-// Leveling up used to force the stat-allocation popup open the moment it was
-// safe to (as soon as combat/other modals cleared) — but "as soon as it's
-// safe" kept landing at the exact moment a final kill was ALSO trying to
-// show the merchant and the path-complete screen, piling three separate
-// interruptions on top of each other right when the player most wanted to
-// see their result. Points are now just queued silently (see awardXP) and
-// surfaced as a small "N pt" badge (see updateSPAvailableBadge) that the
-// player taps whenever they actually want to spend them — this function is
-// kept only as that voluntary entry point, and as a courtesy retry for the
-// rare case where the player had it open already when a kill landed (see
-// onEnemyDeath / closeSPPopup).
+// Points are queued silently (see awardXP) and surfaced as a badge; this popup only opens voluntarily now, not forced on level-up.
 function tryShowLevelUpPopup() {
   updateSPAvailableBadge();
 }
@@ -9573,19 +8894,7 @@ function openLevelUpVoluntarily() {
 function updateSPAvailableBadge() {
   const badge = document.getElementById('sp-available-badge');
   if(!badge) return;
-  // Use the real spendable currencies (G.skillPoints/G.passivePoints)
-  // rather than spPending/passivePending. Those two counters are a
-  // separate, redundant "queued since the popup last opened" tracker used
-  // only to drive the SP popup's own guided step-by-step flow — they can
-  // drift out of sync with the real currency whenever a point is spent
-  // through a path that updates the currency but never touches them. The
-  // mobile Skills panel is exactly that path: its upgradeSkillMobile()
-  // spends a real passive point via upgradeSkill() (G.passivePoints--)
-  // without going through passivePending at all, which left this badge
-  // permanently stuck showing a point that had already been spent — the
-  // panel itself correctly showed 0 remaining, but the badge above it kept
-  // counting a point that no longer existed. The real currency is always
-  // correct here regardless of which UI was used to spend from it.
+  // Uses the real skill/passive point currencies, not the separate spPending/passivePending counters, since those can drift out of sync when a point is spent via a different UI path.
   const total = (G.skillPoints||0) + (G.passivePoints||0);
   if(total > 0 && !spPopupOpen) {
     const text = document.getElementById('sp-available-text');
@@ -9597,12 +8906,7 @@ function updateSPAvailableBadge() {
 }
 
 function awardXP(rawAmount) {
-  // Keen Eye / Fortune's Favor's "+XP gain" — previously computed into
-  // bonuses._xpMult but never actually multiplied into any XP grant. Routed
-  // through the single awardXP() choke point so it really does apply "from
-  // all sources" as the node descriptions claim (kills, boss kills,
-  // milestones). Returns the actual (post-multiplier) amount granted so
-  // callers can display the real number instead of the pre-bonus one.
+  // Routes XP through here so Keen Eye/Fortune's Favor's XP bonus applies to every source; returns the actual granted amount.
   const amount = Math.floor(rawAmount * (getTrinityBonuses()._xpMult || 1));
   G.xp += amount;
   updateXPBar();
@@ -9618,12 +8922,7 @@ function awardXP(rawAmount) {
     leveledUp = true;
   }
   updateSPAvailableBadge();
-  // Re-sync the HP/mana bars against derived stats right at the moment of
-  // level-up rather than waiting for some unrelated later action (equipping
-  // gear, spending a stat point) to recompute them — see the matching fix
-  // in earnClassXP() for the concrete bug report this covers (max HP
-  // display stayed stale after leveling until an unrelated equip action
-  // triggered a recompute and everything "jumped" at once).
+  // Re-syncs HP/mana bars right at level-up instead of waiting on some unrelated later action.
   if(leveledUp) {
     const st = getStats();
     const oldMax = G.maxHp;
@@ -9645,10 +8944,7 @@ function triggerLevelUpPopup() {
   if(spPopupOpen) return;
   spPopupOpen = true;
   updateSPAvailableBadge();
-  // Remember whether this level-up started with BOTH currencies pending, so
-  // the step indicator stays consistent ("Step 2 of 2") even after step 1's
-  // points hit zero mid-session, instead of flickering off right when it
-  // matters most.
+  // Remembers if this level-up started with both currencies pending, so the step indicator stays consistent.
   spPopupHadBoth = spPending > 0 && passivePending > 0;
   playSound('level_up');
   renderSPPopup();
@@ -9683,12 +8979,7 @@ function renderSPPopup() {
 
   let html = '';
 
-  // Guided flow: when BOTH a skill point and a passive point are pending
-  // (very common on level 2, the player's first real level-up), showing the
-  // stat grid + ability upgrades + the entire 4-category passive skill tree
-  // all at once was overwhelming for a first-time player. Instead, gate them
-  // into two clear steps — spend the skill point first, then the passive
-  // point appears once that's done — with a small step indicator.
+  // Gates skill point and passive point spending into two steps on a first level-up instead of showing everything at once.
   if(spPopupHadBoth && spPending > 0) {
     html += `<div style="text-align:center;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-bottom:10px;text-transform:uppercase;">Step 1 of 2 — Skill Point</div>`;
   }
@@ -9853,15 +9144,7 @@ function spSpendPassive(el, idx, force) {
   const before = G.passivePoints;
   upgradeSkill(el, idx, force);
   if(G.passivePoints < before) passivePending = Math.max(0, passivePending - 1);
-  // upgradeSkill() above already calls updateResourceBar() internally, which
-  // refreshes the "N pts" HUD badge — but it does so BEFORE passivePending
-  // is decremented on the line above, so that refresh reads the stale
-  // pre-spend total and the badge is left one point too high. Nothing after
-  // that point re-synced it except closeSPPopup() (only reached once every
-  // pending point is gone), so spending down to a mix like "0 skill, 0
-  // passive but badge still showing 2" could sit there indefinitely.
-  // Explicitly refresh with the now-current numbers regardless of which
-  // branch runs below.
+  // Explicitly refreshes the 'N pts' badge with current numbers, since upgradeSkill()'s own refresh runs before passivePending is decremented.
   updateSPAvailableBadge();
   if(spPending <= 0 && passivePending <= 0) { closeSPPopup(); return; }
   renderSPPopup();
@@ -10021,14 +9304,7 @@ const TUT_STEPS = [
     desc: 'Tap to toggle auto — it will fire automatically every time the cooldown resets. Tap again to turn off.',
     hint: 'Tap Skill 1 to try it',
     waitForTap: 'slot-reg1',
-    // This step used to render the instant the basic-attack step completed
-    // — often right as Wave 1's "cleared" overlay was covering the ability
-    // bar. Reactively
-    // detecting that overlay (isTutorialBlocked) still leaves a brief window
-    // where the prompt renders before the overlay appears and has to wait up
-    // to 400ms to notice and pause — during which taps land on the overlay,
-    // not the ability slot. Gating this step to never even attempt to render
-    // until Wave 2 has actually begun removes that race entirely.
+    // Gates this step to Wave 2+ instead of reactively detecting a blocking overlay, removing the race entirely.
     minSegWave: 2,
   },
   {
@@ -10037,13 +9313,7 @@ const TUT_STEPS = [
     desc: 'This is your heal. Tapping it heals you immediately and turns on auto-heal, which fires again whenever your HP drops low. Costs 30 mana and has a cooldown.',
     hint: 'Tap Heal to restore health',
     waitForTap: 'slot-heal',
-    // Heal is disabled between waves (activateHeal() silently no-ops with
-    // "Can only heal during combat" outside of combat) — if this step
-    // rendered right after a wave-clear, the highlighted button would do
-    // nothing when tapped. Hold the step until the next wave's combat has
-    // actually started, same mechanism as slot-reg1's minSegWave gate below,
-    // but keyed on combat state rather than a specific wave number since
-    // this step can legitimately show up after any wave.
+    // Holds the Heal step until the next wave's combat has actually started, since healing is disabled between waves.
     waitForCombat: true,
   },
   {
@@ -10070,13 +9340,7 @@ function startAbilityTutorial() {
   showTutStep(0);
 }
 
-// Checks whether the action a tutorial step is asking for has ALREADY
-// happened — e.g. the player toggled an ability's AUTO on before this step
-// ever rendered (so no tutorial click-listener existed yet to catch it).
-// Without this check, the step would render and wait for a tap that, if
-// given, would just toggle the already-on ability back OFF instead of
-// completing the lesson. See renderTutStep()'s state watcher for the other
-// half of this fix (catching the state change while the step is showing).
+// Checks whether a step's action already happened before it rendered, so a stray tap doesn't undo it.
 function isTutStepAlreadySatisfied(s) {
   if (s.slotId === 'slot-basic') return !!G.autoSlots[0];
   if (s.slotId === 'slot-reg1')  return !!G.autoSlots[1];
@@ -10087,15 +9351,7 @@ function isTutStepAlreadySatisfied(s) {
 
 let _tutBlockPoll = null;
 
-// Pauses the tutorial while some other full-screen UI (level-up, vendor,
-// between-wave choice, map screen, etc.) is covering the ability bar the
-// current step points at — see the big comment on isTutorialBlocked() for
-// why the step's own "boosted z-index" trick can't reliably win against
-// these. Hides whatever's currently on screen instead of leaving a
-// glowing prompt for a button the player literally cannot reach, and
-// polls until the blocking UI clears, then re-renders the same step fresh
-// (correct position, a real re-attached tap listener) rather than assuming
-// nothing changed while it was hidden.
+// Pauses the tutorial while another full-screen UI covers the ability bar, and re-renders the step fresh once it clears.
 function pauseTutorialForModal(step) {
   ['tut-spotlight','tut-bubble','tut-arrow'].forEach(id => {
     const node = document.getElementById(id);
@@ -10129,13 +9385,7 @@ function showTutStep(step) {
   const s = TUT_STEPS[step];
   if(!s) { endTutorial(); return; }
 
-  // Hold this step until the wave/combat state it's meant for has actually
-  // arrived. minSegWave gates on a specific wave number (used when the step
-  // must not render until a later wave has begun); waitForCombat gates on
-  // combat simply being active regardless of which wave that is (used for
-  // steps whose action is impossible between waves, like Heal). Skipped
-  // entirely if the player already satisfied the step's condition on their
-  // own — no reason to make them wait just to advance past it.
+  // Holds a step until its wave/combat condition is met; skipped if the player already satisfied it on their own.
   if ((s.minSegWave || s.waitForCombat) && !isTutStepAlreadySatisfied(s)) {
     const waveReady = !s.minSegWave || (MAP.currentSegWave||0) >= s.minSegWave;
     const combatReady = G.combatActive && G.enemy;
@@ -10154,17 +9404,7 @@ function showTutStep(step) {
     }
   }
 
-  // If the underlying action this step asks for was already performed —
-  // e.g. the ability got AUTO'd on (or the loadout got opened) before this
-  // step ever rendered — skip straight to the next step instead of asking
-  // the player to repeat a tap that would undo what they already did.
-  // Checked BEFORE isTutorialBlocked(): a step's own completing tap can be
-  // what opens a blocking modal (Loadout's tap both sets the "opened" flag
-  // AND opens the ability-picker modal in the same synchronous call), so if
-  // blocked-status were checked first, the tutorial would pause-for-modal
-  // on a step that had, in that same instant, already been satisfied —
-  // and previously stay hidden indefinitely instead of completing once the
-  // modal is later closed.
+  // Skips to the next step if its action was already performed, checked before the blocked-modal check since the same tap can trigger both.
   if (isTutStepAlreadySatisfied(s)) {
     log(`<span style="color:var(--muted)">${s.title.trim()} already set up — moving on.</span>`);
     tutStep++;
@@ -10175,35 +9415,14 @@ function showTutStep(step) {
 
   if(isTutorialBlocked()) { pauseTutorialForModal(step); return; }
 
-  // The Heal step can otherwise ask for something impossible: a player who
-  // reaches this step at full HP (nothing to heal) or below the mana cost
-  // (heal literally can't fire) would be stuck tapping a button that either
-  // silently no-ops ("Already at full health — no mana spent") or can't
-  // afford its own cost. Make the lesson always completable and worth
-  // seeing: grant enough mana to cover it, and make sure there's HP missing.
+  // Makes sure the Heal step is always completable — tops up mana and ensures HP is missing before it renders.
   if (s.slotId === 'slot-heal') {
     if (G.mana < MANA_COSTS.heal) { G.mana = MANA_COSTS.heal; updateManaBar(); }
     if (G.hp >= G.maxHp * 0.9) { G.hp = Math.max(1, Math.floor(G.maxHp * 0.6)); updateHpBar(); }
     updateResourceBar();
   }
 
-  // The "Manage Loadout" button lives inside the collapsible side menu,
-  // which sits off-screen (left:-280px) until opened. Its bounding rect
-  // was still non-zero-size when closed (full height, just shifted left),
-  // so the old "is this even visible" check below never caught it — the
-  // tutorial would spotlight/point at an off-screen box while the button
-  // the player actually needed to open was still hidden inside the menu.
-  // Open the menu first so the spotlight lands on the real, visible button.
-  //
-  // #side-menu animates `left` with a CSS transition (0.25s). Reading
-  // getBoundingClientRect() synchronously right after setting style.left
-  // does NOT return the final position — a transitioning property's used
-  // value (what layout queries see) interpolates from the old value over
-  // the transition's duration, so an immediate read here still sees the
-  // menu essentially at its old off-screen position. That made the
-  // visibility check below immediately treat the just-opened menu as
-  // still hidden and cascade-skip the rest of the tutorial. Give the
-  // transition time to finish before measuring/rendering against it.
+  // Opens the side menu first so the spotlight lands on the real button, and waits for its CSS transition to finish before measuring position.
   if(s.slotId === 'loadout-btn' && typeof openMenu === 'function') {
     openMenu();
     setTimeout(() => renderTutStep(step, s), 260);
@@ -10221,22 +9440,7 @@ function renderTutStep(step, s) {
   const rect = el.getBoundingClientRect();
   const pad = 8;
 
-  // Check if element is visible on screen — if not, skip this step. This
-  // check used to run much later, AFTER the spotlight/bubble/arrow had
-  // already been faded to visible and positioned from this very same
-  // (zero-sized) rect, with the real title/desc/hint text only getting set
-  // even after that. A skip here used to leave the tutorial bubble sitting
-  // on screen, fully visible, still showing its raw HTML placeholder text
-  // ("Tutorial" / "Description" / "Tap the highlighted button") instead of
-  // either real copy or nothing at all — exactly what got reported as
-  // "the first tutorial card displays placeholder text." Checking and
-  // bailing out FIRST, before touching opacity or content at all, means
-  // the bubble is only ever shown once we know it has something real to
-  // show. Checks both axes — the old version only checked vertical bounds,
-  // which missed the side-menu's closed (off-screen-left) position entirely
-  // (see the openMenu() call above for the actual fix to that case; this
-  // horizontal check just makes the escape hatch correct too, for any other
-  // panel-based target).
+  // Checks visibility on both axes before showing anything, so a skipped step never leaves the bubble on screen with placeholder text.
   if(rect.width === 0 || rect.height === 0 || rect.top > window.innerHeight || rect.bottom < 0
      || rect.right <= 0 || rect.left >= window.innerWidth) {
     tutStep++;
@@ -10259,11 +9463,7 @@ function renderTutStep(step, s) {
   spotlight.style.width  = (rect.width + pad*2) + 'px';
   spotlight.style.height = (rect.height + pad*2) + 'px';
 
-  // Content — set BEFORE measuring the bubble below. Copy length varies a lot
-  // per step (the Heal step's description is much longer than the others),
-  // so the bubble's real rendered height varies too. Content has to be in
-  // place first so the height we measure next reflects what will actually
-  // be on screen.
+  // Content is set before measuring the bubble, since copy length (and rendered height) varies per step.
   document.getElementById('tut-title').textContent = s.title;
   document.getElementById('tut-desc').textContent  = s.desc;
   document.getElementById('tut-hint').textContent  = s.hint;
@@ -10272,17 +9472,7 @@ function renderTutStep(step, s) {
   const bubble = document.getElementById('tut-bubble');
   const bubbleW = 240;
   bubble.style.width = bubbleW + 'px';
-  // Measure the bubble's ACTUAL height instead of assuming a fixed 130px.
-  // That fixed guess was shorter than the real rendered height for
-  // longer-copy steps (Heal's description wraps to more lines), so the
-  // bubble sat lower/higher than expected and overlapped the very button
-  // it was pointing at. Since #tut-bubble has pointer-events:all (so its
-  // own tap-hint text is legible/interactive), that overlap could swallow
-  // a tap aimed at the glowing target underneath before it ever reached the
-  // ability slot's own click handler — this is the most likely explanation
-  // for reports of a tutorial step "not detecting" an action that visibly
-  // succeeded (see the Heal step bug report: mana spent, HP restored, but
-  // the tutorial never advanced).
+  // Measures the bubble's actual height instead of assuming a fixed value, so it can't overlap the button it's pointing at.
   const bubbleH = bubble.getBoundingClientRect().height || 130;
   const spaceAbove = rect.top - pad;
   const spaceBelow = window.innerHeight - rect.bottom - pad;
@@ -10327,38 +9517,19 @@ function renderTutStep(step, s) {
   el.style.boxShadow = '0 0 0 4px rgba(232,184,75,0.6), 0 0 20px rgba(232,184,75,0.4)';
   el.style.zIndex = '301';
 
-  // Show a "stuck? skip this step" escape hatch after a few seconds, in
-  // case a step still can't be completed for some reason we didn't
-  // anticipate — previously the only way out was "Skip Tutorial" entirely.
+  // Shows a 'stuck? skip this step' escape hatch after a few seconds.
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
   clearTimeout(_tutSkipStepTimer);
   _tutSkipStepTimer = setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 6000);
 
-  // Intercept tap on target — this ONLY detects that the tap happened and
-  // advances the tutorial. It must NOT also call activateAbility/activateHeal
-  // itself: every target here already has its own inline onclick wired up,
-  // so calling the action again here fired it twice per tap (toggle ON then
-  // immediately back OFF), which is why AUTO never visibly turned on until a
-  // second tap. Guarded with `handled` because click + touchend can both
-  // fire for a single tap on touch devices.
+  // Detects the tap only — doesn't also fire the action, since the target's own onclick already does that.
   let handled = false;
   const handler = (e) => {
     if (handled) return;
     handled = true;
     e.stopPropagation();
-    // Defer one tick so the SAME tap's real action handler (this element's
-    // own onclick — activateAbility()/activateHeal()/openSlotSelector())
-    // has definitely finished running first, then verify the step's
-    // condition actually became true before declaring success. Previously
-    // this advanced (and showed a success toast) unconditionally on any
-    // tap, regardless of whether the real action actually took effect —
-    // e.g. activateHeal() silently no-ops without setting AUTO if combat
-    // had already ended right as the tap landed. That let a tutorial step
-    // show "Battle Cry used" (not "...now set to AUTO") and still advance,
-    // leaving AUTO never actually enabled despite the tutorial claiming
-    // success, and leaving whatever comes next (e.g. opening the Loadout
-    // menu) sitting on screen with no clear reason once the player moved on.
+    // Verifies the step's condition actually became true after the tap, instead of advancing unconditionally on any click.
     setTimeout(() => {
       if (isTutStepAlreadySatisfied(s)) {
         advanceTutStep(el, s, true);
@@ -10373,25 +9544,11 @@ function renderTutStep(step, s) {
   el.addEventListener('touchend', handler);
   _tutCurrentHandler = { el, handler };
 
-  // Safety net: also watch the underlying game state directly, not just
-  // clicks on the target element. Covers any case where the step's
-  // condition becomes true without a fresh click on `el` being the thing
-  // that satisfied it (the click handler above already covers the normal
-  // tap case; this catches anything else). Also watches for some OTHER
-  // full-screen UI (level-up, vendor, between-wave choice, map screen...)
-  // popping up mid-step — e.g. the enemy dying and the between-wave choice
-  // screen appearing right while this step is showing — and pauses instead
-  // of leaving a prompt pointing at a button the player can no longer
-  // actually reach (see isTutorialBlocked()/pauseTutorialForModal()).
+  // Also watches game state directly (not just clicks on the target) and pauses if another full-screen UI pops up mid-step.
   clearInterval(_tutStateWatcher);
   _tutStateWatcher = setInterval(() => {
     if (handled) return;
-    // Satisfaction is checked before blocked-status for the same reason as
-    // in showTutStep() above: the tap that satisfies a step (e.g. opening
-    // Loadout) can be the very same tap that opens a blocking modal. If
-    // blocked-status won that race, the step would pause-for-modal instead
-    // of completing, and could be left waiting on a modal-close that never
-    // re-triggers this exact watcher.
+    // Checks satisfaction before blocked-status, since the same tap can both satisfy a step and open a blocking modal.
     if (isTutStepAlreadySatisfied(s)) {
       handled = true;
       clearInterval(_tutStateWatcher);
@@ -10405,20 +9562,7 @@ function renderTutStep(step, s) {
     }
   }, 400);
 
-  // Second, independent safety net — catches the action succeeding even when
-  // NEITHER of the above catches it: the tap on `el` never actually reaches
-  // `el`'s own listeners (e.g. it lands on the tutorial's own bubble/spotlight
-  // overlay instead — see the bubble-height fix above for one way that could
-  // happen), and the 400ms poll hasn't had a chance to run yet. Reported
-  // symptom this covers: Heal's mana got spent and HP visibly rose (proving
-  // the tap DID land on the real button and DID fire it), yet the tutorial
-  // sat stuck on "Tap Heal to restore health" until the 6-second skip
-  // fallback appeared — meaning nothing on `el` itself, and no interval tick,
-  // ever ran afterward. A capture-phase listener on `document` runs before
-  // any handler further down the tree could stop the event, so as long as
-  // SOME click/touchend happens anywhere on the page, we get a chance to
-  // notice the underlying condition became true — independent of exactly
-  // which element the tap hit or whether `el`'s own listeners are intact.
+  // Third safety net: a capture-phase document listener catches the action succeeding even if the tap never reached the target's own listeners.
   document.removeEventListener('click', _tutGlobalTapCheck, true);
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   _tutGlobalTapCheck = () => {
@@ -10451,11 +9595,7 @@ function advanceTutStep(el, s, showConfirm) {
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
-  // Hide the spotlight/bubble/arrow immediately instead of leaving the just-
-  // completed step's instruction text ("Tap the Attack button now") visible
-  // for the ~900ms gap before the next step renders — a fast kill (e.g. the
-  // 21hp tutorial Wolf) could otherwise make it look like the tutorial never
-  // registered the tap at all. renderTutStep() fades them back in.
+  // Hides the spotlight/bubble immediately on completion instead of leaving stale instruction text up during the gap before the next step.
   ['tut-spotlight','tut-bubble','tut-arrow'].forEach(id => {
     const node = document.getElementById(id);
     if(node) node.style.opacity = '0';
@@ -10878,9 +10018,7 @@ function trinityEarnXP(dmgDealt) {
     saveTrinity().catch(()=>{});
     return;
   }
-  // Otherwise save periodically — every ~500 calls, or every 20s of play,
-  // whichever comes first — so ordinary play between rank-ups can't lose
-  // more than a short window of progress on refresh.
+  // Also saves periodically (every ~500 calls or 20s), not just on rank-up, so ordinary play can't lose much on refresh.
   if(!trinityEarnXP._saveCounter) trinityEarnXP._saveCounter = 0;
   trinityEarnXP._saveCounter++;
   const now = Date.now();
@@ -10981,10 +10119,6 @@ function buildStatsPanelHTML() {
   return html;
 }
 
-
-function upgradeSkillMobile(el, idx, force) {
-  upgradeSkill(el, idx, force);
-}
 
 function mobileInspectGear(slot) {
   const item = G.equipment[slot];
@@ -11550,360 +10684,6 @@ initGState();
   // name-input focus removed
 renderNameScreenLB();
 
-/* MOVEMENT SYSTEM — disabled (kept for future use)
-// ═══════════════════════════════════════════════════════════════
-// MOVEMENT SYSTEM — Real-time character movement on canvas
-// Player position tracked, auto-attack fires when in range
-// ═══════════════════════════════════════════════════════════════
-const MOVE = {
-  // Player position as fraction of canvas (0-1)
-  px: 0.25, py: 0.62,
-  // Movement keys held
-  keys: { left:false, right:false, up:false, down:false },
-  speed: 0.0028,
-  // Auto-attack range (fraction of canvas width)
-  attackRange: 0.55,
-  // Dodge state
-  dodging: false,
-  dodgeCooldown: 0,
-  dodgeDuration: 320,
-  dodgeDir: 0,
-  dodgeStart: 0,
-  // Touch joystick
-  joystick: null,
-  joystickActive: false,
-  joystickOrigin: null,
-  joystickDelta: { x:0, y:0 },
-  // Movement loop
-  loopId: null,
-};
-
-const ENEMY_POS = { px: 0.72, py: 0.58 };
-
-// Override drawArena player position with MOVE.px/py
-const _origDrawArena = drawArena;
-drawArena = function() {
-  const canvas = document.getElementById('canvas');
-  const W = canvas ? canvas.width : 1;
-  const H = canvas ? canvas.height : 1;
-  // Patch playerOffset to reflect MOVE position relative to default
-  playerOffset.x = (MOVE.px - 0.25) * W;
-  playerOffset.y = (MOVE.py - 0.62) * H;
-  _origDrawArena();
-};
-
-function startMovementLoop() {
-  if (MOVE.loopId) return;
-  MOVE.loopId = setInterval(tickMovement, 16);
-}
-
-function stopMovementLoop() {
-  if (MOVE.loopId) { clearInterval(MOVE.loopId); MOVE.loopId = null; }
-}
-
-function tickMovement() {
-  if (!G.combatActive && !G.enemy) return;
-  const canvas = document.getElementById('canvas');
-  if (!canvas) return;
-  const W = canvas.width, H = canvas.height;
-
-  let dx = 0, dy = 0;
-
-  // Keyboard
-  if (MOVE.keys.left)  dx -= MOVE.speed;
-  if (MOVE.keys.right) dx += MOVE.speed;
-  if (MOVE.keys.up)    dy -= MOVE.speed;
-  if (MOVE.keys.down)  dy += MOVE.speed;
-
-  // Touch joystick
-  if (MOVE.joystickActive && MOVE.joystick) {
-    dx += MOVE.joystick.x * MOVE.speed * 1.4;
-    dy += MOVE.joystick.y * MOVE.speed * 1.4;
-  }
-
-  // Dodge momentum
-  if (MOVE.dodging) {
-    const elapsed = Date.now() - MOVE.dodgeStart;
-    if (elapsed < MOVE.dodgeDuration) {
-      const t = elapsed / MOVE.dodgeDuration;
-      const ease = 1 - t * t;
-      dx += MOVE.dodgeDir * 0.012 * ease;
-    } else {
-      MOVE.dodging = false;
-    }
-  }
-
-  if (dx !== 0 || dy !== 0) {
-    MOVE.px = Math.max(0.05, Math.min(0.55, MOVE.px + dx));
-    MOVE.py = Math.max(0.25, Math.min(0.82, MOVE.py + dy));
-    startAnimLoop();
-  }
-
-  // Range-based auto-attack check
-  checkRangeAutoAttack(W);
-}
-
-function checkRangeAutoAttack(W) {
-  if (!G.combatActive || !G.enemy) return;
-  const dist = Math.abs(MOVE.px - ENEMY_POS.px);
-  const inRange = dist <= MOVE.attackRange;
-  // If player moved into range and auto attack is enabled, ensure it stays active
-  const hasBasicAuto = G.autoSlots && Object.keys(G.autoSlots).some(k => k.startsWith('auto_0'));
-  if (inRange && !hasBasicAuto && G.loadout && G.loadout[0]) {
-    // Visual hint that player is in range
-    const canvas = document.getElementById('canvas');
-    if (canvas) {
-      // Draw range indicator briefly
-      if (!MOVE._rangeFlash) {
-        MOVE._rangeFlash = true;
-        setTimeout(() => { MOVE._rangeFlash = false; }, 500);
-      }
-    }
-  }
-}
-
-// Dodge / Roll mechanic
-function performDodge(direction) {
-  const now = Date.now();
-  if (now < MOVE.dodgeCooldown) {
-    const remaining = ((MOVE.dodgeCooldown - now) / 1000).toFixed(1);
-    combatLog(`Roll on CD (${remaining}s)`, 'l-dodge');
-    return;
-  }
-
-  MOVE.dodging = true;
-  MOVE.dodgeDir = direction; // -1 left, 1 right
-  MOVE.dodgeStart = Date.now();
-  // Rogue gets shorter cooldown and can attack during roll
-  const isRogue = G.playerClass === 'rogue';
-  MOVE.dodgeCooldown = now + (isRogue ? 2200 : 3500);
-
-  // Brief iframe window (dodge invincibility)
-  G._dodgeiframe = true;
-  setTimeout(() => { G._dodgeframe = false; G._dodgeiframe = false; }, isRogue ? 240 : 180);
-
-  // Rogue with upgrades: deal damage during roll
-  if (isRogue && G.abilityLevels && (G.abilityLevels['roll_attack'] || 0) > 0) {
-    if (G.enemy && G.combatActive) {
-      const st = getStats();
-      const rollDmg = Math.floor(st.attack * 0.5);
-      G.enemy.hp = Math.max(0, G.enemy.hp - rollDmg);
-      updateEnemyUI();
-      const px = canvas.width * MOVE.px;
-      const py = canvas.height * MOVE.py;
-      spawnDamageNumber(px, py - 30, rollDmg, false, false, '#3dcc5a');
-      combatLog(` Roll attack ${rollDmg}`, 'l-dodge');
-      startAnimLoop();
-    }
-  }
-
-  playSound('heal'); // reuse swoosh sound
-  combatLog(`${direction < 0 ? '◀' : '▶'} Rolled!`, 'l-dodge');
-  startAnimLoop();
-}
-
-// Override enemy attack to check dodge iframe
-const _origEnemyAttack = window.enemyAttackTick;
-if (typeof enemyAttackPlayer !== 'undefined') {
-  const _origEAP = enemyAttackPlayer;
-  window.enemyAttackPlayer = function(...args) {
-    if (G._dodgeiframe) {
-      combatLog('✦ Dodged!', 'l-dodge');
-      spawnDamageNumber(
-        canvas.width * MOVE.px,
-        canvas.height * MOVE.py - 40,
-        'DODGE', false, false, '#3acc7a'
-      );
-      startAnimLoop();
-      return;
-    }
-    _origEAP.apply(this, args);
-  };
-}
-
-// Keyboard movement + dodge
-document.addEventListener('keydown', e => {
-  // Don't capture keys when typing in inputs
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  switch(e.key) {
-    case 'ArrowLeft':  case 'a': case 'A': MOVE.keys.left  = true; break;
-    case 'ArrowRight': case 'd': case 'D': MOVE.keys.right = true; break;
-    case 'ArrowUp':    case 'w': case 'W': MOVE.keys.up    = true; break;
-    case 'ArrowDown':  case 's': case 'S': MOVE.keys.down  = true; break;
-    case 'q': case 'Q': performDodge(-1); break;
-    case 'e': case 'E': performDodge(1);  break;
-    case 'f': case 'F': activateBlock();  break;
-  }
-  if (!AA.open) startMovementLoop();
-});
-
-document.addEventListener('keyup', e => {
-  switch(e.key) {
-    case 'ArrowLeft':  case 'a': case 'A': MOVE.keys.left  = false; break;
-    case 'ArrowRight': case 'd': case 'D': MOVE.keys.right = false; break;
-    case 'ArrowUp':    case 'w': case 'W': MOVE.keys.up    = false; break;
-    case 'ArrowDown':  case 's': case 'S': MOVE.keys.down  = false; break;
-  }
-});
-
-// Touch joystick on arena canvas
-(function setupTouchMovement() {
-  document.addEventListener('DOMContentLoaded', () => {
-    const arenaEl = document.getElementById('arena');
-    if (!arenaEl) return;
-
-    let touchId = null;
-    let originX = 0, originY = 0;
-
-    arenaEl.addEventListener('touchstart', e => {
-      if (AA.open) return;
-      // Only handle single touch in left half of arena for movement
-      const touch = e.changedTouches[0];
-      const rect = arenaEl.getBoundingClientRect();
-      const relX = touch.clientX - rect.left;
-      if (relX > rect.width * 0.6) return; // right side reserved for abilities
-      touchId = touch.identifier;
-      originX = relX;
-      originY = touch.clientY - rect.top;
-      MOVE.joystickActive = true;
-      MOVE.joystick = { x: 0, y: 0 };
-      startMovementLoop();
-      e.preventDefault();
-    }, { passive: false });
-
-    arenaEl.addEventListener('touchmove', e => {
-      if (!MOVE.joystickActive || touchId === null) return;
-      for (const touch of e.changedTouches) {
-        if (touch.identifier !== touchId) continue;
-        const rect = arenaEl.getBoundingClientRect();
-        const dx = (touch.clientX - rect.left - originX) / rect.width;
-        const dy = (touch.clientY - rect.top  - originY) / rect.height;
-        const len = Math.sqrt(dx*dx + dy*dy);
-        const maxLen = 0.15;
-        if (len > 0) {
-          MOVE.joystick = {
-            x: (dx / len) * Math.min(len / maxLen, 1),
-            y: (dy / len) * Math.min(len / maxLen, 1),
-          };
-        }
-        // Double-tap right side of joystick area = dodge right, left = dodge left
-      }
-      e.preventDefault();
-    }, { passive: false });
-
-    arenaEl.addEventListener('touchend', e => {
-      for (const touch of e.changedTouches) {
-        if (touch.identifier === touchId) {
-          touchId = null;
-          MOVE.joystickActive = false;
-          MOVE.joystick = { x: 0, y: 0 };
-        }
-      }
-    });
-  });
-})();
-
-// Start movement loop when combat begins
-const _origSpawnEnemy = window.spawnEnemy;
-if (typeof spawnEnemy !== 'undefined') {
-  const _origSE = spawnEnemy;
-  window.spawnEnemy = function(...args) {
-    startMovementLoop();
-    return _origSE.apply(this, args);
-  };
-}
-
-// Add dodge buttons to the arena overlay
-document.addEventListener('DOMContentLoaded', () => {
-  // Dodge/block controls removed — ARPG lane system removed
-  const _removedDodge = true;
-  if(false) { const arena = document.getElementById('arena'); if (!arena) return;
-  const dodgeWrap = document.createElement('div');
-  dodgeWrap.id = 'dodge-controls';
-  dodgeWrap.style.cssText = 'position:absolute;bottom:10px;left:10px;display:flex;gap:8px;z-index:6;';
-  dodgeWrap.innerHTML = `
-    <button onclick="performDodge(-1)" id="dodge-left-btn" style="
-      width:48px;height:48px;border-radius:50%;border:2px solid #22ffaa;
-      background:rgba(10,8,30,0.85);color:#22ffaa;border-radius:50%;font-size:20px;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
-      backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
-      -webkit-tap-highlight-color:transparent;user-select:none;" title="Dodge Left (Q)">◀</button>
-    <button onclick="activateBlock()" id="block-btn" style="
-      width:48px;height:48px;border-radius:50%;border:2px solid #88ccff;
-      background:rgba(10,8,30,0.85);color:#88ccff;border-radius:50%;font-size:16px;cursor:pointer;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-      backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
-      -webkit-tap-highlight-color:transparent;user-select:none;" title="Block incoming attack (F)"><span style="font-size:8px;font-family:'Jim Nightshade',cursive;letter-spacing:0.05em;">BLOCK</span></button>
-    <button onclick="performDodge(1)" id="dodge-right-btn" style="
-      width:48px;height:48px;border-radius:50%;border:2px solid #22ffaa;
-      background:rgba(10,8,30,0.85);color:#22ffaa;border-radius:50%;font-size:20px;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
-      backdrop-filter:blur(4px);transition:transform 0.1s,opacity 0.1s;
-      -webkit-tap-highlight-color:transparent;user-select:none;" title="Dodge Right (E)">▶</button>`;
-  arena.appendChild(dodgeWrap);
-
-  // Dodge cooldown visual update
-  setInterval(() => {
-    const now = Date.now();
-    const ready = now >= MOVE.dodgeCooldown;
-    const dodgeBtns = [document.getElementById('dodge-left-btn'), document.getElementById('dodge-right-btn')];
-    dodgeBtns.forEach(btn => {
-      if (!btn) return;
-      btn.style.opacity = ready ? '1' : '0.35';
-      btn.style.borderColor = ready ? '#22ffaa' : '#224433';
-    });
-    // Block button — highlights when telegraph is active
-    const blockBtn = document.getElementById('block-btn');
-    if (blockBtn) {
-      if (TELEGRAPH.active && !TELEGRAPH.blockArmed) {
-        blockBtn.style.opacity = '1';
-        blockBtn.style.borderColor = '#88ccff';
-        blockBtn.style.boxShadow = '0 0 14px 3px rgba(100,180,255,0.5)';
-      } else if (TELEGRAPH.blockArmed) {
-        blockBtn.style.borderColor = '#ffee22';
-        blockBtn.style.boxShadow = '0 0 14px 3px rgba(255,238,34,0.6)';
-      } else {
-        blockBtn.style.opacity = TELEGRAPH.active ? '1' : '0.4';
-        blockBtn.style.borderColor = '#8899ff';
-        blockBtn.style.boxShadow = '';
-      }
-    }
-  }, 150);
-  } // end if(false) - dodge removed
-});
-
-// Range indicator in drawArena — draw a subtle arc showing attack range
-const _drawArenaWithRange = drawArena;
-drawArena = function() {
-  _drawArenaWithRange();
-  const canvas = document.getElementById('canvas');
-  if (!canvas || !G.combatActive || !G.enemy) return;
-  const ctx2 = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const px = MOVE.px * W, py = MOVE.py * H;
-  const rangeW = MOVE.attackRange * W;
-  // Draw subtle range circle
-  ctx2.save();
-  ctx2.globalAlpha = 0.07;
-  ctx2.strokeStyle = '#aaccff';
-  ctx2.lineWidth = 1;
-  ctx2.setLineDash([4, 8]);
-  ctx2.beginPath();
-  ctx2.arc(px, py - 22, rangeW * 0.85, 0, Math.PI * 2);
-  ctx2.stroke();
-  ctx2.setLineDash([]);
-  // In-range glow
-  const dist = Math.abs(MOVE.px - ENEMY_POS.px);
-  if (dist <= MOVE.attackRange) {
-    ctx2.globalAlpha = 0.12;
-    ctx2.fillStyle = '#88ccff';
-    ctx2.beginPath();
-    ctx2.arc(px, py - 22, 28, 0, Math.PI * 2);
-    ctx2.fill();
-  }
-  ctx2.restore();
-};
-*/
 // ── HAMBURGER MENU ──
 function openMenu() {
   document.getElementById('side-menu').style.left = '0';
