@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.17.0 -->
+<!-- v3.18.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -2083,7 +2083,7 @@ window.watchAdStatus = function(ins) {
 // silently drift out of sync with what's actually deployed. This is what
 // lets a quick glance at the name screen confirm whether the latest
 // commit is actually live.
-const GAME_VERSION = '3.17.0';
+const GAME_VERSION = '3.18.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -3304,12 +3304,6 @@ const ABILITIES = {
   rogue_wind_ult:  { id:'rogue_wind_ult',  class:'rogue', imbue:'wind', type:'ultimate', name:'Razor Storm', icon:'', cd:15000, desc:'Unleash a razor storm — hit 8 times at blinding speed. +60% attack speed for 6s after.', dmgMult:1.3, isMagic:false, hits:8, buff:{id:'rw_razorStorm',stat:'atkSpeed',amount:0,pct:0.60,duration:6000,icon:'',label:'Razor Storm'}, unlockLv:10 },
 };
 
-// JSONBin config — leaderboard storage
-// NOTE: Replace BIN_ID with your own from jsonbin.io (free). Create a bin with [] as default content.
-const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
-const BIN_ID = '69fb6fae6373f77b4253ba55';
-const JSONBIN_KEY = '$2a$10$E763Q2oUYh3m6gbIuFQ5TO77CzVFzMzQiSBFUIv7t9pztyovxXgIG';
-
 let G = {
   playerName: '',
   hp:200, maxHp:200,
@@ -3319,7 +3313,7 @@ let G = {
   baseStats:{...BASE_STATS},
   skillLevels:{},
   equipment:{},
-  enemy:null, enemies:[], // enemies array for multi-enemy support
+  enemy:null,
   combatActive:false,
   pendingItem:null,
   inBoss:false,
@@ -3343,6 +3337,7 @@ let G = {
   loadout: [null, null, null, null],
   autoSlots: {},
   lastManualFire: {}, // slotIdx -> timestamp of last manual fire
+  undyingUsed: false, // Trinity Undying node — once per run, see enemyAttack()
 };
 
 // ── TITLE SYSTEM ──
@@ -3587,6 +3582,7 @@ function selectDifficulty(diff) {
   MAP.pendingBoss = false;
   // Reset per-run stats for new path
   G.runStats = { totalDmg:0, bestHit:0, imbueUses:{}, totalGold:0 };
+  G.undyingUsed = false; // Trinity Undying node resets each new run/path
   document.getElementById('map-screen').classList.add('hidden');
   document.getElementById('game').classList.remove('hidden');
   // Double rAF ensures layout has fully settled before we measure the canvas
@@ -3747,10 +3743,10 @@ function onSegmentWaveComplete() {
 
   if(pathDone || extremeVendor) {
     MAP.segmentComplete = pathDone;
-    // Persist segmentComplete the instant it flips, before anything else
-    // can happen (a refresh right here must never re-spawn the wave that
-    // was JUST cleared and rewarded — see the exploit note in saveGame()).
+    // Persist segmentComplete the instant it flips — a refresh here must
+    // never re-spawn the wave that was just cleared and rewarded.
     saveGame();
+    if(sbUser) saveTrinity().catch(()=>{});
     if(MAP.pendingBoss) {
       MAP.pendingBoss = false;
       showWaveBossPrompt();
@@ -3788,61 +3784,77 @@ function onSegmentWaveComplete() {
 // ═══════════════════════════════════════════════
 // SAVE / LOAD
 // ═══════════════════════════════════════════════
+// Full save snapshot — shared by localStorage (saveGame) and cloud (cloudSave).
+function buildSaveObject() {
+  return {
+    playerName:G.playerName, hp:G.hp, maxHp:G.maxHp, mana:G.mana,
+    gold:G.gold, kills:G.kills, wave:G.wave,
+    xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
+    spPending, passivePending,
+    playerClass:G.playerClass, playerImbue:G.playerImbue, rogueWeapon:G.rogueWeapon,
+    baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
+    classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
+    abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
+    selectedTitle: playerSelectedTitle,
+    usedFreeVendorRefresh: G.usedFreeVendorRefresh,
+    // Active-path position — restores mid-path instead of reverting to map.
+    mapDifficulty: MAP.difficulty,
+    mapTotalWaves: MAP.totalWaves,
+    mapCurrentSegWave: MAP.currentSegWave,
+    mapSegmentComplete: !!MAP.segmentComplete,
+    // combatActive + enemySnapshot are an atomic pair — see loadGame().
+    combatActive: !!(G.combatActive && G.enemy && G.enemy.hp > 0),
+    enemySnapshot: (G.combatActive && G.enemy && G.enemy.hp > 0) ? G.enemy : null,
+    autoSlotsSnapshot: Object.keys(G.autoSlots).map(Number).filter(k => !isNaN(k)),
+    healAutoSnapshot: !!G.autoSlots['heal'],
+  };
+}
+
+let _lastCloudSaveAt = 0;
+let _cloudSaveTimer = null;
+const CLOUD_SAVE_MIN_INTERVAL_MS = 8000;
+
+// Throttles cloudSave() so frequent local saves (every equip, every ~3s
+// mid-fight) don't spam Supabase — collapses bursts into one write per
+// CLOUD_SAVE_MIN_INTERVAL_MS, always landing a trailing save.
+function queueCloudSave() {
+  if(!sbUser) return;
+  const now = Date.now();
+  if(now - _lastCloudSaveAt >= CLOUD_SAVE_MIN_INTERVAL_MS) {
+    _lastCloudSaveAt = now;
+    cloudSave().catch(e => console.error('cloudSave error:', e));
+  } else if(!_cloudSaveTimer) {
+    const wait = CLOUD_SAVE_MIN_INTERVAL_MS - (now - _lastCloudSaveAt);
+    _cloudSaveTimer = setTimeout(() => {
+      _cloudSaveTimer = null;
+      _lastCloudSaveAt = Date.now();
+      cloudSave().catch(e => console.error('cloudSave error:', e));
+    }, wait);
+  }
+}
+
 function saveGame() {
   try {
-    const save = {
-      playerName:G.playerName, hp:G.hp, maxHp:G.maxHp, mana:G.mana,
-      gold:G.gold, kills:G.kills, wave:G.wave,
-      xp:G.xp, xpToNext:G.xpToNext, playerLevel:G.playerLevel||1, skillPoints:G.skillPoints, passivePoints:G.passivePoints||0,
-      spPending, passivePending,
-      playerClass:G.playerClass, playerImbue:G.playerImbue, rogueWeapon:G.rogueWeapon,
-      baseStats:G.baseStats, skillLevels:G.skillLevels, equipment:G.equipment,
-      classXP:G.classXP, classLv:G.classLv, classCP:G.classCP,
-      abilityLevels:G.abilityLevels, loadout:G.loadout, healLoadout,
-      selectedTitle: playerSelectedTitle,
-      usedFreeVendorRefresh: G.usedFreeVendorRefresh,
-      // Active-path progress — without this, refreshing (or a crash, or
-      // mobile tab eviction) mid-path silently discarded the entire run:
-      // difficulty and wave progress reverted to "no path selected" even
-      // though gear/gold/character progress all survived fine (those were
-      // already saved above).
-      mapDifficulty: MAP.difficulty,
-      mapTotalWaves: MAP.totalWaves,
-      mapCurrentSegWave: MAP.currentSegWave,
-      // segmentComplete is the ONLY reliable signal that a path has
-      // actually been fully cleared and is just waiting on the vendor/map
-      // screen, as opposed to still being mid-fight on that same wave
-      // number — currentSegWave alone is ambiguous between those two (a
-      // path that just finished wave 3 of 3 and a path still fighting wave
-      // 3 of 3 look identical without this). Getting this wrong previously
-      // let a refresh land on an already-completed wave and silently
-      // re-spawn a fresh enemy on it — killable again for another full set
-      // of gold/XP/kills, repeatably, forever, on every refresh.
-      mapSegmentComplete: !!MAP.segmentComplete,
-      // combatActive + the exact live enemy (identity/HP/status) must be
-      // saved and restored TOGETHER as one atomic snapshot — never the
-      // wave position alone. If combat isn't currently active, no enemy
-      // snapshot is saved at all: resuming must never invent a fresh
-      // enemy for a wave whose real enemy already died and was already
-      // rewarded (see the exploit above), it must instead either restore
-      // the exact fight that was actually happening, or defer to the
-      // normal "advance to the next wave" flow, or show the map/vendor —
-      // never spawn something new out of thin air.
-      combatActive: !!(G.combatActive && G.enemy && G.enemy.hp > 0),
-      enemySnapshot: (G.combatActive && G.enemy && G.enemy.hp > 0) ? G.enemy : null,
-      // Which ability slots (and heal) were on AUTO — a refresh mid-fight
-      // restored the exact enemy/HP/mana correctly (see above) but silently
-      // dropped combat automation, since it was never saved at all. That's
-      // a real surprise for a player who expects their AUTO'd abilities to
-      // keep firing after Continue, not go quiet. Restored via the same
-      // G.savedAutoSlots/restoreAutoSlots() mechanism already used to carry
-      // AUTO across wave transitions — see resumeLiveCombat().
-      autoSlotsSnapshot: Object.keys(G.autoSlots).map(Number).filter(k => !isNaN(k)),
-      healAutoSnapshot: !!G.autoSlots['heal'],
-    };
-    localStorage.setItem('elementalRift_v3', JSON.stringify(save));
+    localStorage.setItem('elementalRift_v3', JSON.stringify(buildSaveObject()));
+    queueCloudSave();
   } catch(e){ console.error('saveGame error:', e); }
 }
+
+// Flush an immediate (unthrottled) save before the tab is hidden/closed —
+// covers refresh, tab switch, and mobile backgrounding for both character
+// and Trinity progress.
+function flushAllSaves() {
+  if(!G.playerClass || !G.playerImbue) return; // no character in progress yet
+  try { localStorage.setItem('elementalRift_v3', JSON.stringify(buildSaveObject())); } catch(e){}
+  if(sbUser) {
+    cloudSave().catch(()=>{});
+    saveTrinity().catch(()=>{});
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'hidden') flushAllSaves();
+});
+window.addEventListener('pagehide', flushAllSaves);
 
 function loadGame(name) {
   try {
@@ -3926,7 +3938,9 @@ function loadGame(name) {
 // name-input removed — auth handles naming
 
 // Check for existing save on load
-(function checkExistingSave() {
+// Shows "Continue as X" when a save exists. Re-run after cloud sync too,
+// since a signed-in player's save may only exist in the cloud on a new device.
+function updateContinueButtonUI() {
   try {
     const raw = localStorage.getItem('elementalRift_v3');
     if (!raw) return;
@@ -3934,19 +3948,15 @@ function loadGame(name) {
     if (save.playerName) {
       const continueBtn = document.getElementById('continue-btn');
       document.getElementById('continue-name').textContent = save.playerName;
-      // name-input removed
       continueBtn.classList.remove('hidden');
-      // "Begin Journey" and "Continue as X" used to look like two flavors of
-      // the same action, but Begin Journey actually assigns a BRAND NEW
-      // random guest name and loads whatever save matches THAT name (almost
-      // always none) — so clicking it here silently orphans the existing
-      // save with zero warning, rather than "starting a new chapter" of it.
-      // Relabel it honestly and confirm before letting that happen.
+      // Begin Journey creates a brand-new guest character — relabel it
+      // honestly once a save exists, instead of implying it resumes one.
       const startBtn = document.getElementById('start-btn');
       if(startBtn) startBtn.textContent = 'New Guest Character';
     }
-  } catch(e){ console.error('checkExistingSave error:', e); }
-})();
+  } catch(e){ console.error('updateContinueButtonUI error:', e); }
+}
+updateContinueButtonUI();
 
 function continueGame() {
   try {
@@ -4169,7 +4179,13 @@ function getStats() {
     s.spellVamp = (s.spellVamp||0) + (G.classLv['mage']||0) * 0.2;
   }
 
-  s.maxHp = s.health;
+  // Trinity's flat maxHp/bonusHp bonuses (Iron Will, Resilience, Undying) are
+  // accumulated onto s.maxHp up above via the flatKeys loop — but nothing
+  // else in G.baseStats/equipment/skill-tree ever touches s.maxHp (they all
+  // use 'health', per STAT_KEYS), so this used to simply stomp those Trinity
+  // bonuses back to zero on every single stat computation instead of adding
+  // to health as intended.
+  s.maxHp = s.health + (s.maxHp||0);
   delete s.magicPower; delete s.armor; delete s.magicResist;
   // Apply active buffs
   if(G.buffs) {
@@ -4345,6 +4361,12 @@ function spawnEnemy() {
   G.combatActive = false;
   G.enemy = rollEnemy(MAP.currentSegWave || G.wave);
   G.combatActive = true;
+  // Plague Vector: apply poison stacks carried over from the last kill.
+  if(G._pendingPoisonSpread) {
+    G.enemy.statusEffects.poison = { ...G._pendingPoisonSpread, timer: Date.now() + 4000 };
+    G._pendingPoisonSpread = null;
+    startStatusTick();
+  }
   // Baseline for the stalemate watchdog (see masterTick) — a fresh fight
   // starts the clock at "no damage dealt yet" rather than inheriting a
   // stale timestamp from whatever the player was doing before this spawn.
@@ -4518,13 +4540,12 @@ function onBossPhaseKill() {
   if(!G.inBoss) {
     // Boss wave (map system) — single kill = segment complete
     G.kills++;
-    G.gold += Math.floor(50 + G.wave*15);
+    const bossGold = grantGold(Math.floor(50 + G.wave*15));
     G.passivePoints += 2 + Math.floor(G.wave/3);
     // Boss XP scales with wave HP — significantly more than a regular enemy
     // Boss gives 5x a regular kill's XP — always a meaningful reward
-    const bossXP = Math.floor(G.wave * 12 * 5);
-    awardXP(bossXP);
-    log(`<span class="log-gold"> Boss slain! +${Math.floor(50+G.wave*15)}g  +${bossXP} XP</span>`);
+    const bossXP = awardXP(Math.floor(G.wave * 12 * 5));
+    log(`<span class="log-gold"> Boss slain! +${bossGold}g  +${bossXP} XP</span>`);
     // Big loot drop
     const dropSlot = SLOTS[Math.floor(Math.random()*SLOTS.length)];
     const dropItem = rollItem(dropSlot, G.wave, false);
@@ -4597,8 +4618,8 @@ async function showBossResults() {
   renderBossResultsModal(score, name, localLB, isGuest ? 'guest' : 'pending');
 
   if (!isGuest) {
-    // Post score to Supabase (upsert — keeps best score only)
-    postSupabaseLeaderboard(score).catch(()=>{});
+    // Await this — the rank fetch right below must see this run's score.
+    await postSupabaseLeaderboard(score).catch(()=>{});
   }
 
   // Fetch the REAL leaderboard for everyone, guests included — it's a
@@ -4711,11 +4732,11 @@ function buildLBHtml(leaderboard, highlightName, limit=10) {
   return leaderboard.slice(0,limit).map((entry,i)=>{
     const rankClass = i===0?'first':i===1?'second':i===2?'third':'';
     const isMe = entry.name === highlightName;
-    const titleStr = entry.title ? `<span style="font-size:9px;color:var(--gold);display:block;line-height:1.2;">${entry.title}</span>` : '';
+    const titleStr = entry.title ? `<span style="font-size:9px;color:var(--gold);display:block;line-height:1.2;">${escHtml(entry.title)}</span>` : '';
     return `<div class="leaderboard-row ${isMe?'lb-row-highlight':''}">
       <span class="lb-rank ${rankClass}">${medals[i]||'#'+(i+1)}</span>
       <span class="lb-name" style="${isMe?'color:var(--gold);font-weight:600;':''}">
-        ${entry.name}${titleStr}
+        ${escHtml(entry.name)}${titleStr}
       </span>
       <span class="lb-score">${numberWithCommas(entry.score)}</span>
     </div>`;
@@ -4730,7 +4751,7 @@ function buildNameScreenLBHtml(leaderboard) {
   return leaderboard.slice(0,5).map((entry,i)=>{
     return `<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;background:rgba(255,255,255,0.04);margin-bottom:3px;">
       <span style="font-family:'Jim Nightshade',cursive;font-size:13px;font-weight:700;width:24px;text-align:center;color:${i===0?'#e8b84b':i===1?'#aaa':i===2?'#cd7f32':'#5a6080'}">${medals[i]||'#'+(i+1)}</span>
-      <span style="flex:1;font-size:13px;color:#c8d0e8;">${entry.name}</span>
+      <span style="flex:1;font-size:13px;color:#c8d0e8;">${escHtml(entry.name)}</span>
       <span style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#ff2277;">${numberWithCommas(entry.score)}</span>
     </div>`;
   }).join('');
@@ -4759,29 +4780,11 @@ async function fetchLeaderboard() {
   } catch { return getLocalLeaderboard(); }
 }
 
-async function postLeaderboard(data) {
-  // Always save locally
-  localStorage.setItem('elementalRift_leaderboard', JSON.stringify(data));
-  if (BIN_ID === 'YOUR_BIN_ID_HERE') return;
-  try {
-    await fetch(`${JSONBIN_API}/${BIN_ID}`, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
-      body:JSON.stringify(data)
-    });
-  } catch {}
-}
-
 function getLocalLeaderboard() {
   try { return JSON.parse(localStorage.getItem('elementalRift_leaderboard')||'[]'); } catch { return []; }
 }
 
-// Persist a freshly-fetched REAL leaderboard locally so the next "instant
-// preview" shown before a live fetch resolves (see showBossResults) is an
-// actual snapshot of the real board rather than going stale. This function
-// was referenced but never defined — meaning the local cache was silently
-// never updated with real data, and the resulting ReferenceError was always
-// swallowed by the calling try/catch.
+// Caches the last real leaderboard fetch for instant preview next time.
 function saveLocalLeaderboard(board) {
   try { localStorage.setItem('elementalRift_leaderboard', JSON.stringify((board||[]).slice(0,20))); } catch {}
 }
@@ -4806,7 +4809,9 @@ function isAbilityReady(ab) {
 
 function getAbilityDmg(ab) {
   const st = getStats();
-  const base = st.attack || 18;
+  let base = st.attack || 18;
+  // Elemental Edge / Elemental Mastery — imbued abilities only.
+  if(ab.imbue) base *= (1 + (getTrinityBonuses()._elemDmgPct||0));
   const lvl = G.abilityLevels[ab.id]||0;
   const lvlBonus = 1 + lvl * 0.15;
   const avg = base * ab.dmgMult * lvlBonus;
@@ -4841,6 +4846,13 @@ function fireAbility(ab) {
   const defenseReduction = baseDR;
   const armorPen = ab.armorPen||0;
   const hits = ab.hits||1;
+  // Hoisted up from further down (used to only be declared right before the
+  // animation code near the end of this function) — the shatterBonus block
+  // below references ex/ey too, and being a `const` declared later in the
+  // same function, that was a temporal-dead-zone ReferenceError waiting to
+  // happen every single time Shatter Strike/Shatter Point actually procced.
+  const W=canvas.width,H=canvas.height;
+  const px=W*.25,py=H*.62,ex=W*.72,ey=H*.60;
 
   let totalDmg = 0;
   let bestRoll = 0;
@@ -4939,8 +4951,6 @@ function fireAbility(ab) {
   const hitsText = hits>1?` (x${hits})`:'';
   log(`<span style="color:${CLASS_COLORS[ab.class]}">${ab.name}</span> → <span class="log-dmg">${totalDmg}</span>${hitsText}${seText}${critText}${maxText}${perfectText}`);
 
-  const W=canvas.width,H=canvas.height;
-  const px=W*.25,py=H*.62,ex=W*.72,ey=H*.60;
   // Color: gold=perfect(max+crit), red=crit, blue=max roll, white=normal
   const elColor = isPerfect ? '#ffdd00' : isCrit ? '#ff4444' : isMaxRoll ? '#44aaff' : (CLASS_COLORS[ab.class]||'#fff');
 
@@ -5033,7 +5043,8 @@ function fireAbility(ab) {
     spawnDamageNumber(ex+(Math.random()-.5)*30, ey-55, echoDmg, false, false, 'var(--gold)');
     combatLog(`Echo ${echoDmg}`, 'se');
   }
-  if(hasMutation('wild_magic') && Math.random() < 0.10 && G.enemy && G.enemy.hp > 0) {
+  // Apex Predator grants this effect too, independent of the mutation pick.
+  if((hasMutation('wild_magic') || hasTrinityNode('atk_5')) && Math.random() < 0.10 && G.enemy && G.enemy.hp > 0) {
     const wildDmg = Math.floor(totalDmg * 3);
     G.enemy.hp -= wildDmg;
     if(G.inBoss) G.bossDmgDealt += wildDmg;
@@ -5044,6 +5055,33 @@ function fireAbility(ab) {
     const execBonus = Math.floor(totalDmg * 0.50);
     G.enemy.hp -= execBonus;
     if(G.inBoss) G.bossDmgDealt += execBonus;
+  }
+  // Combat is single-target, so "chain"/"spread" effects below land on the
+  // same enemy rather than a second one.
+  if(hasMutation('ice_shatter') && G.enemy && G.enemy.hp <= 0 && G.enemy.statusEffects?.frozen) {
+    const shatterDmg = Math.floor(G.enemy.maxHp * 2.0);
+    G.enemy.hp -= shatterDmg;
+    if(G.inBoss) G.bossDmgDealt += shatterDmg;
+    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-65, shatterDmg, true, false, '#88eeff');
+    combatLog(`Shatter! ${shatterDmg}`, 'crit');
+  }
+  if(hasMutation('shockwave') && G.playerClass === 'warrior' && G.enemy && G.enemy.hp > 0) {
+    G._warriorHitCount = (G._warriorHitCount||0) + 1;
+    if(G._warriorHitCount >= 5) {
+      G._warriorHitCount = 0;
+      const shockDmg = totalDmg;
+      G.enemy.hp -= shockDmg;
+      if(G.inBoss) G.bossDmgDealt += shockDmg;
+      spawnDamageNumber(ex+(Math.random()-.5)*30, ey-70, shockDmg, false, false, '#cc8844');
+      combatLog(`Shockwave! ${shockDmg}`, 'se');
+    }
+  }
+  if(hasMutation('chain_lightning') && ab.imbue === 'electric' && Math.random() < 0.25 && G.enemy && G.enemy.hp > 0) {
+    const chainDmg = Math.floor(totalDmg * 0.50);
+    G.enemy.hp -= chainDmg;
+    if(G.inBoss) G.bossDmgDealt += chainDmg;
+    spawnDamageNumber(ex+(Math.random()-.5)*30, ey-55, chainDmg, false, false, '#ffdd00');
+    combatLog(`Chain! ${chainDmg}`, 'se');
   }
 
   if(G.enemy.hp<=0){
@@ -5646,9 +5684,15 @@ const TRINITY_LANES = {
 
 const TRINITY_NODES = {
   atk_1: { id:'atk_1', lane:'attack',  name:'Raw Power',        cost:3,  desc:'+12% base attack damage on all abilities.', effect:{ type:'stat_pct', stat:'attack', pct:0.12 } },
-  atk_2: { id:'atk_2', lane:'attack',  name:'Elemental Edge',   cost:8,  desc:'Elemental abilities deal +18% damage. Imbue effects last 20% longer.', effect:{ type:'stat_pct', stat:'attack', pct:0.18, imbueDurMult:1.20 }, requires:'atk_1' },
+  // elementalOnly nodes deal their % bonus only to abilities that actually
+  // carry an imbue (ab.imbue truthy) — see getAbilityDmg(). Previously this
+  // was a plain stat_pct on 'attack' like Raw Power, which boosted every
+  // ability including warrior/rogue's purely physical basics (imbue:null) —
+  // exactly the "elemental-only" nodes that weren't elemental-only in
+  // practice.
+  atk_2: { id:'atk_2', lane:'attack',  name:'Elemental Edge',   cost:8,  desc:'Elemental abilities deal +18% damage. Imbue effects last 20% longer.', effect:{ type:'stat_pct', stat:'attack', pct:0.18, elementalOnly:true, imbueDurMult:1.20 }, requires:'atk_1' },
   atk_3: { id:'atk_3', lane:'attack',  name:'Critical Focus',   cost:15, desc:'+10% crit chance, +20% crit damage.', effect:{ type:'stat_flat', stats:{ critChance:10, critDmg:20 } }, requires:'atk_2' },
-  atk_4: { id:'atk_4', lane:'attack',  name:'Elemental Mastery',cost:25, desc:'+30% elemental damage. Status effects deal double damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.30, dotMult:2.0 }, requires:'atk_3' },
+  atk_4: { id:'atk_4', lane:'attack',  name:'Elemental Mastery',cost:25, desc:'+30% elemental damage. Status effects deal double damage.', effect:{ type:'stat_pct', stat:'attack', pct:0.30, elementalOnly:true, dotMult:2.0 }, requires:'atk_3' },
   atk_5: { id:'atk_5', lane:'attack',  name:'Apex Predator',    cost:40, desc:'+50% all damage. 10% chance any hit triggers a free 3x echo.', effect:{ type:'mutation_node', id:'wild_magic', chance:0.10, mult:3, bonusAtk:0.50 }, requires:'atk_4' },
 
   def_1: { id:'def_1', lane:'defense', name:'Iron Will',        cost:3,  desc:'+20 max HP and +8% damage reduction.', effect:{ type:'stat_flat', stats:{ maxHp:20 }, pct:{ defense:0.08 } } },
@@ -5682,6 +5726,7 @@ let trinityData = {
   alignment: null,
   classEnhancement: null,
   _activeLane: null,
+  _activePanel: null,
 };
 
 // ── TRINITY NODE BONUSES → feed into getStats() ──
@@ -5694,14 +5739,38 @@ function getTrinityBonuses() {
     const e = node.effect;
     if(e.stats) Object.entries(e.stats).forEach(([k,v]) => { bonuses[k] = (bonuses[k]||0) + v; });
     if(e.bonusHp) bonuses.maxHp = (bonuses.maxHp||0) + e.bonusHp;
-    if(e.type === 'stat_pct' && e.stat) { if(!bonuses._pct) bonuses._pct={}; bonuses._pct[e.stat] = (bonuses._pct[e.stat]||0) + e.pct; }
+    if(e.type === 'stat_pct' && e.stat) {
+      if(e.elementalOnly) { bonuses._elemDmgPct = (bonuses._elemDmgPct||0) + e.pct; }
+      else { if(!bonuses._pct) bonuses._pct={}; bonuses._pct[e.stat] = (bonuses._pct[e.stat]||0) + e.pct; }
+    }
     if(e.bonusAtk) { if(!bonuses._pct) bonuses._pct={}; bonuses._pct.attack = (bonuses._pct?.attack||0) + e.bonusAtk; }
     if(e.type === 'all_stats_pct') { bonuses._allPct = (bonuses._allPct||0) + e.pct; }
     if(e.type === 'stat_mult' && e.stat) { if(!bonuses._mult) bonuses._mult={}; bonuses._mult[e.stat] = (bonuses._mult[e.stat]||1) * e.mult; }
-    if(e.type === 'thorns') { bonuses._thorns = Math.max(bonuses._thorns||0, e.pct); if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap); if(e.undying) bonuses._undying=true; }
+    // Nodes like Iron Will attach a plain percentage map (e.g. pct:{defense:0.08})
+    // alongside their stat_flat effect — distinct from the single-stat 'pct'
+    // number used by stat_pct/thorns above. Previously only the object form's
+    // presence was ignored entirely, silently dropping Iron Will's advertised
+    // 8% damage reduction (defense is later converted into a % dmg reduction
+    // by enemyAttack(), so boosting it here is exactly how that node reduces
+    // incoming damage).
+    if(e.pct && typeof e.pct === 'object') {
+      Object.entries(e.pct).forEach(([k,v]) => { if(!bonuses._pct) bonuses._pct={}; bonuses._pct[k] = (bonuses._pct[k]||0) + v; });
+    }
+    if(e.type === 'thorns') {
+      bonuses._thorns = Math.max(bonuses._thorns||0, e.pct);
+      if(e.dr_cap) bonuses._dr_cap = Math.max(bonuses._dr_cap||0.70, e.dr_cap);
+      if(e.undying) bonuses._undying = true;
+      // Elemental Guard bundles its elemental-resistance bonus into the same
+      // thorns-type effect as its thorns-% upgrade — previously only the
+      // thorns portion was ever read out of it.
+      if(e.elemResist) bonuses._elemResist = Math.max(bonuses._elemResist||0, e.elemResist);
+    }
     if(e.type === 'overheal') { bonuses._overhealCap = Math.max(bonuses._overhealCap||0, e.cap); }
     if(e.healMult) bonuses._healMult = Math.max(bonuses._healMult||1, e.healMult);
     if(e.dotMult)  bonuses._dotMult  = Math.max(bonuses._dotMult||1,  e.dotMult);
+    // Elemental Edge's "imbue effects last 20% longer" — previously calculated
+    // nowhere at all; it lived only as an unread field on the node definition.
+    if(e.imbueDurMult) bonuses._imbueDurMult = Math.max(bonuses._imbueDurMult||1, e.imbueDurMult);
     if(e.type === 'utility') {
       if(e.xpMult)           bonuses._xpMult   = Math.max(bonuses._xpMult||1,   e.xpMult);
       if(e.goldMult)         bonuses._goldMult  = Math.max(bonuses._goldMult||1,  e.goldMult);
@@ -5739,6 +5808,39 @@ function getDRCap() {
   const b = getTrinityBonuses();
   return b._dr_cap || 0.70;
 }
+// Elemental Guard's "+15% resistance to all elemental damage". This game
+// doesn't otherwise tag any incoming damage as elemental vs physical — the
+// one place "elemental" already means something concrete is the enraged
+// prefix variants (Fire/Frost/Venomed/Charged), which are explicitly
+// elemental-themed enemies. Scoped there rather than to all incoming damage
+// so this stays a real, distinct effect instead of just becoming a second
+// copy of the flat defense stat.
+function getElemResist() {
+  const b = getTrinityBonuses();
+  return b._elemResist || 0;
+}
+// Keen Eye / Fortune's Favor / Trinity Conduit's "+gold from all sources" —
+// previously computed into bonuses._goldMult but no gold-granting call site
+// ever multiplied by it. Route every gold gain through here instead of
+// touching G.gold directly so the bonus actually applies everywhere the
+// node descriptions promise ("all sources": kills, boss milestones, selling
+// and auto-selling gear). Returns the actual (post-multiplier) amount
+// granted, so callers can log the real number instead of the pre-bonus one.
+function grantGold(amount) {
+  if(!amount) return 0;
+  const mult = getTrinityBonuses()._goldMult || 1;
+  const granted = Math.floor(amount * mult);
+  G.gold += granted;
+  return granted;
+}
+// Fortune's Favor's "Vendor items 15% cheaper" — previously computed into
+// bonuses._vendorDisc but no vendor price ever read it back out. Used for
+// both the displayed price and the amount actually charged so they always
+// match (see renderVendor()/buyVendorItem()).
+function getVendorPrice(item) {
+  const disc = getTrinityBonuses()._vendorDisc || 0;
+  return Math.max(1, Math.floor(item.buyVal * (1 - Math.min(0.75, disc))));
+}
 
 // ── MANA COSTS ──
 const MANA_COSTS = { basic:0, regular:20, ultimate:50, heal:30 };
@@ -5760,16 +5862,6 @@ function expireBuff(id) {
   }
 }
 
-function getBuffBonus(stat) {
-  if(!G.buffs) return 0;
-  let total = 0;
-  const now = Date.now();
-  Object.values(G.buffs).forEach(b => {
-    if(b.stat === stat && now < b.expiresAt) total += b.amount;
-  });
-  return total;
-}
-
 function updateBuffDisplay() {
   let el = document.getElementById('buff-display');
   if(!el) {
@@ -5789,295 +5881,8 @@ function updateBuffDisplay() {
 }
 // Legacy attack system removed in v2.0 — all attacks go through fireAbility()
 function refreshAutoAttackSpeeds() {} // stub — auto speeds handled by activateAbility interval
-function toggleAutoAttack(element) {} // stub — no longer used
-function attack(element) {} // stub — no longer used
 
 
-// ── TELEGRAPH SYSTEM — enemy attacks are telegraphed and dodgeable ──
-/* TELEGRAPH SYSTEM — disabled
-const TELEGRAPH = {
-  active: false,
-  attackDir: null,   // 'left' | 'right' | 'sweep'
-  phase: 'idle',     // 'idle' | 'warning' | 'window' | 'resolving'
-  warningEl: null,
-  countdownTimer: null,
-  phaseTimer: null,
-  blockArmed: false,
-  pendingDmg: 0,
-  pendingEnemy: null,
-};
-
-function telegraphEnemyAttack(rawDmg) {
-  if (!G.enemy || !G.combatActive || TELEGRAPH.active) return;
-  TELEGRAPH.active = true;
-  TELEGRAPH.pendingDmg = rawDmg;
-  TELEGRAPH.blockArmed = false;
-
-  // Pick direction — bosses use sweep more often
-  const sweepChance = G.inBoss ? 0.25 : 0.12;
-  const r = Math.random();
-  if (r < sweepChance) {
-    TELEGRAPH.attackDir = 'sweep';
-  } else if (r < sweepChance + 0.48) {
-    TELEGRAPH.attackDir = 'left';
-  } else {
-    TELEGRAPH.attackDir = 'right';
-  }
-
-  // Show warning banner
-  showAttackWarning(TELEGRAPH.attackDir);
-
-  // React window: 2s normal enemies, 1.4s bosses, faster at high waves
-  const waveScale = Math.max(0.6, 1 - (G.wave || 1) * 0.008);
-  const windowMs = G.inBoss
-    ? Math.max(900, 1400 * waveScale)
-    : Math.max(1100, 2000 * waveScale);
-
-  // Countdown display
-  let remaining = Math.ceil(windowMs / 1000);
-  updateTelegraphCountdown(remaining);
-  TELEGRAPH.countdownTimer = setInterval(() => {
-    remaining--;
-    updateTelegraphCountdown(remaining);
-    if (remaining <= 0) {
-      clearInterval(TELEGRAPH.countdownTimer);
-      TELEGRAPH.countdownTimer = null;
-    }
-  }, 1000);
-
-  TELEGRAPH.phaseTimer = setTimeout(() => resolveEnemyAttack(), windowMs);
-}
-
-function showAttackWarning(dir) {
-  // Remove any existing warning
-  const old = document.getElementById('attack-warning');
-  if (old) old.remove();
-
-  const arena = document.getElementById('arena');
-  if (!arena) return;
-
-  const isSweep = dir === 'sweep';
-  const color = isSweep ? '#ff2266' : '#ffaa00';
-  const arrow = dir === 'left' ? '◀◀' : dir === 'right' ? '▶▶' : '↔';
-  const label = isSweep ? 'SWEEP — Dodge or Block!' : `Attack ${dir.toUpperCase()} — move ${dir === 'left' ? 'RIGHT' : 'LEFT'}!`;
-
-  const warn = document.createElement('div');
-  warn.id = 'attack-warning';
-  warn.style.cssText = `
-    position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:8;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  `;
-
-  // Direction zones
-  const leftZone = document.createElement('div');
-  leftZone.style.cssText = `
-    position:absolute;top:0;left:0;bottom:0;width:50%;
-    background:${dir==='left'||isSweep ? `rgba(255,34,102,0.18)` : 'rgba(58,204,122,0.06)'};
-    border-right:2px solid ${dir==='left'||isSweep ? '#ff2266' : '#3acc7a'};
-    transition:background 0.15s;
-  `;
-  const rightZone = document.createElement('div');
-  rightZone.style.cssText = `
-    position:absolute;top:0;right:0;bottom:0;width:50%;
-    background:${dir==='right'||isSweep ? `rgba(255,34,102,0.18)` : 'rgba(58,204,122,0.06)'};
-    border-left:2px solid ${dir==='right'||isSweep ? '#ff2266' : '#3acc7a'};
-    transition:background 0.15s;
-  `;
-
-  warn.appendChild(leftZone);
-  warn.appendChild(rightZone);
-
-  // Label
-  const lbl = document.createElement('div');
-  lbl.style.cssText = `
-    position:relative;z-index:1;
-    font-family:'Jim Nightshade',cursive;font-size:clamp(11px,3vw,15px);
-    color:${color};font-weight:700;letter-spacing:0.08em;
-    background:rgba(60,40,10,0.45);padding:5px 14px;border-radius:20px;
-    border:1px solid ${color}66;
-    animation:warnPulse 0.5s ease-in-out infinite alternate;
-  `;
-  lbl.textContent = label;
-  warn.appendChild(lbl);
-
-  // Countdown badge
-  const cd = document.createElement('div');
-  cd.id = 'telegraph-cd';
-  cd.style.cssText = `
-    position:absolute;top:6px;left:50%;transform:translateX(-50%);
-    font-family:'Jim Nightshade',cursive;font-size:22px;font-weight:900;
-    color:${color};text-shadow:0 0 10px ${color};
-    transition:color 0.2s;
-  `;
-  cd.textContent = '2';
-  warn.appendChild(cd);
-
-  // Safe side label
-  if (!isSweep) {
-    const safeLbl = document.createElement('div');
-    const safeDir = dir === 'left' ? 'RIGHT' : 'LEFT';
-    safeLbl.style.cssText = `
-      position:absolute;${dir==='left'?'right':'left'}:8px;bottom:8px;
-      font-family:'Jim Nightshade',cursive;font-size:10px;color:#3acc7a;
-      background:rgba(58,204,122,0.12);padding:3px 8px;border-radius:10px;
-    `;
-    safeLbl.textContent = `✓ SAFE: ${safeDir}`;
-    warn.appendChild(safeLbl);
-  }
-
-  arena.appendChild(warn);
-
-  // Pulse animation
-  if (!document.getElementById('telegraph-style')) {
-    const s = document.createElement('style');
-    s.id = 'telegraph-style';
-    s.textContent = `
-      @keyframes warnPulse { from { opacity:0.75; } to { opacity:1; } }
-      @keyframes dodgeFlash { 0%{background:rgba(58,204,122,0.3)} 100%{background:transparent} }
-      @keyframes hitFlash   { 0%{background:rgba(255,50,50,0.35)} 100%{background:transparent} }
-    `;
-    document.head.appendChild(s);
-  }
-}
-
-function updateTelegraphCountdown(val) {
-  const el = document.getElementById('telegraph-cd');
-  if (!el) return;
-  el.textContent = Math.max(0, val);
-  el.style.color = val <= 1 ? '#e83a3a' : '#ffaa00';
-}
-
-function clearAttackWarning() {
-  const w = document.getElementById('attack-warning');
-  if (w) w.remove();
-  if (TELEGRAPH.countdownTimer) { clearInterval(TELEGRAPH.countdownTimer); TELEGRAPH.countdownTimer = null; }
-}
-
-function resolveEnemyAttack() {
-  if (!TELEGRAPH.active) return;
-  TELEGRAPH.active = false;
-  clearAttackWarning();
-
-  if (!G.enemy || !G.combatActive || G.hp <= 0) return;
-
-  const dir = TELEGRAPH.attackDir;
-  const isSweep = dir === 'sweep';
-  const rawDmg = TELEGRAPH.pendingDmg;
-
-  // Determine if player is on safe side
-  // Player position: < 0.4 = left side, >= 0.4 = right side
-  const playerSide = MOVE.px < 0.40 ? 'left' : 'right';
-  const safeSide = dir === 'left' ? 'right' : 'left';
-  const isDodged = !isSweep && playerSide === safeSide && !TELEGRAPH.blockArmed;
-  const isBlocked = TELEGRAPH.blockArmed;
-  const isDodgeIframe = G._dodgeiframe;
-
-  const st = getStats();
-  const warriorDR = G.playerClass === 'warrior' ? 0.10 : 0;
-  const dmg = Math.max(1, Math.floor(rawDmg * (1 - warriorDR) + (Math.random()*3-1.5)));
-
-  const W = canvas.width, H = canvas.height;
-  const ex = W * ENEMY_POS.px, ey = H * ENEMY_POS.py;
-  const px = W * MOVE.px, py = H * MOVE.py;
-
-  if (isDodgeIframe) {
-    // Full dodge via roll
-    combatLog('✦ Rolled through attack!', 'dmg-heal');
-    spawnDamageNumber(px, py - 40, 'ROLL DODGE', false, false, '#3acc7a');
-    startAnimLoop();
-    playSound('hit_physical');
-    restartEnemyAttackCycle();
-    return;
-  }
-
-  if (isBlocked) {
-    combatLog(' Blocked!', 'dmg-heal');
-    spawnDamageNumber(px, py - 40, 'BLOCKED', false, false, '#88aaff');
-    TELEGRAPH.blockArmed = false;
-    startAnimLoop();
-    playSound('level_up');
-    restartEnemyAttackCycle();
-    return;
-  }
-
-  if (isDodged) {
-    combatLog(`✓ Dodged ${dir.toUpperCase()}!`, 'dmg-heal');
-    spawnDamageNumber(px, py - 40, 'DODGED!', false, false, '#3acc7a');
-    // Flash safe side
-    const arena = document.getElementById('arena');
-    if (arena) {
-      const flash = document.createElement('div');
-      flash.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:7;animation:dodgeFlash 0.4s ease-out forwards;';
-      arena.appendChild(flash);
-      setTimeout(() => flash.remove(), 400);
-    }
-    playSound('hit_physical');
-    startAnimLoop();
-    restartEnemyAttackCycle();
-    return;
-  }
-
-  // Hit lands
-  G.hp -= dmg;
-
-  // Thorns
-  const thornsPct = getThorns();
-  if (thornsPct > 0 && G.enemy && G.enemy.hp > 0) {
-    const thornsDmg = Math.floor(dmg * thornsPct);
-    G.enemy.hp -= thornsDmg;
-    if (thornsDmg > 0) spawnDamageNumber(ex + (Math.random()-.5)*15, ey - 30, thornsDmg, false, false, '#88cc00');
-  }
-
-  // Berserker mutation
-  if (hasMutation('berserker') && G.hp < G.maxHp * 0.30) {
-    if (!G.berserkerActive) {
-      G.berserkerActive = true;
-      const st2 = getStats();
-      G.buffs['berserker']     = { stat:'attack',   amount: Math.floor(st2.attack*0.30),  expiresAt: Date.now()+999999, icon:'', label:'Berserker' };
-      G.buffs['berserker_spd'] = { stat:'atkSpeed',  amount: st2.atkSpeed*0.50,            expiresAt: Date.now()+999999, icon:'', label:'' };
-    }
-  } else if (G.berserkerActive && G.hp >= G.maxHp * 0.30) {
-    G.berserkerActive = false;
-    delete G.buffs['berserker']; delete G.buffs['berserker_spd'];
-  }
-
-  log(`${G.enemy.name} hits you for <span class="log-dmg">${dmg}</span>${isSweep?' (SWEEP)':''}`);
-  combatLog(`◀ ${G.enemy.name} -${dmg}${isSweep?' SWEEP':''}`, 'dmg-in');
-
-  triggerEnemyLunge(ex, ey, px, py);
-  setTimeout(() => {
-    spawnEnemyAttackParticles(ex, ey, px, py);
-    spawnDamageNumber(px + (Math.random()-.5)*15, py - 35, dmg, false, false, '#ff4444');
-    playerFlash = 0.9;
-    startAnimLoop();
-    // Red flash overlay
-    const arena = document.getElementById('arena');
-    if (arena) {
-      const flash = document.createElement('div');
-      flash.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:7;animation:hitFlash 0.4s ease-out forwards;';
-      arena.appendChild(flash);
-      setTimeout(() => flash.remove(), 400);
-    }
-  }, 140);
-
-  playSound('take_damage');
-  triggerScreenShake(4, 0.2);
-
-  if (G.hp <= 0) { G.hp = 0; onDeath(); return; }
-  markDirty(['hp', 'enemy']);
-  restartEnemyAttackCycle();
-}
-
-function restartEnemyAttackCycle() {
-  // folded into enemyAttack()
-}
-
-// activateBlock — disabled (telegraph system removed)
-function activateBlock() {
-  // no-op: telegraph system removed
-}
-
-*/
 function enemyAttack() {
   if (!G.enemy || !G.combatActive || G.hp<=0 || G._deathInProgress) return;
   if (G.enemy.frozenUntil && Date.now() < G.enemy.frozenUntil) {
@@ -6086,7 +5891,13 @@ function enemyAttack() {
   }
 
   const st = getStats();
-  const rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008));
+  let rawDmg = G.enemy.attack * (1 - Math.min(0.70, (st.defense||8) * 0.008));
+  // Elemental Guard's resistance applies against the enraged elemental
+  // variants (Fire/Frost/Venomed/Charged) — see getElemResist()'s comment.
+  if (G.enemy.resistance) {
+    const elemResist = getElemResist();
+    if (elemResist > 0) rawDmg *= (1 - Math.min(0.75, elemResist));
+  }
   const dmg = Math.max(1, Math.floor(rawDmg + (Math.random()*3-1.5)));
 
   // Thorns
@@ -6096,6 +5907,17 @@ function enemyAttack() {
     G.enemy.hp -= thornsDmg;
     const ex = canvas.width * 0.72, ey = canvas.height * 0.60;
     if (thornsDmg > 0) spawnDamageNumber(ex, ey - 30, thornsDmg, false, false, '#88cc00');
+    // Thorns reflected enough to kill the enemy outright. Route through the
+    // normal death flow right here instead of falling through to also deal
+    // this same attack's damage to the player — without this check, a
+    // thorns-killed enemy's hp sat at/below 0 but onEnemyDeath() was never
+    // called, so it stayed "active" (no reward, no next-wave transition)
+    // and kept attacking on every later cycle until something else, like an
+    // AUTO ability hit, happened to notice it was already dead.
+    if (G.enemy.hp <= 0) {
+      onEnemyDeath();
+      return;
+    }
   }
 
   // Berserker mutation
@@ -6135,7 +5957,24 @@ function enemyAttack() {
   playSound('take_damage');
   triggerScreenShake(4, 0.2);
 
-  if (G.hp <= 0) { G.hp = 0; onDeath(); return; }
+  if (G.hp <= 0) {
+    // Undying (def_5): once per run, survive a killing blow at 1 HP instead
+    // of dying. Previously trinityData/getTrinityBonuses() computed
+    // bonuses._undying but nothing ever read it back out at the actual
+    // lethal-damage check, so the node's signature effect silently did
+    // nothing.
+    const tb = getTrinityBonuses();
+    if (tb._undying && !G.undyingUsed) {
+      G.undyingUsed = true;
+      G.hp = 1;
+      log('<span style="color:#ffe84d;font-weight:700;">Undying! You survive the killing blow at 1 HP.</span>');
+      combatLog('UNDYING — survived at 1 HP!', 'heal');
+      updateHpBar();
+      markDirty(['hp', 'enemy']);
+      return;
+    }
+    G.hp = 0; onDeath(); return;
+  }
   markDirty(['hp', 'enemy']);
 }
 
@@ -6149,21 +5988,24 @@ function onEnemyDeath() {
   const enemyGold = G.enemy.gold || 0;
   const enemyType = G.enemy.type || 'wolf';
   const enemyMaxHp = G.enemy.maxHp || 50;
+  // Plague Vector: poison stacks on the kill carry into the next enemy.
+  if(hasMutation('poison_spread') && G.enemy.statusEffects?.poison) {
+    G._pendingPoisonSpread = { ...G.enemy.statusEffects.poison };
+  }
   G.enemy = null;
   try {
     G.kills++;
-    G.gold += enemyGold;
-    G.runStats.totalGold += enemyGold;
+    const goldGained = grantGold(enemyGold);
+    G.runStats.totalGold += goldGained;
     const waveNum = MAP.currentSegWave || G.wave;
-    const xpGain = Math.floor(waveNum * 12 * (enemyType === 'brute' ? 1.3 : 1.0));
-    awardXP(xpGain);
+    const xpGained = awardXP(Math.floor(waveNum * 12 * (enemyType === 'brute' ? 1.3 : 1.0)));
     if(G.kills % 5 === 0) {
       G.passivePoints++;
       updateClassXPPanel();
       updateResourceBar();
       log(`<span style="color:#8888ff">Passive Skill Point earned! (${G.passivePoints} available)</span>`);
     }
-    log(`<span class="log-gold">+${enemyGold}g  +${xpGain} XP</span>`);
+    log(`<span class="log-gold">+${goldGained}g  +${xpGained} XP</span>`);
 
     // Loot drop on kill
     const dropChance = {easy:0.12,medium:0.18,hard:0.28}[MAP.difficulty||'easy']||0.15;
@@ -6344,24 +6186,8 @@ Think you can do better? Play free at https://zindigon.com/elementalrift/`;
   document.body.appendChild(overlay);
 }
 
-function emergencySpawn() {
-  // Safety net — if no enemy present, force spawn
-  if(!G.enemy || G.enemy.hp <= 0) {
-    safeHide('spawn-btn');
-    setNextBtnActive(false);
-    hidePotionBtn();
-    if(!MAP.difficulty) {
-      // No difficulty selected — show map
-      showMapScreen(false);
-    } else {
-      spawnNextSegmentWave();
-    }
-  }
-}
-
 
 function safeHide(id) { const el=document.getElementById(id); if(el) el.classList.add('hidden'); }
-function safeShow(id) { const el=document.getElementById(id); if(el) el.classList.remove('hidden'); }
 
 
 
@@ -6436,14 +6262,6 @@ function flushUI() {
   if(_dirty.equip)       { updateEquipUI();         _dirty.equip = false; }
   if(_dirty.mobilePanel) { refreshMobilePanel();    _dirty.mobilePanel = false; }
   if(_dirty.log)         { syncMobileLog();         _dirty.log = false; }
-}
-
-// Debounced heavy flush — non-critical panels wait 250ms
-let _heavyFlushTimer = null;
-function markDirtyHeavy(flags) {
-  for(const f of flags) _dirty[f] = true;
-  clearTimeout(_heavyFlushTimer);
-  _heavyFlushTimer = setTimeout(flushUI, 250);
 }
 
 let autoWaveEnabled = false;
@@ -6714,54 +6532,6 @@ function rollItem(slot, waveMod=1, vendorCap=false) {
   return { slot, tier, rarity:tier, stats, sellVal, buyVal, name };
 }
 
-function buildComparisonHTML(newItem) {
-  const slot = newItem.slot;
-  const equipped = G.equipment[slot] || null;
-  const allStats = new Set([...Object.keys(newItem.stats), ...(equipped ? Object.keys(equipped.stats) : [])]);
-
-  // New item column
-  const t = newItem.tier || newItem.rarity;
-  let newCol = `<div class="compare-col new-item">
-    <div class="compare-col-title" style="color:${t.color}">${t.name} (New)</div>`;
-  allStats.forEach(k => {
-    const val = newItem.stats[k] || 0;
-    const oldVal = equipped ? (equipped.stats[k] || 0) : 0;
-    const delta = val - oldVal;
-    let deltaHtml = '';
-    if (delta > 0) deltaHtml = `<span class="compare-delta delta-up">+${delta}</span>`;
-    else if (delta < 0) deltaHtml = `<span class="compare-delta delta-down">${delta}</span>`;
-    const irrelevant = !isEffectStatRelevantForImbue(k, G.playerImbue);
-    newCol += `<div class="compare-stat-row"${irrelevant?' style="opacity:0.5;" title="Doesn\'t benefit your '+(G.playerImbue||'')+' build"':''}>
-      <span class="compare-stat-label">${STAT_LABELS[k]||k}${irrelevant?' <span style="font-size:9px;font-style:italic;">(not useful)</span>':''}</span>
-      <span style="display:flex;align-items:center;">
-        <span class="compare-stat-val ${delta>0?'positive':delta<0?'negative':'neutral'}">${val>0?'+'+val:val}</span>
-        ${deltaHtml}
-      </span>
-    </div>`;
-  });
-  newCol += '</div>';
-
-  // Equipped column
-  let eqCol = `<div class="compare-col">
-    <div class="compare-col-title">Currently Equipped</div>`;
-  if (!equipped) {
-    eqCol += '<div class="compare-empty">Nothing equipped</div>';
-  } else {
-    const et = equipped.tier || equipped.rarity;
-    eqCol += `<div style="font-size:10px;color:${et.color};margin-bottom:6px;font-family:'Jim Nightshade',cursive;">${et.name}</div>`;
-    allStats.forEach(k => {
-      const val = equipped.stats[k] || 0;
-      eqCol += `<div class="compare-stat-row">
-        <span class="compare-stat-label">${STAT_LABELS[k]||k}</span>
-        <span class="compare-stat-val neutral">${val>0?'+'+val:val||'—'}</span>
-      </div>`;
-    });
-  }
-  eqCol += '</div>';
-
-  return `<div class="compare-wrap">${newCol}${eqCol}</div>`;
-}
-
 // ── GEAR UPGRADE SYSTEM ──
 const UPGRADE_COSTS = [50, 150, 400, 900, 1800]; // cost for upgrades 1-5
 const UPGRADE_STAT_BONUS = 0.15; // 15% per upgrade level
@@ -7025,8 +6795,9 @@ function vendorEquipItem() {
   const item = modal._item;
   // Auto-sell equipped piece first
   const equipped = G.equipment[item.slot];
+  let equippedSoldFor = 0;
   if(equipped) {
-    G.gold += equipped.sellVal;
+    equippedSoldFor = grantGold(equipped.sellVal);
   }
   // Equip new item
   G.equipment[item.slot] = item;
@@ -7044,7 +6815,7 @@ function vendorEquipItem() {
   updateResourceBar();
   refreshAutoAttackSpeeds && refreshAutoAttackSpeeds();
   saveGame();
-  log(`<span style="color:#3acc7a">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equipped.sellVal+'g':''}</span>`);
+  log(`<span style="color:#3acc7a">✓ Equipped ${item.name}${equipped?' · Sold '+equipped.name+' for '+equippedSoldFor+'g':''}</span>`);
   modal.remove();
   G.buyingVendorItem = false;
   document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
@@ -7059,9 +6830,9 @@ function vendorSellNew() {
   const modal = document.getElementById('vendor-decision-modal');
   if(!modal) return;
   const item = modal._item;
-  G.gold += item.sellVal;
+  const soldFor = grantGold(item.sellVal);
   updateResourceBar();
-  log(`<span style="color:#e8b84b">Sold ${item.name} for ${item.sellVal}g</span>`);
+  log(`<span style="color:#e8b84b">Sold ${item.name} for ${soldFor}g</span>`);
   modal.remove();
   G.buyingVendorItem = false;
   document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
@@ -7072,18 +6843,7 @@ function vendorSellNew() {
   }
 }
 
-function equipItem(item){
-  const existing=G.equipment[item.slot];
-  if(existing){G.gold+=existing.sellVal;log(`<span class="log-sys">Replaced ${existing.name}. +${existing.sellVal}g</span>`);}
-  G.equipment[item.slot]=item;
-  const st=getStats();const oldMax=G.maxHp;G.maxHp=st.maxHp;
-  if(G.maxHp>oldMax)G.hp+=G.maxHp-oldMax;G.hp=Math.min(G.hp,G.maxHp);
-  log(`<span class="log-gold">Equipped: ${item.name}</span>`);
-  closeItemModal();updateEquipUI();updateStatsPanel();updateHpBar();updateResourceBar();saveGame();
-  refreshAutoAttackSpeeds();
-  refreshMobilePanel();
-}
-function sellItem(item,slot){G.gold+=item.sellVal;if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${item.sellVal}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
+function sellItem(item,slot){const soldFor=grantGold(item.sellVal);if(slot)delete G.equipment[slot];updateResourceBar();log(`<span class="log-gold">Sold for ${soldFor}g</span>`);closeItemModal();updateStatsPanel();saveGame();}
 function closeItemModal(){
   document.getElementById('item-modal').classList.add('hidden');
   const queueHint = document.getElementById('item-queue-hint');
@@ -7191,7 +6951,8 @@ function renderVendor(){
   document.getElementById('vendor-items').innerHTML=vendorStock.map((v,i)=>{
     const t=v.item.tier||v.item.rarity;
     const glow=t.name==='Exquisite'?'border-color:#2196f3;':t.name==='Ancient'?'border-color:#ff4444;box-shadow:0 0 8px rgba(255,68,68,0.4);':'';
-    const canAfford = G.gold >= v.item.buyVal;
+    const vendorPrice = getVendorPrice(v.item);
+    const canAfford = G.gold >= vendorPrice;
     // Show top stats
     const statEntries = Object.entries(v.item.stats||{}).slice(0,3);
     const statsHtml = statEntries.map(([k,val])=>{
@@ -7207,7 +6968,7 @@ function renderVendor(){
         <div style="margin-top:2px;">${statsHtml}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
-        <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:${canAfford?'var(--gold)':'#cc4444'};">${v.item.buyVal}g</div>
+        <div style="font-family:'Jim Nightshade',cursive;font-size:13px;color:${canAfford?'var(--gold)':'#cc4444'};">${vendorPrice}g</div>
         <button onclick="buyVendorItem(${i})" ${canAfford?'':'disabled'} style="font-family:'Jim Nightshade',cursive;font-size:11px;padding:6px 12px;border-radius:8px;border:1px solid ${canAfford?'var(--gold)':'var(--border)'};color:${canAfford?'var(--gold)':'var(--muted)'};background:${canAfford?'rgba(232,184,75,0.1)':'transparent'};cursor:${canAfford?'pointer':'not-allowed'};">
           ${canAfford?'Buy':'No gold'}
         </button>
@@ -7222,13 +6983,14 @@ function buyVendorItem(idx){
   G.buyingVendorItem = true;
   const v = vendorStock[idx];
   if(!v){ G.buyingVendorItem = false; renderVendor(); return; }
-  if(G.gold < v.item.buyVal){
+  const price = getVendorPrice(v.item);
+  if(G.gold < price){
     log('<span style="color:#cc4444">Not enough gold!</span>');
     renderVendor();
     G.buyingVendorItem = false;
     return;
   }
-  G.gold -= v.item.buyVal;
+  G.gold -= price;
   updateResourceBar();
   document.getElementById('vendor-gold-display').textContent = `${G.gold} gold`;
   const boughtItem = v.item;
@@ -7847,6 +7609,7 @@ function drawArena(){
     ctx.fillText(G.kills===0?'Your first foe awaits...':'Wave cleared!',W/2,H/2);
   }
   drawParticlesLayer('front');
+  drawAttackTrails();
   ctx.save();
   damageNumbers.forEach(d=>{
     ctx.save();
@@ -7912,7 +7675,6 @@ function drawParticlesLayer(layer){
   });
 }
 
-function flashCanvas(){}
 
 
 // ═══════════════════════════════════════════════
@@ -8527,7 +8289,6 @@ function triggerHitstop(ms) {
   if(G_fxLevel === FX.PERF) return;
   _hitstopUntil = performance.now() + (G_fxLevel === FX.BAL ? ms * 0.6 : ms);
 }
-function isHitstop() { return performance.now() < _hitstopUntil; }
 
 
 // ── ZOOM PULSE ──
@@ -8663,6 +8424,9 @@ function doHeal(ab) {
 
   const st = getStats();
   const maxHp = G.maxHp;
+  // Resilience (def_2): "Healing restores 20% more" — previously computed
+  // into bonuses._healMult but never actually multiplied into any heal.
+  const healMult = getTrinityBonuses()._healMult || 1;
   let healAmt = 0;
 
   if (ab.siphon) {
@@ -8670,13 +8434,13 @@ function doHeal(ab) {
     if (G.enemy && G.combatActive) {
       const dmg = Math.max(1, Math.floor((st.attack||18) * 0.5));
       G.enemy.hp -= dmg;
-      healAmt = dmg;
+      healAmt = Math.floor(dmg * healMult);
       updateEnemyUI();
       if (G.enemy.hp <= 0) setTimeout(onEnemyDeath, 300);
     }
   } else if (ab.hot) {
     // Heal over time — 3 pulses
-    const pulseHeal = Math.floor(maxHp * (ab.healPct / 100) / 3);
+    const pulseHeal = Math.floor(maxHp * (ab.healPct / 100) / 3 * healMult);
     healAmt = pulseHeal;
     [0, 1000, 2000].forEach(delay => {
       setTimeout(() => {
@@ -8695,7 +8459,7 @@ function doHeal(ab) {
     if (ab.healFlat) healAmt += ab.healFlat;
     // Add ability level bonus
     const abLv = G.abilityLevels[ab.id] || 0;
-    healAmt = Math.floor(healAmt * (1 + abLv * 0.1));
+    healAmt = Math.floor(healAmt * (1 + abLv * 0.1) * healMult);
   }
 
   if (!ab.hot && healAmt > 0) {
@@ -8955,9 +8719,9 @@ document.addEventListener('DOMContentLoaded', () => {
   sb.auth.getSession().then(({ data: { session } }) => {
     if(session) {
       sbUser = session.user;
-      loadSbProfile().then(() => {
+      loadSbProfile().then(async () => {
         hideAuthModal();
-        onAuthReady();
+        await onAuthReady();
         _authReady = true;
         _tryDismiss();
       });
@@ -8985,8 +8749,14 @@ async function authSubmit() {
 
   if(authMode === 'register') {
     const displayName = document.getElementById('auth-display-name').value.trim();
-    if(!displayName || displayName.length < 2) {
-      errEl.textContent = 'Display name must be at least 2 characters.';
+    if(!displayName || displayName.length < 2 || displayName.length > 20) {
+      errEl.textContent = 'Display name must be 2-20 characters.';
+      btn.textContent = 'Create Account'; btn.disabled = false; return;
+    }
+    // Rendered via innerHTML on the leaderboard — escHtml() there covers
+    // display, but restrict input too so names can't contain markup at all.
+    if(!/^[A-Za-z0-9 _-]+$/.test(displayName)) {
+      errEl.textContent = 'Display name can only use letters, numbers, spaces, - and _.';
       btn.textContent = 'Create Account'; btn.disabled = false; return;
     }
     // Check availability one more time
@@ -9016,7 +8786,7 @@ async function authSubmit() {
     }
     sbProfile = { id: sbUser.id, username: displayName };
     hideAuthModal();
-    onAuthReady();
+    await onAuthReady();
 
   } else {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
@@ -9028,7 +8798,7 @@ async function authSubmit() {
       btn.textContent = 'Sign In'; btn.disabled = false; return;
     }
     hideAuthModal();
-    onAuthReady();
+    await onAuthReady();
   }
 }
 
@@ -9085,7 +8855,7 @@ async function submitPasswordReset() {
     if(session) {
       sbUser = session.user;
       await loadSbProfile();
-      onAuthReady();
+      await onAuthReady();
     } else {
       showAuthModal();
     }
@@ -9100,25 +8870,34 @@ function dismissLoader() {
   }
 }
 
-function onAuthReady() {
+// Cloud is the source of truth once signed in — pulls the account's saved
+// character into localStorage so the existing loadGame()/Continue flow
+// picks it up unchanged. cloudSave()/cloudLoad() previously existed but
+// were never called, so signed-in progress never actually left the device.
+async function syncCloudSaveIntoLocal() {
+  try {
+    const cloudData = await Promise.race([
+      cloudLoad(),
+      new Promise(resolve => setTimeout(() => resolve(undefined), 5000))
+    ]);
+    if(cloudData === undefined || !cloudData || !cloudData.playerClass) return;
+    localStorage.setItem('elementalRift_v3', JSON.stringify(cloudData));
+    updateContinueButtonUI();
+  } catch(e) { console.error('syncCloudSaveIntoLocal error:', e); }
+}
+
+async function onAuthReady() {
   updateNameScreenAuthUI();
   if(sbProfile) {
     G.playerName = sbProfile.username;
     document.getElementById('player-name-display').textContent = sbProfile.username;
     const idEl = document.getElementById('name-screen-identity');
     if(idEl) idEl.textContent = `Signed in as ${sbProfile.username}`;
-    // The "Continue as X" button's name was set once by checkExistingSave()
-    // at page load, straight from the local save's (possibly stale/guest)
-    // playerName — before auth had a chance to resolve. Once we know the
-    // real signed-in identity, the button needs to reflect it too, since
-    // loadGame() itself already treats the signed-in account as owning
-    // whatever save is being continued regardless of the name stored in it.
     const continueNameEl = document.getElementById('continue-name');
     if(continueNameEl) continueNameEl.textContent = sbProfile.username;
-    // Load trinity data (orbs, artifacts) as soon as we know who the player is
     loadTrinity().catch(()=>{});
-    // Load titles
     loadPlayerTitles().catch(()=>{});
+    await syncCloudSaveIntoLocal();
   } else {
     const idEl = document.getElementById('name-screen-identity');
     if(idEl) idEl.textContent = `Playing as ${G.playerName}`;
@@ -9136,22 +8915,16 @@ function onAuthReady() {
         if(wbTitle && playerSelectedTitle && TITLES[playerSelectedTitle]) {
           wbTitle.textContent = TITLES[playerSelectedTitle].label;
         }
-      });
+      }).catch(()=>{});
     }
   }
   // Don't call dismissLoader/initGame here — _tryDismiss handles it
   // to prevent double-init when auth and assets both resolve
 }
 
-// Called when both auth AND assets are ready
-function _onBothReady() {
-  dismissLoader();
-  initGame();
-}
-
 // ── CLOUD SAVE ──
 async function cloudSave() {
-  if(!sbUser) return; // guest — use localStorage only
+  if(!sb || !sbUser) return; // guest, or Supabase failed to load — use localStorage only
   const saveData = buildSaveObject();
   await sb.from('player_saves').upsert({
     player_id: sbUser.id,
@@ -9162,7 +8935,7 @@ async function cloudSave() {
 }
 
 async function cloudLoad() {
-  if(!sbUser) return null;
+  if(!sb || !sbUser) return null;
   const { data } = await sb.from('player_saves')
     .select('save_data')
     .eq('player_id', sbUser.id)
@@ -9170,29 +8943,16 @@ async function cloudLoad() {
   return data ? data.save_data : null;
 }
 
-// ── COSMETICS / RELICS ──
-async function getPlayerCosmetics() {
-  if(!sbUser) return [];
-  const { data } = await sb.from('player_cosmetics')
-    .select('item_id, source, acquired_at')
-    .eq('player_id', sbUser.id);
-  return data || [];
-}
-
-async function grantCosmetic(itemId, source='boss_reward') {
-  if(!sbUser) return false;
-  const { error } = await sb.from('player_cosmetics').upsert({
-    player_id: sbUser.id,
-    item_id: itemId,
-    source
-  }, { onConflict: 'player_id,item_id' });
-  return !error;
-}
-
 // ── SUPABASE LEADERBOARD (replaces JSONBin) ──
 async function postSupabaseLeaderboard(score) {
   if(!sbUser || !sbProfile) return;
   if(sbUser) await saveTrinity().catch(()=>{});
+  // Keep best score only — never let a worse attempt overwrite it.
+  const { data: existing } = await sb.from('leaderboard')
+    .select('boss_damage')
+    .eq('player_id', sbUser.id)
+    .single();
+  if(existing && existing.boss_damage >= score) return;
   await sb.from('leaderboard').upsert({
     player_id: sbUser.id,
     username: sbProfile.username,
@@ -9225,45 +8985,10 @@ async function grantTitle(playerId, titleId) {
   );
 }
 
-// Call this once to grant guinea pig to all existing players and set top 3
-// Run from browser console: grantSeasonTitles()
-window.grantSeasonTitles = async function() {
-  if(!sbUser) { console.log('Must be signed in'); return; }
-  console.log('Granting guinea pig to all players...');
-  // Get all players
-  const { data: allPlayers } = await sb.from('players').select('id');
-  if(allPlayers) {
-    for(const p of allPlayers) {
-      await sb.from('player_titles').upsert(
-        { player_id: p.id, title_id: 'guinea_pig', acquired_at: new Date().toISOString() },
-        { onConflict: 'player_id,title_id' }
-      );
-    }
-    console.log(`Guinea pig granted to ${allPlayers.length} players`);
-  }
-  // Grant top 3 titles by username
-  const titleMap = { 'SpaZ': 'season1_gold', 'Slayersin93': 'season1_silver', 'Bjorn': 'season1_bronze' };
-  for(const [username, titleId] of Object.entries(titleMap)) {
-    const { data: player } = await sb.from('players').select('id').eq('username', username).single();
-    if(player) {
-      await sb.from('player_titles').upsert(
-        { player_id: player.id, title_id: titleId, acquired_at: new Date().toISOString() },
-        { onConflict: 'player_id,title_id' }
-      );
-      console.log(`${titleId} granted to ${username}`);
-    } else {
-      console.log(`Player not found: ${username}`);
-    }
-  }
-  console.log('Done! Now wipe the leaderboard with: wipeLeaderboard()');
-};
-
-window.wipeLeaderboard = async function() {
-  if(!sbUser) { console.log('Must be signed in'); return; }
-  const { error } = await sb.from('leaderboard').delete().neq('player_id', '00000000-0000-0000-0000-000000000000');
-  if(error) console.error('Error:', error);
-  else console.log('Leaderboard wiped. Season 2 begins!');
-};
+// One-time admin scripts (season title grants, leaderboard wipe) used to
+// live here as window.* functions callable from any signed-in player's
+// console. Removed from the shipped client — run those as one-off scripts
+// against Supabase directly, gated by RLS/service role, not from browser JS.
 
 // ── SIGN OUT ──
 function honorableDeath() {
@@ -9345,6 +9070,7 @@ function executeHonorableDeath(orbsEarned) {
 }
 
 async function signOut() {
+  await cloudSave().catch(()=>{}); // flush latest progress before clearing local
   await sb.auth.signOut();
   sbUser = null; sbProfile = null;
   localStorage.removeItem('elementalRift_v3');
@@ -9372,7 +9098,7 @@ async function loadTrinity() {
 }
 
 async function saveTrinity() {
-  if(!sbUser) return;
+  if(!sbUser) return true;
   try {
     const payload = {
       player_id: sbUser.id,
@@ -9381,9 +9107,11 @@ async function saveTrinity() {
       updated_at: new Date().toISOString()
     };
     const { error } = await sb.from('player_trinity').upsert(payload, { onConflict: 'player_id' });
-    if(error) console.error('[Trinity] Save failed:', error.message, error);
+    if(error) { console.error('[Trinity] Save failed:', error.message, error); return false; }
+    return true;
   } catch(e) {
     console.error('[Trinity] Save exception:', e);
+    return false;
   }
 }
 
@@ -9398,16 +9126,23 @@ function applyImbueEffect(enemy, effect, st, stacks=1) {
   if(!enemy.statusEffects) enemy.statusEffects = {};
   const now = Date.now();
   const dotBonus = (st.dotDamage||0);
+  // Elemental Mastery (atk_4): "status effects deal double damage" — applies
+  // to the DOT ticks below. Elemental Edge (atk_2): "imbue effects last 20%
+  // longer" — applies to every duration below. Both were previously computed
+  // into getTrinityBonuses() but never actually read anywhere.
+  const tb = getTrinityBonuses();
+  const dotMult = tb._dotMult || 1;
+  const durMult = tb._imbueDurMult || 1;
 
   if(effect === 'burn') {
-    const dur = ((st.burnDuration||3) * 1000);
-    const dps = Math.floor((st.attack||18) * 0.12 + dotBonus * 0.5);
+    const dur = ((st.burnDuration||3) * 1000) * durMult;
+    const dps = Math.floor(((st.attack||18) * 0.12 + dotBonus * 0.5) * dotMult);
     enemy.statusEffects.burn = { dps, timer: now + dur };
     startStatusTick();
   }
   if(effect === 'poison') {
-    const dur = ((st.poisonDuration||4) * 1000);
-    const dps = Math.floor((st.attack||18) * 0.08 + dotBonus * 0.4);
+    const dur = ((st.poisonDuration||4) * 1000) * durMult;
+    const dps = Math.floor(((st.attack||18) * 0.08 + dotBonus * 0.4) * dotMult);
     const existing = enemy.statusEffects.poison;
     enemy.statusEffects.poison = {
       dps: dps * stacks,
@@ -9417,23 +9152,23 @@ function applyImbueEffect(enemy, effect, st, stacks=1) {
     startStatusTick();
   }
   if(effect === 'electric') {
-    const dur = 3000;
-    const dps = Math.floor((st.electricDot||3) + dotBonus * 0.3);
+    const dur = 3000 * durMult;
+    const dps = Math.floor(((st.electricDot||3) + dotBonus * 0.3) * dotMult);
     enemy.statusEffects.electric = { dps, timer: now + dur, aoe: true };
     startStatusTick();
   }
   if(effect === 'slow' || effect === 'ice') {
     const slowPct = Math.min(0.7, (st.slowStrength||30) / 100);
-    const dur = effect === 'ice' ? ((st.freezeDuration||1.5) * 1000 * 2) : 3000;
+    const dur = (effect === 'ice' ? ((st.freezeDuration||1.5) * 1000 * 2) : 3000) * durMult;
     enemy.statusEffects.slow = { timer: now + dur, pct: slowPct };
     enemy.slowMult = 1 - slowPct;
     // Chance to fully freeze
     const freezeChance = effect === 'ice' ? 0.35 : 0;
     if(Math.random() < freezeChance) {
-      const freezeDur = (st.freezeDuration||1.5) * 1000;
+      const freezeDur = (st.freezeDuration||1.5) * 1000 * durMult;
       enemy.statusEffects.frozen = { timer: now + freezeDur };
       enemy.frozenUntil = now + freezeDur;
-      log(`<span style="color:#88eeff">${enemy.name} is FROZEN for ${(st.freezeDuration||1.5).toFixed(1)}s!</span>`);
+      log(`<span style="color:#88eeff">${enemy.name} is FROZEN for ${(freezeDur/1000).toFixed(1)}s!</span>`);
     } else if(effect === 'ice') {
     }
     startStatusTick();
@@ -9506,11 +9241,11 @@ function checkBossMilestones() {
     if(G.bossRewardsClaimed.includes(idx)) return;
     if(G.bossDmgDealt >= m.dmg) {
       G.bossRewardsClaimed.push(idx);
-      G.gold += m.gold;
-      awardXP(m.xp);
+      const milestoneGold = grantGold(m.gold);
+      const milestoneXP = awardXP(m.xp);
       updateResourceBar();
-      showMilestoneNotification(m);
-      log(`<span style="color:var(--gold)">${m.icon} Milestone ${m.label}! +${m.gold}g +${m.xp}xp</span>`);
+      showMilestoneNotification({...m, gold: milestoneGold, xp: milestoneXP});
+      log(`<span style="color:var(--gold)">${m.icon} Milestone ${m.label}! +${milestoneGold}g +${milestoneXP}xp</span>`);
       playSound('level_up');
       // Grant exclusive title if milestone has one
       if(m.titleReward && sbUser) {
@@ -9760,22 +9495,6 @@ let passivePending = 0; // queued passive points
 let spPopupOpen = false;
 let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
 
-// Modals that must never have the level-up popup stacked on top of them.
-// awardXP() used to guess with a hard-coded setTimeout+one-retry check against
-// only item-modal — if the player took longer than ~1.4s to close it (or if a
-// different modal like boss-results was open, e.g. after a boss-milestone XP
-// award), the level-up popup would fire anyway and stack on top. Instead we
-// check every blocking modal right before showing, and each modal's own close
-// handler calls tryShowLevelUpPopup() so a pending level-up always surfaces
-// the moment the screen is actually free — no stacking, no guessing.
-const LEVEL_UP_BLOCKING_MODAL_IDS = ['item-modal','vendor-modal','boss-results-modal','ability-picker-modal'];
-function anyBlockingModalOpen() {
-  return LEVEL_UP_BLOCKING_MODAL_IDS.some(id => {
-    const el = document.getElementById(id);
-    return el && !el.classList.contains('hidden');
-  });
-}
-
 // Every one of these sits in its own local stacking context (map-screen,
 // sp-popup, vendor-modal, etc. are direct children near the top of <body>)
 // while the ability bar the tutorial points at lives inside #loadout-area,
@@ -9844,7 +9563,14 @@ function updateSPAvailableBadge() {
   }
 }
 
-function awardXP(amount) {
+function awardXP(rawAmount) {
+  // Keen Eye / Fortune's Favor's "+XP gain" — previously computed into
+  // bonuses._xpMult but never actually multiplied into any XP grant. Routed
+  // through the single awardXP() choke point so it really does apply "from
+  // all sources" as the node descriptions claim (kills, boss kills,
+  // milestones). Returns the actual (post-multiplier) amount granted so
+  // callers can display the real number instead of the pre-bonus one.
+  const amount = Math.floor(rawAmount * (getTrinityBonuses()._xpMult || 1));
   G.xp += amount;
   updateXPBar();
   let leveledUp = false;
@@ -9874,6 +9600,7 @@ function awardXP(amount) {
     updateHpBar();
     updateStatsPanel();
   }
+  return amount;
 }
 
 function triggerLevelUpPopup() {
@@ -9910,9 +9637,6 @@ let spStep = 1; // 1=pick class, 2=pick class investment, 3=pick stat
 let spChosenClass = null;
 let spPopupHadBoth = false; // true if this level-up opened with both skill + passive points pending
 
-function showSPPopup() {
-  triggerLevelUpPopup();
-}
 
 function renderSPPopup() {
   const el = document.getElementById('sp-popup-content');
@@ -10774,9 +10498,6 @@ function endTutorial() {
   log(`<span class="log-sys">Tutorial complete! Now go fight.</span>`);
 }
 
-function resetTutorial() {
-  localStorage.removeItem(TUT_KEY);
-}
 
 
 
@@ -10808,6 +10529,8 @@ function renderTrinityModal() {
   const rankXP = td.rankXP || 0;
   const pct = Math.min(100, Math.round((rankXP / TRINITY_RANK_XP_PER_LEVEL) * 100));
   if(td._activeLane) { renderTrinityLane(td._activeLane); return; }
+  if(td._activePanel === 'mutations') { renderTrinityMutationsPanel(); return; }
+  if(td._activePanel === 'ascension') { renderTrinityAscensionPanel(); return; }
 
   const laneCards = Object.values(TRINITY_LANES).map(lane => {
     const laneNodes = Object.values(TRINITY_NODES).filter(n => n.lane === lane.id);
@@ -10849,8 +10572,30 @@ function renderTrinityModal() {
       <div style="font-family:'Lato',sans-serif;font-size:10px;color:rgba(255,255,255,0.35);text-align:right;margin-top:3px;">${pct}% to Rank ${rank+1}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">${laneCards}</div>
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <div onclick="trinityData._activePanel='mutations';renderTrinityModal();" style="flex:1;cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid rgba(200,155,60,0.3);border-radius:12px;padding:12px 14px;text-align:center;font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);">
+        Mutations ${td.mutations.length > 0 ? `(${td.mutations.length})` : ''}
+      </div>
+      <div onclick="trinityData._activePanel='ascension';renderTrinityModal();" style="flex:1;cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid rgba(200,48,42,0.3);border-radius:12px;padding:12px 14px;text-align:center;font-family:'Jim Nightshade',cursive;font-size:14px;color:#ff4444;">
+        Ascension ${td.ascensionCount > 0 ? `(#${td.ascensionCount+1})` : ''}
+      </div>
+    </div>
   </div>`;
 }
+
+function renderTrinityPanelChrome(title, contentHtml) {
+  const inner = document.getElementById('trinity-modal-inner');
+  if(!inner) return;
+  inner.innerHTML = `<div style="padding:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <button onclick="trinityData._activePanel=null;renderTrinityModal();" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:rgba(255,255,255,0.6);padding:6px 12px;cursor:pointer;font-family:'Jim Nightshade',cursive;font-size:13px;">← Back</button>
+      <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:rgba(220,180,60,0.95);letter-spacing:0.06em;">${title}</div>
+    </div>
+    ${contentHtml}
+  </div>`;
+}
+function renderTrinityMutationsPanel() { renderTrinityPanelChrome('Mutations', renderTrinityMutations()); }
+function renderTrinityAscensionPanel() { renderTrinityPanelChrome('Ascension', renderTrinityAscension()); }
 
 function renderTrinityLane(laneId) {
   const inner = document.getElementById('trinity-modal-inner');
@@ -10908,7 +10653,7 @@ function hexToRgb(hex) {
   return r+','+g+','+b;
 }
 
-function unlockTrinityNode(nodeId) {
+async function unlockTrinityNode(nodeId) {
   const node = TRINITY_NODES[nodeId];
   if(!node) return;
   const rank = trinityData.rank || 0;
@@ -10917,9 +10662,16 @@ function unlockTrinityNode(nodeId) {
   if((trinityData.unlockedNodes||[]).includes(nodeId)) return;
   if(!trinityData.unlockedNodes) trinityData.unlockedNodes = [];
   trinityData.unlockedNodes.push(nodeId);
-  saveTrinity().catch(()=>{});
-  log(`<span style="color:#e8b84b">Trinity Node unlocked: ${node.name}!</span>`);
   renderTrinityLane(node.lane);
+  const saved = await saveTrinity();
+  if(!saved) {
+    // Roll back rather than let it silently vanish on the next load.
+    trinityData.unlockedNodes = trinityData.unlockedNodes.filter(id => id !== nodeId);
+    log(`<span style="color:#e83a3a">Couldn't save ${node.name} — try again.</span>`);
+    renderTrinityLane(node.lane);
+    return;
+  }
+  log(`<span style="color:#e8b84b">Trinity Node unlocked: ${node.name}!</span>`);
 }
 
 
@@ -10957,7 +10709,7 @@ function renderTrinityAscension(align) {
     </div>`;
 }
 
-function triggerAscension() {
+async function triggerAscension() {
   const td = trinityData;
   const rank = td.rank || 0;
   if(rank < 1) return;
@@ -10970,15 +10722,21 @@ function triggerAscension() {
     { stat:'atkSpeed', amount: parseFloat((rank * 0.02 * boostMult).toFixed(2)) },
     { stat:'mana',     amount: Math.floor(rank * 5 * boostMult) },
   ];
+  // Snapshot for rollback if the save fails below.
+  const prevState = {
+    ascensionBoosts: [...(td.ascensionBoosts||[])],
+    ascensionCount: td.ascensionCount||0,
+    rank: td.rank||0, rankXP: td.rankXP||0,
+    unlockedNodes: [...(td.unlockedNodes||[])],
+    mutations: [...(td.mutations||[])],
+    classEnhancement: td.classEnhancement,
+  };
 
-  // Add to permanent boosts
+  // Stored here only — getTrinityBonuses() applies these into getStats()
+  // on every computation. Not baked into G.baseStats, or every stat would
+  // be counted twice.
   if(!td.ascensionBoosts) td.ascensionBoosts = [];
   newBoosts.forEach(b => td.ascensionBoosts.push(b));
-
-  // Apply to base stats immediately
-  newBoosts.forEach(b => {
-    G.baseStats[b.stat] = (G.baseStats[b.stat]||0) + b.amount;
-  });
 
   td.ascensionCount = (td.ascensionCount||0) + 1;
   td.rank = 0;
@@ -10992,10 +10750,20 @@ function triggerAscension() {
   G.hp = Math.min(G.hp + newBoosts.find(b=>b.stat==='health')?.amount||0, G.maxHp);
   G.maxMana = st.mana||100;
   updateHpBar(); updateManaBar(); updateStatsPanel(); updateResourceBar();
-  saveTrinity().catch(()=>{});
+  renderTrinityModal();
+
+  const saved = await saveTrinity();
+  if(!saved) {
+    Object.assign(td, prevState);
+    const st2 = getStats();
+    G.maxHp = st2.maxHp; G.maxMana = st2.mana||100;
+    updateHpBar(); updateManaBar(); updateStatsPanel(); updateResourceBar();
+    log(`<span style="color:#e83a3a">Ascension failed to save — try again.</span>`);
+    renderTrinityModal();
+    return;
+  }
   saveGame();
   log(`<span style="color:#ff4444"> ASCENDED! Permanent stat boosts applied for this season!</span>`);
-  renderTrinityModal();
 }
 
 function renderTrinityMutations() {
@@ -11037,13 +10805,19 @@ function renderTrinityMutations() {
   return html;
 }
 
-function chooseMutation(mutationId) {
+async function chooseMutation(mutationId) {
   if(trinityData.mutations.includes(mutationId)) return;
   trinityData.mutations.push(mutationId);
-  saveTrinity().catch(()=>{});
-  const m = TRINITY_MUTATIONS.find(x => x.id === mutationId);
-  log(`<span style="color:var(--gold)">Mutation chosen: ${m?.name}!</span>`);
   renderTrinityModal();
+  const m = TRINITY_MUTATIONS.find(x => x.id === mutationId);
+  const saved = await saveTrinity();
+  if(!saved) {
+    trinityData.mutations = trinityData.mutations.filter(id => id !== mutationId);
+    log(`<span style="color:#e83a3a">Couldn't save ${m?.name} — try again.</span>`);
+    renderTrinityModal();
+    return;
+  }
+  log(`<span style="color:var(--gold)">Mutation chosen: ${m?.name}!</span>`);
 }
 
 // ── TRINITY XP EARN ──
@@ -11071,11 +10845,15 @@ function trinityEarnXP(dmgDealt) {
     saveTrinity().catch(()=>{});
     return;
   }
-  // Also save XP progress periodically (every ~500 damage calls) so partial progress survives
+  // Otherwise save periodically — every ~500 calls, or every 20s of play,
+  // whichever comes first — so ordinary play between rank-ups can't lose
+  // more than a short window of progress on refresh.
   if(!trinityEarnXP._saveCounter) trinityEarnXP._saveCounter = 0;
   trinityEarnXP._saveCounter++;
-  if(trinityEarnXP._saveCounter >= 500) {
+  const now = Date.now();
+  if(trinityEarnXP._saveCounter >= 500 || now - (trinityEarnXP._lastSaveAt||0) >= 20000) {
     trinityEarnXP._saveCounter = 0;
+    trinityEarnXP._lastSaveAt = now;
     saveTrinity().catch(()=>{});
   }
 }
@@ -11170,59 +10948,6 @@ function buildStatsPanelHTML() {
   return html;
 }
 
-function buildUpgradesPanelHTML() {
-  // Class XP bars
-  let html = '<div class="panel-title" style="position:static;" title="Separate from your Character Level — earned by using this class in combat.">Class Mastery</div>';
-  html += '<div class="class-xp-section">';
-  CLASS_NAMES.forEach(cls => {
-    const lv = G.classLv[cls]||0;
-    const cp = G.classCP[cls]||0;
-    const xpStart = CLASS_XP_TO_LEVEL[lv]||0;
-    const xpEnd = CLASS_XP_TO_LEVEL[Math.min(lv+1,CLASS_XP_TO_LEVEL.length-1)]||9999;
-    const xpCur = G.classXP[cls]||0;
-    const pct = lv >= CLASS_XP_TO_LEVEL.length-1 ? 100 : Math.floor(((xpCur-xpStart)/(xpEnd-xpStart))*100);
-    const color = CLASS_COLORS[cls];
-    html += `<div class="class-xp-row">
-      <span class="cxp-icon">${CLASS_ICONS[cls]}</span>
-      <div class="cxp-info">
-        <div class="cxp-name"><span>${cls.charAt(0).toUpperCase()+cls.slice(1)}</span><span title="Class Mastery Level">Mastery ${lv}</span></div>
-        <div class="cxp-bar-track"><div class="cxp-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      </div>
-      ${cp>0?`<span class="cxp-pts">${cp}cp</span>`:'<span class="cxp-pts" style="opacity:0.3">0</span>'}
-    </div>`;
-  });
-  html += '</div>';
-
-  // Ability upgrades
-  html += '<div class="panel-title" style="position:static;margin-top:4px;"> Ability Upgrades</div>';
-  html += '<div style="font-size:10px;color:var(--muted);text-align:center;padding:3px 0 6px;font-style:italic;">Earn class points by using abilities in combat</div>';
-  html += buildAbilityUpgradesHTML();
-
-  // Divider + passive skills
-  html += '<hr class="upgrade-divider">';
-  html += `<div class="panel-title" style="position:static;">Passive Skills <span style="color:#8888ff;font-size:10px;">(${G.passivePoints} pts)</span></div>`;
-  const elEmoji={offense:'',defense:'',effects:'',utility:''};
-  Object.entries(SKILL_TREE).forEach(([el,skills])=>{
-    const color = CLASS_COLORS[el]||'#88aacc';
-    html+=`<div class="skill-section"><div class="skill-element-title" style="color:${color}">${elEmoji[el]||''} ${el.charAt(0).toUpperCase()+el.slice(1)}</div>`;
-    skills.forEach((sk,i)=>{
-      const key=`${el}_${i}`;const lvl=G.skillLevels[key]||0;
-      const irrelevant = el === 'effects' && !isEffectStatRelevantForImbue(sk.stat, G.playerImbue);
-      const rowStyle = irrelevant ? 'opacity:0.45;' : '';
-      const rowTitle = irrelevant ? ` title="Requires an imbue that applies this effect — doesn't affect your current ${G.playerImbue||''} build."` : '';
-      const disabledAttr = (G.passivePoints<1||lvl>=10||irrelevant) ? 'disabled' : '';
-      html+=`<div class="skill-row" style="${rowStyle}"${rowTitle}>
-        <div><div class="skill-name">${sk.name}${irrelevant?` <span style="font-size:9px;color:var(--muted);font-style:italic;">(Requires ${requiredImbueLabelForEffectStat(sk.stat)})</span>`:''}</div><div class="skill-pts">Lv${lvl} · +${(sk.per*lvl).toFixed(sk.per<1?1:0)} ${STAT_LABELS[sk.stat]||sk.stat}</div></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <button class="skill-btn" ${disabledAttr} onclick="upgradeSkillMobile('${el}',${i})">+</button>
-          ${irrelevant && G.passivePoints>=1 && lvl<10 ? `<span onclick="upgradeSkillMobile('${el}',${i},true)" style="font-size:8px;color:var(--muted);text-decoration:underline;cursor:pointer;">invest anyway</span>` : ''}
-        </div>
-      </div>`;
-    });
-    html+='</div>';
-  });
-  return html;
-}
 
 function upgradeSkillMobile(el, idx, force) {
   upgradeSkill(el, idx, force);
