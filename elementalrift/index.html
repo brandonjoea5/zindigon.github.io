@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.25.0 -->
+<!-- v3.26.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.25.0';
+const GAME_VERSION = '3.26.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -4961,6 +4961,22 @@ function stopAllAutoSlots(save=false) {
   updateHealSlotUI();
 }
 
+// Restores heal's AUTO flag directly instead of routing through activateHeal(), which bails out
+// entirely — silently leaving heal off AUTO — if combat isn't live at the exact instant it's
+// called. That guard exists so a player can't manually tap Heal with no target, but during a
+// restore it could fire false: an offensive slot restored earlier in this same pass can one-shot
+// a fresh, low-HP enemy (more likely the stronger a build gets over a run) and end combat before
+// heal's own restore ever runs, dropping heal's AUTO flag while the offensive slots — set
+// directly, with no such gate — survive untouched. Heal's AUTO state shouldn't depend on there
+// being a live target this instant any more than theirs does; the regular per-tick heal check
+// already only fires it once combat resumes.
+function restoreHealAuto() {
+  if(G.autoSlots['heal']) return;
+  G.autoSlots['heal'] = 'master';
+  _tick.heal = 0;
+  if(!_tick.running) startMasterTick();
+}
+
 function restoreAutoSlots() {
   if(!G.savedAutoSlots && !G.healWasAuto) return;
   if(!G.combatActive || !G.enemy || G.enemy.hp <= 0) return;
@@ -4988,7 +5004,7 @@ function restoreAutoSlots() {
       console.error('restoreAutoSlots: failed to restore slot', slotIdx, e);
     }
   });
-  if(healWanted && !G.autoSlots['heal']) activateHeal();
+  if(healWanted) restoreHealAuto();
   // Re-check every slot we meant to restore against the FINAL G.autoSlots, not just each slot's
   // own moment in the loop above. fireAbility() on an early slot in this same loop can end the
   // fight as a side effect and reentrantly call stopAllAutoSlots(true), which replaces
@@ -5005,7 +5021,7 @@ function restoreAutoSlots() {
       G.autoSlots[slotIdx] = 'master';
       _tick.slots[slotIdx] = 0;
     });
-    if(healWanted && !G.autoSlots['heal']) activateHeal();
+    if(healWanted) restoreHealAuto();
   }
   G.savedAutoSlots = null;
   G.healWasAuto = false;
@@ -6015,6 +6031,21 @@ function setPotionBtnActive(active, label='') {
 
 
 function nextWave() {
+  // Dismiss the between-wave choice overlay FIRST, before checking for other blocking modals —
+  // advancing to the next wave is literally what that overlay's own "Next Wave" button does, so
+  // its presence should never make this call wait on itself. (isTutorialBlocked() would otherwise
+  // see it as "still blocked" forever, since nothing else in this function closes it.)
+  hideWaveChoice();
+  // Auto-Advance's own timers (setNextBtnActive, menuToggleAutoWave, the onEnemyDeath error
+  // fallback) don't know whether a DIFFERENT modal is covering the screen when they fire —
+  // without this, a loot-drop item modal appearing right as a wave cleared let Auto-Advance
+  // silently spawn and clear enemies underneath it. Retrying instead of dropping the call keeps
+  // the eventual advance instead of just losing it if this happened to be the one and only
+  // scheduled attempt.
+  if(isTutorialBlocked()) {
+    setTimeout(nextWave, 400);
+    return;
+  }
   // Guard: never spawn a new enemy while one is already alive and being fought — catches a stale/duplicate auto-advance timer.
   if(G.combatActive && G.enemy && G.enemy.hp > 0) {
     return;
@@ -7655,8 +7686,22 @@ function masterTick(ts) {
   // future startMasterTick() guard from noticing the loop had died.
   try {
 
+  // Freezes the WHOLE combat tick — mana regen, status/DOT, the stalemate watchdog, enemy
+  // attacks, and every AUTO ability (offense and Heal) — while a substantial modal is open, not
+  // just the enemy's own attack. Player AUTO abilities used to keep firing behind e.g. the
+  // Trinity sign-in modal or an item-drop popup (enemy HP visibly dropping with no way for it to
+  // retaliate, since ITS attack was the only thing this used to pause), letting a fight —
+  // including a boss — be won risk-free just by opening a modal mid-combat and waiting.
+  // Deliberately does NOT include tutActive: the tutorial only ever needs the enemy's OWN attack
+  // suppressed (below) so instructions don't go stale mid-read — the player's own AUTO abilities
+  // and mana regen still need to run normally during the tutorial itself, or "tap Attack and
+  // watch it fire on AUTO" would never actually happen. Folding tutActive in here too once
+  // silently froze the whole tutorial fight (broke round3/round4's smoke suite — enemy never
+  // took any damage while the tutorial was up).
+  const combatPaused = isTutorialBlocked();
+
   // ── Mana regen (was 100ms interval) ──
-  if(G.combatActive && G.enemy) {
+  if(G.combatActive && G.enemy && !combatPaused) {
     _tick.mana += dt;
     if(_tick.mana >= 100) {
       _tick.mana = 0;
@@ -7682,18 +7727,14 @@ function masterTick(ts) {
       checkCombatStalemate();
     }
 
-    // Enemy attack is suppressed while the opening tutorial is active, so instructions don't go stale mid-read.
+    // combatPaused (modal) is already checked by the outer block above this point. Enemy attack
+    // ALSO stays suppressed for the whole opening tutorial specifically (tutActive) — separate
+    // from combatPaused since the tutorial needs the player's OWN AUTO abilities and mana regen
+    // to keep working normally, just not the enemy hitting back while instructions are on screen.
     // Rechecks G.enemy here (not just at the top of this block) — tickStatusEffects()/
     // checkCombatStalemate() above can kill the enemy synchronously (e.g. a poison
     // tick), which would otherwise leave this reading .hp off a null reference.
-    // Also suppressed while a loadout/progression/vendor/item modal is open (isTutorialBlocked()'s
-    // ID list, e.g. ability-picker-modal, sp-popup) — those pauses used to work by clearing
-    // G.enemyAttackInterval, back when a real setInterval drove enemy attacks. That interval is
-    // long gone (attacks are timed by this masterTick accumulator now), so the old clearInterval
-    // calls scattered through the loadout/level-up code had quietly become no-ops: opening any of
-    // those screens mid-fight no longer paused anything, and the boss (or any enemy) kept landing
-    // hits while the player was stuck in a nested selection screen with no way to react.
-    if(G.enemy && !G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0 && !tutActive && !isTutorialBlocked()) {
+    if(G.enemy && !G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0 && !tutActive) {
       _tick.enemyAtk += dt;
       if(_tick.enemyAtk >= _tick.enemyAtkDelay) {
         _tick.enemyAtk = 0;
