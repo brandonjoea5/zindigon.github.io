@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.20.0 -->
+<!-- v3.21.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -376,7 +376,12 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
   border:1px solid rgba(200,155,60,0.5);
   border-radius:12px;
   padding:14px 16px;
-  pointer-events:all;
+  /* The bubble itself must stay click-through — it's invisible (opacity:0) between
+     steps and during modal pauses, but its fixed position can still overlap real UI
+     underneath (e.g. the wave-choice "Next Wave" button), which would otherwise
+     swallow the tap. Its two buttons declare their own pointer-events:all inline,
+     so they stay clickable while the bubble is actually showing. */
+  pointer-events:none;
   box-shadow:0 10px 30px rgba(0,0,0,0.55);
   opacity:0;
   transition:opacity 0.2s ease;
@@ -1976,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.20.0';
+const GAME_VERSION = '3.21.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -3197,8 +3202,11 @@ let G = {
   bossLevel:1,
   bossDmgDealt:0,
   bossRewardsClaimed:[],
+  _preBossHp:null, // snapshot of HP/mana from just before a boss attempt, restored after — see startBossAttempt()/endBossAttempt()
+  _preBossMana:null,
   runStats:{ totalDmg:0, bestHit:0, imbueUses:{}, totalGold:0 },
   bossTimerSec:60,
+  bossEndsAt:null, // absolute Date.now()-based deadline — see startBossTimer()
   bossTimerInterval:null,
   enemyAttackInterval:null,
   autoAttacks:{},
@@ -3959,8 +3967,17 @@ function rollEnemy(wave) {
     const enemyLv = 1;
     const hpBase = Math.floor(30 * Math.pow(enemyLv, 1.85));
     const atkBase = Math.floor(3  * Math.pow(enemyLv, 1.40));
-    // Flat HP floor on the tutorial Wolf so it survives a few hits instead of one basic attack.
-    const tutorialHpFloor = 55;
+    // Time-budgeted the same way as the rest of Easy mode's wave HP (see the
+    // "Easy-mode power budget" block below) instead of a flat 55, so this fight
+    // takes a few hits and roughly EASY_WAVE_SECONDS[1] real seconds regardless
+    // of how strong the chosen build's basic attack is. A flat number either
+    // died in one hit for a strong build (skipping the "AUTO fires more than
+    // once" lesson) or dragged on for a weak one — and for every build it made
+    // wave 2 (already time-budgeted) look like a sudden 8-9x HP jump right after.
+    const st = getStats();
+    const approxDps = Math.max(6, (st.attack||18) * (st.atkSpeed||2.0) * 0.85);
+    const [tutSecMin, tutSecMax] = EASY_WAVE_SECONDS[1];
+    const tutorialHpFloor = Math.max(20, Math.floor(approxDps * (tutSecMin + Math.random() * (tutSecMax - tutSecMin))));
     return {
       name: wolfType.name, id: wolfType.id,
       type: wolfType.id,
@@ -4142,6 +4159,11 @@ function updateEnemyUI() {
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff2266,#ff6699)';
     if(hpNums) hpNums.textContent = '';
     document.getElementById('enemy-type-badge').innerHTML = `<span style="color:#ff2277;font-size:10px;">★ BOSS · ${numberWithCommas(G.bossDmgDealt)} total dmg</span>`;
+    // Refreshed here too (not just in updateBossTimerUI's once-a-second tick) so the
+    // two visible damage totals — this header and the boss-score box — never show
+    // different numbers mid-fight; both now update on every hit, from the same read.
+    const bossDmgEl = document.getElementById('boss-dmg-display');
+    if(bossDmgEl) bossDmgEl.textContent = ' ' + numberWithCommas(G.bossDmgDealt) + ' dmg';
   } else {
     document.getElementById('enemy-hp-fill').style.width = Math.max(0,(e.hp/e.maxHp)*100)+'%';
     document.getElementById('enemy-hp-fill').style.background = 'linear-gradient(90deg,#ff1155,#ff5555)';
@@ -4203,6 +4225,15 @@ function startBossAttempt(fromMap = false) {
   G.bossName = BOSS_NAMES[Math.floor(Math.random()*BOSS_NAMES.length)];
   G.enemy = rollBoss(1, true); // infinite HP leaderboard boss
   G.combatActive = true;
+  // Snapshot current HP/mana and start the attempt fully topped up, so leaderboard
+  // performance depends only on the attempt itself, not on what the player happened
+  // to walk in with. Restored in endBossAttempt() once the attempt is over.
+  G._preBossHp = G.hp;
+  G._preBossMana = G.mana;
+  G.hp = G.maxHp;
+  G.mana = G.maxMana;
+  updateHpBar();
+  updateManaBar();
   setNextBtnActive(false);
   setBossBtnActive(false);
   document.getElementById('boss-timer-wrap').style.display = 'block';
@@ -4219,9 +4250,13 @@ function startBossAttempt(fromMap = false) {
 
 function startBossTimer() {
   G.bossTimerSec = 60;
+  // Absolute deadline, not a tick-accumulated countdown — a throttled/backgrounded
+  // tab still gets requestAnimationFrame calls (just infrequently), and each call
+  // re-derives the true remaining time from Date.now() instead of counting elapsed
+  // ticks, so throttling can no longer stretch the 60-second window in real time.
+  G.bossEndsAt = Date.now() + 60000;
   updateBossTimerUI();
   if(G.bossTimerInterval) { clearInterval(G.bossTimerInterval); G.bossTimerInterval = null; }
-  _tick.boss = 0; // reset boss timer accumulator
   if(!_tick.running) startMasterTick();
 }
 
@@ -4286,8 +4321,17 @@ function endBossAttempt() {
   stopAllAutoSlots();
   stopAllAutoSlots();
   G.inBoss = false;
+  G.bossEndsAt = null;
   G.combatActive = false;
   G.enemy = null;
+  // Restore the HP/mana the player had before the attempt — the boss fight ran on
+  // a full-resource snapshot so it wouldn't reward/punish whatever state they
+  // happened to enter with, and shouldn't leave normal progression better or
+  // worse off either.
+  if(G._preBossHp !== null) { G.hp = G._preBossHp; G._preBossHp = null; }
+  if(G._preBossMana !== null) { G.mana = G._preBossMana; G._preBossMana = null; }
+  updateHpBar();
+  updateManaBar();
   document.getElementById('boss-timer-wrap').style.display='none';
   document.getElementById('boss-level-badge').style.display='none';
   G.enemy = null;
@@ -7574,15 +7618,17 @@ function masterTick(ts) {
     }
   }
 
-  // ── Boss countdown timer (was 1000ms setInterval) ──
-  if(G.inBoss && G.bossTimerSec > 0) {
-    _tick.boss += dt;
-    if(_tick.boss >= 1000) {
-      _tick.boss -= 1000;
-      G.bossTimerSec--;
+  // ── Boss countdown timer — absolute deadline, immune to the dt cap above ──
+  // (that cap is deliberate for combat/mana pacing, but would let a throttled
+  // tab stretch this race well past 60 real seconds if reused here).
+  if(G.inBoss && G.bossEndsAt) {
+    const bossRemainingMs = G.bossEndsAt - Date.now();
+    const bossRemainingSec = Math.max(0, Math.ceil(bossRemainingMs / 1000));
+    if(bossRemainingSec !== G.bossTimerSec) {
+      G.bossTimerSec = bossRemainingSec;
       updateBossTimerUI();
-      if(G.bossTimerSec <= 0) endBossAttempt();
     }
+    if(bossRemainingMs <= 0) endBossAttempt();
   }
 
   // Periodic mid-fight autosave (~3s) so a long single fight's progress isn't lost on refresh/crash.
