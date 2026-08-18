@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.21.0 -->
+<!-- v3.22.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.21.0';
+const GAME_VERSION = '3.22.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -4418,8 +4418,15 @@ function renderBossResultsModal(score, name, leaderboard, rankState) {
 function closeBossResults() {
   document.getElementById('boss-results-modal').classList.add('hidden');
   log('<span class="log-sys">Boss attempt complete. Choose your next action.</span>');
-  G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3));
-  updateHpBar();
+  // Standalone "Boss Attempt" runs are re-enterable at will from the map screen —
+  // endBossAttempt() already restores the exact pre-attempt HP/mana, so a flat
+  // +30% heal here on top of that would let a player repeat the attempt purely
+  // to top off HP for free. Only a boss met naturally mid-path (a one-time event
+  // per path, like the map's between-wave heal) keeps this completion reward.
+  if (!G._bossEntryFromMap) {
+    G.hp = Math.min(G.maxHp, G.hp + Math.floor(G.maxHp * 0.3));
+    updateHpBar();
+  }
   renderIngameLB();
   G.combatActive = false;
   G.enemy = null;
@@ -9569,21 +9576,34 @@ function renderTutStep(step, s) {
   clearTimeout(_tutSkipStepTimer);
   _tutSkipStepTimer = setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 6000);
 
-  // Detects the tap only — doesn't also fire the action, since the target's own onclick already does that.
-  let handled = false;
+  // Three independent ways to notice this step is done: a listener on the target
+  // itself, a game-state poll, and a document-wide capture listener. They used to
+  // share one `handled` flag that any of them could set true and only one narrow
+  // code path ever reset — so a tap that raced the target's own onclick (e.g. a
+  // touchend firing before the real click sets AUTO, or a quick double-tap) could
+  // leave `handled` stuck true and silently block all three for the rest of the
+  // step, even though the ability was genuinely on and firing. `finished` now only
+  // ever gets set once, at the single moment we actually decide to advance, so a
+  // transient false reading from one mechanism can never block the other two.
+  let finished = false;
+  const tryAdvance = () => {
+    if (finished) return;
+    if (isTutStepAlreadySatisfied(s)) {
+      finished = true;
+      clearInterval(_tutStateWatcher);
+      document.removeEventListener('click', _tutGlobalTapCheck, true);
+      document.removeEventListener('touchend', _tutGlobalTapCheck, true);
+      advanceTutStep(el, s, true);
+    }
+  };
+
   const handler = (e) => {
-    if (handled) return;
-    handled = true;
+    if (finished) return;
     e.stopPropagation();
-    // Verifies the step's condition actually became true after the tap, instead of advancing unconditionally on any click.
-    setTimeout(() => {
-      if (isTutStepAlreadySatisfied(s)) {
-        advanceTutStep(el, s, true);
-      } else {
-        handled = false;
-        log('<span style="color:var(--muted)">That didn\'t go through — try tapping it again.</span>');
-      }
-    }, 0);
+    // Deferred because the tap that satisfies this step (e.g. touchend firing
+    // before the browser's synthesized click actually runs the ability's own
+    // onclick) may not have taken effect in game state yet.
+    setTimeout(tryAdvance, 0);
   };
 
   el.addEventListener('click', handler);
@@ -9593,16 +9613,12 @@ function renderTutStep(step, s) {
   // Also watches game state directly (not just clicks on the target) and pauses if another full-screen UI pops up mid-step.
   clearInterval(_tutStateWatcher);
   _tutStateWatcher = setInterval(() => {
-    if (handled) return;
+    if (finished) { clearInterval(_tutStateWatcher); return; }
     // Checks satisfaction before blocked-status, since the same tap can both satisfy a step and open a blocking modal.
-    if (isTutStepAlreadySatisfied(s)) {
-      handled = true;
-      clearInterval(_tutStateWatcher);
-      advanceTutStep(el, s, true);
-      return;
-    }
+    tryAdvance();
+    if (finished) return;
     if (isTutorialBlocked()) {
-      handled = true;
+      finished = true;
       clearInterval(_tutStateWatcher);
       pauseTutorialForModal(step);
     }
@@ -9611,16 +9627,7 @@ function renderTutStep(step, s) {
   // Third safety net: a capture-phase document listener catches the action succeeding even if the tap never reached the target's own listeners.
   document.removeEventListener('click', _tutGlobalTapCheck, true);
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
-  _tutGlobalTapCheck = () => {
-    if (handled) return;
-    if (isTutStepAlreadySatisfied(s)) {
-      handled = true;
-      clearInterval(_tutStateWatcher);
-      document.removeEventListener('click', _tutGlobalTapCheck, true);
-      document.removeEventListener('touchend', _tutGlobalTapCheck, true);
-      advanceTutStep(el, s, true);
-    }
-  };
+  _tutGlobalTapCheck = tryAdvance;
   document.addEventListener('click', _tutGlobalTapCheck, true);
   document.addEventListener('touchend', _tutGlobalTapCheck, true);
 }
