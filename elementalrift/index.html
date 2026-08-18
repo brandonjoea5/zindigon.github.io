@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.23.0 -->
+<!-- v3.24.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.23.0';
+const GAME_VERSION = '3.24.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -2941,7 +2941,14 @@ const STAT_LABELS = {
 const BASE_STATS = {
   attack:18, atkSpeed:2.0, critChance:0, critDmg:150,
   defense:8, health:200, lifeSteal:0, spellVamp:0,
-  cdr:0, mana:100, manaRegen:3,
+  // manaRegen was 3 — a Regular ability costs 20 mana (MANA_COSTS.regular) but most Regulars
+  // are ready again in ~3.5s (e.g. Quake Strike's 3500ms cd), so a fresh build with no
+  // manaRegen gear/passives yet (the exact situation entering early Medium) could only afford
+  // one cast roughly every ~6.7s — nearly double the actual cooldown — with Heal's 30-mana cost
+  // competing for the same pool. That's the "waiting for mana while watching AUTO" slog on
+  // Medium's early Ancient Troll/Golem fights. 5 keeps a Regular's mana upkeep close to its own
+  // cooldown (20/5=4s vs. 3.5s) instead of roughly doubling it, without touching enemy HP scaling.
+  cdr:0, mana:100, manaRegen:5,
   dotDamage:0, burnDuration:3, poisonDuration:4,
   freezeDuration:1.5, electricDot:3, slowStrength:30
 };
@@ -3865,7 +3872,16 @@ function resumeFromSave() {
   updateHpBar(); updateStatsPanel(); updateEquipUI(); updateClassXPPanel();
   updateResourceBar(); updateManaBar();
   // Resumes into the right place using segmentComplete + combatActive/enemy — never re-spawns a finished or already-active fight; otherwise advances via spawnNextSegmentWave().
-  if(MAP.segmentComplete) {
+  // Live combat is checked FIRST: onSegmentWaveComplete() marks MAP.segmentComplete true the
+  // moment the path's final wave clears — before the end-of-path boss fight even starts — and
+  // never clears it back once startBossWave() kicks that fight off. A refresh mid-boss-fight was
+  // landing on a save with BOTH segmentComplete:true AND a live combatActive/enemySnapshot pair,
+  // and segmentComplete used to win unconditionally: the player came back to "Path Complete" on
+  // the map screen with the boss simply gone and the merchant skipped, even though the save had
+  // a perfectly resumable fight sitting right next to it.
+  if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+    resumeLiveCombat();
+  } else if(MAP.segmentComplete) {
     // A refresh landing in the brief window between onSegmentWaveComplete() marking the path
     // done and its deferred openVendor() actually firing would otherwise drop straight to the
     // map screen, silently skipping the vendor visit the player just earned.
@@ -3875,8 +3891,6 @@ function resumeFromSave() {
     } else {
       showMapScreen(false);
     }
-  } else if(G.combatActive && G.enemy && G.enemy.hp > 0) {
-    resumeLiveCombat();
   } else if(MAP.difficulty && MAP.totalWaves > 0) {
     spawnNextSegmentWave();
   } else {
@@ -4943,6 +4957,7 @@ function restoreAutoSlots() {
   if(!G.savedAutoSlots && !G.healWasAuto) return;
   if(!G.combatActive || !G.enemy || G.enemy.hp <= 0) return;
   const slots = G.savedAutoSlots || [];
+  const healWanted = G.healWasAuto;
   // Directly activate each saved slot — don't call activateAbility (that toggles)
   slots.forEach(slotIdx => {
     try {
@@ -4965,7 +4980,25 @@ function restoreAutoSlots() {
       console.error('restoreAutoSlots: failed to restore slot', slotIdx, e);
     }
   });
-  if(G.healWasAuto && !G.autoSlots['heal']) activateHeal();
+  if(healWanted && !G.autoSlots['heal']) activateHeal();
+  // Re-check every slot we meant to restore against the FINAL G.autoSlots, not just each slot's
+  // own moment in the loop above. fireAbility() on an early slot in this same loop can end the
+  // fight as a side effect and reentrantly call stopAllAutoSlots(true), which replaces
+  // G.autoSlots with a fresh {} — wiping out any slot that was already set earlier in this very
+  // loop, even though that slot's own restore succeeded at the time. Whichever slot triggers
+  // that reset ends up the only one still on afterward (its assignment runs after the reentrant
+  // clear), while everything restored before it silently vanishes — exactly the "some AUTO
+  // slots survived, others didn't" pattern this is meant to close.
+  if(G.combatActive && G.enemy && G.enemy.hp > 0) {
+    slots.forEach(slotIdx => {
+      if(G.autoSlots[slotIdx]) return;
+      const abId = G.loadout[slotIdx];
+      if(!abId || !isSlotUnlocked(slotIdx)) return;
+      G.autoSlots[slotIdx] = 'master';
+      _tick.slots[slotIdx] = 0;
+    });
+    if(healWanted && !G.autoSlots['heal']) activateHeal();
+  }
   G.savedAutoSlots = null;
   G.healWasAuto = false;
   updateLoadoutUI();
@@ -5194,7 +5227,10 @@ function updateLoadoutUI() {
       el.style.background='';
     }
     const unlocked = isSlotUnlocked(i);
-    const lockMsg = ['','','Lv5 class','Lv8 class'][i]||'';
+    // Matches isSlotUnlocked()'s actual thresholds (6/10) — this used to say Lv5/Lv8, disagreeing
+    // with the Skills panel's Lv6/Lv10 text, which comes from the SAME unlock check. Both strings
+    // describe one gate; only one of them had been updated when the threshold changed.
+    const lockMsg = ['','','Lv6 class','Lv10 class'][i]||'';
     el.style.opacity = unlocked ? '1' : '0.4';
     const manaCost = ab ? (MANA_COSTS[ab.type]||0) : 0;
     const manaStarved = manaCost > 0 && G.mana < manaCost;
@@ -9370,6 +9406,40 @@ function upgradeAbilityAndRefresh(abId) {
 
 function buildAbilityUpgradesHTML() {
   let html = '';
+  // Shared card renderer so the main list and the collapsed "other imbues" section below
+  // stay visually identical instead of drifting out of sync.
+  const renderAbilityCard = (ab, cls, color) => {
+    const unlocked = isAbilityUnlocked(ab.id);
+    const abLv = G.abilityLevels[ab.id] || 0;
+    const cost = getAbilityUpgradeCost(ab.id);
+    const canUp = canUpgradeAbility(ab.id);
+    const dmgBonus = abLv > 0
+      ? (ab.type==='heal' ? `+${abLv*10}% healing power` : `+${Math.floor(abLv * 15)}% damage`)
+      : 'Base power';
+    const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
+
+    if (!unlocked) {
+      return `<div class="ab-upgrade-card" style="opacity:0.4;">
+        <span class="ab-upgrade-icon">—</span>
+        <div class="ab-upgrade-info">
+          <div class="ab-upgrade-name" style="color:${color}">${ab.name}</div>
+          <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.unlockLv || (ab.type==='ultimate'?10:ab.type==='basic'?1:3)}</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="ab-upgrade-card ${canUp?'can-upgrade':''}">
+      <span class="ab-upgrade-icon">${ab.imbue?elemLogoHTML(ab.imbue,20):'◆'}</span>
+      <div class="ab-upgrade-info">
+        <div class="ab-upgrade-name" style="color:${color}">${ab.name} <span style="font-size:9px;color:${typeColor};border:1px solid ${typeColor};border-radius:8px;padding:1px 5px;">${ab.type}</span></div>
+        <div class="ab-upgrade-desc">${ab.desc}</div>
+        <div class="ab-upgrade-level">Lv${abLv} · ${dmgBonus} · Next upgrade: ${cost} pt${cost!==1?'s':''}</div>
+      </div>
+      <button class="ab-upgrade-btn" ${canUp?'':'disabled'} onclick="upgradeAbilityAndRefresh('${ab.id}')">
+        ${canUp?` ${cost}pt`:''}
+      </button>
+    </div>`;
+  };
+
   // Only show the player's class
   const clsList = G.playerClass ? [G.playerClass] : CLASS_NAMES;
   clsList.forEach(cls => {
@@ -9384,50 +9454,38 @@ function buildAbilityUpgradesHTML() {
       <span class="ab-class-pts">${cp} class pt${cp!==1?'s':''}</span>
     </div>`;
 
-    // Get abilities for this class+imbue
+    // Abilities that actually apply to this build — imbue-less (Warrior/Rogue basics) plus
+    // whatever matches the player's chosen imbue. This used to also pull in EVERY OTHER
+    // imbue's basic ability via a blanket "type==='basic'" clause (class matched, so it slipped
+    // past the imbue check) — a Mage/Rock character saw Ember Strike, Tide Slash, Gale Strike,
+    // etc. all greyed out with "Requires Mage Lv1", which reads as "you're not leveled enough"
+    // when the real reason is simply the wrong imbue.
     const classAbilities = Object.values(ABILITIES).filter(ab =>
       ab.class === cls && ab.type !== 'heal' &&
-      (ab.imbue === G.playerImbue || ab.imbue === null || ab.type === 'basic')
+      (ab.imbue === G.playerImbue || ab.imbue === null)
     );
+    // Same class, different imbue — real abilities (relevant after a respec), just not for the
+    // current build. Moved out of the main list into a collapsed section instead of interleaved.
+    const otherImbueAbilities = G.playerImbue ? Object.values(ABILITIES).filter(ab =>
+      ab.class === cls && ab.type !== 'heal' && ab.imbue !== null && ab.imbue !== G.playerImbue
+    ) : [];
     const hasAnyUnlocked = classAbilities.some(ab => isAbilityUnlocked(ab.id));
 
     if (!hasAnyUnlocked) {
       html += `<div class="ab-class-hint">Use ${cls} abilities in combat to earn class XP and unlock upgrades</div>`;
     } else {
       html += '<div class="ab-upgrade-section">';
-      classAbilities.forEach(ab => {
-        const unlocked = isAbilityUnlocked(ab.id);
-        const abLv = G.abilityLevels[ab.id] || 0;
-        const cost = getAbilityUpgradeCost(ab.id);
-        const canUp = canUpgradeAbility(ab.id);
-        const dmgBonus = abLv > 0
-      ? (ab.type==='heal' ? `+${abLv*10}% healing power` : `+${Math.floor(abLv * 15)}% damage`)
-      : 'Base power';
-        const typeColor = {basic:'#3acc7a',regular:'#2196f3',ultimate:'#ff2266'}[ab.type];
-
-        if (!unlocked) {
-          html += `<div class="ab-upgrade-card" style="opacity:0.4;">
-            <span class="ab-upgrade-icon">—</span>
-            <div class="ab-upgrade-info">
-              <div class="ab-upgrade-name" style="color:${color}">${ab.name}</div>
-              <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.unlockLv || (ab.type==='ultimate'?10:ab.type==='basic'?1:3)}</div>
-            </div>
-          </div>`;
-        } else {
-          html += `<div class="ab-upgrade-card ${canUp?'can-upgrade':''}">
-            <span class="ab-upgrade-icon">${ab.imbue?elemLogoHTML(ab.imbue,20):'◆'}</span>
-            <div class="ab-upgrade-info">
-              <div class="ab-upgrade-name" style="color:${color}">${ab.name} <span style="font-size:9px;color:${typeColor};border:1px solid ${typeColor};border-radius:8px;padding:1px 5px;">${ab.type}</span></div>
-              <div class="ab-upgrade-desc">${ab.desc}</div>
-              <div class="ab-upgrade-level">Lv${abLv} · ${dmgBonus} · Next upgrade: ${cost} pt${cost!==1?'s':''}</div>
-            </div>
-            <button class="ab-upgrade-btn" ${canUp?'':'disabled'} onclick="upgradeAbilityAndRefresh('${ab.id}')">
-              ${canUp?` ${cost}pt`:''}
-            </button>
-          </div>`;
-        }
-      });
+      classAbilities.forEach(ab => { html += renderAbilityCard(ab, cls, color); });
       html += '</div>';
+    }
+
+    if (otherImbueAbilities.length) {
+      html += `<details class="ab-other-imbues">
+        <summary style="cursor:pointer;font-size:11px;color:var(--muted);padding:6px 2px;">Other imbues (${otherImbueAbilities.length})</summary>
+        <div class="ab-upgrade-section">
+          ${otherImbueAbilities.map(ab => renderAbilityCard(ab, cls, color)).join('')}
+        </div>
+      </details>`;
     }
   });
   return html;
@@ -9450,6 +9508,13 @@ const TUT_STEPS = [
     desc: 'Tap any ability to toggle AUTO on — it fires automatically. Tap again to stop. Skills fire as soon as their cooldown ends.',
     hint: 'Tap the Attack button now',
     waitForTap: 'slot-basic',
+    // Both this and the _tutStateWatcher's combatLost check (below) apply to any ability-slot
+    // step, not just Heal — without it, an enemy dying while this step is still up left the
+    // bubble showing "Tap the Attack button now" through the wave-cleared screen and into
+    // whatever came next, since nothing else in isTutorialBlocked() covers "no live enemy right
+    // now." Harmless here since spawnEnemy() always sets combatActive+enemy before this step's
+    // very first render (it's only ever kicked off from inside spawnEnemy() itself).
+    waitForCombat: true,
   },
   {
     slotId: 'slot-reg1',
@@ -9459,6 +9524,9 @@ const TUT_STEPS = [
     waitForTap: 'slot-reg1',
     // Gates this step to Wave 2+ instead of reactively detecting a blocking overlay, removing the race entirely.
     minSegWave: 2,
+    // Same as Attack above — pauses the moment Wave 2's enemy dies instead of lingering with a
+    // stale "Tap Skill 1" hint through the wave-cleared screen until the player finally taps it.
+    waitForCombat: true,
   },
   {
     slotId: 'slot-heal',
@@ -9717,7 +9785,15 @@ function renderTutStep(step, s) {
     // Checks satisfaction before blocked-status, since the same tap can both satisfy a step and open a blocking modal.
     tryAdvance();
     if (finished) return;
-    if (isTutorialBlocked()) {
+    // For a waitForCombat step (currently just Heal), the enemy dying ends combat — and
+    // disables the ability itself — before any blocking overlay actually appears on screen:
+    // onEnemyDeath() is deferred ~300-500ms after the kill, and even once it runs, the
+    // wave-choice overlay is only one of several things that can follow (vendor, boss prompt).
+    // isTutorialBlocked() alone missed that whole gap, during which the hint kept telling the
+    // player to tap an ability that was already non-functional. Checking combat readiness here
+    // too closes it immediately instead of waiting for whatever overlay eventually shows up.
+    const combatLost = s.waitForCombat && !(G.combatActive && G.enemy);
+    if (isTutorialBlocked() || combatLost) {
       finished = true;
       clearInterval(_tutStateWatcher);
       pauseTutorialForModal(step);
