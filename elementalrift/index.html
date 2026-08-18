@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.22.0 -->
+<!-- v3.23.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.22.0';
+const GAME_VERSION = '3.23.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -3521,6 +3521,10 @@ function startBossWave() {
   drawArena();
   log(`<span style="color:#ff2277;font-weight:600;"> Wave Boss! Defeat it for bonus loot!</span>`);
   saveGame();
+  // Every other enemy-spawn path (spawnEnemy(), startBossAttempt()) restores whatever
+  // AUTO slots were active before the transition — this one was missing that call,
+  // so AUTO always dropped entering the natural end-of-path boss.
+  setTimeout(restoreAutoSlots, 400);
 }
 
 function showWaveBossPrompt() {
@@ -3573,6 +3577,10 @@ function onSegmentWaveComplete() {
 
   if(pathDone || extremeVendor) {
     MAP.segmentComplete = pathDone;
+    // Marks the vendor visit as owed before the save below, so a refresh landing in the ~500ms
+    // window before openVendor() actually fires doesn't strand the player on the map screen
+    // having silently skipped the vendor they just earned (resumeFromSave() checks this flag).
+    G._pendingVendorOpen = !MAP.pendingBoss;
     // Persists segmentComplete immediately — a refresh must never re-spawn an already-cleared wave.
     saveGame();
     if(sbUser) saveTrinity().catch(()=>{});
@@ -3582,7 +3590,7 @@ function onSegmentWaveComplete() {
     } else {
       const msg = `${MAP.difficulty} path ${pathDone ? 'complete' : `wave ${MAP.currentSegWave}`}! Vendor incoming...`;
       log(`<span class="log-sys">${msg}</span>`);
-      setTimeout(()=>{ openVendor(); }, 500);
+      setTimeout(()=>{ G._pendingVendorOpen = false; openVendor(); }, 500);
     }
   } else {
     log(`<span class="log-sys">Wave ${MAP.currentSegWave}${MAP.difficulty==='extreme'?'':'/'+MAP.totalWaves} complete.</span>`);
@@ -3617,6 +3625,7 @@ function buildSaveObject() {
     mapTotalWaves: MAP.totalWaves,
     mapCurrentSegWave: MAP.currentSegWave,
     mapSegmentComplete: !!MAP.segmentComplete,
+    pendingVendorOpen: !!G._pendingVendorOpen,
     // combatActive + enemySnapshot are an atomic pair — see loadGame().
     combatActive: !!(G.combatActive && G.enemy && G.enemy.hp > 0),
     enemySnapshot: (G.combatActive && G.enemy && G.enemy.hp > 0) ? G.enemy : null,
@@ -3707,6 +3716,7 @@ function loadGame(name) {
       MAP.currentSegWave = save.mapCurrentSegWave || 0;
       MAP.segmentComplete = !!save.mapSegmentComplete;
     }
+    G._pendingVendorOpen = !!save.pendingVendorOpen;
     // combatActive + enemySnapshot restore together as an atomic pair — only resumeFromSave() acts on them.
     G.combatActive = !!save.combatActive && !!save.enemySnapshot;
     G.enemy = G.combatActive ? save.enemySnapshot : null;
@@ -3837,6 +3847,7 @@ function loadFromData(data) {
       MAP.currentSegWave = save.mapCurrentSegWave || 0;
       MAP.segmentComplete = !!save.mapSegmentComplete;
     }
+    G._pendingVendorOpen = !!save.pendingVendorOpen;
     G.combatActive = !!save.combatActive && !!save.enemySnapshot;
     G.enemy = G.combatActive ? save.enemySnapshot : null;
     // Hands saved AUTO state to restoreAutoSlots(), same as loadGame().
@@ -3855,7 +3866,15 @@ function resumeFromSave() {
   updateResourceBar(); updateManaBar();
   // Resumes into the right place using segmentComplete + combatActive/enemy — never re-spawns a finished or already-active fight; otherwise advances via spawnNextSegmentWave().
   if(MAP.segmentComplete) {
-    showMapScreen(false);
+    // A refresh landing in the brief window between onSegmentWaveComplete() marking the path
+    // done and its deferred openVendor() actually firing would otherwise drop straight to the
+    // map screen, silently skipping the vendor visit the player just earned.
+    if(G._pendingVendorOpen) {
+      G._pendingVendorOpen = false;
+      openVendor();
+    } else {
+      showMapScreen(false);
+    }
   } else if(G.combatActive && G.enemy && G.enemy.hp > 0) {
     resumeLiveCombat();
   } else if(MAP.difficulty && MAP.totalWaves > 0) {
@@ -4234,6 +4253,13 @@ function startBossAttempt(fromMap = false) {
   G.mana = G.maxMana;
   updateHpBar();
   updateManaBar();
+  // The HP/mana bars refresh above, but each ability slot's own "NO MP" badge and
+  // tooltip are computed separately in updateLoadoutUI()/updateHealSlotUI() and
+  // don't re-run on their own — without this they kept showing the pre-boss mana
+  // reading (e.g. "NO MP — have 17") until the player tapped an ability and its
+  // own click handler happened to refresh them.
+  updateLoadoutUI();
+  updateHealSlotUI();
   setNextBtnActive(false);
   setBossBtnActive(false);
   document.getElementById('boss-timer-wrap').style.display = 'block';
@@ -4819,7 +4845,7 @@ function flashAbilityDenied(slotIdx, message) {
 
 function activateAbility(slotIdx) {
   if(!isSlotUnlocked(slotIdx)){
-    const msgs = ['','','Skill 2 unlocks when any class reaches Level 5','Ultimate unlocks when any class reaches Level 8'];
+    const msgs = ['','','Skill 2 unlocks when any class reaches Level 6','Ultimate unlocks when any class reaches Level 10'];
     log(`<span style="color:var(--muted)">${msgs[slotIdx]||'Locked'}</span>`);
     return;
   }
@@ -4919,25 +4945,58 @@ function restoreAutoSlots() {
   const slots = G.savedAutoSlots || [];
   // Directly activate each saved slot — don't call activateAbility (that toggles)
   slots.forEach(slotIdx => {
-    if(G.autoSlots[slotIdx]) return; // already on
-    const abId = G.loadout[slotIdx];
-    if(!abId || !isSlotUnlocked(slotIdx)) return;
-    const ab = ABILITIES[abId];
-    if(!ab) return;
-    // Fire immediately if ready
-    if(isAbilityReady(ab)) fireAbility(ab);
-    // Basics and skills/ults now share the same masterTick poll (see
-    // activateAbility) — one mechanism to re-arm here instead of two.
-    if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
-    G.autoSlots[slotIdx] = 'master';
-    _tick.slots[slotIdx] = 0;
-    if(!_tick.running) startMasterTick();
+    try {
+      if(G.autoSlots[slotIdx]) return; // already on
+      const abId = G.loadout[slotIdx];
+      if(!abId || !isSlotUnlocked(slotIdx)) return;
+      const ab = ABILITIES[abId];
+      if(!ab) return;
+      // Fire immediately if ready — guarded on its own: this can end the fight
+      // (kill the enemy) as a side effect, and one slot's restore should never
+      // throw and skip re-arming the slots after it in this same loop.
+      if(isAbilityReady(ab) && G.enemy && G.enemy.hp > 0) fireAbility(ab);
+      // Basics and skills/ults now share the same masterTick poll (see
+      // activateAbility) — one mechanism to re-arm here instead of two.
+      if(ab.type !== 'basic') startCDBarAnimation(slotIdx, ab);
+      G.autoSlots[slotIdx] = 'master';
+      _tick.slots[slotIdx] = 0;
+      if(!_tick.running) startMasterTick();
+    } catch(e) {
+      console.error('restoreAutoSlots: failed to restore slot', slotIdx, e);
+    }
   });
   if(G.healWasAuto && !G.autoSlots['heal']) activateHeal();
   G.savedAutoSlots = null;
   G.healWasAuto = false;
   updateLoadoutUI();
   updateHealSlotUI();
+}
+
+// Guards against updateClassXPPanel() destroying and rebuilding the Skills panel's
+// button DOM nodes mid-tap. earnClassXP() below fires on nearly every ability use —
+// many times per second under AUTO combat — and unconditionally rebuilds the whole
+// panel via innerHTML. If that rebuild lands while a finger/mouse is still down on
+// an upgrade button, the original element is gone by the time the browser would
+// fire 'click', so the tap silently does nothing even though the button looked
+// enabled and responsive. Defer the rebuild until the pointer lifts instead.
+let _skillsPanelPointerDown = false;
+let _skillsPanelUpdatePending = false;
+document.addEventListener('pointerdown', e => {
+  if(e.target && e.target.closest && e.target.closest('#panel-skills, #mobile-panel-skills')) _skillsPanelPointerDown = true;
+}, true);
+document.addEventListener('pointerup', () => {
+  if(_skillsPanelPointerDown) {
+    _skillsPanelPointerDown = false;
+    // Defer to a fresh macrotask — pointerup is immediately followed by the synchronous
+    // 'click' dispatch in the same gesture, so rebuilding here in the capture-phase
+    // pointerup handler would still yank the node out from under the click that's about
+    // to fire. setTimeout(...,0) runs after that whole sequence has already completed.
+    if(_skillsPanelUpdatePending) { _skillsPanelUpdatePending = false; setTimeout(updateClassXPPanel, 0); }
+  }
+}, true);
+function scheduleClassXPPanelUpdate() {
+  if(_skillsPanelPointerDown) { _skillsPanelUpdatePending = true; return; }
+  updateClassXPPanel();
 }
 
 // ── CLASS XP ──
@@ -4956,7 +5015,7 @@ function earnClassXP(cls, amount) {
       leveledUp = true;
     } else break;
   }
-  updateClassXPPanel();
+  scheduleClassXPPanelUpdate();
   // Refreshes cached maxHp/HP right after a Mastery level-up, since it happens silently mid-combat and getStats() only recomputes at specific call sites.
   if(leveledUp && cls === G.playerClass) {
     const st = getStats();
@@ -5011,7 +5070,7 @@ function openSlotSelector() {
     const ab = abId ? ABILITIES[abId] : null;
     const unlocked = isSlotUnlocked(i);
     const color = ab ? (CLASS_COLORS[ab.class]||'#aaa') : 'var(--muted)';
-    const lockMsg = ['','','Level 5 any class','Level 8 any class'][i]||'';
+    const lockMsg = ['','','Level 6 any class','Level 10 any class'][i]||'';
     return `<div class="ability-pick-card ${unlocked?'':'locked'}" onclick="${unlocked?`openLoadoutPicker(${i})`:''}">
       <div class="apc-header">
         ${ab?`<span class="apc-icon">${ab.imbue?elemLogoHTML(ab.imbue,18):'◆'}</span>`:'<span class="apc-icon" style="color:var(--muted)">＋</span>'}
@@ -5584,7 +5643,13 @@ function enemyAttack() {
       markDirty(['hp', 'enemy']);
       return;
     }
-    G.hp = 0; onDeath(); return;
+    // Renders the HP bar at 0 synchronously before onDeath() shows the results screen. The
+    // non-fatal path below only markDirty()s (deferred to the next animation frame), which is
+    // fine normally, but on the killing blow the results screen can appear before that deferred
+    // frame ever flushes — leaving the HUD frozen on whatever HP the previous hit left behind
+    // (e.g. "4/200") even though the death was correctly detected off the real, already-zeroed
+    // G.hp underneath it.
+    G.hp = 0; updateHpBar(); onDeath(); return;
   }
   markDirty(['hp', 'enemy']);
 }
@@ -7519,6 +7584,16 @@ function masterTick(ts) {
   const dt = _tick.lastTs ? Math.min(ts - _tick.lastTs, 100) : 16; // cap dt at 100ms (tab hidden)
   _tick.lastTs = ts;
 
+  // Everything below runs inside try/finally so requestAnimationFrame(masterTick)
+  // always gets scheduled again, even if something throws. Without this, one
+  // uncaught error anywhere in a tick (e.g. a status-effect tick killing the
+  // enemy mid-frame, which used to crash the enemy-attack check further down
+  // still reading the now-null G.enemy) permanently stopped every AUTO ability,
+  // mana regen, the boss timer, and autosave for the rest of the session —
+  // with no self-recovery, since _tick.running stays true and blocks any
+  // future startMasterTick() guard from noticing the loop had died.
+  try {
+
   // ── Mana regen (was 100ms interval) ──
   if(G.combatActive && G.enemy) {
     _tick.mana += dt;
@@ -7547,7 +7622,17 @@ function masterTick(ts) {
     }
 
     // Enemy attack is suppressed while the opening tutorial is active, so instructions don't go stale mid-read.
-    if(!G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0 && !tutActive) {
+    // Rechecks G.enemy here (not just at the top of this block) — tickStatusEffects()/
+    // checkCombatStalemate() above can kill the enemy synchronously (e.g. a poison
+    // tick), which would otherwise leave this reading .hp off a null reference.
+    // Also suppressed while a loadout/progression/vendor/item modal is open (isTutorialBlocked()'s
+    // ID list, e.g. ability-picker-modal, sp-popup) — those pauses used to work by clearing
+    // G.enemyAttackInterval, back when a real setInterval drove enemy attacks. That interval is
+    // long gone (attacks are timed by this masterTick accumulator now), so the old clearInterval
+    // calls scattered through the loadout/level-up code had quietly become no-ops: opening any of
+    // those screens mid-fight no longer paused anything, and the boss (or any enemy) kept landing
+    // hits while the player was stuck in a nested selection screen with no way to react.
+    if(G.enemy && !G._deathInProgress && !G._enemyDeathInProgress && G.enemy.hp > 0 && G.hp > 0 && !tutActive && !isTutorialBlocked()) {
       _tick.enemyAtk += dt;
       if(_tick.enemyAtk >= _tick.enemyAtkDelay) {
         _tick.enemyAtk = 0;
@@ -7649,7 +7734,11 @@ function masterTick(ts) {
     _tick.autosave = 0;
   }
 
-  requestAnimationFrame(masterTick);
+  } catch(e) {
+    console.error('masterTick error (recovered, loop continues):', e);
+  } finally {
+    requestAnimationFrame(masterTick);
+  }
 }
 
 function startMasterTick() {
@@ -9227,8 +9316,19 @@ function closeSPPopup() {
 function isSlotUnlocked(slotIdx) {
   if (slotIdx === 0) return true;
   if (slotIdx === 1) return G.playerClass !== null && G.playerClass !== undefined;
-  if (slotIdx === 2) return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 5);
-  if (slotIdx === 3) return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 8);
+  // Thresholds match the lowest unlockLv actually available for that slot's ability pool.
+  // Fire/water/grass/poison/electric/ice imbues have a *_reg4 (unlockLv:5) that can fill
+  // Skill 2 right at class Lv5, but Wind and Rock imbues only define *_reg1/*_reg2 — for
+  // those, *_reg2 (unlockLv:6) is the ONLY new option, so gating the slot at 5 opened it a
+  // level early with nothing to equip but the ability already sitting in Skill 1. Every
+  // *_reg2 across every class/imbue is unlockLv:6, so raising this to 6 fixes Wind/Rock
+  // without taking anything away from the richer imbues (reg4 is still usable once this
+  // unlocks — one level later than before, but never earlier than the ability itself exists).
+  if (slotIdx === 2) return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 6);
+  // Every ultimate ability is unlockLv:10 (the max class level) — the slot itself unlocking
+  // at 8 left an 8-9 window where "+Assign" was clickable but the picker had zero eligible
+  // abilities (no already-equipped ultimate to fall back on, unlike the Skill 2 case above).
+  if (slotIdx === 3) return CLASS_NAMES.some(c => (G.classLv[c]||0) >= 10);
   return false;
 }
 
@@ -9310,7 +9410,7 @@ function buildAbilityUpgradesHTML() {
             <span class="ab-upgrade-icon">—</span>
             <div class="ab-upgrade-info">
               <div class="ab-upgrade-name" style="color:${color}">${ab.name}</div>
-              <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.type==='ultimate'?8:ab.id.endsWith('_reg2')?5:3}</div>
+              <div class="ab-upgrade-desc">Requires ${cls} class Lv${ab.unlockLv || (ab.type==='ultimate'?10:ab.type==='basic'?1:3)}</div>
             </div>
           </div>`;
         } else {
@@ -9736,7 +9836,15 @@ function endTutorial() {
 // ═══════════════════════════════════════════════
 
 async function openTrinityShop() {
-  if(!sbUser) { alert('Sign in to access Trinity Force.'); return; }
+  // Was a bare alert() — native browser dialogs are easy to silently lose (a page that's
+  // triggered one before can get "prevent additional dialogs" auto-blocked by the browser,
+  // and they're jarring/inconsistent with every other in-game message anyway). Route guests
+  // straight to the game's own sign-in modal instead, with a log line explaining why.
+  if(!sbUser) {
+    log('<span style="color:#cc8844">Trinity Force requires a signed-in account — sign in to unlock it.</span>');
+    showAuthModal();
+    return;
+  }
   await loadTrinity().catch(()=>{});
   renderTrinityModal();
   document.getElementById('trinity-modal').classList.remove('hidden');
@@ -10787,7 +10895,7 @@ function menuToggleAutoPauseMana() {
 function menuToggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
   const btn = document.getElementById('menu-auto-wave');
-  if(btn) btn.textContent = 'Auto-Advance Waves: ' + (autoWaveEnabled ? 'ON' : 'OFF');
+  if(btn) btn.textContent = '▶ Auto-Advance Waves: ' + (autoWaveEnabled ? 'ON' : 'OFF');
   if(btn) btn.style.color = autoWaveEnabled ? '#2e9e58' : '#4e5468';
   if(btn) btn.style.borderColor = autoWaveEnabled ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
   // If toggled on and between waves, fire immediately
