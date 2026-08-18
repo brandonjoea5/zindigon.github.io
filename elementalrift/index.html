@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.24.0 -->
+<!-- v3.25.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.24.0';
+const GAME_VERSION = '3.25.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -3987,7 +3987,15 @@ function getStats() {
 // Player "power level" — drives enemy scaling
 function getPlayerPower() {
   const s = getStats();
-  return s.attack * (1 + (s.critChance||0)/100) + (s.defense||8) + (s.health||200)/20 + G.wave * 2;
+  // Sole consumer is rollBoss()'s HP scale — defense and health used to count toward power at
+  // (roughly) their full face value even though neither adds one point of damage. A fresh,
+  // starter-geared Warrior (defense ~18, health ~260) got about 60% of their "power" from stats
+  // that don't affect DPS at all, inflating even a first optional boss (2,517 HP reported on
+  // Easy) to a HP total that a few-minutes-old character's real damage output — attack + basics —
+  // couldn't reasonably clear before dying to attrition. Weighting them down so they still count
+  // (tankier builds still see somewhat tougher bosses) without dominating the estimate the way a
+  // pure damage stat should.
+  return s.attack * (1 + (s.critChance||0)/100) + (s.defense||8) * 0.3 + (s.health||200) / 60 + G.wave * 2;
 }
 
 // ═══════════════════════════════════════════════
@@ -5961,7 +5969,20 @@ function flushUI() {
   if(_dirty.log)         { syncMobileLog();         _dirty.log = false; }
 }
 
-let autoWaveEnabled = false;
+// A plain in-memory flag with no ties to the per-character save data, so it used to reset to OFF
+// on every refresh — including mid-fight, where the report was "the boss fight itself recovered
+// correctly (HP, ability AUTO states) but Auto-Advance flipped back to OFF." Persisted separately
+// via its own localStorage key instead of the save object, since it's a device/session preference
+// rather than character progress (same pattern as TUT_KEY below).
+const AUTO_WAVE_KEY = 'er_autoWaveEnabled';
+let autoWaveEnabled = localStorage.getItem(AUTO_WAVE_KEY) === '1';
+function syncAutoWaveButton() {
+  const btn = document.getElementById('menu-auto-wave');
+  if(!btn) return;
+  btn.textContent = '▶ Auto-Advance Waves: ' + (autoWaveEnabled ? 'ON' : 'OFF');
+  btn.style.color = autoWaveEnabled ? '#2e9e58' : '#4e5468';
+  btn.style.borderColor = autoWaveEnabled ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
+}
 
 function setNextBtnActive(active) {
   const btn = document.getElementById('next-btn');
@@ -6827,6 +6848,10 @@ function initUI(){
   loadHealLoadout();
   startManaRegen();
   initMobileLayout();
+  // The button's static markup always starts on its OFF text/color — sync it to whatever was
+  // actually loaded from localStorage (see AUTO_WAVE_KEY above) so a persisted ON doesn't show
+  // as OFF until the player happens to open the menu and re-toggle it.
+  syncAutoWaveButton();
 }
 
 function showAccountMenu() {
@@ -7708,13 +7733,20 @@ function masterTick(ts) {
           handleAutoManaStarved(slotIdx, pollMs, ab.name);
           continue;
         }
-        // Mana priority: an armed, ready, low-HP Heal outranks offensive AUTO abilities so it can actually accumulate enough mana to fire.
+        // Mana priority: a ready, low-HP Heal outranks offensive AUTO abilities so it can actually
+        // accumulate enough mana to fire. This used to only protect Heal when Heal was ALSO on
+        // AUTO — a manual-heal player (or the ability tutorial, which always expects a manual tap)
+        // got no protection at all, so a cheap, fast-cycling offensive AUTO (e.g. a 20-mana/3.5s
+        // Regular) could perpetually drain mana back down before it ever reached Heal's cost,
+        // right up until the player died with a fully-equipped heal they could never afford to
+        // tap. Reserving whenever HP is low and Heal is ready — regardless of Heal's own AUTO
+        // state — protects the manual-tap case the same way.
         if(manaCost > 0) {
           const healAbForReserve = healLoadout ? ABILITIES[healLoadout] : null;
           const healCostForReserve = healAbForReserve ? (MANA_COSTS[healAbForReserve.type] || 0) : 0;
-          const healAboutToFire = G.autoSlots['heal'] === 'master' && healAbForReserve &&
+          const healMightBeNeeded = healAbForReserve &&
             healCostForReserve > 0 && isHealReady() && G.hp < G.maxHp * AUTO_HEAL_HP_PCT;
-          if(healAboutToFire && (G.mana - manaCost) < healCostForReserve) {
+          if(healMightBeNeeded && (G.mana - manaCost) < healCostForReserve) {
             handleAutoManaStarved(slotIdx, pollMs, ab.name);
             continue;
           }
@@ -9049,11 +9081,21 @@ let spPopupOpen = false;
 let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
 
 // Tutorial overlays and the ability bar sit in separate stacking contexts, so boosting a target's z-index can paint on top without winning a real hit-test — see isTutorialBlocked().
-const TUTORIAL_BLOCKING_IDS = ['sp-popup','vendor-modal','item-modal','boss-results-modal','ability-picker-modal','map-screen'];
+// Despite the name, this doubles as the general "is a substantial modal open" check that also
+// suppresses the enemy's own attacks (see the masterTick call site) — not just tutorial gating.
+// auth-modal (Trinity/sign-in) was missing from this list entirely, so opening it mid-fight left
+// the enemy landing hits behind it with no way for the player to see or react — reported as a
+// death that happened entirely off-screen behind the sign-in form.
+const TUTORIAL_BLOCKING_IDS = ['sp-popup','vendor-modal','item-modal','boss-results-modal','ability-picker-modal','map-screen','auth-modal'];
 function isTutorialBlocked() {
   if(document.getElementById('wave-boss-prompt')) return true;
   const waveChoice = document.getElementById('wave-choice-overlay');
   if(waveChoice && waveChoice.style.display && waveChoice.style.display !== 'none') return true;
+  // Gear/Stats/Ranks all render into this one shared side-menu panel, toggled via style.display
+  // (not the .hidden class the rest of this list uses) — same gap as auth-modal above, just for
+  // a different modal, and the same fix: treat it as blocking too.
+  const menuPanel = document.getElementById('menu-panel');
+  if(menuPanel && menuPanel.style.display && menuPanel.style.display !== 'none') return true;
   return TUTORIAL_BLOCKING_IDS.some(id => {
     const el = document.getElementById(id);
     return el && !el.classList.contains('hidden');
@@ -10915,6 +10957,11 @@ if(typeof ResizeObserver !== 'undefined') {
 }
 resizeCanvas();
 idlePulse();
+// The menu (and its Auto-Advance button) lives in the DOM from page load, before the player has
+// necessarily started or loaded a run — initUI() (which also calls this) doesn't run until then,
+// so relying on it alone left the button showing its static markup's OFF text even when a
+// previous session had persisted it ON.
+syncAutoWaveButton();
 
 // Focus name input
 initGState();
@@ -10970,10 +11017,8 @@ function menuToggleAutoPauseMana() {
 
 function menuToggleAutoWave() {
   autoWaveEnabled = !autoWaveEnabled;
-  const btn = document.getElementById('menu-auto-wave');
-  if(btn) btn.textContent = '▶ Auto-Advance Waves: ' + (autoWaveEnabled ? 'ON' : 'OFF');
-  if(btn) btn.style.color = autoWaveEnabled ? '#2e9e58' : '#4e5468';
-  if(btn) btn.style.borderColor = autoWaveEnabled ? 'rgba(46,158,88,0.7)' : 'rgba(46,158,88,0.3)';
+  localStorage.setItem(AUTO_WAVE_KEY, autoWaveEnabled ? '1' : '0');
+  syncAutoWaveButton();
   // If toggled on and between waves, fire immediately
   if(autoWaveEnabled && !G.enemy && !G.combatActive && !G._enemyDeathInProgress) {
     const next = document.getElementById('next-btn');
