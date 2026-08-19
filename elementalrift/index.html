@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.28.0 -->
+<!-- v3.29.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.28.0';
+const GAME_VERSION = '3.29.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -2611,6 +2611,14 @@ const GAME_VERSION = '3.28.0';
         The boss never attacks back — it's a pure DPS check with zero risk to your run. Deal damage for 60 seconds; hitting gold thresholds (starting at 1,000 dmg) pays out bonus gold and XP on top of your score. Your build, gear, and current wave are untouched either way, and you can try again anytime the option shows up.
       </div>
 
+      <!-- Honorable Death: the function/overlay this calls (honorableDeath()) already existed
+           fully built, but had no button anywhere in the game wired to it — this was the intended
+           entry point (right where you choose what to do next each wave) and it was simply
+           missing, making the whole feature unreachable. Styled as a quieter text-link rather than
+           a full button like Next Wave/Boss Attempt, since choosing to end the run on purpose is a
+           deliberate, less-common action, not the default path. -->
+      <button id="wc-honorable-death" onclick="honorableDeath()" style="background:transparent;border:none;color:var(--muted);font-family:'Lato',sans-serif;font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 10px;margin-top:-4px;">Honorable Death — end this run for bonus Trinity XP</button>
+
     </div>
   </div>
 
@@ -2681,7 +2689,7 @@ const GAME_VERSION = '3.28.0';
     <div class="tut-tap-hint" id="tut-hint"></div>
     <button id="tut-skip-step" onclick="skipTutStep()" class="hidden" style="display:block;width:100%;margin-top:8px;font-family:'Jim Nightshade',cursive;font-size:10px;background:rgba(232,184,75,0.12);border:1px solid rgba(232,184,75,0.4);color:#e8b84b;padding:6px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Stuck? Tap here to skip this step →</button>
     <div style="text-align:right;margin-top:8px;">
-      <button onclick="endTutorial()" style="font-family:'Jim Nightshade',cursive;font-size:10px;background:transparent;border:1px solid rgba(200,155,60,0.25);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Skip Tutorial</button>
+      <button id="tut-skip-all" onclick="endTutorial()" style="font-family:'Jim Nightshade',cursive;font-size:10px;background:transparent;border:1px solid rgba(200,155,60,0.25);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;pointer-events:all;">Skip Tutorial</button>
     </div>
   </div>
   <svg class="tut-arrow-svg" id="tut-arrow" width="60" height="80" viewBox="0 0 60 80">
@@ -3552,6 +3560,15 @@ function showWaveBossPrompt() {
           <div style="font-family:'Jim Nightshade',cursive;color:#3acc7a;">Bonus loot + gold</div>
           <div style="color:var(--muted);">Risk</div>
           <div style="font-family:'Jim Nightshade',cursive;color:#e83a3a;">It fights back</div>
+        </div>
+        <!-- startBossWave() (unlike the standalone Boss Attempt DPS race) never tops up HP/mana --
+             the player walks in with whatever they currently have. The prompt used to say nothing
+             about this, so a player finishing a path at low resources (e.g. 81/308 HP, 0/100 mana)
+             had no way to know that before committing to "Fight the Boss." Spelling out the exact
+             numbers here lets them make an informed call, or back out to the Merchant to heal/shop
+             first if they're not in fighting shape. -->
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(200,48,42,0.2);font-size:11px;color:var(--muted);text-align:center;">
+          Your current HP and mana carry into the fight as-is: <span style="color:${G.hp < G.maxHp*0.4 ? '#e83a3a' : 'var(--text)'};font-weight:700;">${Math.floor(G.hp)}/${Math.floor(G.maxHp)} HP</span>, <span style="color:var(--text);font-weight:700;">${Math.floor(G.mana)}/${Math.floor(G.maxMana)} mana</span>.
         </div>
       </div>
       <div style="display:flex;gap:10px;">
@@ -5827,10 +5844,17 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
-  // Accidental death Trinity XP (utility lane)
+  // Accidental death Trinity XP (utility lane). This used to require the Survivor's Legacy
+  // node (util_3) to be unlocked before granting ANY bonus here — without it, _deathTrinXP was
+  // undefined/0 and the whole block was a no-op, so a natural death paid out nothing beyond
+  // whatever per-hit trinityEarnXP() calls had already landed during the run itself. Every run
+  // should contribute something on death even without that node — just significantly less than
+  // choosing Honorable Death outright (see executeHonorableDeath() below). Survivor's Legacy now
+  // reads as the intended upgrade (10% baseline -> its full 25%) instead of the only way in.
   if(sbUser && G.runStats && G.runStats.totalDmg > 0) {
     const _tb = getTrinityBonuses();
-    if(_tb._deathTrinXP > 0) trinityEarnXP(Math.floor(G.runStats.totalDmg * _tb._deathTrinXP));
+    const _deathRate = _tb._deathTrinXP > 0 ? _tb._deathTrinXP : 0.10;
+    trinityEarnXP(Math.floor(G.runStats.totalDmg * _deathRate));
   }
   // Always save trinity on death
   if(sbUser) saveTrinity().catch(()=>{});
@@ -8692,11 +8716,17 @@ function honorableDeath() {
 }
 
 function executeHonorableDeath(orbsEarned) {
-  // Honorable death bonus Trinity XP (utility lane)
+  // Honorable Death is the full-value Trinity XP path — it's supposed to grant this whole run's
+  // damage total as Trinity XP (that total is exactly what the confirmation screen shows the
+  // player under "XP This Run" right above this button). This used to only grant the *bonus*
+  // fraction from Honor Bound/Trinity Conduit — (honorMult - 1) times totalDmg — and skipped the
+  // call entirely when honorMult was the default 1 (no utility nodes unlocked), meaning most
+  // players choosing Honorable Death got 0 Trinity XP despite the screen advertising the full
+  // amount. Granting honorMult * totalDmg matches what's actually promised on screen.
   if(sbUser && G.runStats && G.runStats.totalDmg > 0) {
     const _tb = getTrinityBonuses();
     const honorMult = _tb._honorTrinXP || 1;
-    if(honorMult > 1) trinityEarnXP(Math.floor(G.runStats.totalDmg * (honorMult - 1)));
+    trinityEarnXP(Math.floor(G.runStats.totalDmg * honorMult));
   }
   // Save trinity before clearing local data
   if(sbUser) saveTrinity().catch(()=>{});
@@ -9150,6 +9180,14 @@ let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
 const TUTORIAL_BLOCKING_IDS = ['sp-popup','vendor-modal','item-modal','boss-results-modal','ability-picker-modal','map-screen','auth-modal'];
 function isTutorialBlocked() {
   if(document.getElementById('wave-boss-prompt')) return true;
+  // The loot Equip/Sell decision popup (showVendorItemDecision()) is built with
+  // document.createElement and appended straight to <body> — same dynamic-creation pattern as
+  // wave-boss-prompt above — instead of toggling the shared .hidden class TUTORIAL_BLOCKING_IDS
+  // checks below. It was never added to either list, so this whole pause system (masterTick's
+  // combatPaused gate included, not just the tutorial) had no idea it existed: combat kept running
+  // — player HP, enemy HP, mana all still moving — for the entire time a loot decision sat on
+  // screen forcing the player to evaluate gear blind to what was happening underneath it.
+  if(document.getElementById('vendor-decision-modal')) return true;
   const waveChoice = document.getElementById('wave-choice-overlay');
   if(waveChoice && waveChoice.style.display && waveChoice.style.display !== 'none') return true;
   // Gear/Stats/Ranks all render into this one shared side-menu panel, toggled via style.display
@@ -9713,6 +9751,18 @@ function pauseTutorialForModal(step) {
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
+  // tut-bubble's own CSS sets pointer-events:none, but both of its buttons declare their own
+  // pointer-events:all inline so they stay tappable while the bubble is genuinely showing (see the
+  // CSS comment on .tut-bubble). Opacity alone doesn't touch pointer-events — fading the bubble out
+  // above does NOT stop this button from still being clickable at its last on-screen position,
+  // wherever that happened to be pointing. With a modal now open underneath (Merchant, loot,
+  // level-up, boss-choice), that invisible-but-live hit target can sit directly over the modal's
+  // own buttons (e.g. "Leave Shop") and silently eat every tap aimed at them — the only way out
+  // being to accidentally land squarely on THIS button and skip the whole tutorial. Hiding it
+  // (display:none, not just invisible) removes it from hit-testing entirely for as long as the
+  // tutorial stays paused; renderTutStep() brings it back once a step is genuinely on screen again.
+  const skipAllBtn = document.getElementById('tut-skip-all');
+  if(skipAllBtn) skipAllBtn.classList.add('hidden');
   if(_tutCurrentHandler) {
     _tutCurrentHandler.el.removeEventListener('click', _tutCurrentHandler.handler);
     _tutCurrentHandler.el.removeEventListener('touchend', _tutCurrentHandler.handler);
@@ -9780,7 +9830,16 @@ function showTutStep(step) {
   // Opens the side menu first so the spotlight lands on the real button, and waits for its CSS transition to finish before measuring position.
   if(s.slotId === 'loadout-btn' && typeof openMenu === 'function') {
     openMenu();
-    setTimeout(() => renderTutStep(step, s), 260);
+    setTimeout(() => {
+      // The isTutorialBlocked() check above only covers the instant showTutStep() was called —
+      // nothing re-checks it across this 260ms wait for the side-menu's own CSS transition. A
+      // path-complete Merchant (or any other blocking modal) opening during that window used to
+      // render the Loadout spotlight/bubble straight over it regardless, since renderTutStep() here
+      // ran unconditionally. Re-checking fresh right before actually rendering closes that gap —
+      // and closes the side menu we just opened for nothing, so it doesn't linger behind the modal.
+      if(isTutorialBlocked()) { closeMenu(); pauseTutorialForModal(step); return; }
+      renderTutStep(step, s);
+    }, 260);
     return;
   }
 
@@ -9810,6 +9869,12 @@ function renderTutStep(step, s) {
     const node = document.getElementById(id);
     if(node) node.style.opacity = '1';
   });
+  // Re-enable the whole-tutorial skip button now that a step is genuinely back on screen —
+  // pauseTutorialForModal()/advanceTutStep()/endTutorial() hide it (display:none) whenever the
+  // bubble itself is faded, since its pointer-events:all would otherwise stay clickable at its
+  // last position and can silently swallow taps meant for whatever's now underneath.
+  const skipAllBtn = document.getElementById('tut-skip-all');
+  if(skipAllBtn) skipAllBtn.classList.remove('hidden');
 
   // Spotlight
   const spotlight = document.getElementById('tut-spotlight');
@@ -9963,6 +10028,11 @@ function advanceTutStep(el, s, showConfirm) {
     const node = document.getElementById(id);
     if(node) node.style.opacity = '0';
   });
+  // See the matching comment in pauseTutorialForModal() — this button's pointer-events:all keeps
+  // it clickable at its last screen position even while invisible, so it needs to be actually
+  // hidden (not just faded) for the gap before the next step renders.
+  const skipAllBtn = document.getElementById('tut-skip-all');
+  if(skipAllBtn) skipAllBtn.classList.add('hidden');
   if(_tutCurrentHandler && _tutCurrentHandler.el === el) {
     el.removeEventListener('click', _tutCurrentHandler.handler);
     el.removeEventListener('touchend', _tutCurrentHandler.handler);
@@ -10084,8 +10154,8 @@ function renderTrinityModal() {
     return `<div onclick="trinityData._activeLane='${lane.id}';renderTrinityModal();" style="cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid ${lane.color}44;border-radius:14px;padding:18px 16px;transition:all 0.2s;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='${lane.color}99'" onmouseout="this.style.borderColor='${lane.color}44'">
       <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,${lane.color},transparent);opacity:0.5;"></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-        <div style="font-family:'Jim Nightshade',cursive;font-size:20px;color:${lane.color};letter-spacing:0.08em;">${lane.name}</div>
-        <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:${canAfford?lane.color:'rgba(255,255,255,0.3)'};">${canAfford?'Ready':'Rank '+( next?next.cost:'-')}</div>
+        <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:20px;color:${lane.color};letter-spacing:0.02em;">${lane.name}</div>
+        <div style="font-family:'Lato',sans-serif;font-size:11px;color:${canAfford?lane.color:'rgba(255,255,255,0.3)'};">${canAfford?'Ready':'Rank '+( next?next.cost:'-')}</div>
       </div>
       <div style="font-family:'Lato',sans-serif;font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:10px;line-height:1.4;">${lane.desc}</div>
       <div style="height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="height:100%;background:${lane.color};width:${Math.round(done/laneNodes.length*100)}%;"></div></div>
@@ -10098,17 +10168,17 @@ function renderTrinityModal() {
   inner.innerHTML = `<div style="padding:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <div>
-        <div style="font-family:'Jim Nightshade',cursive;font-size:22px;color:rgba(220,180,60,0.95);letter-spacing:0.08em;">Trinity Force</div>
+        <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:20px;color:rgba(220,180,60,0.95);letter-spacing:0.02em;">Trinity Force</div>
         <div style="font-family:'Lato',sans-serif;font-size:11px;color:rgba(255,255,255,0.4);">Permanent upgrades · 3 Power Lanes</div>
       </div>
-      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:rgba(255,255,255,0.5);padding:6px 12px;cursor:pointer;font-family:'Jim Nightshade',cursive;font-size:14px;">×</button>
+      <button onclick="closeTrinityShop()" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:rgba(255,255,255,0.5);padding:6px 12px;cursor:pointer;font-family:'Lato',sans-serif;font-size:14px;">×</button>
     </div>
     <div style="background:rgba(200,155,60,0.1);border:1px solid rgba(200,155,60,0.25);border-radius:10px;padding:12px;margin-bottom:18px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div><div style="font-family:'Lato',sans-serif;font-size:9px;color:rgba(255,255,255,0.45);text-transform:uppercase;font-weight:700;letter-spacing:0.1em;">Trinity Rank</div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:28px;color:rgba(220,180,60,0.95);line-height:1;">${rank}</div></div>
+          <div style="font-family:'Lato',sans-serif;font-size:28px;color:rgba(220,180,60,0.95);line-height:1;">${rank}</div></div>
         <div style="text-align:right;"><div style="font-family:'Lato',sans-serif;font-size:9px;color:rgba(255,255,255,0.45);text-transform:uppercase;font-weight:700;letter-spacing:0.1em;">XP to Next</div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:rgba(220,180,60,0.8);">${numberWithCommas(TRINITY_RANK_XP_PER_LEVEL-rankXP)}</div></div>
+          <div style="font-family:'Lato',sans-serif;font-size:16px;color:rgba(220,180,60,0.8);">${numberWithCommas(TRINITY_RANK_XP_PER_LEVEL-rankXP)}</div></div>
       </div>
       <div style="height:6px;background:rgba(0,0,0,0.3);border-radius:3px;overflow:hidden;">
         <div style="height:100%;background:linear-gradient(90deg,#a07808,#e8b020,#ffe84d);border-radius:3px;width:${pct}%;"></div>
@@ -10117,10 +10187,10 @@ function renderTrinityModal() {
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">${laneCards}</div>
     <div style="display:flex;gap:10px;margin-top:10px;">
-      <div onclick="trinityData._activePanel='mutations';renderTrinityModal();" style="flex:1;cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid rgba(200,155,60,0.3);border-radius:12px;padding:12px 14px;text-align:center;font-family:'Jim Nightshade',cursive;font-size:14px;color:var(--gold);">
+      <div onclick="trinityData._activePanel='mutations';renderTrinityModal();" style="flex:1;cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid rgba(200,155,60,0.3);border-radius:12px;padding:12px 14px;text-align:center;font-family:'Lato',sans-serif;font-size:14px;color:var(--gold);">
         Mutations ${td.mutations.length > 0 ? `(${td.mutations.length})` : ''}
       </div>
-      <div onclick="trinityData._activePanel='ascension';renderTrinityModal();" style="flex:1;cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid rgba(200,48,42,0.3);border-radius:12px;padding:12px 14px;text-align:center;font-family:'Jim Nightshade',cursive;font-size:14px;color:#ff4444;">
+      <div onclick="trinityData._activePanel='ascension';renderTrinityModal();" style="flex:1;cursor:pointer;background:rgba(20,12,4,0.6);border:1.5px solid rgba(200,48,42,0.3);border-radius:12px;padding:12px 14px;text-align:center;font-family:'Lato',sans-serif;font-size:14px;color:#ff4444;">
         Ascension ${td.ascensionCount > 0 ? `(#${td.ascensionCount+1})` : ''}
       </div>
     </div>
@@ -10132,8 +10202,8 @@ function renderTrinityPanelChrome(title, contentHtml) {
   if(!inner) return;
   inner.innerHTML = `<div style="padding:20px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-      <button onclick="trinityData._activePanel=null;renderTrinityModal();" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:rgba(255,255,255,0.6);padding:6px 12px;cursor:pointer;font-family:'Jim Nightshade',cursive;font-size:13px;">← Back</button>
-      <div style="font-family:'Jim Nightshade',cursive;font-size:18px;color:rgba(220,180,60,0.95);letter-spacing:0.06em;">${title}</div>
+      <button onclick="trinityData._activePanel=null;renderTrinityModal();" style="background:transparent;border:1px solid rgba(200,155,60,0.25);border-radius:6px;color:rgba(255,255,255,0.6);padding:6px 12px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px;">← Back</button>
+      <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:18px;color:rgba(220,180,60,0.95);letter-spacing:0.02em;">${title}</div>
     </div>
     ${contentHtml}
   </div>`;
@@ -10165,17 +10235,17 @@ function renderTrinityLane(laneId) {
 
     return `<div style="opacity:${opacity}">
       <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:14px 16px;position:relative;${unlocked?'box-shadow:0 0 10px '+lane.color+'22;':''}">
-        ${unlocked?`<div style="position:absolute;top:8px;right:12px;font-family:'Jim Nightshade',cursive;font-size:10px;color:${lane.color};letter-spacing:0.06em;">Unlocked</div>`:''}
+        ${unlocked?`<div style="position:absolute;top:8px;right:12px;font-family:'Lato',sans-serif;font-size:10px;color:${lane.color};letter-spacing:0.06em;">Unlocked</div>`:''}
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;background:${unlocked?lane.color+'22':'rgba(255,255,255,0.04)'};border:1.5px solid ${unlocked?lane.color:'rgba(255,255,255,0.12)'};display:flex;align-items:center;justify-content:center;font-family:'Jim Nightshade',cursive;font-size:13px;color:${unlocked?lane.color:'rgba(255,255,255,0.25)'};">${idx+1}</div>
+          <div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;background:${unlocked?lane.color+'22':'rgba(255,255,255,0.04)'};border:1.5px solid ${unlocked?lane.color:'rgba(255,255,255,0.12)'};display:flex;align-items:center;justify-content:center;font-family:'Lato',sans-serif;font-size:13px;color:${unlocked?lane.color:'rgba(255,255,255,0.25)'};">${idx+1}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-family:'Jim Nightshade',cursive;font-size:16px;color:${unlocked?lane.color:'rgba(255,255,255,0.9)'};margin-bottom:4px;">${node.name}</div>
+            <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:15px;color:${unlocked?lane.color:'rgba(255,255,255,0.9)'};margin-bottom:4px;">${node.name}</div>
             <div style="font-family:'Lato',sans-serif;font-size:12px;color:rgba(255,255,255,0.6);line-height:1.4;">${node.desc}</div>
           </div>
         </div>
         ${!unlocked && prevDone ? `<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <div style="font-family:'Lato',sans-serif;font-size:11px;color:${rank>=node.cost?'rgba(220,180,60,0.9)':'rgba(255,255,255,0.4)'};">Cost: <span style="font-family:'Jim Nightshade',cursive;font-size:14px;">${node.cost} Rank</span>${rank<node.cost?' · Need '+(node.cost-rank)+' more':''}</div>
-          ${rank>=node.cost?`<button onclick="unlockTrinityNode('${node.id}')" style="font-family:'Jim Nightshade',cursive;font-size:13px;padding:0;border:none;cursor:pointer;background:url('${BASE_BTN}') center/100% 100% no-repeat;color:#fff;min-height:42px;min-width:90px;text-shadow:0 1px 3px rgba(0,0,0,0.6);transition:filter 0.15s;">Unlock</button>`:''}
+          <div style="font-family:'Lato',sans-serif;font-size:11px;color:${rank>=node.cost?'rgba(220,180,60,0.9)':'rgba(255,255,255,0.4)'};">Cost: <span style="font-family:'Lato',sans-serif;font-size:14px;">${node.cost} Rank</span>${rank<node.cost?' · Need '+(node.cost-rank)+' more':''}</div>
+          ${rank>=node.cost?`<button onclick="unlockTrinityNode('${node.id}')" style="font-family:'Lato',sans-serif;font-size:13px;padding:0;border:none;cursor:pointer;background:url('${BASE_BTN}') center/100% 100% no-repeat;color:#fff;min-height:42px;min-width:90px;text-shadow:0 1px 3px rgba(0,0,0,0.6);transition:filter 0.15s;">Unlock</button>`:''}
         </div>`:''}
         ${locked?`<div style="margin-top:8px;font-family:'Lato',sans-serif;font-size:11px;color:rgba(255,255,255,0.25);">Unlock the previous node first</div>`:''}
       </div>${connector}
@@ -10185,7 +10255,7 @@ function renderTrinityLane(laneId) {
   inner.innerHTML = `<div style="padding:20px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
       <button onclick="trinityData._activeLane=null;renderTrinityModal();" style="background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:rgba(255,255,255,0.5);padding:5px 10px;cursor:pointer;font-size:13px;">← Back</button>
-      <div style="font-family:'Jim Nightshade',cursive;font-size:22px;color:${lane.color};letter-spacing:0.08em;">${lane.name}</div>
+      <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:20px;color:${lane.color};letter-spacing:0.02em;">${lane.name}</div>
     </div>
     <div style="font-family:'Lato',sans-serif;font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:18px;">${lane.desc}</div>
     <div style="display:flex;flex-direction:column;gap:0;">${nodeHTML}</div>
@@ -10235,7 +10305,7 @@ function renderTrinityAscension(align) {
 
   return `
     <div style="background:rgba(245,225,175,0.92);border:1px solid rgba(200,48,42,0.25);border-radius:10px;padding:12px;margin-bottom:12px;">
-      <div style="font-family:'Jim Nightshade',cursive;font-size:12px;color:#ff4444;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">
+      <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:12px;color:#ff4444;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;">
          Ascension ${td.ascensionCount > 0 ? `(#${td.ascensionCount+1})` : ''}
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Reset Trinity Rank to 0 and all nodes/mutations for a permanent stat boost this season. Higher rank = bigger boost.</div>
@@ -10243,11 +10313,11 @@ function renderTrinityAscension(align) {
         ${boosts.map(b => `
           <div style="background:rgba(245,225,175,0.7);border:1px solid rgba(200,48,42,0.2);border-radius:6px;padding:6px 8px;font-size:11px;color:var(--text);">
             <span style="color:var(--muted);">${b.stat}</span>
-            <span style="color:#3acc7a;font-family:'Jim Nightshade',cursive;float:right;">+${b.amount}</span>
+            <span style="color:#3acc7a;font-family:'Lato',sans-serif;font-weight:700;float:right;">+${b.amount}</span>
           </div>`).join('')}
       </div>
       <div style="font-size:10px;color:#ff4444;margin-bottom:8px;">Rank resets to 0. All nodes and mutations lost. Stat boosts are permanent for this season.</div>
-      <button onclick="triggerAscension()" style="width:100%;font-family:'Jim Nightshade',cursive;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #ff2266;background:rgba(255,34,102,0.08);color:#ff4444;cursor:pointer;">
+      <button onclick="triggerAscension()" style="width:100%;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;padding:10px;border-radius:8px;border:1px solid #ff2266;background:rgba(255,34,102,0.08);color:#ff4444;cursor:pointer;">
          Ascend (Rank ${rank} → 0)
       </button>
     </div>`;
@@ -10317,7 +10387,7 @@ function renderTrinityMutations() {
   if(rank < 10) return `<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px;">Mutations unlock at Trinity Rank 10, 20, 30...</div>`;
 
   const available = rank >= nextMutationRank && td.mutations.length < Math.floor(rank/10);
-  let html = `<div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;"> Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
+  let html = `<div style="font-family:'Lato',sans-serif;font-weight:700;font-size:11px;color:var(--gold);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;"> Mutations ${td.mutations.length > 0 ? `(${td.mutations.length} active)` : ''}</div>`;
 
   if(td.mutations.length > 0) {
     html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
@@ -10337,7 +10407,7 @@ function renderTrinityMutations() {
         onmouseover="this.style.background='rgba(200,155,60,0.06)'" onmouseout="this.style.background='rgba(245,225,175,0.92)'">
         <span style="font-size:16px;">${m.icon}</span>
         <div>
-          <div style="font-family:'Jim Nightshade',cursive;font-size:11px;color:var(--gold);">${m.name}</div>
+          <div style="font-family:'Lato',sans-serif;font-weight:700;font-size:11px;color:var(--gold);">${m.name}</div>
           <div style="font-size:10px;color:var(--muted);">${m.desc}</div>
         </div>
       </div>`;
