@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.27.0 -->
+<!-- v3.28.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.27.0';
+const GAME_VERSION = '3.28.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -9673,6 +9673,32 @@ function isTutStepAlreadySatisfied(s) {
   return false;
 }
 
+// Real device browsers throttle plain setInterval far more aggressively than
+// requestAnimationFrame — especially while the user is actively touching the screen, which is
+// exactly when a tutorial poll needs to notice a state change (AUTO just got toggled, an enemy
+// just died). A throttled interval here can leave a tutorial hint visibly stuck long after the
+// state it describes has moved on — "Tap the Attack button now" still showing well after AUTO was
+// already on, or "Tap Heal" still showing after the wave-clear screen opened. masterTick's own
+// combat loop rides requestAnimationFrame and has never been reported as sluggish on a real
+// device, so give these tutorial polls the same clock instead of a separate timer that can lag
+// behind it. Behaves like setInterval/clearInterval (assign the return value, call tutPollStop on
+// it to cancel) but ticks off rAF with its own elapsed-time gate instead of the browser's timer queue.
+function tutPollStart(ms, fn) {
+  const handle = { stopped: false };
+  let last = 0;
+  function loop() {
+    if (handle.stopped) return;
+    const now = Date.now();
+    if (!last || now - last >= ms) { last = now; fn(); }
+    if (!handle.stopped) requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  return handle;
+}
+function tutPollStop(handle) {
+  if (handle) handle.stopped = true;
+}
+
 let _tutBlockPoll = null;
 
 // Pauses the tutorial while another full-screen UI covers the ability bar, and re-renders the step fresh once it clears.
@@ -9682,7 +9708,7 @@ function pauseTutorialForModal(step) {
     if(node) node.style.opacity = '0';
   });
   clearTimeout(_tutSkipStepTimer);
-  clearInterval(_tutStateWatcher);
+  tutPollStop(_tutStateWatcher);
   document.removeEventListener('click', _tutGlobalTapCheck, true);
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   const skipBtn = document.getElementById('tut-skip-step');
@@ -9692,15 +9718,15 @@ function pauseTutorialForModal(step) {
     _tutCurrentHandler.el.removeEventListener('touchend', _tutCurrentHandler.handler);
     _tutCurrentHandler = null;
   }
-  clearInterval(_tutBlockPoll);
-  _tutBlockPoll = setInterval(() => {
-    if(!tutActive) { clearInterval(_tutBlockPoll); _tutBlockPoll = null; return; }
+  tutPollStop(_tutBlockPoll);
+  _tutBlockPoll = tutPollStart(400, () => {
+    if(!tutActive) { tutPollStop(_tutBlockPoll); _tutBlockPoll = null; return; }
     if(!isTutorialBlocked()) {
-      clearInterval(_tutBlockPoll);
+      tutPollStop(_tutBlockPoll);
       _tutBlockPoll = null;
       showTutStep(step);
     }
-  }, 400);
+  });
 }
 
 let _tutMinWavePoll = null;
@@ -9712,18 +9738,23 @@ function showTutStep(step) {
   // Holds a step until its wave/combat condition is met; skipped if the player already satisfied it on their own.
   if ((s.minSegWave || s.waitForCombat) && !isTutStepAlreadySatisfied(s)) {
     const waveReady = !s.minSegWave || (MAP.currentSegWave||0) >= s.minSegWave;
-    const combatReady = G.combatActive && G.enemy;
+    // Also requires no blocking overlay (wave-choice screen, vendor, item drop, etc.) even when
+    // combat technically looks "active" — a step like Heal shouldn't render its hint on the
+    // between-wave clear screen just because G.combatActive/G.enemy haven't been reset yet at the
+    // exact instant this runs. isTutorialBlocked() itself is what pauseTutorialForModal() also
+    // uses, so this keeps the same definition of "safe to show" for every gate in the tutorial.
+    const combatReady = G.combatActive && G.enemy && !isTutorialBlocked();
     if (!waveReady || !combatReady) {
-      clearInterval(_tutMinWavePoll);
-      _tutMinWavePoll = setInterval(() => {
-        if(!tutActive) { clearInterval(_tutMinWavePoll); _tutMinWavePoll = null; return; }
+      tutPollStop(_tutMinWavePoll);
+      _tutMinWavePoll = tutPollStart(400, () => {
+        if(!tutActive) { tutPollStop(_tutMinWavePoll); _tutMinWavePoll = null; return; }
         const waveReadyNow = !s.minSegWave || (MAP.currentSegWave||0) >= s.minSegWave;
-        if(waveReadyNow && G.combatActive && G.enemy) {
-          clearInterval(_tutMinWavePoll);
+        if(waveReadyNow && G.combatActive && G.enemy && !isTutorialBlocked()) {
+          tutPollStop(_tutMinWavePoll);
           _tutMinWavePoll = null;
           showTutStep(step);
         }
-      }, 400);
+      });
       return;
     }
   }
@@ -9861,7 +9892,7 @@ function renderTutStep(step, s) {
     if (finished) return;
     if (isTutStepAlreadySatisfied(s)) {
       finished = true;
-      clearInterval(_tutStateWatcher);
+      tutPollStop(_tutStateWatcher);
       document.removeEventListener('click', _tutGlobalTapCheck, true);
       document.removeEventListener('touchend', _tutGlobalTapCheck, true);
       advanceTutStep(el, s, true);
@@ -9882,9 +9913,9 @@ function renderTutStep(step, s) {
   _tutCurrentHandler = { el, handler };
 
   // Also watches game state directly (not just clicks on the target) and pauses if another full-screen UI pops up mid-step.
-  clearInterval(_tutStateWatcher);
-  _tutStateWatcher = setInterval(() => {
-    if (finished) { clearInterval(_tutStateWatcher); return; }
+  tutPollStop(_tutStateWatcher);
+  _tutStateWatcher = tutPollStart(400, () => {
+    if (finished) { tutPollStop(_tutStateWatcher); return; }
     // Checks satisfaction before blocked-status, since the same tap can both satisfy a step and open a blocking modal.
     tryAdvance();
     if (finished) return;
@@ -9898,10 +9929,10 @@ function renderTutStep(step, s) {
     const combatLost = s.waitForCombat && !(G.combatActive && G.enemy);
     if (isTutorialBlocked() || combatLost) {
       finished = true;
-      clearInterval(_tutStateWatcher);
+      tutPollStop(_tutStateWatcher);
       pauseTutorialForModal(step);
     }
-  }, 400);
+  });
 
   // Third safety net: a capture-phase document listener catches the action succeeding even if the tap never reached the target's own listeners.
   document.removeEventListener('click', _tutGlobalTapCheck, true);
@@ -9922,7 +9953,7 @@ function advanceTutStep(el, s, showConfirm) {
   el.style.boxShadow = '';
   el.style.zIndex = '';
   clearTimeout(_tutSkipStepTimer);
-  clearInterval(_tutStateWatcher);
+  tutPollStop(_tutStateWatcher);
   document.removeEventListener('click', _tutGlobalTapCheck, true);
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
   const skipBtn = document.getElementById('tut-skip-step');
@@ -9984,12 +10015,12 @@ function endTutorial() {
   document.getElementById('ability-tutorial').classList.add('hidden');
   document.getElementById('ability-tutorial').classList.remove('active');
   clearTimeout(_tutSkipStepTimer);
-  clearInterval(_tutStateWatcher);
+  tutPollStop(_tutStateWatcher);
   document.removeEventListener('click', _tutGlobalTapCheck, true);
   document.removeEventListener('touchend', _tutGlobalTapCheck, true);
-  clearInterval(_tutBlockPoll);
+  tutPollStop(_tutBlockPoll);
   _tutBlockPoll = null;
-  clearInterval(_tutMinWavePoll);
+  tutPollStop(_tutMinWavePoll);
   _tutMinWavePoll = null;
   const skipBtn = document.getElementById('tut-skip-step');
   if(skipBtn) skipBtn.classList.add('hidden');
