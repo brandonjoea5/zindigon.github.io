@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.26.0 -->
+<!-- v3.27.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.26.0';
+const GAME_VERSION = '3.27.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -5011,18 +5011,28 @@ function restoreAutoSlots() {
   // G.autoSlots with a fresh {} — wiping out any slot that was already set earlier in this very
   // loop, even though that slot's own restore succeeded at the time. Whichever slot triggers
   // that reset ends up the only one still on afterward (its assignment runs after the reentrant
-  // clear), while everything restored before it silently vanishes — exactly the "some AUTO
-  // slots survived, others didn't" pattern this is meant to close.
-  if(G.combatActive && G.enemy && G.enemy.hp > 0) {
-    slots.forEach(slotIdx => {
-      if(G.autoSlots[slotIdx]) return;
-      const abId = G.loadout[slotIdx];
-      if(!abId || !isSlotUnlocked(slotIdx)) return;
-      G.autoSlots[slotIdx] = 'master';
-      _tick.slots[slotIdx] = 0;
-    });
-    if(healWanted) restoreHealAuto();
-  }
+  // clear), while everything restored before it silently vanishes.
+  //
+  // This used to only run when combat was STILL active, on the assumption that a mid-loop
+  // reentrant clear only mattered if the fight kept going. That missed the far more common case:
+  // TWO offensive slots both fire during this same restore (e.g. a strong post-path character
+  // meeting a fresh early wave) — the first slot's hit doesn't finish the enemy and sets its own
+  // 'master' flag, then the second slot's hit DOES finish it, reentrantly clearing G.autoSlots
+  // (wiping the first slot's flag, which nothing re-adds since the loop already moved past it)
+  // before setting only its own flag back. Combat is over by then, so the old guard skipped
+  // reconciling entirely — permanently dropping the first slot from every future restore too
+  // (its own onEnemyDeath() snapshot, taken after this function returns, only sees whatever
+  // survived here). Setting G.autoSlots[slotIdx]='master' is just a flag either way — masterTick's
+  // own per-tick loop already re-checks G.combatActive && G.enemy before ever using it — so
+  // reasserting every originally-intended slot here is safe whether or not combat is still live.
+  slots.forEach(slotIdx => {
+    if(G.autoSlots[slotIdx]) return;
+    const abId = G.loadout[slotIdx];
+    if(!abId || !isSlotUnlocked(slotIdx)) return;
+    G.autoSlots[slotIdx] = 'master';
+    _tick.slots[slotIdx] = 0;
+  });
+  if(healWanted) restoreHealAuto();
   G.savedAutoSlots = null;
   G.healWasAuto = false;
   updateLoadoutUI();
@@ -5625,6 +5635,16 @@ function refreshAutoAttackSpeeds() {} // stub — auto speeds handled by activat
 
 function enemyAttack() {
   if (!G.enemy || !G.combatActive || G.hp<=0 || G._deathInProgress) return;
+  // masterTick() only reads isTutorialBlocked() once, at the very top of the tick, into its
+  // combatPaused const — everything below that point in the same tick (mana regen, the status/DOT
+  // tick, the stalemate watchdog) runs before this function is ever reached. Any of those could in
+  // principle synchronously trigger something that opens a blocking modal (e.g. a DOT tick killing
+  // the enemy and cascading into a UI popup) within that same tick, after combatPaused was already
+  // read as false. Re-checking fresh here, immediately before the only line in the game that
+  // reduces player HP, closes that gap instead of trusting a value that could be one step stale —
+  // exactly the "check the paused/modal state again immediately before applying damage" fix a
+  // level-up-modal hit-slip-through report asked for.
+  if (isTutorialBlocked()) return;
   if (G.enemy.frozenUntil && Date.now() < G.enemy.frozenUntil) {
     setTimeout(() => { if(G.combatActive && G.enemy) enemyAttack(); }, 800);
     return;
