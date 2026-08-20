@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stackforge — Prototype</title>
+<title>Stackforge — Prototype v0.0.4</title>
 <style>
   :root{
     --bg:#0f1115;
@@ -17,6 +17,7 @@
     --good:#5fd68e;
     --bad:#ff6b6b;
     --gold:#e0b34c;
+    --teal:#5fd6c8;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
@@ -30,14 +31,14 @@
   }
   header h1{font-size:17px;margin:0;letter-spacing:.5px;font-weight:600;}
   header h1 span{color:var(--accent);}
-  .badge{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 8px;border-radius:20px;}
+  .verbadge{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 8px;border-radius:20px;}
   #restartBtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;}
   #restartBtn:hover{border-color:var(--accent);}
 
   /* ---------- main layout ---------- */
   #main{flex:1;display:flex;overflow:hidden;}
   #boardCol{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px 14px;gap:8px;}
-  #sideCol{width:290px;flex-shrink:0;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;overflow:hidden;}
+  #sideCol{width:300px;flex-shrink:0;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;overflow:hidden;}
 
   .zone{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
   .zoneLabel{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
@@ -49,9 +50,10 @@
   .hpbar-inner{height:100%;background:linear-gradient(90deg,var(--good),#3fae70);transition:width .3s;}
   .hpbar-inner.low{background:linear-gradient(90deg,var(--bad),#c94747);}
   .hp-num{font-size:12px;color:var(--dim);margin-top:3px;}
-  .mana-pips{display:flex;gap:4px;}
+  .mana-pips{display:flex;gap:4px;flex-wrap:wrap;max-width:120px;}
   .pip{width:14px;height:14px;border-radius:3px;background:#2a2f3a;border:1px solid var(--line);}
   .pip.on{background:var(--accent);border-color:var(--accent);}
+  .pip.bucket{background:var(--teal);border-color:var(--teal);}
   .name-row{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
   .turn-dot{width:8px;height:8px;border-radius:50%;background:var(--line);}
   .turn-dot.active{background:var(--gold);box-shadow:0 0 8px var(--gold);}
@@ -59,16 +61,18 @@
   /* ---------- boards ---------- */
   #enemyBoard, #playerBoard{display:flex;gap:10px;justify-content:center;padding:6px 0;}
   .stack{
-    width:96px;min-height:150px;border:1px dashed #333849;border-radius:10px;
+    width:104px;min-height:158px;border:1px dashed #333849;border-radius:10px;
     display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
     padding:4px;gap:3px;position:relative;transition:border-color .15s, background .15s;
   }
   .stack.dropTarget{border-color:var(--accent);background:rgba(124,158,255,.08);cursor:pointer;}
   .stack.atkTarget{border-color:var(--accent2);background:rgba(255,138,124,.10);cursor:crosshair;}
+  .stack.evoTarget{border-color:var(--gold);background:rgba(224,179,76,.10);cursor:pointer;box-shadow:0 0 10px rgba(224,179,76,.25);}
   .stack .slotIdx{position:absolute;bottom:2px;right:5px;font-size:9px;color:#444a5a;}
+  .stack .statusTag{position:absolute;top:2px;left:4px;font-size:9px;color:var(--dim);}
 
   .card{
-    width:88px;border-radius:8px;padding:5px 6px 6px;font-size:11px;position:relative;
+    width:96px;border-radius:8px;padding:5px 6px 6px;font-size:11px;position:relative;
     border:1px solid var(--line);background:linear-gradient(160deg,#232838,#1b1e27);
     box-shadow:0 2px 4px rgba(0,0,0,.4);
   }
@@ -79,6 +83,7 @@
   .card.exposed{border-color:#4a5270;box-shadow:0 0 0 1px #4a5270, 0 3px 8px rgba(0,0,0,.5);}
   .card.buried{opacity:.62;transform:scale(.94);margin-top:-14px;}
   .card.buried .cname{font-size:10px;}
+  .card.evolutionCard{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold), 0 3px 8px rgba(0,0,0,.5);}
   .card.sick::after{
     content:"NEW";position:absolute;top:-6px;left:-6px;background:var(--gold);color:#1a1a1a;
     font-size:8px;font-weight:800;padding:1px 4px;border-radius:4px;
@@ -87,8 +92,22 @@
   .card.attackable{cursor:pointer;box-shadow:0 0 0 2px var(--accent);}
   .card.targetable{cursor:crosshair;box-shadow:0 0 0 2px var(--accent2);}
   .card.selectedAttacker{box-shadow:0 0 0 2px var(--gold);}
+  .card.activatable{cursor:pointer;box-shadow:0 0 0 2px var(--gold);}
+  .card.activatable::after{
+    content:"⚡";position:absolute;top:-7px;right:-7px;background:var(--gold);color:#1a1a1a;
+    font-size:9px;font-weight:800;padding:1px 4px;border-radius:50%;
+  }
+  .card.shieldTarget{cursor:pointer;box-shadow:0 0 0 2px var(--teal);}
+  .cbadges{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;}
+  .cbadge{font-size:9px;background:#2a2f3a;border-radius:4px;padding:1px 3px;color:var(--text);}
 
   .empty-slot-hint{color:#3d4254;font-size:10px;text-align:center;margin-top:auto;margin-bottom:auto;}
+
+  /* mode banner (evolution placement / shield choice / ability targeting prompts) */
+  #modeBanner{
+    display:none;text-align:center;font-size:12px;color:#1a1a1a;background:var(--gold);
+    border-radius:8px;padding:7px 10px;font-weight:700;
+  }
 
   /* midline */
   #midline{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0;}
@@ -102,10 +121,10 @@
   #cancelAtkBtn.show{display:inline-block;}
 
   /* ---------- hand ---------- */
-  #handZone{min-height:150px;}
-  #hand{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;min-height:126px;}
+  #handZone{min-height:158px;}
+  #hand{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;min-height:134px;}
   .handcard{
-    width:98px;flex-shrink:0;border-radius:9px;padding:7px 8px;cursor:pointer;
+    width:106px;flex-shrink:0;border-radius:9px;padding:7px 8px;cursor:pointer;
     border:1px solid var(--line);background:linear-gradient(160deg,#242a3c,#1a1d26);
     transition:transform .12s, box-shadow .12s;position:relative;
   }
@@ -119,11 +138,20 @@
   }
   .handcard .cname{font-weight:700;font-size:12px;margin:4px 0 6px;}
   .handcard .stats{display:flex;justify-content:space-between;font-size:12px;}
+  .handcard .blurb{font-size:9px;color:var(--dim);margin-top:5px;line-height:1.25;}
 
   /* ---------- side col ---------- */
   #logZone{flex:1;overflow-y:auto;padding:10px 12px;font-size:12px;color:#c7cadb;}
   #logZone div{margin-bottom:6px;line-height:1.4;}
   #logZone .t{color:var(--dim);font-size:10px;margin-right:4px;}
+
+  #evoPoolZone{border-top:1px solid var(--line);padding:10px 12px;font-size:11.5px;}
+  #evoPoolZone .zoneLabel{margin-bottom:8px;}
+  .evoCard{border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:var(--panel2);}
+  .evoCard .evoName{font-weight:700;color:var(--gold);margin-bottom:2px;}
+  .evoCard .evoReq{color:var(--dim);margin-bottom:5px;font-size:10.5px;}
+  .evoCard .evoProgress{color:var(--text);font-size:11px;}
+
   #rulesZone{border-top:1px solid var(--line);padding:10px 12px;font-size:11.5px;color:var(--dim);}
   #rulesZone summary{cursor:pointer;color:var(--text);font-weight:600;margin-bottom:6px;}
   #rulesZone ul{margin:6px 0 0 16px;padding:0;}
@@ -135,6 +163,24 @@
   .actbtn:disabled{opacity:.35;cursor:not-allowed;}
   #endTurnBtn{background:var(--accent);color:#0f1115;border:none;}
   #endTurnBtn:hover{filter:brightness(1.08);}
+
+  #placementPrompt, #deathPicker{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;
+  }
+  #placementPrompt.show, #deathPicker.show{display:flex;}
+  #placementPromptBox, #deathPickerBox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;text-align:center;max-width:360px;}
+  #placementPromptBox h3, #deathPickerBox h3{margin:0 0 6px;font-size:14px;}
+  #placementPromptBox p{margin:0 0 16px;color:var(--dim);font-size:12px;}
+  #placementPromptBox .row{display:flex;gap:10px;}
+  #placementPromptBox button, #deathPickerList button, #deathPickerCancel{
+    padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);
+    cursor:pointer;font-size:12px;font-weight:600;
+  }
+  #placementPromptBox button{flex:1;}
+  #placementPromptBox button:hover, #deathPickerList button:hover, #deathPickerCancel:hover{border-color:var(--accent);}
+  #deathPickerList{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;margin:10px 0;}
+  #deathPickerList button{text-align:left;}
+  #deathPickerEmpty{color:var(--dim);font-size:12px;margin:10px 0;}
 
   /* ---------- RPS + game over overlays ---------- */
   .overlay{position:fixed;inset:0;background:rgba(8,9,12,.88);display:flex;align-items:center;justify-content:center;z-index:100;text-align:center;}
@@ -155,12 +201,14 @@
 <div id="app">
 
   <header>
-    <h1>Stack<span>forge</span> <span class="badge">early prototype</span></h1>
+    <h1>Stack<span>forge</span> <span class="verbadge">v0.0.4</span></h1>
     <button id="restartBtn">Restart Match</button>
   </header>
 
   <div id="main">
     <div id="boardCol">
+
+      <div id="modeBanner"></div>
 
       <!-- Enemy status -->
       <div class="zone">
@@ -209,23 +257,51 @@
 
     <div id="sideCol">
       <div id="logZone"></div>
+      <div id="evoPoolZone">
+        <div class="zoneLabel">Evolution Pool</div>
+        <div id="evoPoolList"></div>
+      </div>
       <div id="rulesZone">
         <details>
           <summary>Quick rules reference</summary>
           <ul>
-            <li>5 Mana every turn (no ramp). 5-card starting hand, draw 1/turn.</li>
-            <li>3 Mana → draw a card, any number of times per turn.</li>
-            <li>5 stacks per side, 3 cards max per stack.</li>
-            <li>Only the top card of a stack is exposed: it can Basic Attack once/turn and can be targeted.</li>
-            <li>Buried cards are protected but (in this vanilla-only prototype) have no Active ability to use yet.</li>
-            <li>New cards can't attack the turn they're played (no retaliation on Basic Attacks).</li>
-            <li>Every played card goes on top of its stack — no current card has the Dig keyword yet, so playing on top and burying whatever was underneath is the only placement.</li>
-            <li>Damage is permanent: a card's Health only ever goes down (or is removed on death) — it never resets or heals on its own.</li>
+            <li>5 Mana every turn (no ramp). 5-card starting hand, draw 1/turn. 3 Mana → draw a card, any number of times per turn.</li>
+            <li>5 stacks per side, 3 cards max per stack. Only the Top card is Exposed (can Basic Attack, can be targeted). Buried cards are protected and can use an Active ability instead.</li>
+            <li>New cards, new Evolutions, and Revived cards can't act the turn they enter play. Basic Attacks cause no retaliation. Card Health damage is permanent.</li>
+            <li>Only cards with the Dig keyword (Goblin King, Grylyn) can be placed beneath another card — everything else always goes on top, burying whatever was there.</li>
+            <li><b>Evolution Pool:</b> lives outside the normal deck. 3 living Goblins on your board auto-consumes them and pulls Goblin King from the pool.</li>
+            <li><b>Shield</b> absorbs damage before Health. <b>DoT</b> ticks at the end of the caster's own turns. <b>Weakened</b> adds +1 per damage instance that reaches Health.</li>
+            <li><b>Revive</b> returns a card to the top of the stack it died in (unless a card says otherwise) and re-triggers its On Reveal. A full stack blocks that specific Revive — no searching for another spot.</li>
+            <li><b>Gain Health</b> raises current AND max Health permanently. <b>Restore</b> only heals up to the existing max.</li>
+            <li><b>Bucket +N</b> grants +N Mana on the very next turn only. <b>Cooldowns</b> block re-use for the stated number of the controller's own turns.</li>
+            <li>A 0-Health card's On Reveal still resolves in full before it dies (e.g. Sacrifice).</li>
             <li>Reduce the enemy Player to 0 Health to win.</li>
           </ul>
         </details>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Evolution / Dig placement prompt -->
+<div id="placementPrompt">
+  <div id="placementPromptBox">
+    <h3>Place Card</h3>
+    <p id="placementPromptText"></p>
+    <div class="row">
+      <button id="placeTopBtn">Play on Top</button>
+      <button id="placeDigBtn">Dig (place underneath)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Necromancer's dead-card picker -->
+<div id="deathPicker">
+  <div id="deathPickerBox">
+    <h3>Choose a card to Revive</h3>
+    <div id="deathPickerEmpty" style="display:none;">No cards have died yet.</div>
+    <div id="deathPickerList"></div>
+    <button id="deathPickerCancel">Cancel</button>
   </div>
 </div>
 
@@ -256,24 +332,76 @@
 (function(){
 "use strict";
 
+const GAME_VERSION = '0.0.4';
+
 /* ============================================================
-   CARD DEFINITIONS  (Section 56-69: vanilla set, no abilities)
+   CARD DEFINITIONS
    ============================================================ */
+
+// Drawable cards — live in the normal deck.
 const CARD_DEFS = [
-  {id:'fairy',      name:'Fairy',      cost:1, dmg:2,  hp:1},
-  {id:'beetle',     name:'Beetle',     cost:1, dmg:0,  hp:2},
-  {id:'goblin',     name:'Goblin',     cost:2, dmg:1,  hp:3},
-  {id:'gnome',      name:'Gnome',      cost:2, dmg:3,  hp:1},
-  {id:'wolf',       name:'Wolf',       cost:3, dmg:4,  hp:3},
-  {id:'bats',       name:'Bats',       cost:3, dmg:6,  hp:1},
-  {id:'troll',      name:'Troll',      cost:4, dmg:4,  hp:5},
-  {id:'leprechaun', name:'Leprechaun', cost:4, dmg:0,  hp:9},
-  {id:'giant',      name:'Giant',      cost:5, dmg:5,  hp:7},
-  {id:'elf',        name:'Elf',        cost:5, dmg:8,  hp:3},
-  {id:'pegasus',    name:'Pegasus',    cost:6, dmg:10, hp:4},
-  {id:'titan',      name:'Titan',      cost:6, dmg:3,  hp:12},
+  {id:'fairy',      name:'Fairy',      cost:1, dmg:2,  hp:1,  blurb:''},
+  {id:'beetle',     name:'Beetle',     cost:1, dmg:0,  hp:2,  blurb:''},
+  {id:'goblin',     name:'Goblin',     cost:2, dmg:1,  hp:3,  blurb:''},
+  {id:'gnome',      name:'Gnome',      cost:2, dmg:3,  hp:1,  blurb:''},
+  {id:'wolf',       name:'Wolf',       cost:3, dmg:4,  hp:3,  blurb:''},
+  {id:'bats',       name:'Bats',       cost:3, dmg:6,  hp:1,  blurb:''},
+  {id:'troll',      name:'Troll',      cost:4, dmg:4,  hp:5,  blurb:''},
+  {id:'leprechaun', name:'Leprechaun', cost:4, dmg:0,  hp:9,  blurb:''},
+  {id:'giant',      name:'Giant',      cost:5, dmg:5,  hp:7,  blurb:''},
+  {id:'elf',        name:'Elf',        cost:5, dmg:8,  hp:3,  blurb:''},
+  {id:'pegasus',    name:'Pegasus',    cost:6, dmg:10, hp:4,  blurb:''},
+  {id:'titan',      name:'Titan',      cost:6, dmg:3,  hp:12, blurb:''},
+  {id:'parxes',     name:'Parxes',     cost:3, dmg:3,  hp:3,
+    blurb:'On Reveal: Burn all enemy cards for 1 dmg over 2 turns',
+    onReveal:{type:'dotAllEnemyCards', dmg:1, ticks:2}},
+  {id:'podric',     name:'Podric',     cost:3, dmg:1,  hp:5,
+    blurb:'On Reveal: Give one of your Top cards Shield 5',
+    onReveal:{type:'shieldChooseOwnTop', amount:5}},
+  {id:'paxton',     name:'Paxton',     cost:5, dmg:4,  hp:2,
+    blurb:'On Reveal: Revive the last 2 friendly cards that died',
+    onReveal:{type:'reviveLastFriendlyDeaths', count:2}},
+  {id:'mouse',      name:'Mouse',      cost:2, dmg:1,  hp:1,
+    blurb:'On Death: Bucket +1',
+    onDeath:{type:'bucketSelf', amount:1}},
+  {id:'lycander',   name:'Lycander',   cost:4, dmg:4,  hp:4,
+    blurb:'On Kill: Gain +1 Health (permanent)',
+    onKill:{type:'gainHealth', amount:1}},
+  {id:'brand',      name:'Brand',      cost:3, dmg:2,  hp:3,
+    blurb:'On Death: Deal 1 damage to all enemy cards',
+    onDeath:{type:'damageAllEnemyCards', dmg:1}},
+  {id:'minion',     name:'Minion',     cost:1, dmg:1,  hp:1,
+    blurb:'Active (Buried): Weaken an enemy stack for 3 turns',
+    active:{type:'weakenStack', turns:3}},
+  {id:'grylyn',     name:'Grylyn',     cost:2, dmg:0,  hp:1, keyword:'dig',
+    blurb:'Dig • Active (Buried): Restore 2 Health to a target card',
+    active:{type:'restoreHealth', amount:2}},
+  {id:'toxious',    name:'Toxious',    cost:5, dmg:0,  hp:6,
+    blurb:'On Reveal: Infect an enemy stack with a spreading DoT 1',
+    onReveal:{type:'chooseEnemyStackInfect', dmg:1}},
+  {id:'azelia',     name:'Azelia',     cost:4, dmg:2,  hp:3,
+    blurb:'Active (Buried): Cleanse a target — 2-turn cooldown',
+    active:{type:'cleanse', cooldown:2}},
+  {id:'sacrifice',  name:'Sacrifice',  cost:2, dmg:0,  hp:0,
+    blurb:'On Reveal: Chosen friendly stack gains +2 Health, then Sacrifice dies',
+    onReveal:{type:'buffChosenFriendlyStack', amount:2}},
+  {id:'necromancer',name:'Necromancer',cost:4, dmg:3,  hp:2,
+    blurb:'Active (Buried), once/game: Revive any dead card onto a chosen stack',
+    active:{type:'necromancerRevive'}},
 ];
-const COPIES_PER_CARD = 4;   // deck size not finalized in the spec (Sec.76) — placeholder for this prototype
+
+// Evolution cards — live in each player's Evolution Pool, never in the deck or hand.
+const EVOLUTION_DEFS = [
+  {id:'goblinking', name:'Goblin King', type:'evolution', dmg:3, hp:6, keyword:'dig',
+    blurb:'Evolution • Requires 3 Goblins Alive • Dig • Active (Buried): Goblin Assault',
+    evolution:{requiresId:'goblin', requiresCount:3},
+    active:{type:'goblinAssault', hits:2, dmgEach:1}},
+];
+
+const ALL_DEFS = CARD_DEFS.concat(EVOLUTION_DEFS);
+function getDef(id){ return ALL_DEFS.find(d=>d.id===id); }
+
+const COPIES_PER_CARD = 4;   // deck size not finalized in the spec — placeholder for this prototype
 const BASE_MANA = 5;
 const STACK_COUNT = 5;
 const STACK_MAX = 3;
@@ -294,7 +422,6 @@ function buildDeck(){
   CARD_DEFS.forEach(def=>{
     for(let i=0;i<COPIES_PER_CARD;i++) deck.push(def.id);
   });
-  // shuffle
   for(let i=deck.length-1;i>0;i--){
     const j = Math.floor(Math.random()*(i+1));
     [deck[i],deck[j]] = [deck[j],deck[i]];
@@ -302,18 +429,22 @@ function buildDeck(){
   return deck;
 }
 
-function makeCardInstance(defId){
-  const def = CARD_DEFS.find(d=>d.id===defId);
+function makeCardInstance(defId, ownerSide){
+  const def = getDef(defId);
   return {
     uid: nextUid(),
     defId: def.id,
     name: def.name,
-    cost: def.cost,
     dmg: def.dmg,
     maxHp: def.hp,
     hp: def.hp,
-    sick: true,      // can't act the turn it's played
-    attacked: false
+    sick: true,               // can't act the turn it enters play (Evolutions + Revives included)
+    attacked: false,
+    abilityUsedThisTurn: false,
+    cooldownTurnsLeft: 0,
+    shield: 0,
+    dots: [],                 // [{dmg, ticksLeft, casterSide}]
+    ownerSide: ownerSide       // which player's deck this specific card instance originally came from (Stolen tracking)
   };
 }
 
@@ -325,9 +456,12 @@ function newPlayer(name, isAI){
     name, isAI,
     hp: START_HP,
     mana: BASE_MANA,
-    deck: deckIds,          // array of defIds, draw from end
-    hand: hand,              // array of defIds
-    board: Array.from({length:STACK_COUNT}, ()=>[])  // each stack: array of card instances, [0]=top/exposed
+    bucket: 0,
+    necromancerUsed: false,
+    deck: deckIds,
+    hand: hand,
+    board: Array.from({length:STACK_COUNT}, ()=>[]),  // stack[0] = top/exposed
+    evoPool: { goblinking: { available: true } }
   };
 }
 
@@ -335,13 +469,18 @@ function initGame(firstPlayer){
   state = {
     player: newPlayer('You', false),
     enemy: newPlayer('Opponent', true),
-    turn: firstPlayer,        // 'player' | 'enemy'
+    turn: firstPlayer,
     turnNumber: 1,
+    deathLog: [],                // [{defId, name, controllerSide, originalStackIdx, ownerSide}]
     selectedHandIdx: null,
-    selectedAttackerLoc: null,  // {side:'player', stackIdx}
+    selectedAttackerLoc: null,   // {side:'player', stackIdx}
+    pendingAbility: null,        // {kind, side, ...kind-specific fields}
+    pendingEvoPlacement: null,   // {side, instance, chosenStackIdx?}
+    pendingShieldChoice: null,   // {side, amount, defName}
+    pendingHandDigChoice: null,  // {handIdx, stackIdx}
     over: false
   };
-  log(`Match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
+  log(`Stackforge prototype v${GAME_VERSION} — match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
   startTurn(firstPlayer, true);
   render();
 }
@@ -369,18 +508,23 @@ function oppSide(side){ return side==='player' ? 'enemy' : 'player'; }
 
 function startTurn(side, isFirstOfMatch){
   const p = sideObj(side);
-  p.mana = BASE_MANA;
-  // clear sickness / attacked flags for this player's own cards only
+  p.mana = BASE_MANA + (p.bucket || 0);
+  if(p.bucket) log(`${p.name}'s Bucket grants +${p.bucket} Mana this turn.`);
+  p.bucket = 0;
   p.board.forEach(stack=>{
-    stack.forEach(c=>{ c.sick = false; c.attacked = false; });
+    stack.forEach(c=>{
+      c.sick = false;
+      c.attacked = false;
+      c.abilityUsedThisTurn = false;
+      if(c.cooldownTurnsLeft > 0) c.cooldownTurnsLeft--;
+    });
+    if(stack.weakened){
+      stack.weakened.turnsLeft--;
+      if(stack.weakened.turnsLeft <= 0) delete stack.weakened;
+    }
   });
-  if(!isFirstOfMatch){
-    drawCard(side, true);
-  } else {
-    // natural draw still happens even on turn 1 per spec (Sec.7), hand already has 5 starting cards
-    drawCard(side, true);
-  }
-  log(`${p.name}'s turn begins. Mana refreshed to ${BASE_MANA}.`);
+  drawCard(side, true);
+  log(`${p.name}'s turn begins. Mana refreshed to ${p.mana}.`);
   if(side === 'enemy'){
     setTimeout(runAiTurn, 550);
   }
@@ -400,8 +544,13 @@ function drawCard(side, isNatural){
 
 function endTurn(){
   if(state.over) return;
+  if(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice) return; // must resolve first
   clearSelections();
   const finishing = state.turn;
+  processDotTicks(finishing);
+  if(state.over){ render(); return; }
+  processInfections(finishing);
+  if(state.over){ render(); return; }
   if(finishing === 'enemy') state.turnNumber++;
   state.turn = oppSide(finishing);
   startTurn(state.turn, false);
@@ -414,67 +563,619 @@ function endTurn(){
 function canAffordIdx(side, handIdx){
   const p = sideObj(side);
   const defId = p.hand[handIdx];
-  const def = CARD_DEFS.find(d=>d.id===defId);
+  const def = getDef(defId);
   return def && p.mana >= def.cost;
 }
 
-function playCardToStack(side, handIdx, stackIdx){
+// Returns the newly created instance, or null if the play was illegal.
+function playCardToStack(side, handIdx, stackIdx, digUnder){
   const p = sideObj(side);
   const defId = p.hand[handIdx];
-  const def = CARD_DEFS.find(d=>d.id===defId);
+  const def = getDef(defId);
   const stack = p.board[stackIdx];
-  if(!def) return false;
-  if(p.mana < def.cost) return false;
-  if(stack.length >= STACK_MAX) return false;
+  if(!def) return null;
+  if(p.mana < def.cost) return null;
+  if(stack.length >= STACK_MAX) return null;
 
-  const inst = makeCardInstance(defId);
+  const inst = makeCardInstance(defId, side);
   p.mana -= def.cost;
   p.hand.splice(handIdx,1);
 
-  // No card in the current vanilla set has the Dig keyword, so every play goes on top
-  // of the stack (Sec.9-14) — this naturally buries whatever card was already there.
   const buried = stack.length > 0;
-  stack.unshift(inst);
+  if(!digUnder || stack.length === 0){
+    stack.unshift(inst);
+  } else {
+    stack.splice(1,0,inst);
+  }
 
-  log(`${p.name} plays ${def.name} into Stack ${stackIdx+1}${buried ? ' (burying the card beneath it)' : ''}.`);
+  log(`${p.name} plays ${def.name} into Stack ${stackIdx+1}${digUnder && buried ? ' (Dig — buried)' : buried ? ' (burying the card beneath it)' : ''}.`);
+  return inst;
+}
+
+// Wraps playCardToStack with On Reveal resolution + zero-Health death + Evolution checking.
+function playCard(side, handIdx, stackIdx, digUnder){
+  const defId = sideObj(side).hand[handIdx];
+  const def = getDef(defId);
+  const inst = playCardToStack(side, handIdx, stackIdx, digUnder);
+  if(!inst) return false;
+  afterCardEntersPlay(side, inst, def);
+  return true;
+}
+
+// Shared by playCard() and reviveCard(): resolves On Reveal, then (unless the On Reveal
+// deferred to a player choice) processes a 0-Health death, then checks Evolutions.
+function afterCardEntersPlay(side, inst, def){
+  onCardRevealed(side, inst, def);
+  const deferred = !!state.pendingAbility; // this card's own On Reveal is waiting on a player click
+  if(!deferred){
+    if(inst.hp <= 0){
+      const p = sideObj(side);
+      for(let si=0; si<p.board.length; si++){
+        const idx = p.board[si].indexOf(inst);
+        if(idx !== -1){ processCardDeath(side, si, idx); break; }
+      }
+    }
+    checkEvolutions(side);
+  }
+}
+
+/* ============================================================
+   ON REVEAL EFFECTS
+   ============================================================ */
+function onCardRevealed(side, card, def){
+  if(!def.onReveal) return;
+  const p = sideObj(side);
+
+  if(def.onReveal.type === 'dotAllEnemyCards'){
+    const opp = sideObj(oppSide(side));
+    let count = 0;
+    opp.board.forEach(stack=>stack.forEach(c=>{
+      c.dots.push({dmg: def.onReveal.dmg, ticksLeft: def.onReveal.ticks, casterSide: side});
+      count++;
+    }));
+    log(`${p.name}'s ${def.name} burns ${count} enemy card(s) for ${def.onReveal.dmg} damage over ${def.onReveal.ticks} turns.`);
+    return;
+  }
+
+  if(def.onReveal.type === 'shieldChooseOwnTop'){
+    const eligible = [];
+    p.board.forEach((stack, idx)=>{ if(stack.length>0) eligible.push({stackIdx: idx, card: stack[0]}); });
+    if(eligible.length === 0){
+      log(`${p.name}'s ${def.name} has no Top card to Shield.`);
+      return;
+    }
+    if(side === 'enemy' || eligible.length === 1){
+      let best = eligible[0];
+      eligible.forEach(e=>{ if(e.card.hp > best.card.hp) best = e; });
+      best.card.shield += def.onReveal.amount;
+      log(`${p.name}'s ${def.name} gives ${best.card.name} Shield ${def.onReveal.amount}.`);
+    } else {
+      state.pendingShieldChoice = { side, amount: def.onReveal.amount, defName: def.name };
+      log(`${p.name} must choose a Top card to receive Shield ${def.onReveal.amount} from ${def.name}.`);
+    }
+    return;
+  }
+
+  if(def.onReveal.type === 'reviveLastFriendlyDeaths'){
+    const friendly = state.deathLog.filter(e=>e.controllerSide===side);
+    const toRevive = friendly.slice(-def.onReveal.count);
+    if(toRevive.length === 0){
+      log(`${p.name}'s ${def.name} finds no friendly dead cards to Revive.`);
+      return;
+    }
+    toRevive.forEach(entry=>{
+      const ok = reviveCard(entry, side);
+      if(ok){
+        const idx = state.deathLog.indexOf(entry);
+        if(idx !== -1) state.deathLog.splice(idx,1);
+      }
+    });
+    return;
+  }
+
+  if(def.onReveal.type === 'chooseEnemyStackInfect'){
+    const opp = sideObj(oppSide(side));
+    if(side === 'enemy'){
+      let target = 0, bestHp = -1;
+      opp.board.forEach((st, idx)=>{ if(st.length>0 && st[0].hp>bestHp){ bestHp = st[0].hp; target = idx; } });
+      opp.board[target].infection = { dmg: def.onReveal.dmg, casterSide: side };
+      log(`${p.name}'s ${def.name} infects ${opp.name}'s Stack ${target+1} with a spreading DoT.`);
+    } else {
+      state.pendingAbility = { kind:'toxiousInfect', side, dmg: def.onReveal.dmg, sourceName: def.name };
+      log(`${p.name} must choose an enemy stack to infect with ${def.name}.`);
+    }
+    return;
+  }
+
+  if(def.onReveal.type === 'buffChosenFriendlyStack'){
+    if(side === 'enemy'){
+      let target = -1, bestLen = -1;
+      p.board.forEach((st, idx)=>{ if(st.length > bestLen){ bestLen = st.length; target = idx; } });
+      if(target !== -1 && p.board[target].length > 0){
+        p.board[target].forEach(c=>{ c.maxHp += def.onReveal.amount; c.hp += def.onReveal.amount; });
+        log(`${p.name}'s ${def.name} gives Stack ${target+1} +${def.onReveal.amount} Health each.`);
+      }
+      killCardByUid(side, card.uid);
+    } else {
+      state.pendingAbility = { kind:'sacrificeBuff', side, amount: def.onReveal.amount, sourceName: def.name, cardUid: card.uid };
+      log(`${p.name} must choose one of their stacks for ${def.name} to buff (Sacrifice will then die).`);
+    }
+    return;
+  }
+}
+
+function killCardByUid(side, uid){
+  const p = sideObj(side);
+  for(let si=0; si<p.board.length; si++){
+    const idx = p.board[si].findIndex(c=>c.uid===uid);
+    if(idx !== -1){ processCardDeath(side, si, idx); return; }
+  }
+}
+
+function resolveShieldChoice(stackIdx){
+  const psc = state.pendingShieldChoice;
+  if(!psc) return;
+  const p = sideObj(psc.side);
+  const stack = p.board[stackIdx];
+  if(stack.length === 0) return;
+  const card = stack[0];
+  card.shield += psc.amount;
+  log(`${p.name} gives ${card.name} Shield ${psc.amount} (from ${psc.defName}).`);
+  state.pendingShieldChoice = null;
+  checkEvolutions(psc.side);
+  render();
+}
+
+function resolveSacrificeBuff(pa, stackIdx){
+  const p = sideObj(pa.side);
+  const stack = p.board[stackIdx];
+  stack.forEach(c=>{ c.maxHp += pa.amount; c.hp += pa.amount; });
+  log(`${p.name}'s ${pa.sourceName} gives Stack ${stackIdx+1} +${pa.amount} Health each.`);
+  state.pendingAbility = null;
+  killCardByUid(pa.side, pa.cardUid);
+  checkEvolutions(pa.side);
+  render();
+}
+
+/* ============================================================
+   REVIVE
+   ============================================================ */
+// deathEntry: {defId, name, controllerSide, originalStackIdx, ownerSide}
+function reviveCard(deathEntry, controllerSide, opts){
+  opts = opts || {};
+  const p = sideObj(controllerSide);
+  const targetStackIdx = (opts.forcedStackIdx !== undefined) ? opts.forcedStackIdx : deathEntry.originalStackIdx;
+  const stack = p.board[targetStackIdx];
+  const def = getDef(deathEntry.defId);
+  if(!stack || stack.length >= STACK_MAX){
+    log(`${p.name} tries to Revive ${deathEntry.name}, but Stack ${targetStackIdx+1} is full — the Revive fails (no search for another spot).`);
+    return false;
+  }
+  const inst = makeCardInstance(deathEntry.defId, deathEntry.ownerSide);
+  stack.unshift(inst); // Revive always returns to the TOP of the target stack
+  const stolen = inst.ownerSide !== controllerSide;
+  log(`${p.name} Revives ${def.name}${stolen ? ' (now Stolen)' : ''} onto Stack ${targetStackIdx+1}.`);
+  afterCardEntersPlay(controllerSide, inst, def);
   return true;
 }
 
 /* ============================================================
-   COMBAT
+   EVOLUTIONS
    ============================================================ */
-function performAttack(atkSide, atkStackIdx, target){
-  const atkP = sideObj(atkSide);
-  const defSide = oppSide(atkSide);
+function countAliveOfType(side, defId){
+  let n = 0;
+  sideObj(side).board.forEach(stack=>stack.forEach(c=>{ if(c.defId === defId && c.hp > 0) n++; }));
+  return n;
+}
+
+function checkEvolutions(side){
+  const p = sideObj(side);
+  const gk = EVOLUTION_DEFS.find(d=>d.id==='goblinking');
+  if(p.evoPool.goblinking.available && countAliveOfType(side, gk.evolution.requiresId) >= gk.evolution.requiresCount){
+    triggerGoblinKingEvolution(side);
+  }
+}
+
+function triggerGoblinKingEvolution(side){
+  const p = sideObj(side);
+  const gk = EVOLUTION_DEFS.find(d=>d.id==='goblinking');
+  p.evoPool.goblinking.available = false;
+
+  let consumed = 0;
+  p.board.forEach(stack=>{
+    for(let i=stack.length-1; i>=0 && consumed < gk.evolution.requiresCount; i--){
+      if(stack[i].defId === gk.evolution.requiresId && stack[i].hp > 0){
+        stack.splice(i,1); // Consumed, not Dead — no processCardDeath, no deathLog entry, no On Death
+        consumed++;
+      }
+    }
+  });
+  log(`${p.name}'s three Goblins are Consumed (not killed — no On Death triggers)! Goblin King rises from the Evolution Pool.`);
+
+  const inst = makeCardInstance('goblinking', side);
+
+  if(side === 'player'){
+    const hasRoom = p.board.some(st => st.length < STACK_MAX);
+    if(!hasRoom){
+      log(`${p.name} has no room on the board to place Goblin King! He returns to the Evolution Pool.`);
+      p.evoPool.goblinking.available = true;
+      return;
+    }
+    state.pendingEvoPlacement = { side, instance: inst };
+  } else {
+    aiPlaceEvolution(inst);
+  }
+}
+
+function aiPlaceEvolution(inst){
+  const p = state.enemy;
+  const def = getDef(inst.defId);
+  let target = -1, digChoice = false;
+
+  if(def.keyword === 'dig'){
+    p.board.forEach((st, i)=>{
+      if(target === -1 && st.length > 0 && st.length < STACK_MAX){ target = i; digChoice = true; }
+    });
+  }
+  if(target === -1){
+    p.board.forEach((st, i)=>{ if(target === -1 && st.length < STACK_MAX) target = i; });
+  }
+  if(target === -1){
+    log(`${p.name} has no room to place ${def.name}! He returns to the Evolution Pool.`);
+    p.evoPool.goblinking.available = true;
+    return;
+  }
+  const stack = p.board[target];
+  if(digChoice){
+    stack.splice(1,0,inst);
+    log(`${p.name} digs ${def.name} in underneath Stack ${target+1}, keeping him protected and ready to use his Active ability.`);
+  } else {
+    stack.unshift(inst);
+    log(`${p.name} places ${def.name} on top of Stack ${target+1}.`);
+  }
+}
+
+function handleEvoPlacementClick(stackIdx){
+  const pe = state.pendingEvoPlacement;
+  if(!pe) return;
+  const p = sideObj(pe.side);
+  const stack = p.board[stackIdx];
+  if(stack.length >= STACK_MAX) return;
+  const def = getDef(pe.instance.defId);
+
+  if(stack.length === 0){
+    stack.unshift(pe.instance);
+    log(`${p.name} places ${pe.instance.name} into empty Stack ${stackIdx+1}.`);
+    state.pendingEvoPlacement = null;
+    render();
+    return;
+  }
+
+  if(def.keyword === 'dig'){
+    pe.chosenStackIdx = stackIdx;
+    document.getElementById('placementPromptText').textContent =
+      `Place ${pe.instance.name} on top of Stack ${stackIdx+1}, or Dig him underneath the current top card (protected — lets him use his Active ability while buried)?`;
+    document.getElementById('placementPrompt').classList.add('show');
+  } else {
+    stack.unshift(pe.instance);
+    log(`${p.name} places ${pe.instance.name} on top of Stack ${stackIdx+1}.`);
+    state.pendingEvoPlacement = null;
+    render();
+  }
+}
+
+document.getElementById('placeTopBtn').addEventListener('click', ()=>{
+  if(state.pendingEvoPlacement){
+    const pe = state.pendingEvoPlacement;
+    const p = sideObj(pe.side);
+    const stack = p.board[pe.chosenStackIdx];
+    stack.unshift(pe.instance);
+    log(`${p.name} places ${pe.instance.name} on top of Stack ${pe.chosenStackIdx+1}.`);
+    state.pendingEvoPlacement = null;
+  } else if(state.pendingHandDigChoice){
+    const phd = state.pendingHandDigChoice;
+    playCard('player', phd.handIdx, phd.stackIdx, false);
+    state.pendingHandDigChoice = null;
+    clearSelections();
+  }
+  closePlacementPrompt();
+});
+document.getElementById('placeDigBtn').addEventListener('click', ()=>{
+  if(state.pendingEvoPlacement){
+    const pe = state.pendingEvoPlacement;
+    const p = sideObj(pe.side);
+    const stack = p.board[pe.chosenStackIdx];
+    stack.splice(1,0,pe.instance);
+    log(`${p.name} digs ${pe.instance.name} in underneath Stack ${pe.chosenStackIdx+1}'s top card.`);
+    state.pendingEvoPlacement = null;
+  } else if(state.pendingHandDigChoice){
+    const phd = state.pendingHandDigChoice;
+    playCard('player', phd.handIdx, phd.stackIdx, true);
+    state.pendingHandDigChoice = null;
+    clearSelections();
+  }
+  closePlacementPrompt();
+});
+function closePlacementPrompt(){
+  document.getElementById('placementPrompt').classList.remove('show');
+  render();
+}
+
+/* ============================================================
+   ACTIVE ABILITIES
+   ============================================================ */
+function tryActivateAbility(side, stackIdx, depth){
+  const p = sideObj(side);
+  const stack = p.board[stackIdx];
+  const card = stack[depth];
+  if(!card) return;
+  const def = getDef(card.defId);
+  if(!def.active) return;
+  if(depth === 0) return;                 // Active abilities require being Buried (Sec.19)
+  if(card.sick || card.abilityUsedThisTurn) return;
+  if(def.active.cooldown && card.cooldownTurnsLeft > 0) return;
+  if(def.active.type === 'necromancerRevive' && p.necromancerUsed) return;
+
+  if(def.active.type === 'necromancerRevive' && state.deathLog.length === 0){
+    log(`${p.name} activates Necromancer, but no cards have died yet — the ability fizzles without being spent.`);
+    return;
+  }
+
+  card.abilityUsedThisTurn = true;
+  if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+
+  if(def.active.type === 'goblinAssault'){
+    state.pendingAbility = { kind:'goblinAssault', side, hitsRemaining: def.active.hits, dmgEach: def.active.dmgEach, sourceName: def.name };
+    log(`${p.name} activates ${def.name}'s Goblin Assault — choose ${def.active.hits} target(s).`);
+  } else if(def.active.type === 'restoreHealth'){
+    state.pendingAbility = { kind:'restoreHealth', side, amount: def.active.amount, sourceName: def.name };
+    log(`${p.name} activates ${def.name} — choose one of your cards to Restore ${def.active.amount} Health.`);
+  } else if(def.active.type === 'cleanse'){
+    state.pendingAbility = { kind:'cleanse', side, sourceName: def.name };
+    log(`${p.name} activates ${def.name} — choose one of your cards to Cleanse.`);
+  } else if(def.active.type === 'weakenStack'){
+    state.pendingAbility = { kind:'weakenStack', side, turns: def.active.turns, sourceName: def.name };
+    log(`${p.name} activates ${def.name} — choose an enemy stack to Weaken.`);
+  } else if(def.active.type === 'necromancerRevive'){
+    state.pendingAbility = { kind:'necromancerPickCard', side, sourceName: def.name };
+    log(`${p.name} activates Necromancer — choose a dead card to Revive.`);
+    openDeathPicker();
+  }
+  render();
+}
+
+function resolveAbilityHit(target){
+  const pa = state.pendingAbility;
+  if(!pa || pa.kind !== 'goblinAssault') return;
+  applyDamageToTarget(pa.side, pa.dmgEach, target, pa.sourceName);
+  pa.hitsRemaining--;
+  if(pa.hitsRemaining <= 0) state.pendingAbility = null;
+  render();
+}
+
+function resolveSelfTargetAbility(pa, stackIdx, depth){
+  const p = sideObj(pa.side);
+  const stack = p.board[stackIdx];
+  const card = stack[depth];
+  if(!card) return;
+  if(pa.kind === 'restoreHealth'){
+    const before = card.hp;
+    card.hp = Math.min(card.maxHp, card.hp + pa.amount);
+    log(`${pa.sourceName} restores ${card.hp-before} Health to ${card.name}. (${card.hp}/${card.maxHp} HP)`);
+  } else if(pa.kind === 'cleanse'){
+    card.dots = [];
+    if(depth === 0 && (stack.weakened || stack.infection)){
+      delete stack.weakened;
+      delete stack.infection;
+    }
+    log(`${pa.sourceName} Cleanses ${card.name} of all DoTs and negative statuses.`);
+  }
+  state.pendingAbility = null;
+  render();
+}
+
+function resolveStackTargetAbility(pa, stackIdx){
+  const opp = sideObj(oppSide(pa.side));
+  const stack = opp.board[stackIdx];
+  if(pa.kind === 'weakenStack'){
+    stack.weakened = { turnsLeft: pa.turns, casterSide: pa.side };
+    log(`${pa.sourceName} Weakens ${opp.name}'s Stack ${stackIdx+1} for ${pa.turns} turns.`);
+  } else if(pa.kind === 'toxiousInfect'){
+    stack.infection = { dmg: pa.dmg, casterSide: pa.side };
+    log(`${pa.sourceName} infects ${opp.name}'s Stack ${stackIdx+1} with a spreading DoT.`);
+  }
+  state.pendingAbility = null;
+  render();
+}
+
+function openDeathPicker(){
+  const list = document.getElementById('deathPickerList');
+  const empty = document.getElementById('deathPickerEmpty');
+  list.innerHTML = '';
+  if(state.deathLog.length === 0){
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    state.deathLog.forEach(entry=>{
+      const def = getDef(entry.defId);
+      const btn = document.createElement('button');
+      const originText = entry.controllerSide === 'player' ? 'yours' : "opponent's";
+      btn.textContent = `${def.name} (${originText}, died in Stack ${entry.originalStackIdx+1})`;
+      btn.addEventListener('click', ()=>{
+        const pa = state.pendingAbility;
+        if(!pa || pa.kind !== 'necromancerPickCard') return;
+        pa.kind = 'necromancerPickStack';
+        pa.chosenEntry = entry;
+        document.getElementById('deathPicker').classList.remove('show');
+        render();
+      });
+      list.appendChild(btn);
+    });
+  }
+  document.getElementById('deathPicker').classList.add('show');
+}
+document.getElementById('deathPickerCancel').addEventListener('click', ()=>{
+  document.getElementById('deathPicker').classList.remove('show');
+  state.pendingAbility = null;
+  render();
+});
+
+function aiUseAbilities(){
+  const ai = state.enemy;
+  ai.board.forEach((stack, stackIdx)=>{
+    for(let depth=1; depth<stack.length; depth++){
+      const card = stack[depth];
+      const def = getDef(card.defId);
+      if(!def.active) continue;
+      if(card.sick || card.abilityUsedThisTurn) continue;
+      if(def.active.cooldown && card.cooldownTurnsLeft > 0) continue;
+
+      if(def.active.type === 'goblinAssault'){
+        card.abilityUsedThisTurn = true;
+        log(`${ai.name} activates ${def.name}'s Goblin Assault.`);
+        for(let h=0; h<def.active.hits; h++){
+          applyDamageToTarget('enemy', def.active.dmgEach, pickAiAbilityTarget(def.active.dmgEach), def.name);
+        }
+      } else if(def.active.type === 'restoreHealth'){
+        let target = null, worstDeficit = 0;
+        ai.board.forEach(st=>st.forEach(c=>{
+          const deficit = c.maxHp - c.hp;
+          if(deficit > worstDeficit){ worstDeficit = deficit; target = c; }
+        }));
+        if(target){
+          card.abilityUsedThisTurn = true;
+          const before = target.hp;
+          target.hp = Math.min(target.maxHp, target.hp + def.active.amount);
+          log(`${ai.name}'s ${def.name} restores ${target.hp-before} Health to ${target.name}.`);
+        }
+      } else if(def.active.type === 'cleanse'){
+        let target = null, targetStack = null;
+        ai.board.forEach(st=>{
+          if(st.length && (st[0].dots.length || st.weakened || st.infection) && !target){ target = st[0]; targetStack = st; }
+        });
+        if(!target){
+          ai.board.forEach(st=>st.forEach(c=>{ if(c.dots.length && !target) target = c; }));
+        }
+        if(target){
+          card.abilityUsedThisTurn = true;
+          if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+          target.dots = [];
+          if(targetStack){ delete targetStack.weakened; delete targetStack.infection; }
+          log(`${ai.name}'s ${def.name} Cleanses ${target.name}.`);
+        }
+      } else if(def.active.type === 'weakenStack'){
+        let target = -1, bestHp = -1;
+        state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].hp>bestHp){ bestHp = st[0].hp; target = idx; } });
+        if(target !== -1){
+          card.abilityUsedThisTurn = true;
+          state.player.board[target].weakened = { turnsLeft: def.active.turns, casterSide: 'enemy' };
+          log(`${ai.name}'s ${def.name} Weakens your Stack ${target+1}.`);
+        }
+      } else if(def.active.type === 'necromancerRevive'){
+        if(!ai.necromancerUsed && state.deathLog.length){
+          let best = state.deathLog[0], bestScore = -1;
+          state.deathLog.forEach(entry=>{
+            const d = getDef(entry.defId);
+            const score = d.dmg + d.hp;
+            if(score > bestScore){ bestScore = score; best = entry; }
+          });
+          let targetStack = -1;
+          ai.board.forEach((st, idx)=>{ if(targetStack===-1 && st.length < STACK_MAX) targetStack = idx; });
+          if(targetStack !== -1){
+            card.abilityUsedThisTurn = true;
+            const ok = reviveCard(best, 'enemy', { forcedStackIdx: targetStack });
+            if(ok){
+              ai.necromancerUsed = true;
+              const dlIdx = state.deathLog.indexOf(best);
+              if(dlIdx !== -1) state.deathLog.splice(dlIdx,1);
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function pickAiAbilityTarget(dmg){
+  const pl = state.player;
+  let best = null, bestHp = Infinity;
+  pl.board.forEach((st, idx)=>{
+    if(st.length > 0){
+      const c = st[0];
+      if(c.hp <= dmg && c.hp < bestHp){ bestHp = c.hp; best = {type:'card', stackIdx: idx}; }
+    }
+  });
+  return best || {type:'player'};
+}
+
+/* ============================================================
+   DAMAGE / COMBAT
+   ============================================================ */
+// Applies damage to a card, honoring Shield (absorbs first) and Weakened (+1 per
+// instance that reaches Health — Sec.42/43). `stack` is the card's containing stack,
+// used only to check stack.weakened.
+function dealDamageToCard(stack, card, rawAmount){
+  let amount = rawAmount;
+  if(card.shield > 0){
+    const absorbed = Math.min(card.shield, amount);
+    card.shield -= absorbed;
+    amount -= absorbed;
+  }
+  if(amount > 0 && stack && stack.weakened) amount += 1;
+  if(amount > 0) card.hp -= amount;
+}
+
+// Returns {died:boolean} so callers (e.g. On Kill) can react.
+function applyDamageToTarget(casterSide, amount, target, sourceName){
+  const defSide = oppSide(casterSide);
   const defP = sideObj(defSide);
-  const stack = atkP.board[atkStackIdx];
-  if(stack.length===0) return false;
-  const attacker = stack[0];
-  if(attacker.sick || attacker.attacked) return false;
 
   if(target.type === 'player'){
-    defP.hp = Math.max(0, defP.hp - attacker.dmg);
-    log(`${attacker.name} hits ${defP.name} for ${attacker.dmg} damage. (${defP.name}: ${defP.hp} HP)`);
-    attacker.attacked = true;
+    defP.hp = Math.max(0, defP.hp - amount);
+    log(`${sourceName} hits ${defP.name} for ${amount} damage. (${defP.name}: ${defP.hp} HP)`);
     checkGameOver();
-    return true;
+    return {died:false};
   }
 
   if(target.type === 'card'){
-    const defStack = defP.board[target.stackIdx];
-    if(defStack.length===0) return false;
-    const defender = defStack[0]; // only top/exposed cards are legal targets
-    defender.hp -= attacker.dmg;
-    log(`${attacker.name} attacks ${defender.name} for ${attacker.dmg} damage.`);
-    attacker.attacked = true;
+    const stack = defP.board[target.stackIdx];
+    if(stack.length === 0) return {died:false};
+    const defender = stack[0];
+    const hadShield = defender.shield > 0;
+    dealDamageToCard(stack, defender, amount);
+    log(`${sourceName} hits ${defender.name} for ${amount} damage${hadShield ? ' (Shield absorbed some)' : ''}.`);
     if(defender.hp <= 0){
-      log(`${defender.name} dies. Stack ${target.stackIdx+1} collapses.`);
-      defStack.shift(); // remove dead top card, stack collapses upward automatically (array shift)
+      processCardDeath(defSide, target.stackIdx, 0);
+      checkGameOver();
+      return {died:true};
     }
     checkGameOver();
-    return true;
+    return {died:false};
   }
-  return false;
+  return {died:false};
+}
+
+function performAttack(atkSide, atkStackIdx, target){
+  const atkP = sideObj(atkSide);
+  const stack = atkP.board[atkStackIdx];
+  if(stack.length === 0) return false;
+  const attacker = stack[0];
+  if(attacker.sick || attacker.attacked) return false;
+  const result = applyDamageToTarget(atkSide, attacker.dmg, target, attacker.name);
+  attacker.attacked = true;
+  if(result.died){
+    const def = getDef(attacker.defId);
+    if(def.onKill) resolveOnKill(attacker, def);
+  }
+  return true;
+}
+
+function resolveOnKill(card, def){
+  if(def.onKill.type === 'gainHealth'){
+    card.maxHp += def.onKill.amount;
+    card.hp += def.onKill.amount;
+    log(`${card.name} gains Health from the kill! Now ${card.dmg} Damage / ${card.hp} Health (max ${card.maxHp}).`);
+  }
 }
 
 function checkGameOver(){
@@ -484,44 +1185,134 @@ function checkGameOver(){
 }
 
 /* ============================================================
+   DEATH PROCESSING (shared by combat, DoT, infection, on-reveal 0 HP)
+   ============================================================ */
+function processCardDeath(controllerSide, stackIdx, depthInStack){
+  const p = sideObj(controllerSide);
+  const stack = p.board[stackIdx];
+  const card = stack[depthInStack];
+  if(!card) return;
+  const def = getDef(card.defId);
+  stack.splice(depthInStack, 1);
+  log(`${card.name} dies.`);
+  state.deathLog.push({
+    defId: card.defId,
+    name: card.name,
+    controllerSide,
+    originalStackIdx: stackIdx,
+    ownerSide: card.ownerSide
+  });
+  if(def.onDeath) resolveOnDeath(controllerSide, def);
+}
+
+function resolveOnDeath(controllerSide, def){
+  const p = sideObj(controllerSide);
+  if(def.onDeath.type === 'bucketSelf'){
+    p.bucket = (p.bucket || 0) + def.onDeath.amount;
+    log(`${p.name} gains Bucket +${def.onDeath.amount} (extra Mana next turn) from ${def.name}'s death.`);
+  } else if(def.onDeath.type === 'damageAllEnemyCards'){
+    const oppS = oppSide(controllerSide);
+    const opp = sideObj(oppS);
+    let count = 0;
+    opp.board.forEach((stack, stackIdx)=>{
+      let depth = 0;
+      while(depth < stack.length){
+        const card = stack[depth];
+        dealDamageToCard(stack, card, def.onDeath.dmg);
+        count++;
+        if(card.hp <= 0){
+          processCardDeath(oppS, stackIdx, depth); // splices this depth out; do not advance
+        } else {
+          depth++;
+        }
+      }
+    });
+    log(`${def.name}'s death deals ${def.onDeath.dmg} damage to ${count} enemy card(s).`);
+    checkGameOver();
+  }
+}
+
+/* ============================================================
+   DAMAGE OVER TIME  &  STACK INFECTION
+   ============================================================ */
+function processDotTicks(casterSide){
+  ['player','enemy'].forEach(side=>{
+    const p = sideObj(side);
+    p.board.forEach((stack, stackIdx)=>{
+      for(let i=stack.length-1; i>=0; i--){
+        const c = stack[i];
+        if(!c.dots.length) continue;
+        for(let j=c.dots.length-1; j>=0; j--){
+          const d = c.dots[j];
+          if(d.casterSide !== casterSide) continue;
+          dealDamageToCard(stack, c, d.dmg);
+          d.ticksLeft--;
+          log(`${c.name} takes ${d.dmg} burn damage. (${Math.max(0,c.hp)} HP left)`);
+          if(d.ticksLeft <= 0) c.dots.splice(j,1);
+          if(c.hp <= 0){ processCardDeath(side, stackIdx, i); break; }
+        }
+      }
+    });
+  });
+  checkGameOver();
+}
+
+function processInfections(casterSide){
+  ['player','enemy'].forEach(side=>{
+    const p = sideObj(side);
+    p.board.forEach((stack, stackIdx)=>{
+      if(!stack.infection || stack.infection.casterSide !== casterSide) return;
+      if(stack.length === 0){ delete stack.infection; return; }
+      const card = stack[0];
+      dealDamageToCard(stack, card, stack.infection.dmg);
+      log(`${card.name} takes ${stack.infection.dmg} infection damage.`);
+      if(card.hp <= 0){
+        processCardDeath(side, stackIdx, 0);
+        if(stack.length === 0){
+          delete stack.infection;
+          log(`The infection in that stack has nowhere left to spread and fades.`);
+        }
+      }
+    });
+  });
+  checkGameOver();
+}
+
+/* ============================================================
    SIMPLE AI
    ============================================================ */
 function runAiTurn(){
   if(state.over) return;
   const ai = state.enemy;
 
-  // --- play phase: greedily play the most expensive affordable card each pass ---
   let guard = 0;
   while(guard++ < 20){
     let bestIdx = -1, bestCost = -1;
     ai.hand.forEach((defId, idx)=>{
-      const def = CARD_DEFS.find(d=>d.id===defId);
+      const def = getDef(defId);
       if(def.cost <= ai.mana && def.cost > bestCost){ bestCost = def.cost; bestIdx = idx; }
     });
     if(bestIdx === -1) break;
-    // find a stack: prefer empty, else the stack with the fewest cards that still has room
     let target = -1, bestLen = 99;
     ai.board.forEach((st,i)=>{
       if(st.length < STACK_MAX && st.length < bestLen){ bestLen = st.length; target = i; }
     });
-    if(target === -1) break; // board full
-    playCardToStack('enemy', bestIdx, target);
+    if(target === -1) break;
+    playCard('enemy', bestIdx, target, false);
   }
-  // spend spare mana (>=6 left, keep it simple) drawing cards if hand is thin
   while(ai.mana >= DRAW_COST && ai.hand.length < 3 && ai.deck.length > 0){
     ai.mana -= DRAW_COST;
     drawCard('enemy', false);
   }
 
+  aiUseAbilities();
   render();
 
-  // --- attack phase ---
   setTimeout(()=>{
     ai.board.forEach((stack, idx)=>{
       if(stack.length===0) return;
       const attacker = stack[0];
       if(attacker.sick || attacker.attacked) return;
-      // pick a target: weakest exposed enemy card if it can kill it, else the player
       const pl = state.player;
       let bestTarget = null, bestHp = Infinity;
       pl.board.forEach((pstack, pIdx)=>{
@@ -529,10 +1320,7 @@ function runAiTurn(){
         const def = pstack[0];
         if(def.hp <= attacker.dmg && def.hp < bestHp){ bestHp = def.hp; bestTarget = {type:'card', stackIdx:pIdx}; }
       });
-      if(!bestTarget){
-        // no killable card found — attack the player directly
-        bestTarget = {type:'player'};
-      }
+      if(!bestTarget) bestTarget = {type:'player'};
       performAttack('enemy', idx, bestTarget);
     });
     render();
@@ -550,6 +1338,7 @@ function runAiTurn(){
 function clearSelections(){
   state.selectedHandIdx = null;
   state.selectedAttackerLoc = null;
+  state.pendingAbility = null;
 }
 
 /* ============================================================
@@ -565,22 +1354,16 @@ function render(){
   renderMana('player'); renderMana('enemy');
   renderBoard('player'); renderBoard('enemy');
   renderHand();
+  renderEvoPool();
+  updateModeBanner();
+  updateMidline();
 
   document.getElementById('deckCount').textContent = `${state.player.deck.length} cards left in deck`;
 
   const isPlayerTurn = state.turn==='player' && !state.over;
-  document.getElementById('drawBtn').disabled = !isPlayerTurn || state.player.mana < DRAW_COST || state.player.deck.length===0;
-  document.getElementById('endTurnBtn').disabled = !isPlayerTurn;
-
-  const atkBtn = document.getElementById('attackPlayerBtn');
-  const cancelBtn = document.getElementById('cancelAtkBtn');
-  if(state.selectedAttackerLoc){
-    atkBtn.classList.add('show');
-    cancelBtn.classList.add('show');
-  } else {
-    atkBtn.classList.remove('show');
-    cancelBtn.classList.remove('show');
-  }
+  const blockingMode = !!(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice);
+  document.getElementById('drawBtn').disabled = !isPlayerTurn || blockingMode || state.player.mana < DRAW_COST || state.player.deck.length===0;
+  document.getElementById('endTurnBtn').disabled = !isPlayerTurn || blockingMode;
 
   if(state.over){
     showGameOver();
@@ -605,10 +1388,17 @@ function renderMana(side){
     pip.className = 'pip' + (i < p.mana ? ' on' : '');
     el.appendChild(pip);
   }
+  for(let i=0;i<p.bucket;i++){
+    const pip = document.createElement('div');
+    pip.className = 'pip bucket';
+    pip.title = 'Bucket (next turn only)';
+    el.appendChild(pip);
+  }
 }
 
-function cardEl(inst, opts){
+function cardEl(inst, side, opts){
   opts = opts || {};
+  const def = getDef(inst.defId);
   const div = document.createElement('div');
   div.className = 'card' + (opts.exposed ? ' exposed' : ' buried');
   if(inst.sick) div.classList.add('sick');
@@ -616,8 +1406,26 @@ function cardEl(inst, opts){
   if(opts.attackable) div.classList.add('attackable');
   if(opts.targetable) div.classList.add('targetable');
   if(opts.selected) div.classList.add('selectedAttacker');
+  if(opts.activatable) div.classList.add('activatable');
+  if(opts.shieldTarget) div.classList.add('shieldTarget');
+  if(def && def.type === 'evolution') div.classList.add('evolutionCard');
+
+  const badges = [];
+  if(inst.shield > 0) badges.push(`<span class="cbadge">🛡${inst.shield}</span>`);
+  if(inst.dots && inst.dots.length){
+    const totalTicks = inst.dots.reduce((s,d)=>s+d.ticksLeft, 0);
+    badges.push(`<span class="cbadge">🔥${totalTicks}</span>`);
+  }
+  if(def && def.active && def.active.cooldown && inst.cooldownTurnsLeft > 0){
+    badges.push(`<span class="cbadge">⏳${inst.cooldownTurnsLeft}</span>`);
+  }
+  if(inst.ownerSide && inst.ownerSide !== side){
+    badges.push(`<span class="cbadge">🔓Stolen</span>`);
+  }
+
   div.innerHTML = `<div class="cname">${inst.name}</div>
-    <div class="stats"><span class="dmg">⚔${inst.dmg}</span><span class="hp">♥${inst.hp}</span></div>`;
+    <div class="stats"><span class="dmg">⚔${inst.dmg}</span><span class="hp">♥${Math.max(0,inst.hp)}</span></div>
+    ${badges.length ? `<div class="cbadges">${badges.join('')}</div>` : ''}`;
   return div;
 }
 
@@ -627,19 +1435,38 @@ function renderBoard(side){
   container.innerHTML = '';
 
   const isPlayerTurn = state.turn === 'player' && !state.over;
+  const blockingMode = !!(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice);
+  const pa = state.pendingAbility;
+  const abilityMode = !!pa;
+  const wantsEnemyCardTarget = !!state.selectedAttackerLoc || (pa && pa.kind === 'goblinAssault');
+  const wantsEnemyStackTarget = pa && (pa.kind === 'weakenStack' || pa.kind === 'toxiousInfect');
+  const wantsOwnCardTarget = pa && (pa.kind === 'restoreHealth' || pa.kind === 'cleanse');
+  const wantsOwnStackTarget = pa && (pa.kind === 'sacrificeBuff' || pa.kind === 'necromancerPickStack');
 
   p.board.forEach((stack, idx)=>{
     const stackDiv = document.createElement('div');
     stackDiv.className = 'stack';
 
-    // Determine interaction mode
     const isOwnBoard = side === 'player';
-    const canDropHere = isPlayerTurn && isOwnBoard && state.selectedHandIdx !== null &&
+    const canDropHere = isPlayerTurn && isOwnBoard && !blockingMode && !abilityMode && state.selectedHandIdx !== null &&
                          canAffordIdx('player', state.selectedHandIdx) && stack.length < STACK_MAX;
-    const isAttackTargetStack = isPlayerTurn && side==='enemy' && state.selectedAttackerLoc && stack.length>0;
+    const isAttackTargetStack = (isPlayerTurn && side==='enemy' && wantsEnemyCardTarget && stack.length>0) ||
+                                 (isPlayerTurn && side==='enemy' && wantsEnemyStackTarget);
+    const isEvoTargetStack = isPlayerTurn && isOwnBoard &&
+                              ((state.pendingEvoPlacement && stack.length < STACK_MAX) ||
+                               (pa && pa.kind==='necromancerPickStack' && stack.length < STACK_MAX) ||
+                               (pa && pa.kind==='sacrificeBuff'));
 
     if(canDropHere) stackDiv.classList.add('dropTarget');
     if(isAttackTargetStack) stackDiv.classList.add('atkTarget');
+    if(isEvoTargetStack) stackDiv.classList.add('evoTarget');
+
+    if(stack.weakened || stack.infection){
+      const tag = document.createElement('div');
+      tag.className = 'statusTag';
+      tag.textContent = [stack.weakened ? `🧊${stack.weakened.turnsLeft}` : '', stack.infection ? '☣' : ''].filter(Boolean).join(' ');
+      stackDiv.appendChild(tag);
+    }
 
     if(stack.length===0){
       const hint = document.createElement('div');
@@ -647,12 +1474,19 @@ function renderBoard(side){
       hint.textContent = 'empty';
       stackDiv.appendChild(hint);
     } else {
-      // render top first (index 0) visually at top
       stack.forEach((inst, depth)=>{
+        const def = getDef(inst.defId);
         const exposed = depth===0;
-        const attackable = isPlayerTurn && side==='player' && exposed && !inst.sick && !inst.attacked;
-        const targetable = isPlayerTurn && side==='enemy' && exposed && state.selectedAttackerLoc;
-        const el = cardEl(inst, {exposed, attackable, targetable});
+        const onCooldown = def.active && def.active.cooldown && inst.cooldownTurnsLeft > 0;
+        const necroBlocked = def.active && def.active.type==='necromancerRevive' && sideObj(side).necromancerUsed;
+        const attackable = isPlayerTurn && side==='player' && exposed && !inst.sick && !inst.attacked && !blockingMode && !abilityMode;
+        const targetable = isPlayerTurn && side==='enemy' && exposed && wantsEnemyCardTarget;
+        const activatable = isPlayerTurn && side==='player' && !exposed && def.active && !inst.sick && !inst.abilityUsedThisTurn &&
+                             !onCooldown && !necroBlocked && !blockingMode && !abilityMode && state.selectedHandIdx===null;
+        const ownCardTargetable = isPlayerTurn && side==='player' &&
+                                   ((state.pendingShieldChoice && exposed) || wantsOwnCardTarget);
+        const el = cardEl(inst, side, {exposed, attackable, targetable, activatable, shieldTarget: ownCardTargetable});
+        el.dataset.depth = depth;
         stackDiv.appendChild(el);
       });
     }
@@ -662,7 +1496,7 @@ function renderBoard(side){
     idxTag.textContent = idx+1;
     stackDiv.appendChild(idxTag);
 
-    stackDiv.addEventListener('click', ()=> onStackClick(side, idx));
+    stackDiv.addEventListener('click', (evt)=> onStackClick(side, idx, evt));
     container.appendChild(stackDiv);
   });
 }
@@ -671,17 +1505,19 @@ function renderHand(){
   const hand = document.getElementById('hand');
   hand.innerHTML = '';
   const isPlayerTurn = state.turn==='player' && !state.over;
+  const blocked = !!(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingAbility || state.pendingHandDigChoice);
   state.player.hand.forEach((defId, idx)=>{
-    const def = CARD_DEFS.find(d=>d.id===defId);
+    const def = getDef(defId);
     const div = document.createElement('div');
     const affordable = state.player.mana >= def.cost;
     div.className = 'handcard' + (!affordable ? ' unaffordable' : '') + (state.selectedHandIdx===idx ? ' selected' : '');
     div.innerHTML = `<div class="cost">${def.cost}</div>
       <div class="cname">${def.name}</div>
-      <div class="stats"><span class="dmg">⚔${def.dmg}</span><span class="hp">♥${def.hp}</span></div>`;
+      <div class="stats"><span class="dmg">⚔${def.dmg}</span><span class="hp">♥${def.hp}</span></div>
+      ${def.blurb ? `<div class="blurb">${def.blurb}</div>` : ''}`;
     div.addEventListener('click', (e)=>{
       e.stopPropagation();
-      if(!isPlayerTurn || !affordable) return;
+      if(!isPlayerTurn || !affordable || blocked) return;
       state.selectedAttackerLoc = null;
       state.selectedHandIdx = (state.selectedHandIdx===idx) ? null : idx;
       render();
@@ -690,40 +1526,190 @@ function renderHand(){
   });
 }
 
+function renderEvoPool(){
+  const el = document.getElementById('evoPoolList');
+  if(!el) return;
+  el.innerHTML = EVOLUTION_DEFS.map(def=>{
+    const req = def.evolution;
+    const reqDef = getDef(req.requiresId);
+    const yourCount = Math.min(countAliveOfType('player', req.requiresId), req.requiresCount);
+    const theirCount = Math.min(countAliveOfType('enemy', req.requiresId), req.requiresCount);
+    const yourStatus = state.player.evoPool[def.id].available ? `${yourCount}/${req.requiresCount} ${reqDef.name}s` : 'Claimed';
+    const theirStatus = state.enemy.evoPool[def.id].available ? `${theirCount}/${req.requiresCount} ${reqDef.name}s` : 'Claimed';
+    return `<div class="evoCard">
+      <div class="evoName">${def.name}</div>
+      <div class="evoReq">${def.blurb}</div>
+      <div class="evoProgress">You: ${yourStatus} &nbsp;|&nbsp; Opponent: ${theirStatus}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateModeBanner(){
+  const banner = document.getElementById('modeBanner');
+  const pa = state.pendingAbility;
+  if(state.pendingEvoPlacement){
+    banner.style.display = 'block';
+    banner.textContent = `Choose a stack on YOUR board for ${state.pendingEvoPlacement.instance.name} (Evolution!)`;
+  } else if(state.pendingShieldChoice){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of your Top cards to receive Shield ${state.pendingShieldChoice.amount} (from ${state.pendingShieldChoice.defName}).`;
+  } else if(pa && pa.kind === 'restoreHealth'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of YOUR cards (any Stack, any depth) to Restore ${pa.amount} Health.`;
+  } else if(pa && pa.kind === 'cleanse'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of YOUR cards (any Stack, any depth) to Cleanse.`;
+  } else if(pa && pa.kind === 'weakenStack'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of the OPPONENT's stacks to Weaken it for ${pa.turns} turns.`;
+  } else if(pa && pa.kind === 'toxiousInfect'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of the OPPONENT's stacks to infect its Top card with a spreading DoT.`;
+  } else if(pa && pa.kind === 'sacrificeBuff'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of YOUR stacks — every card in it gains +${pa.amount} Health.`;
+  } else if(pa && pa.kind === 'necromancerPickCard'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose a dead card to Revive from the popup.`;
+  } else if(pa && pa.kind === 'necromancerPickStack'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of YOUR stacks to place the Revived ${getDef(pa.chosenEntry.defId).name} on top.`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function updateMidline(){
+  const atkBtn = document.getElementById('attackPlayerBtn');
+  const cancelBtn = document.getElementById('cancelAtkBtn');
+  const pa = state.pendingAbility;
+  if(state.selectedAttackerLoc){
+    atkBtn.textContent = '⚔ Attack Enemy Player';
+    atkBtn.classList.add('show');
+    cancelBtn.textContent = 'Cancel Attack';
+    cancelBtn.classList.add('show');
+  } else if(pa && pa.kind === 'goblinAssault'){
+    const n = pa.hitsRemaining;
+    atkBtn.textContent = `🎯 Target Enemy Player (${n} hit${n>1?'s':''} left)`;
+    atkBtn.classList.add('show');
+    cancelBtn.textContent = 'Cancel Ability';
+    cancelBtn.classList.add('show');
+  } else if(pa){
+    atkBtn.classList.remove('show');
+    cancelBtn.textContent = 'Cancel Ability';
+    cancelBtn.classList.add('show');
+  } else {
+    atkBtn.classList.remove('show');
+    cancelBtn.classList.remove('show');
+  }
+}
+
 /* ============================================================
    INTERACTION HANDLERS
    ============================================================ */
-function onStackClick(side, stackIdx){
+function onStackClick(side, stackIdx, evt){
   if(state.over) return;
   const isPlayerTurn = state.turn === 'player';
   if(!isPlayerTurn) return;
 
-  // Case 1: playing a selected hand card onto own board — always goes on top
-  // (no card in the current set has the Dig keyword yet), burying whatever was there.
+  const cardNode = evt && evt.target ? evt.target.closest('.card') : null;
+  const depth = cardNode ? parseInt(cardNode.dataset.depth, 10) : null;
+
+  // Mandatory: place a just-evolved card
+  if(state.pendingEvoPlacement){
+    if(side === 'player') handleEvoPlacementClick(stackIdx);
+    return;
+  }
+  // Mandatory: choose a Shield target
+  if(state.pendingShieldChoice){
+    if(side === 'player'){
+      const stack = state.player.board[stackIdx];
+      if(stack.length > 0) resolveShieldChoice(stackIdx);
+    }
+    return;
+  }
+  // Active-ability / On-Reveal targeting flows
+  if(state.pendingAbility){
+    const pa = state.pendingAbility;
+    if(pa.kind === 'goblinAssault'){
+      if(side === 'enemy'){
+        const stack = state.enemy.board[stackIdx];
+        if(stack.length > 0) resolveAbilityHit({type:'card', stackIdx});
+      }
+      return;
+    }
+    if(pa.kind === 'restoreHealth' || pa.kind === 'cleanse'){
+      if(side === 'player'){
+        const stack = state.player.board[stackIdx];
+        if(stack.length > 0 && depth !== null) resolveSelfTargetAbility(pa, stackIdx, depth);
+      }
+      return;
+    }
+    if(pa.kind === 'weakenStack' || pa.kind === 'toxiousInfect'){
+      if(side === 'enemy') resolveStackTargetAbility(pa, stackIdx);
+      return;
+    }
+    if(pa.kind === 'sacrificeBuff'){
+      if(side === 'player') resolveSacrificeBuff(pa, stackIdx);
+      return;
+    }
+    if(pa.kind === 'necromancerPickStack'){
+      if(side === 'player'){
+        const stack = state.player.board[stackIdx];
+        if(stack.length < STACK_MAX){
+          reviveCard(pa.chosenEntry, pa.side, {forcedStackIdx: stackIdx});
+          state.player.necromancerUsed = true;
+          const dlIdx = state.deathLog.indexOf(pa.chosenEntry);
+          if(dlIdx !== -1) state.deathLog.splice(dlIdx,1);
+          state.pendingAbility = null;
+          render();
+        } else {
+          log(`Stack ${stackIdx+1} is full — choose another stack for the Revive.`);
+        }
+      }
+      return;
+    }
+    return;
+  }
+
+  // Playing a selected hand card onto own board
   if(side==='player' && state.selectedHandIdx !== null){
     const handIdx = state.selectedHandIdx;
     if(!canAffordIdx('player', handIdx)) return;
     const stack = state.player.board[stackIdx];
     if(stack.length >= STACK_MAX) return;
-    playCardToStack('player', handIdx, stackIdx);
+    const defId = state.player.hand[handIdx];
+    const def = getDef(defId);
+    if(def.keyword === 'dig' && stack.length > 0){
+      state.pendingHandDigChoice = {handIdx, stackIdx};
+      document.getElementById('placementPromptText').textContent =
+        `Place ${def.name} on top of Stack ${stackIdx+1}, or Dig him underneath the current top card?`;
+      document.getElementById('placementPrompt').classList.add('show');
+      return;
+    }
+    playCard('player', handIdx, stackIdx, false);
     clearSelections();
     render();
     return;
   }
 
-  // Case 2: selecting one of your own exposed attackers
+  // Own board, nothing selected: pick an attacker (top) or activate an ability (buried)
   if(side==='player' && state.selectedHandIdx===null){
     const stack = state.player.board[stackIdx];
     if(stack.length===0) return;
-    const top = stack[0];
-    if(top.sick || top.attacked) return;
-    state.selectedAttackerLoc = (state.selectedAttackerLoc && state.selectedAttackerLoc.stackIdx===stackIdx)
-      ? null : {side:'player', stackIdx};
-    render();
+    if(depth === 0){
+      const top = stack[0];
+      if(top.sick || top.attacked) return;
+      state.selectedAttackerLoc = (state.selectedAttackerLoc && state.selectedAttackerLoc.stackIdx===stackIdx)
+        ? null : {side:'player', stackIdx};
+      render();
+    } else if(depth !== null){
+      tryActivateAbility('player', stackIdx, depth);
+    }
     return;
   }
 
-  // Case 3: attacking an enemy stack's exposed card
+  // Attacking an enemy stack's exposed card
   if(side==='enemy' && state.selectedAttackerLoc){
     const stack = state.enemy.board[stackIdx];
     if(stack.length===0) return;
@@ -735,18 +1721,33 @@ function onStackClick(side, stackIdx){
 }
 
 document.getElementById('attackPlayerBtn').addEventListener('click', ()=>{
-  if(!state.selectedAttackerLoc) return;
-  performAttack('player', state.selectedAttackerLoc.stackIdx, {type:'player'});
-  state.selectedAttackerLoc = null;
+  if(state.selectedAttackerLoc){
+    performAttack('player', state.selectedAttackerLoc.stackIdx, {type:'player'});
+    state.selectedAttackerLoc = null;
+  } else if(state.pendingAbility && state.pendingAbility.kind === 'goblinAssault'){
+    resolveAbilityHit({type:'player'});
+  }
   render();
 });
 document.getElementById('cancelAtkBtn').addEventListener('click', ()=>{
-  state.selectedAttackerLoc = null;
+  if(state.selectedAttackerLoc){
+    state.selectedAttackerLoc = null;
+  } else if(state.pendingAbility){
+    const pa = state.pendingAbility;
+    if(pa.kind === 'goblinAssault' && pa.hitsRemaining > 0){
+      log(`${state.player.name} cancels ${pa.sourceName} with ${pa.hitsRemaining} hit(s) unused.`);
+    } else {
+      log(`${state.player.name} cancels ${pa.sourceName || 'the ability'}.`);
+    }
+    state.pendingAbility = null;
+    document.getElementById('deathPicker').classList.remove('show');
+  }
   render();
 });
 
 document.getElementById('drawBtn').addEventListener('click', ()=>{
   if(state.turn!=='player' || state.player.mana < DRAW_COST || state.player.deck.length===0) return;
+  if(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice) return;
   state.player.mana -= DRAW_COST;
   drawCard('player', false);
   render();
@@ -772,7 +1773,7 @@ function showGameOver(){
 }
 
 /* ============================================================
-   ROCK PAPER SCISSORS — decide first turn (Sec.3)
+   ROCK PAPER SCISSORS — decide first turn
    ============================================================ */
 const beats = {rock:'scissors', paper:'rock', scissors:'paper'};
 document.querySelectorAll('.rpsBtn').forEach(btn=>{
