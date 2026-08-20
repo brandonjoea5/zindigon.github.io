@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stackforge — Prototype v0.0.6</title>
+<title>Stackforge — Prototype v0.0.7</title>
 <style>
   :root{
     --bg:#0f1115;
@@ -203,6 +203,38 @@
   #gameOverTitle.lose{color:var(--bad);}
   .overlay .bigbtn{margin-top:18px;background:var(--accent);color:#0f1115;border:none;border-radius:8px;padding:10px 22px;font-weight:700;cursor:pointer;font-size:13px;}
 
+  /* ---------- sequential turn-playback animations ---------- */
+  @keyframes cardPlaceReveal{
+    0%{ transform:scale(.4) rotateY(100deg); opacity:0; }
+    60%{ transform:scale(1.06) rotateY(0deg); opacity:1; }
+    100%{ transform:scale(1) rotateY(0deg); opacity:1; }
+  }
+  .card.justPlayed{ animation:cardPlaceReveal .45s ease-out; }
+
+  @keyframes attackSettleKf{
+    0%{ transform:translateY(-5px) scale(1.06); }
+    100%{ transform:translateY(0) scale(1); }
+  }
+  .card.settleBack{ animation:attackSettleKf .22s ease-out; }
+
+  @keyframes hitFlashKf{
+    0%, 100%{ filter:none; box-shadow:none; }
+    35%{ filter:brightness(1.9) saturate(2); box-shadow:0 0 0 3px var(--bad); }
+  }
+  .card.hitFlash{ animation:hitFlashKf .38s ease-out; }
+
+  @keyframes abilityGlowKf{
+    0%, 100%{ box-shadow:none; }
+    40%{ box-shadow:0 0 12px 3px var(--gold); }
+  }
+  .card.abilityGlow{ animation:abilityGlowKf .5s ease-out; }
+
+  @keyframes zoneHitFlashKf{
+    0%, 100%{ box-shadow:none; background:var(--panel); }
+    30%{ box-shadow:0 0 0 3px var(--bad) inset; background:rgba(255,107,107,.14); }
+  }
+  .zone.hitFlash{ animation:zoneHitFlashKf .4s ease-out; }
+
   /* ---------- mobile: board + hand fill the screen; log/evo-pool/rules move into a slide-in drawer ---------- */
   @media (max-width: 820px){
     #menuBtn{display:inline-block;}
@@ -263,7 +295,7 @@
 <div id="app">
 
   <header>
-    <h1>Stack<span>forge</span> <span class="verbadge">v0.0.6</span></h1>
+    <h1>Stack<span>forge</span> <span class="verbadge">v0.0.7</span></h1>
     <div class="headerBtns">
       <button id="menuBtn" aria-label="Menu">☰ Menu</button>
       <button id="restartBtn">Restart Match</button>
@@ -276,7 +308,7 @@
       <div id="modeBanner"></div>
 
       <!-- Enemy status -->
-      <div class="zone">
+      <div class="zone" id="enemyStatusZone">
         <div class="name-row"><span class="turn-dot" id="dotEnemy"></span> Opponent</div>
         <div class="pstatus">
           <div class="hpwrap">
@@ -297,7 +329,7 @@
       <div id="playerBoard"></div>
 
       <!-- Player status -->
-      <div class="zone">
+      <div class="zone" id="playerStatusZone">
         <div class="name-row"><span class="turn-dot" id="dotPlayer"></span> You</div>
         <div class="pstatus">
           <div class="hpwrap">
@@ -405,7 +437,7 @@
 (function(){
 "use strict";
 
-const GAME_VERSION = '0.0.6';
+const GAME_VERSION = '0.0.7';
 
 /* ============================================================
    CARD DEFINITIONS
@@ -531,10 +563,21 @@ const DRAW_COST = 3;
 let uidCounter = 1;
 function nextUid(){ return uidCounter++; }
 
+function sleep(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+
+// Pacing for the sequential AI-turn playback (see SIMPLE AI section) — long enough to read, short enough not to drag.
+const AI_STEP_DELAY = 480;
+
 /* ============================================================
    STATE
    ============================================================ */
 let state = null;
+
+// Any card uid inserted here gets a one-shot "flip into place" reveal animation the
+// next time it's rendered (see cardEl), then is removed from the set — covers every
+// way a new instance can land on a board: hand plays, Revives, Evolutions, and Summons.
+let recentlyPlayedUids = new Set();
+function markJustPlaced(uid){ recentlyPlayedUids.add(uid); }
 
 function buildDeck(){
   const deck = [];
@@ -768,6 +811,7 @@ function playCardToStack(side, handIdx, stackIdx, digUnder){
   } else {
     stack.splice(1,0,inst);
   }
+  markJustPlaced(inst.uid);
 
   log(`${p.name} plays ${def.name} into Stack ${stackIdx+1}${digUnder && buried ? ' (Dig — buried)' : buried ? ' (burying the card beneath it)' : ''}.`);
   return inst;
@@ -966,6 +1010,7 @@ function onCardRevealed(side, card, def){
       const pulledDef = getDef(pulledDefId);
       const inst = makeCardInstance(pulledDefId, side, 0, false); // straight from own deck — Not Stolen, Not Borrowed
       stack.unshift(inst); // placed directly above Advantage (ignores Dig, per Summoning-vs-Dig rule)
+      markJustPlaced(inst.uid);
       pulled++;
       log(`${p.name}'s ${def.name} pulls ${pulledDef.name} from the deck directly into play, free of cost.`);
       afterCardEntersPlay(side, inst, pulledDef);
@@ -998,6 +1043,7 @@ function summonRandomCardForSide(side, sourceName){
   const stackIdx = legalStacks[Math.floor(Math.random()*legalStacks.length)];
   const inst = makeCardInstance(randomDef.id, side, 0, true); // Borrowed
   p.board[stackIdx].unshift(inst);
+  markJustPlaced(inst.uid);
   log(`${sourceName} summons a Borrowed ${randomDef.name} for ${p.name} into Stack ${stackIdx+1}.`);
   afterCardEntersPlay(side, inst, randomDef);
   return inst;
@@ -1052,6 +1098,7 @@ function reviveCard(deathEntry, controllerSide, opts){
   }
   const inst = makeCardInstance(deathEntry.defId, deathEntry.ownerSide);
   stack.unshift(inst); // Revive always returns to the TOP of the target stack
+  markJustPlaced(inst.uid);
   const stolen = inst.ownerSide !== controllerSide;
   log(`${p.name} Revives ${def.name}${stolen ? ' (now Stolen)' : ''} onto Stack ${targetStackIdx+1}.`);
   afterCardEntersPlay(controllerSide, inst, def);
@@ -1131,9 +1178,11 @@ function aiPlaceEvolution(inst){
   const stack = p.board[target];
   if(digChoice){
     stack.splice(1,0,inst);
+    markJustPlaced(inst.uid);
     log(`${p.name} digs ${def.name} in underneath Stack ${target+1}, keeping him protected and ready to use his Active ability.`);
   } else {
     stack.unshift(inst);
+    markJustPlaced(inst.uid);
     log(`${p.name} places ${def.name} on top of Stack ${target+1}.`);
   }
 }
@@ -1148,6 +1197,7 @@ function handleEvoPlacementClick(stackIdx){
 
   if(stack.length === 0){
     stack.unshift(pe.instance);
+    markJustPlaced(pe.instance.uid);
     log(`${p.name} places ${pe.instance.name} into empty Stack ${stackIdx+1}.`);
     state.pendingEvoPlacement = null;
     render();
@@ -1161,6 +1211,7 @@ function handleEvoPlacementClick(stackIdx){
     document.getElementById('placementPrompt').classList.add('show');
   } else {
     stack.unshift(pe.instance);
+    markJustPlaced(pe.instance.uid);
     log(`${p.name} places ${pe.instance.name} on top of Stack ${stackIdx+1}.`);
     state.pendingEvoPlacement = null;
     render();
@@ -1173,6 +1224,7 @@ document.getElementById('placeTopBtn').addEventListener('click', ()=>{
     const p = sideObj(pe.side);
     const stack = p.board[pe.chosenStackIdx];
     stack.unshift(pe.instance);
+    markJustPlaced(pe.instance.uid);
     log(`${p.name} places ${pe.instance.name} on top of Stack ${pe.chosenStackIdx+1}.`);
     state.pendingEvoPlacement = null;
   } else if(state.pendingHandDigChoice){
@@ -1189,6 +1241,7 @@ document.getElementById('placeDigBtn').addEventListener('click', ()=>{
     const p = sideObj(pe.side);
     const stack = p.board[pe.chosenStackIdx];
     stack.splice(1,0,pe.instance);
+    markJustPlaced(pe.instance.uid);
     log(`${p.name} digs ${pe.instance.name} in underneath Stack ${pe.chosenStackIdx+1}'s top card.`);
     state.pendingEvoPlacement = null;
   } else if(state.pendingHandDigChoice){
@@ -1371,117 +1424,216 @@ document.getElementById('deathPickerCancel').addEventListener('click', ()=>{
   render();
 });
 
-function aiUseAbilities(){
+// Finds the first eligible buried-card ability the AI hasn't already tried this turn
+// (skipUids holds cards whose ability attempt already failed to find a valid target).
+function findNextAiAbilityAction(skipUids){
   const ai = state.enemy;
-  ai.board.forEach((stack, stackIdx)=>{
+  for(let stackIdx=0; stackIdx<ai.board.length; stackIdx++){
+    const stack = ai.board[stackIdx];
     for(let depth=1; depth<stack.length; depth++){
       const card = stack[depth];
+      if(skipUids.has(card.uid)) continue;
       const def = getDef(card.defId);
       if(!def.active) continue;
       if(card.sick || abilityExhausted(card)) continue;
       if(def.active.cooldown && card.cooldownTurnsLeft > 0) continue;
-
-      if(def.active.type === 'goblinAssault'){
-        card.abilityUsesUsed++;
-        log(`${ai.name} activates ${def.name}'s Goblin Assault.`);
-        for(let h=0; h<def.active.hits; h++){
-          applyDamageToTarget('enemy', def.active.dmgEach, pickAiAbilityTarget(def.active.dmgEach), def.name);
-        }
-      } else if(def.active.type === 'restoreHealth'){
-        let target = null, worstDeficit = 0;
-        ai.board.forEach(st=>st.forEach(c=>{
-          const deficit = c.maxHp - c.hp;
-          if(deficit > worstDeficit){ worstDeficit = deficit; target = c; }
-        }));
-        if(target){
-          card.abilityUsesUsed++;
-          const before = target.hp;
-          target.hp = Math.min(target.maxHp, target.hp + def.active.amount);
-          log(`${ai.name}'s ${def.name} restores ${target.hp-before} Health to ${target.name}.`);
-        }
-      } else if(def.active.type === 'cleanse'){
-        let target = null, targetStack = null;
-        ai.board.forEach(st=>{
-          if(st.length && (st[0].dots.length || st.weakened || st.infection) && !target){ target = st[0]; targetStack = st; }
-        });
-        if(!target){
-          ai.board.forEach(st=>st.forEach(c=>{ if(c.dots.length && !target) target = c; }));
-        }
-        if(target){
-          card.abilityUsesUsed++;
-          if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
-          target.dots = [];
-          if(targetStack){ delete targetStack.weakened; delete targetStack.infection; }
-          log(`${ai.name}'s ${def.name} Cleanses ${target.name}.`);
-        }
-      } else if(def.active.type === 'weakenStack'){
-        let target = -1, bestHp = -1;
-        state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].hp>bestHp){ bestHp = st[0].hp; target = idx; } });
-        if(target !== -1){
-          card.abilityUsesUsed++;
-          state.player.board[target].weakened = { turnsLeft: def.active.turns, casterSide: 'enemy' };
-          log(`${ai.name}'s ${def.name} Weakens your Stack ${target+1}.`);
-        }
-      } else if(def.active.type === 'necromancerRevive'){
-        if(!ai.necromancerUsed && state.deathLog.length){
-          let best = state.deathLog[0], bestScore = -1;
-          state.deathLog.forEach(entry=>{
-            const d = getDef(entry.defId);
-            const score = d.dmg + d.hp;
-            if(score > bestScore){ bestScore = score; best = entry; }
-          });
-          let targetStack = -1;
-          ai.board.forEach((st, idx)=>{ if(targetStack===-1 && st.length < STACK_MAX) targetStack = idx; });
-          if(targetStack !== -1){
-            card.abilityUsesUsed++;
-            const ok = reviveCard(best, 'enemy', { forcedStackIdx: targetStack });
-            if(ok){
-              ai.necromancerUsed = true;
-              const dlIdx = state.deathLog.indexOf(best);
-              if(dlIdx !== -1) state.deathLog.splice(dlIdx,1);
-            }
-          }
-        }
-      } else if(def.active.type === 'playerGainHealth'){
-        card.abilityUsesUsed++;
-        ai.maxHp += def.active.amount;
-        ai.hp += def.active.amount;
-        log(`${ai.name}'s ${def.name} permanently gains +${def.active.amount} Player Health.`);
-      } else if(def.active.type === 'fountainSelfDestruct'){
-        card.abilityUsesUsed++;
-        ai.fountain = (ai.fountain||0) + def.active.amount;
-        log(`${ai.name}'s ${def.name} gains Fountain +${def.active.amount}, then dies.`);
-        killCardByUid('enemy', card.uid);
-      } else if(def.active.type === 'becomeImpatient'){
-        card.abilityUsesUsed++;
-        if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
-        ai.impatientNext = true;
-        log(`${ai.name} activates ${def.name} — will take a second consecutive turn next.`);
-      } else if(def.active.type === 'slowCard'){
-        let target = -1, bestDmg = -1;
-        state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].dmg>bestDmg){ bestDmg = st[0].dmg; target = idx; } });
-        if(target !== -1){
-          card.abilityUsesUsed++;
-          state.player.board[target][0].slowedTurnsLeft = 1;
-          log(`${ai.name}'s ${def.name} Slows your Stack ${target+1}'s Top card.`);
-        }
-      } else if(def.active.type === 'yelnatsStrike'){
-        let best = null, bestHp = Infinity;
-        state.player.board.forEach((st, idx)=>{
-          st.forEach((c, d)=>{ if(c.hp < bestHp){ bestHp = c.hp; best = {stackIdx: idx, depth: d}; } });
-        });
-        if(best){
-          card.abilityUsesUsed++;
-          applyDamageToTarget('enemy', def.active.amount, {type:'card', stackIdx: best.stackIdx, depth: best.depth}, def.name);
-        }
-      } else if(def.active.type === 'fountainGain'){
-        card.abilityUsesUsed++;
-        if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
-        ai.fountain = (ai.fountain||0) + def.active.amount;
-        log(`${ai.name}'s ${def.name} gains Fountain +${def.active.amount}.`);
-      }
+      return {stackIdx, depth, card, def};
     }
+  }
+  return null;
+}
+
+// Executes exactly one AI ability activation and reports back what (if anything) it
+// hit, so the caller can flash the right card/zone. Returns {ok:false} without
+// mutating anything if no valid target exists — same as the original single-pass
+// behavior, just split so it can be replayed one action at a time.
+function executeAiAbilityAction(found){
+  const ai = state.enemy;
+  const { card, def } = found;
+
+  if(def.active.type === 'goblinAssault'){
+    card.abilityUsesUsed++;
+    log(`${ai.name} activates ${def.name}'s Goblin Assault.`);
+    let lastTarget = null;
+    for(let h=0; h<def.active.hits; h++){
+      lastTarget = pickAiAbilityTarget(def.active.dmgEach);
+      applyDamageToTarget('enemy', def.active.dmgEach, lastTarget, def.name);
+    }
+    if(lastTarget && lastTarget.type === 'card'){
+      const tCard = state.player.board[lastTarget.stackIdx] && state.player.board[lastTarget.stackIdx][0];
+      return {ok:true, targetSide:'player', targetUid: tCard ? tCard.uid : null};
+    }
+    return {ok:true, targetIsPlayer:true, targetSide:'player'};
+  }
+
+  if(def.active.type === 'restoreHealth'){
+    let target = null, worstDeficit = 0;
+    ai.board.forEach(st=>st.forEach(c=>{
+      const deficit = c.maxHp - c.hp;
+      if(deficit > worstDeficit){ worstDeficit = deficit; target = c; }
+    }));
+    if(!target) return {ok:false};
+    card.abilityUsesUsed++;
+    const before = target.hp;
+    target.hp = Math.min(target.maxHp, target.hp + def.active.amount);
+    log(`${ai.name}'s ${def.name} restores ${target.hp-before} Health to ${target.name}.`);
+    return {ok:true, targetSide:'enemy', targetUid: target.uid};
+  }
+
+  if(def.active.type === 'cleanse'){
+    let target = null, targetStack = null;
+    ai.board.forEach(st=>{
+      if(st.length && (st[0].dots.length || st.weakened || st.infection) && !target){ target = st[0]; targetStack = st; }
+    });
+    if(!target){
+      ai.board.forEach(st=>st.forEach(c=>{ if(c.dots.length && !target) target = c; }));
+    }
+    if(!target) return {ok:false};
+    card.abilityUsesUsed++;
+    if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+    target.dots = [];
+    if(targetStack){ delete targetStack.weakened; delete targetStack.infection; }
+    log(`${ai.name}'s ${def.name} Cleanses ${target.name}.`);
+    return {ok:true, targetSide:'enemy', targetUid: target.uid};
+  }
+
+  if(def.active.type === 'weakenStack'){
+    let target = -1, bestHp = -1;
+    state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].hp>bestHp){ bestHp = st[0].hp; target = idx; } });
+    if(target === -1) return {ok:false};
+    card.abilityUsesUsed++;
+    state.player.board[target].weakened = { turnsLeft: def.active.turns, casterSide: 'enemy' };
+    log(`${ai.name}'s ${def.name} Weakens your Stack ${target+1}.`);
+    return {ok:true, targetSide:'player', targetUid: state.player.board[target][0].uid};
+  }
+
+  if(def.active.type === 'necromancerRevive'){
+    if(ai.necromancerUsed || !state.deathLog.length) return {ok:false};
+    let best = state.deathLog[0], bestScore = -1;
+    state.deathLog.forEach(entry=>{
+      const d = getDef(entry.defId);
+      const score = d.dmg + d.hp;
+      if(score > bestScore){ bestScore = score; best = entry; }
+    });
+    let targetStack = -1;
+    ai.board.forEach((st, idx)=>{ if(targetStack===-1 && st.length < STACK_MAX) targetStack = idx; });
+    if(targetStack === -1) return {ok:false};
+    card.abilityUsesUsed++;
+    const ok = reviveCard(best, 'enemy', { forcedStackIdx: targetStack });
+    if(!ok) return {ok:false};
+    ai.necromancerUsed = true;
+    const dlIdx = state.deathLog.indexOf(best);
+    if(dlIdx !== -1) state.deathLog.splice(dlIdx,1);
+    const revived = ai.board[targetStack][0];
+    return {ok:true, targetSide:'enemy', targetUid: revived ? revived.uid : null};
+  }
+
+  if(def.active.type === 'playerGainHealth'){
+    card.abilityUsesUsed++;
+    ai.maxHp += def.active.amount;
+    ai.hp += def.active.amount;
+    log(`${ai.name}'s ${def.name} permanently gains +${def.active.amount} Player Health.`);
+    return {ok:true, targetIsPlayer:true, targetSide:'enemy'};
+  }
+
+  if(def.active.type === 'fountainSelfDestruct'){
+    card.abilityUsesUsed++;
+    ai.fountain = (ai.fountain||0) + def.active.amount;
+    log(`${ai.name}'s ${def.name} gains Fountain +${def.active.amount}, then dies.`);
+    killCardByUid('enemy', card.uid);
+    return {ok:true};
+  }
+
+  if(def.active.type === 'becomeImpatient'){
+    card.abilityUsesUsed++;
+    if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+    ai.impatientNext = true;
+    log(`${ai.name} activates ${def.name} — will take a second consecutive turn next.`);
+    return {ok:true};
+  }
+
+  if(def.active.type === 'slowCard'){
+    let target = -1, bestDmg = -1;
+    state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].dmg>bestDmg){ bestDmg = st[0].dmg; target = idx; } });
+    if(target === -1) return {ok:false};
+    card.abilityUsesUsed++;
+    const tCard = state.player.board[target][0];
+    tCard.slowedTurnsLeft = 1;
+    log(`${ai.name}'s ${def.name} Slows your Stack ${target+1}'s Top card.`);
+    return {ok:true, targetSide:'player', targetUid: tCard.uid};
+  }
+
+  if(def.active.type === 'yelnatsStrike'){
+    let best = null, bestHp = Infinity;
+    state.player.board.forEach((st, idx)=>{
+      st.forEach((c, d)=>{ if(c.hp < bestHp){ bestHp = c.hp; best = {stackIdx: idx, depth: d, uid: c.uid}; } });
+    });
+    if(!best) return {ok:false};
+    card.abilityUsesUsed++;
+    applyDamageToTarget('enemy', def.active.amount, {type:'card', stackIdx: best.stackIdx, depth: best.depth}, def.name);
+    return {ok:true, targetSide:'player', targetUid: best.uid};
+  }
+
+  if(def.active.type === 'fountainGain'){
+    card.abilityUsesUsed++;
+    if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+    ai.fountain = (ai.fountain||0) + def.active.amount;
+    log(`${ai.name}'s ${def.name} gains Fountain +${def.active.amount}.`);
+    return {ok:true, targetIsPlayer:true, targetSide:'enemy'};
+  }
+
+  return {ok:false};
+}
+
+// Runs one ability action (if any remain) and, on success, plays it back: render the
+// resulting state, glow the source card, flash whatever it hit, then pause before the
+// next action. Returns false once there's nothing left to try this turn.
+async function aiAnimatedAbilityAction(skipUids){
+  const found = findNextAiAbilityAction(skipUids);
+  if(!found) return false;
+  const result = executeAiAbilityAction(found);
+  if(!result.ok){
+    skipUids.add(found.card.uid);
+    return true; // consumed a decision slot, but nothing visible happened — no pause needed
+  }
+  render();
+  await sleep(20);
+  flashCardByUid('enemy', found.card.uid, 'abilityGlow');
+  if(result.targetUid){
+    flashCardByUid(result.targetSide, result.targetUid, 'hitFlash');
+  } else if(result.targetIsPlayer){
+    flashPlayerZone(result.targetSide, 'hitFlash');
+  }
+  await sleep(AI_STEP_DELAY);
+  return true;
+}
+
+// Plays exactly one AI hand card (same "priciest affordable card, shallowest legal
+// stack" heuristic as before), then renders and pauses so the placement is visible
+// before the next action starts. Returns false once nothing more can be played.
+async function aiAnimatedPlayOneCard(){
+  const ai = state.enemy;
+  let bestIdx = -1, bestCost = -1;
+  ai.hand.forEach((entry, idx)=>{
+    const def = getDef(entry.defId);
+    if(def.cost <= ai.mana && def.cost > bestCost){ bestCost = def.cost; bestIdx = idx; }
   });
+  if(bestIdx === -1) return false;
+  const chosenDef = getDef(ai.hand[bestIdx].defId);
+  let target = -1, bestLen = 99, targetHasCards = false;
+  ai.board.forEach((st,i)=>{
+    if(st.length >= STACK_MAX) return;
+    const topDef = st.length>0 ? getDef(st[0].defId) : null;
+    if(topDef && topDef.noCover && chosenDef.keyword !== 'dig') return;
+    if(st.length < bestLen){ bestLen = st.length; target = i; targetHasCards = st.length > 0; }
+  });
+  if(target === -1) return false;
+  const digUnder = chosenDef.keyword === 'dig' && targetHasCards;
+  const played = playCard('enemy', bestIdx, target, digUnder);
+  if(!played) return false;
+  render();
+  await sleep(AI_STEP_DELAY);
+  return true;
 }
 
 function pickAiAbilityTarget(dmg){
@@ -1654,6 +1806,76 @@ function checkGameOver(){
 }
 
 /* ============================================================
+   TURN-PLAYBACK ANIMATION HELPERS
+   (Sequential, one-action-at-a-time visual playback so both the player's own
+   attacks and the AI's whole turn read as a clear, ordered story rather than
+   snapping straight to the final state.)
+   ============================================================ */
+function triggerAnimClass(el, cls){
+  if(!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth; // force reflow so the animation restarts if the class was already present
+  el.classList.add(cls);
+}
+
+function findCardEl(side, uid){
+  const boardId = side === 'player' ? 'playerBoard' : 'enemyBoard';
+  return document.querySelector(`#${boardId} .card[data-uid="${uid}"]`);
+}
+
+function flashCardByUid(side, uid, cls){
+  triggerAnimClass(findCardEl(side, uid), cls);
+}
+
+function flashPlayerZone(side, cls){
+  triggerAnimClass(document.getElementById(side === 'player' ? 'playerStatusZone' : 'enemyStatusZone'), cls);
+}
+
+// Shared attack primitive used by BOTH the player's manual attack clicks and the AI's
+// turn so every attack — whoever makes it — visibly lunges toward its target and back
+// before the board snaps to the final (post-damage) state.
+async function animatedAttack(atkSide, atkStackIdx, target){
+  const atkP = sideObj(atkSide);
+  const attacker = atkP.board[atkStackIdx] && atkP.board[atkStackIdx][0];
+  if(!attacker) return false;
+
+  const attackerEl = findCardEl(atkSide, attacker.uid);
+  const defSide = oppSide(atkSide);
+  let targetEl = null;
+  if(target.type === 'card'){
+    const defStack = sideObj(defSide).board[target.stackIdx];
+    const tCard = defStack && defStack[target.depth || 0];
+    if(tCard) targetEl = findCardEl(defSide, tCard.uid);
+  } else {
+    targetEl = document.getElementById(defSide === 'player' ? 'playerStatusZone' : 'enemyStatusZone');
+  }
+
+  if(attackerEl && targetEl){
+    const aRect = attackerEl.getBoundingClientRect();
+    const tRect = targetEl.getBoundingClientRect();
+    const dx = ((tRect.left + tRect.width/2) - (aRect.left + aRect.width/2)) * 0.82;
+    const dy = ((tRect.top + tRect.height/2) - (aRect.top + aRect.height/2)) * 0.82;
+    attackerEl.style.position = 'relative';
+    attackerEl.style.zIndex = '40';
+    attackerEl.style.transition = 'transform .26s cubic-bezier(.4,0,.2,1)';
+    attackerEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.08)`;
+    await sleep(270);
+    triggerAnimClass(targetEl, 'hitFlash');
+    await sleep(150);
+  }
+
+  const ok = performAttack(atkSide, atkStackIdx, target);
+  render();
+
+  if(ok){
+    await sleep(20);
+    const newAttackerEl = findCardEl(atkSide, attacker.uid);
+    if(newAttackerEl) triggerAnimClass(newAttackerEl, 'settleBack');
+  }
+  return ok;
+}
+
+/* ============================================================
    DEATH PROCESSING (shared by combat, DoT, infection, on-reveal 0 HP)
    ============================================================ */
 function processCardDeath(controllerSide, stackIdx, depthInStack){
@@ -1759,60 +1981,62 @@ function processInfections(casterSide){
 /* ============================================================
    SIMPLE AI
    ============================================================ */
-function runAiTurn(){
+async function runAiTurn(){
   if(state.over) return;
   const ai = state.enemy;
 
-  let guard = 0;
-  while(guard++ < 20){
-    let bestIdx = -1, bestCost = -1;
-    ai.hand.forEach((entry, idx)=>{
-      const def = getDef(entry.defId);
-      if(def.cost <= ai.mana && def.cost > bestCost){ bestCost = def.cost; bestIdx = idx; }
-    });
-    if(bestIdx === -1) break;
-    const chosenDef = getDef(ai.hand[bestIdx].defId);
-    let target = -1, bestLen = 99, targetHasCards = false;
-    ai.board.forEach((st,i)=>{
-      if(st.length >= STACK_MAX) return;
-      const topDef = st.length>0 ? getDef(st[0].defId) : null;
-      if(topDef && topDef.noCover && chosenDef.keyword !== 'dig') return;
-      if(st.length < bestLen){ bestLen = st.length; target = i; targetHasCards = st.length > 0; }
-    });
-    if(target === -1) break;
-    const digUnder = chosenDef.keyword === 'dig' && targetHasCards;
-    playCard('enemy', bestIdx, target, digUnder);
+  // Phase 1: play cards, one at a time, each fully animated before the next begins.
+  let playGuard = 0;
+  while(playGuard++ < 20){
+    if(state.over) return;
+    const playedOne = await aiAnimatedPlayOneCard();
+    if(!playedOne) break;
   }
+
+  // Phase 2: draw (instant, unchanged) then a brief pause so the hand update is visible.
   while(ai.mana >= DRAW_COST && ai.hand.length < 3 && ai.deck.length > 0){
     ai.mana -= DRAW_COST;
     drawCard('enemy', false);
   }
-
-  aiUseAbilities();
   render();
+  await sleep(250);
+  if(state.over) return;
 
-  setTimeout(()=>{
-    ai.board.forEach((stack, idx)=>{
-      if(stack.length===0) return;
-      const attacker = stack[0];
-      if(attacker.sick || attacksExhausted(attacker)) return;
-      const pl = state.player;
-      let bestTarget = null, bestHp = Infinity;
-      pl.board.forEach((pstack, pIdx)=>{
-        if(pstack.length===0) return;
-        const def = pstack[0];
-        if(def.hp <= attacker.dmg && def.hp < bestHp){ bestHp = def.hp; bestTarget = {type:'card', stackIdx:pIdx}; }
-      });
-      if(!bestTarget) bestTarget = {type:'player'};
-      performAttack('enemy', idx, bestTarget);
+  // Phase 3: abilities, one at a time, each glowing its source and flashing its target.
+  const abilitySkipUids = new Set();
+  let abilityGuard = 0;
+  while(abilityGuard++ < 30){
+    if(state.over) return;
+    const didSomething = await aiAnimatedAbilityAction(abilitySkipUids);
+    if(!didSomething) break;
+  }
+
+  // Phase 4: attacks, in board order, each a full lunge-and-return animation before the next starts.
+  for(let idx=0; idx<ai.board.length; idx++){
+    if(state.over) return;
+    const stack = ai.board[idx];
+    if(stack.length===0) continue;
+    const attacker = stack[0];
+    if(attacker.sick || attacksExhausted(attacker)) continue;
+    const pl = state.player;
+    let bestTarget = null, bestHp = Infinity;
+    pl.board.forEach((pstack, pIdx)=>{
+      if(pstack.length===0) return;
+      const def = pstack[0];
+      if(def.hp <= attacker.dmg && def.hp < bestHp){ bestHp = def.hp; bestTarget = {type:'card', stackIdx:pIdx}; }
     });
+    if(!bestTarget) bestTarget = {type:'player'};
+    await animatedAttack('enemy', idx, bestTarget);
+    await sleep(180);
+  }
+
+  render();
+  await sleep(350);
+  if(!state.over){
+    endTurn();
+  } else {
     render();
-    if(!state.over){
-      setTimeout(()=>{ endTurn(); }, 500);
-    } else {
-      render();
-    }
-  }, 500);
+  }
 }
 
 /* ============================================================
@@ -1927,6 +2151,12 @@ function cardEl(inst, side, opts){
   div.innerHTML = `<div class="cname">${inst.name}</div>
     <div class="stats"><span class="dmg">⚔${inst.dmg}</span><span class="hp">♥${Math.max(0,inst.hp)}</span></div>
     ${badges.length ? `<div class="cbadges">${badges.join('')}</div>` : ''}`;
+
+  div.dataset.uid = inst.uid;
+  if(recentlyPlayedUids.has(inst.uid)){
+    div.classList.add('justPlayed');
+    recentlyPlayedUids.delete(inst.uid);
+  }
   return div;
 }
 
@@ -1948,6 +2178,7 @@ function renderBoard(side){
   p.board.forEach((stack, idx)=>{
     const stackDiv = document.createElement('div');
     stackDiv.className = 'stack';
+    stackDiv.dataset.stackidx = idx;
 
     const isOwnBoard = side === 'player';
     const canDropHere = isPlayerTurn && isOwnBoard && !blockingMode && !abilityMode && state.selectedHandIdx !== null &&
@@ -2122,7 +2353,7 @@ function updateMidline(){
 /* ============================================================
    INTERACTION HANDLERS
    ============================================================ */
-function onStackClick(side, stackIdx, evt){
+async function onStackClick(side, stackIdx, evt){
   if(state.over) return;
   const isPlayerTurn = state.turn === 'player';
   if(!isPlayerTurn) return;
@@ -2260,17 +2491,21 @@ function onStackClick(side, stackIdx, evt){
   if(side==='enemy' && state.selectedAttackerLoc){
     const stack = state.enemy.board[stackIdx];
     if(stack.length===0) return;
-    performAttack('player', state.selectedAttackerLoc.stackIdx, {type:'card', stackIdx});
+    const atkStackIdx = state.selectedAttackerLoc.stackIdx;
     state.selectedAttackerLoc = null;
+    render();
+    await animatedAttack('player', atkStackIdx, {type:'card', stackIdx});
     render();
     return;
   }
 }
 
-document.getElementById('attackPlayerBtn').addEventListener('click', ()=>{
+document.getElementById('attackPlayerBtn').addEventListener('click', async ()=>{
   if(state.selectedAttackerLoc){
-    performAttack('player', state.selectedAttackerLoc.stackIdx, {type:'player'});
+    const atkStackIdx = state.selectedAttackerLoc.stackIdx;
     state.selectedAttackerLoc = null;
+    render();
+    await animatedAttack('player', atkStackIdx, {type:'player'});
   } else if(state.pendingAbility && state.pendingAbility.kind === 'goblinAssault'){
     resolveAbilityHit({type:'player'});
   }
