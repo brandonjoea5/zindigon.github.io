@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stackforge — Prototype v0.0.4</title>
+<title>Stackforge — Prototype v0.0.6</title>
 <style>
   :root{
     --bg:#0f1115;
@@ -32,8 +32,13 @@
   header h1{font-size:17px;margin:0;letter-spacing:.5px;font-weight:600;}
   header h1 span{color:var(--accent);}
   .verbadge{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 8px;border-radius:20px;}
+  .headerBtns{display:flex;gap:8px;}
   #restartBtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;}
   #restartBtn:hover{border-color:var(--accent);}
+  #menuBtn{display:none;background:var(--accent);color:#0f1115;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;}
+  #sideColOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;}
+  #sideColOverlay.show{display:block;}
+  #sideColCloseBtn{display:none;}
 
   /* ---------- main layout ---------- */
   #main{flex:1;display:flex;overflow:hidden;}
@@ -50,10 +55,12 @@
   .hpbar-inner{height:100%;background:linear-gradient(90deg,var(--good),#3fae70);transition:width .3s;}
   .hpbar-inner.low{background:linear-gradient(90deg,var(--bad),#c94747);}
   .hp-num{font-size:12px;color:var(--dim);margin-top:3px;}
-  .mana-pips{display:flex;gap:4px;flex-wrap:wrap;max-width:120px;}
-  .pip{width:14px;height:14px;border-radius:3px;background:#2a2f3a;border:1px solid var(--line);}
+  .mana-pips{display:flex;gap:4px;flex-wrap:wrap;max-width:170px;align-items:center;}
+  .pip{width:14px;height:14px;border-radius:3px;background:#2a2f3a;border:1px solid var(--line);flex-shrink:0;}
   .pip.on{background:var(--accent);border-color:var(--accent);}
   .pip.bucket{background:var(--teal);border-color:var(--teal);}
+  .pip.fountain{background:var(--gold);border-color:var(--gold);}
+  .depletedTag{font-size:9.5px;color:var(--bad);margin-left:2px;}
   .name-row{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
   .turn-dot{width:8px;height:8px;border-radius:50%;background:var(--line);}
   .turn-dot.active{background:var(--gold);box-shadow:0 0 8px var(--gold);}
@@ -195,14 +202,72 @@
   #gameOverTitle.win{color:var(--good);}
   #gameOverTitle.lose{color:var(--bad);}
   .overlay .bigbtn{margin-top:18px;background:var(--accent);color:#0f1115;border:none;border-radius:8px;padding:10px 22px;font-weight:700;cursor:pointer;font-size:13px;}
+
+  /* ---------- mobile: board + hand fill the screen; log/evo-pool/rules move into a slide-in drawer ---------- */
+  @media (max-width: 820px){
+    #menuBtn{display:inline-block;}
+    #sideCol{
+      position:fixed;top:0;right:0;height:100%;width:86%;max-width:340px;
+      transform:translateX(100%);transition:transform .25s ease;z-index:80;
+      box-shadow:-4px 0 20px rgba(0,0,0,.6);
+    }
+    #sideCol.open{transform:translateX(0);}
+    #sideColCloseBtn{
+      display:block;width:100%;margin:8px 0 0;background:var(--panel2);color:var(--text);
+      border:1px solid var(--line);border-radius:7px;padding:8px;font-size:12px;cursor:pointer;order:-1;
+    }
+    #sideCol{display:flex;flex-direction:column;}
+
+    header{padding:8px 10px;}
+    header h1{font-size:14px;}
+    .verbadge{font-size:9.5px;padding:2px 6px;}
+    #restartBtn, #menuBtn{padding:6px 9px;font-size:11px;}
+
+    #boardCol{padding:6px 6px;gap:5px;}
+    #enemyBoard, #playerBoard{gap:4px;overflow-x:auto;padding:4px 0;-webkit-overflow-scrolling:touch;}
+    .stack{width:59px;min-height:104px;padding:3px;gap:2px;flex-shrink:0;}
+    .card{width:53px;padding:3px 4px 4px;font-size:8.5px;border-radius:6px;}
+    .card .cname{font-size:8.5px;margin-bottom:2px;}
+    .card .stats{font-size:8.5px;}
+    .card.buried{margin-top:-10px;}
+    .cbadge{font-size:7.5px;padding:0 2px;}
+    .stack .slotIdx{font-size:7px;}
+    #midline{padding:2px 0;gap:8px;}
+    #attackPlayerBtn, #cancelAtkBtn{padding:5px 10px;font-size:11px;}
+
+    .zone{padding:6px 8px;}
+    .pstatus{gap:8px;}
+    .mana-pips{max-width:120px;}
+    .pip{width:11px;height:11px;}
+
+    #handZone{min-height:118px;}
+    #hand{min-height:96px;gap:6px;padding:3px 2px 4px;}
+    .handcard{width:82px;padding:5px 6px;}
+    .handcard .cname{font-size:10.5px;}
+    .handcard .blurb{font-size:8px;}
+
+    #actionBar{padding:6px 8px;}
+    .actbtn{font-size:11px;padding:8px 4px;}
+
+    #modeBanner{font-size:11px;padding:6px 8px;}
+  }
+
+  @media (max-width: 380px){
+    .stack{width:52px;min-height:96px;}
+    .card{width:46px;font-size:8px;}
+    .card .cname{font-size:7.8px;}
+  }
 </style>
 </head>
 <body>
 <div id="app">
 
   <header>
-    <h1>Stack<span>forge</span> <span class="verbadge">v0.0.4</span></h1>
-    <button id="restartBtn">Restart Match</button>
+    <h1>Stack<span>forge</span> <span class="verbadge">v0.0.6</span></h1>
+    <div class="headerBtns">
+      <button id="menuBtn" aria-label="Menu">☰ Menu</button>
+      <button id="restartBtn">Restart Match</button>
+    </div>
   </header>
 
   <div id="main">
@@ -255,7 +320,9 @@
 
     </div>
 
+    <div id="sideColOverlay"></div>
     <div id="sideCol">
+      <button id="sideColCloseBtn" aria-label="Close menu">✕ Close</button>
       <div id="logZone"></div>
       <div id="evoPoolZone">
         <div class="zoneLabel">Evolution Pool</div>
@@ -265,16 +332,22 @@
         <details>
           <summary>Quick rules reference</summary>
           <ul>
-            <li>5 Mana every turn (no ramp). 5-card starting hand, draw 1/turn. 3 Mana → draw a card, any number of times per turn.</li>
-            <li>5 stacks per side, 3 cards max per stack. Only the Top card is Exposed (can Basic Attack, can be targeted). Buried cards are protected and can use an Active ability instead.</li>
-            <li>New cards, new Evolutions, and Revived cards can't act the turn they enter play. Basic Attacks cause no retaliation. Card Health damage is permanent.</li>
-            <li>Only cards with the Dig keyword (Goblin King, Grylyn) can be placed beneath another card — everything else always goes on top, burying whatever was there.</li>
+            <li>5 base Mana every turn (plus permanent Fountain bonuses). 5-card starting hand, draw 1/turn. 3 Mana → draw a card, any number of times per turn.</li>
+            <li>5 stacks per side, 3 cards max per stack. Only the Top card is Exposed (can Basic Attack, can be targeted by normal attacks). Buried cards are protected from normal targeting and can use an Active ability instead.</li>
+            <li>New cards, new Evolutions, and Revived cards can't act the turn they enter play (sickness), even if something Accelerates them.</li>
+            <li>Only cards with the Dig keyword can be placed beneath another card — everything else always goes on top, burying whatever was there.</li>
             <li><b>Evolution Pool:</b> lives outside the normal deck. 3 living Goblins on your board auto-consumes them and pulls Goblin King from the pool.</li>
             <li><b>Shield</b> absorbs damage before Health. <b>DoT</b> ticks at the end of the caster's own turns. <b>Weakened</b> adds +1 per damage instance that reaches Health.</li>
             <li><b>Revive</b> returns a card to the top of the stack it died in (unless a card says otherwise) and re-triggers its On Reveal. A full stack blocks that specific Revive — no searching for another spot.</li>
-            <li><b>Gain Health</b> raises current AND max Health permanently. <b>Restore</b> only heals up to the existing max.</li>
-            <li><b>Bucket +N</b> grants +N Mana on the very next turn only. <b>Cooldowns</b> block re-use for the stated number of the controller's own turns.</li>
-            <li>A 0-Health card's On Reveal still resolves in full before it dies (e.g. Sacrifice).</li>
+            <li><b>Gain Health</b> raises current AND max Health permanently. <b>Restore</b> only heals up to the existing max. <b>Gain Damage</b> permanently raises a card's Damage stat — can even apply to a Stolen card while it's still sitting in hand.</li>
+            <li><b>Bucket +N</b> grants +N Mana on the very next turn only. <b>Fountain +N</b> permanently raises base Mana every turn. <b>Depleted -N</b> temporarily reduces Mana, but only on the affected player's very next turn.</li>
+            <li><b>Cooldowns</b> block re-use for the stated number of the controller's own turns. <b>Slowed</b> zeroes out a card's attacks/abilities for its controller's very next turn only.</li>
+            <li><b>Accelerated</b> grants one extra eligible action (attack or ability) this turn — it never lets a newly-played/Revived card bypass sickness.</li>
+            <li>Effects that hit "a random card in play" or "a random enemy card" can select Buried cards — random selection isn't normal targeting, so Buried protection doesn't apply unless the card says otherwise. Picking N random cards never repeats a target; if fewer than N exist, it hits as many as it can.</li>
+            <li>Player Health Gain permanently raises a Player's max Health, same as Gain Health does for a card.</li>
+            <li><b>Stolen</b> means a card began the match in the OPPONENT's deck. <b>Borrowed</b> means a card began the match in NEITHER Player's deck (e.g. Tryxee's random summons) — the two never overlap.</li>
+            <li>Random Summoning creates a card straight into play — the Evolution Pool is excluded, it needs a legal stack with room (or the summon fails), it triggers On Reveal immediately, and it can't act the turn it arrives. It always places on top — the Dig keyword doesn't apply to a summon unless the effect specifically allows it.</li>
+            <li>A 0-Health card's On Reveal still resolves in full before it dies (e.g. Sacrifice, Nuke).</li>
             <li>Reduce the enemy Player to 0 Health to win.</li>
           </ul>
         </details>
@@ -332,7 +405,7 @@
 (function(){
 "use strict";
 
-const GAME_VERSION = '0.0.4';
+const GAME_VERSION = '0.0.6';
 
 /* ============================================================
    CARD DEFINITIONS
@@ -361,7 +434,7 @@ const CARD_DEFS = [
   {id:'paxton',     name:'Paxton',     cost:5, dmg:4,  hp:2,
     blurb:'On Reveal: Revive the last 2 friendly cards that died',
     onReveal:{type:'reviveLastFriendlyDeaths', count:2}},
-  {id:'mouse',      name:'Mouse',      cost:2, dmg:1,  hp:1,
+  {id:'mouse',      name:'Mouse',      namePlural:'Mice', cost:2, dmg:1,  hp:1,
     blurb:'On Death: Bucket +1',
     onDeath:{type:'bucketSelf', amount:1}},
   {id:'lycander',   name:'Lycander',   cost:4, dmg:4,  hp:4,
@@ -388,6 +461,48 @@ const CARD_DEFS = [
   {id:'necromancer',name:'Necromancer',cost:4, dmg:3,  hp:2,
     blurb:'Active (Buried), once/game: Revive any dead card onto a chosen stack',
     active:{type:'necromancerRevive'}},
+  {id:'prayer',     name:'Prayer',     cost:2, dmg:0,  hp:3,
+    blurb:'Active (Buried), no cooldown: Permanently Gain +1 Player Health',
+    active:{type:'playerGainHealth', amount:1}},
+  {id:'bandit',     name:'Bandit',     cost:4, dmg:3,  hp:2,
+    blurb:"On Reveal: All Stolen cards in your hand and in play permanently gain +1 Damage",
+    onReveal:{type:'buffStolenCards', amount:1}},
+  {id:'degiv',      name:'Degiv',      cost:2, dmg:1,  hp:1,
+    blurb:"On Reveal: Steal 1 card from the top of the opponent's deck into your hand (it becomes Stolen)",
+    onReveal:{type:'stealFromOpponentDeck'}},
+  {id:'skyarrow',   name:'Sky Arrow',  cost:3, dmg:1,  hp:1,
+    blurb:'On Death: Deal 1 damage to 3 random cards in play (friendly or enemy, Exposed or Buried)',
+    onDeath:{type:'randomDamageMultiple', dmg:1, count:3}},
+  {id:'beartrap',   name:'Bear Trap',  cost:4, dmg:2,  hp:2,
+    blurb:'On Death: Deal 5 damage to a random enemy card (Exposed or Buried)',
+    onDeath:{type:'randomDamageSingleEnemy', dmg:5}},
+  {id:'nuke',       name:'Nuke',       cost:4, dmg:0,  hp:0,
+    blurb:'On Reveal: Deal 2 damage to all cards in play and both Players, then Nuke dies',
+    onReveal:{type:'globalNuke', dmg:2}},
+  {id:'yelnats',    name:'Yelnats',    cost:3, dmg:2,  hp:2,
+    blurb:'Active (Buried): Deal 2 damage to a targeted enemy card, Exposed or Buried (bypasses Buried protection)',
+    active:{type:'yelnatsStrike', amount:2}},
+  {id:'nymph',      name:'Nymph',      cost:2, dmg:0,  hp:3,
+    blurb:'Active (Buried), no cooldown: Gain Fountain +1 permanent Mana, then Nymph dies',
+    active:{type:'fountainSelfDestruct', amount:1}},
+  {id:'boss',       name:'Boss',       cost:4, dmg:3,  hp:2,
+    blurb:'Active (Buried): Become Impatient — take a second consecutive turn next. 2-turn cooldown',
+    active:{type:'becomeImpatient', cooldown:2}},
+  {id:'succubus',   name:'Succubus',   cost:2, dmg:1,  hp:3,
+    blurb:"On Reveal: Deplete the enemy Player -2 Mana next turn. No card may be stacked on top of her while she's Exposed",
+    onReveal:{type:'depleteEnemy', amount:2}, noCover:true},
+  {id:'slug',       name:'Slug',       cost:1, dmg:0,  hp:1,
+    blurb:'Active (Buried), no cooldown: Apply Slowed to a chosen enemy Top card',
+    active:{type:'slowCard'}},
+  {id:'clock',      name:'Clock',      cost:2, dmg:1,  hp:2, keyword:'dig',
+    blurb:"Dig • On Reveal: Choose a friendly card to Accelerate (one extra action this turn — can't bypass sickness)",
+    onReveal:{type:'accelerateChoice'}},
+  {id:'tryxee',     name:'Tryxee',     cost:3, dmg:3,  hp:2,
+    blurb:"On Reveal: Summon 1 random Borrowed card for each Player into a random legal stack they control (Evolution Pool excluded)",
+    onReveal:{type:'summonRandomForEachPlayer'}},
+  {id:'advantage',  name:'Advantage',  cost:6, dmg:0,  hp:4,
+    blurb:'On Reveal: Pull up to 2 random cards from your deck and place them directly above Advantage, free of cost',
+    onReveal:{type:'pullFromDeck', count:2}},
 ];
 
 // Evolution cards — live in each player's Evolution Pool, never in the deck or hand.
@@ -396,6 +511,10 @@ const EVOLUTION_DEFS = [
     blurb:'Evolution • Requires 3 Goblins Alive • Dig • Active (Buried): Goblin Assault',
     evolution:{requiresId:'goblin', requiresCount:3},
     active:{type:'goblinAssault', hits:2, dmgEach:1}},
+  {id:'kingrat',    name:'King Rat',   type:'evolution', dmg:2, hp:6,
+    blurb:'Evolution • Requires 3 Mice Alive • Active (Buried): Fountain +3 — 2-round cooldown',
+    evolution:{requiresId:'mouse', requiresCount:3},
+    active:{type:'fountainGain', amount:3, cooldown:2}},
 ];
 
 const ALL_DEFS = CARD_DEFS.concat(EVOLUTION_DEFS);
@@ -429,46 +548,64 @@ function buildDeck(){
   return deck;
 }
 
-function makeCardInstance(defId, ownerSide){
+// Hand entries are objects (not bare def-ids) so Stolen cards can carry a
+// permanent Damage bonus (Gain Damage / Bandit) even while sitting in hand.
+function makeHandEntry(defId, ownerSide){
+  return { defId, ownerSide, bonusDmg: 0 };
+}
+
+function makeCardInstance(defId, ownerSide, bonusDmg, borrowed){
   const def = getDef(defId);
+  bonusDmg = bonusDmg || 0;
   return {
     uid: nextUid(),
     defId: def.id,
     name: def.name,
-    dmg: def.dmg,
+    dmg: def.dmg + bonusDmg,
     maxHp: def.hp,
     hp: def.hp,
-    sick: true,               // can't act the turn it enters play (Evolutions + Revives included)
-    attacked: false,
-    abilityUsedThisTurn: false,
+    sick: true,               // can't act the turn it enters play (Evolutions + Revives + Summons included)
+    attacksUsed: 0,
+    attacksAllowed: 1,        // Accelerate can temporarily raise this for the current turn
+    abilityUsesUsed: 0,
+    abilityUsesAllowed: 1,
     cooldownTurnsLeft: 0,
     shield: 0,
     dots: [],                 // [{dmg, ticksLeft, casterSide}]
-    ownerSide: ownerSide       // which player's deck this specific card instance originally came from (Stolen tracking)
+    slowedTurnsLeft: 0,       // Slowed: zeroes this card's allowances for its controller's next turn
+    ownerSide: ownerSide,      // which player's deck this specific card instance originally came from (Stolen tracking)
+    borrowed: !!borrowed       // true if this instance did not begin the match in EITHER starting deck (e.g. Tryxee's summons)
   };
 }
 
-function newPlayer(name, isAI){
+function attacksExhausted(card){ return card.attacksUsed >= card.attacksAllowed; }
+function abilityExhausted(card){ return card.abilityUsesUsed >= card.abilityUsesAllowed; }
+
+function newPlayer(name, isAI, side){
   const deckIds = buildDeck();
   const hand = [];
-  for(let i=0;i<START_HAND;i++) hand.push(deckIds.pop());
+  for(let i=0;i<START_HAND;i++) hand.push(makeHandEntry(deckIds.pop(), side));
   return {
     name, isAI,
     hp: START_HP,
+    maxHp: START_HP,          // Prayer's Player Health Gain permanently raises this
     mana: BASE_MANA,
     bucket: 0,
+    fountain: 0,               // Nymph's permanent bonus base Mana
+    depletedNext: 0,           // Succubus's temporary Mana reduction, applied on the next startTurn only
+    impatientNext: false,      // Boss's effect — take a second consecutive turn
     necromancerUsed: false,
     deck: deckIds,
-    hand: hand,
+    hand: hand,                // [{defId, ownerSide, bonusDmg}]
     board: Array.from({length:STACK_COUNT}, ()=>[]),  // stack[0] = top/exposed
-    evoPool: { goblinking: { available: true } }
+    evoPool: Object.fromEntries(EVOLUTION_DEFS.map(d=>[d.id, { available: true }]))
   };
 }
 
 function initGame(firstPlayer){
   state = {
-    player: newPlayer('You', false),
-    enemy: newPlayer('Opponent', true),
+    player: newPlayer('You', false, 'player'),
+    enemy: newPlayer('Opponent', true, 'enemy'),
     turn: firstPlayer,
     turnNumber: 1,
     deathLog: [],                // [{defId, name, controllerSide, originalStackIdx, ownerSide}]
@@ -508,15 +645,28 @@ function oppSide(side){ return side==='player' ? 'enemy' : 'player'; }
 
 function startTurn(side, isFirstOfMatch){
   const p = sideObj(side);
-  p.mana = BASE_MANA + (p.bucket || 0);
+  let mana = BASE_MANA + (p.fountain || 0) + (p.bucket || 0);
+  if(p.depletedNext){
+    mana = Math.max(0, mana - p.depletedNext);
+    log(`${p.name} is Depleted -${p.depletedNext} Mana this turn.`);
+    p.depletedNext = 0;
+  }
   if(p.bucket) log(`${p.name}'s Bucket grants +${p.bucket} Mana this turn.`);
   p.bucket = 0;
+  p.mana = mana;
   p.board.forEach(stack=>{
     stack.forEach(c=>{
       c.sick = false;
-      c.attacked = false;
-      c.abilityUsedThisTurn = false;
+      c.attacksUsed = 0;
+      c.attacksAllowed = 1;
+      c.abilityUsesUsed = 0;
+      c.abilityUsesAllowed = 1;
       if(c.cooldownTurnsLeft > 0) c.cooldownTurnsLeft--;
+      if(c.slowedTurnsLeft > 0){
+        c.slowedTurnsLeft--;
+        c.attacksAllowed = 0;
+        c.abilityUsesAllowed = 0;
+      }
     });
     if(stack.weakened){
       stack.weakened.turnsLeft--;
@@ -537,7 +687,7 @@ function drawCard(side, isNatural){
     return false;
   }
   const id = p.deck.pop();
-  p.hand.push(id);
+  p.hand.push(makeHandEntry(id, side));
   if(!isNatural) log(`${p.name} spends ${DRAW_COST} Mana to draw a card.`);
   return true;
 }
@@ -551,6 +701,14 @@ function endTurn(){
   if(state.over){ render(); return; }
   processInfections(finishing);
   if(state.over){ render(); return; }
+  const finishingP = sideObj(finishing);
+  if(finishingP.impatientNext){
+    finishingP.impatientNext = false;
+    log(`${finishingP.name} is Impatient and takes another turn!`);
+    startTurn(finishing, false);
+    render();
+    return;
+  }
   if(finishing === 'enemy') state.turnNumber++;
   state.turn = oppSide(finishing);
   startTurn(state.turn, false);
@@ -562,22 +720,45 @@ function endTurn(){
    ============================================================ */
 function canAffordIdx(side, handIdx){
   const p = sideObj(side);
-  const defId = p.hand[handIdx];
-  const def = getDef(defId);
-  return def && p.mana >= def.cost;
+  const entry = p.hand[handIdx];
+  const def = entry && getDef(entry.defId);
+  return !!def && p.mana >= def.cost;
+}
+
+// Shared legality check for dropping a hand card into a stack — affordability,
+// room, and Succubus's "no cover while Exposed" restriction (Dig cards go
+// underneath her, so they're exempt; only non-Dig plays that would bury her are blocked).
+function canPlaceHandCardInStack(side, handIdx, stackIdx){
+  const p = sideObj(side);
+  const entry = p.hand[handIdx];
+  if(!entry) return false;
+  const def = getDef(entry.defId);
+  if(!def || p.mana < def.cost) return false;
+  const stack = p.board[stackIdx];
+  if(!stack || stack.length >= STACK_MAX) return false;
+  if(stack.length > 0){
+    const topDef = getDef(stack[0].defId);
+    if(topDef && topDef.noCover && def.keyword !== 'dig') return false;
+  }
+  return true;
 }
 
 // Returns the newly created instance, or null if the play was illegal.
 function playCardToStack(side, handIdx, stackIdx, digUnder){
   const p = sideObj(side);
-  const defId = p.hand[handIdx];
-  const def = getDef(defId);
+  const entry = p.hand[handIdx];
+  if(!entry) return null;
+  const def = getDef(entry.defId);
   const stack = p.board[stackIdx];
   if(!def) return null;
   if(p.mana < def.cost) return null;
   if(stack.length >= STACK_MAX) return null;
+  if(stack.length > 0){
+    const topDef = getDef(stack[0].defId);
+    if(topDef && topDef.noCover && !(def.keyword === 'dig' && digUnder)) return null;
+  }
 
-  const inst = makeCardInstance(defId, side);
+  const inst = makeCardInstance(entry.defId, entry.ownerSide, entry.bonusDmg);
   p.mana -= def.cost;
   p.hand.splice(handIdx,1);
 
@@ -594,8 +775,9 @@ function playCardToStack(side, handIdx, stackIdx, digUnder){
 
 // Wraps playCardToStack with On Reveal resolution + zero-Health death + Evolution checking.
 function playCard(side, handIdx, stackIdx, digUnder){
-  const defId = sideObj(side).hand[handIdx];
-  const def = getDef(defId);
+  const entry = sideObj(side).hand[handIdx];
+  if(!entry) return false;
+  const def = getDef(entry.defId);
   const inst = playCardToStack(side, handIdx, stackIdx, digUnder);
   if(!inst) return false;
   afterCardEntersPlay(side, inst, def);
@@ -702,6 +884,123 @@ function onCardRevealed(side, card, def){
     }
     return;
   }
+
+  if(def.onReveal.type === 'buffStolenCards'){
+    let count = 0;
+    p.hand.forEach(h=>{
+      if(h.ownerSide !== side){ h.bonusDmg = (h.bonusDmg||0) + def.onReveal.amount; count++; }
+    });
+    p.board.forEach(stack=>stack.forEach(c=>{
+      if(c.ownerSide !== side){ c.dmg += def.onReveal.amount; count++; }
+    }));
+    log(`${p.name}'s ${def.name} permanently gives +${def.onReveal.amount} Damage to ${count} Stolen card(s) (hand + in play).`);
+    return;
+  }
+
+  if(def.onReveal.type === 'stealFromOpponentDeck'){
+    const opp = sideObj(oppSide(side));
+    if(opp.deck.length === 0){
+      log(`${p.name}'s ${def.name} finds the opponent's deck empty — nothing to steal.`);
+      return;
+    }
+    const stolenDefId = opp.deck.pop();
+    const stolenDef = getDef(stolenDefId);
+    p.hand.push(makeHandEntry(stolenDefId, oppSide(side)));
+    log(`${p.name}'s ${def.name} steals ${stolenDef.name} from the opponent's deck into hand (now Stolen).`);
+    return;
+  }
+
+  if(def.onReveal.type === 'globalNuke'){
+    resolveGlobalNuke(def);
+    return;
+  }
+
+  if(def.onReveal.type === 'depleteEnemy'){
+    const opp = sideObj(oppSide(side));
+    opp.depletedNext = (opp.depletedNext||0) + def.onReveal.amount;
+    log(`${p.name}'s ${def.name} Depletes ${opp.name} -${def.onReveal.amount} Mana next turn.`);
+    return;
+  }
+
+  if(def.onReveal.type === 'accelerateChoice'){
+    if(side === 'enemy'){
+      let best = null, bestScore = -1;
+      p.board.forEach(st=>st.forEach(c=>{
+        if(c.sick) return;
+        if(c.dmg > bestScore){ bestScore = c.dmg; best = c; }
+      }));
+      if(best){
+        best.attacksAllowed += 1;
+        best.abilityUsesAllowed += 1;
+        log(`${p.name}'s ${def.name} Accelerates ${best.name}.`);
+      } else {
+        log(`${p.name}'s ${def.name} finds no eligible card to Accelerate.`);
+      }
+    } else {
+      state.pendingAbility = { kind:'accelerateChoice', side, sourceName: def.name };
+      log(`${p.name} must choose one of their cards to Accelerate with ${def.name}.`);
+    }
+    return;
+  }
+
+  if(def.onReveal.type === 'summonRandomForEachPlayer'){
+    ['player','enemy'].forEach(s=>{
+      summonRandomCardForSide(s, def.name);
+    });
+    return;
+  }
+
+  if(def.onReveal.type === 'pullFromDeck'){
+    let stackIdx = -1;
+    p.board.forEach((st, idx)=>{ if(st.indexOf(card) !== -1) stackIdx = idx; });
+    if(stackIdx === -1) return;
+    let pulled = 0;
+    for(let i=0; i<def.onReveal.count; i++){
+      const stack = p.board[stackIdx];
+      if(stack.length >= STACK_MAX) break;
+      if(p.deck.length === 0){
+        log(`${p.name}'s ${def.name} finds the deck empty — no more cards to pull.`);
+        break;
+      }
+      const pulledDefId = p.deck.pop();
+      const pulledDef = getDef(pulledDefId);
+      const inst = makeCardInstance(pulledDefId, side, 0, false); // straight from own deck — Not Stolen, Not Borrowed
+      stack.unshift(inst); // placed directly above Advantage (ignores Dig, per Summoning-vs-Dig rule)
+      pulled++;
+      log(`${p.name}'s ${def.name} pulls ${pulledDef.name} from the deck directly into play, free of cost.`);
+      afterCardEntersPlay(side, inst, pulledDef);
+    }
+    if(pulled === 0 && p.deck.length > 0){
+      log(`${p.name}'s ${def.name} has no room left in its stack to pull any cards.`);
+    }
+    return;
+  }
+}
+
+// Random Summoning: creates a card directly into play (bypassing hand/deck draw), excludes the
+// Evolution Pool, requires a legal stack with room (Succubus's no-cover rule counts as illegal),
+// always places on top (Summoning-vs-Dig: ignores the Dig keyword unless an effect says otherwise),
+// and is Borrowed since the instance never began the match in either starting deck.
+function summonRandomCardForSide(side, sourceName){
+  const p = sideObj(side);
+  const randomDef = CARD_DEFS[Math.floor(Math.random()*CARD_DEFS.length)];
+  const legalStacks = [];
+  p.board.forEach((st, idx)=>{
+    if(st.length >= STACK_MAX) return;
+    const topDef = st.length>0 ? getDef(st[0].defId) : null;
+    if(topDef && topDef.noCover) return;
+    legalStacks.push(idx);
+  });
+  if(legalStacks.length === 0){
+    log(`${sourceName} tries to summon a card for ${p.name}, but no legal stack has room — that summon fails.`);
+    return null;
+  }
+  const stackIdx = legalStacks[Math.floor(Math.random()*legalStacks.length)];
+  const inst = makeCardInstance(randomDef.id, side, 0, true); // Borrowed
+  p.board[stackIdx].unshift(inst);
+  log(`${sourceName} summons a Borrowed ${randomDef.name} for ${p.name} into Stack ${stackIdx+1}.`);
+  afterCardEntersPlay(side, inst, randomDef);
+  return inst;
 }
 
 function killCardByUid(side, uid){
@@ -770,35 +1069,39 @@ function countAliveOfType(side, defId){
 
 function checkEvolutions(side){
   const p = sideObj(side);
-  const gk = EVOLUTION_DEFS.find(d=>d.id==='goblinking');
-  if(p.evoPool.goblinking.available && countAliveOfType(side, gk.evolution.requiresId) >= gk.evolution.requiresCount){
-    triggerGoblinKingEvolution(side);
-  }
+  EVOLUTION_DEFS.forEach(evoDef=>{
+    const poolEntry = p.evoPool[evoDef.id];
+    if(poolEntry && poolEntry.available &&
+       countAliveOfType(side, evoDef.evolution.requiresId) >= evoDef.evolution.requiresCount){
+      triggerEvolution(side, evoDef.id);
+    }
+  });
 }
 
-function triggerGoblinKingEvolution(side){
+function triggerEvolution(side, evoId){
   const p = sideObj(side);
-  const gk = EVOLUTION_DEFS.find(d=>d.id==='goblinking');
-  p.evoPool.goblinking.available = false;
+  const evoDef = EVOLUTION_DEFS.find(d=>d.id===evoId);
+  p.evoPool[evoId].available = false;
 
+  const reqDef = getDef(evoDef.evolution.requiresId);
   let consumed = 0;
   p.board.forEach(stack=>{
-    for(let i=stack.length-1; i>=0 && consumed < gk.evolution.requiresCount; i--){
-      if(stack[i].defId === gk.evolution.requiresId && stack[i].hp > 0){
+    for(let i=stack.length-1; i>=0 && consumed < evoDef.evolution.requiresCount; i--){
+      if(stack[i].defId === evoDef.evolution.requiresId && stack[i].hp > 0){
         stack.splice(i,1); // Consumed, not Dead — no processCardDeath, no deathLog entry, no On Death
         consumed++;
       }
     }
   });
-  log(`${p.name}'s three Goblins are Consumed (not killed — no On Death triggers)! Goblin King rises from the Evolution Pool.`);
+  log(`${p.name}'s ${evoDef.evolution.requiresCount} ${reqDef.namePlural || reqDef.name+'s'} are Consumed (not killed — no On Death triggers)! ${evoDef.name} rises from the Evolution Pool.`);
 
-  const inst = makeCardInstance('goblinking', side);
+  const inst = makeCardInstance(evoId, side);
 
   if(side === 'player'){
     const hasRoom = p.board.some(st => st.length < STACK_MAX);
     if(!hasRoom){
-      log(`${p.name} has no room on the board to place Goblin King! He returns to the Evolution Pool.`);
-      p.evoPool.goblinking.available = true;
+      log(`${p.name} has no room on the board to place ${evoDef.name}! It returns to the Evolution Pool.`);
+      p.evoPool[evoId].available = true;
       return;
     }
     state.pendingEvoPlacement = { side, instance: inst };
@@ -821,8 +1124,8 @@ function aiPlaceEvolution(inst){
     p.board.forEach((st, i)=>{ if(target === -1 && st.length < STACK_MAX) target = i; });
   }
   if(target === -1){
-    log(`${p.name} has no room to place ${def.name}! He returns to the Evolution Pool.`);
-    p.evoPool.goblinking.available = true;
+    log(`${p.name} has no room to place ${def.name}! It returns to the Evolution Pool.`);
+    p.evoPool[inst.defId].available = true;
     return;
   }
   const stack = p.board[target];
@@ -912,7 +1215,7 @@ function tryActivateAbility(side, stackIdx, depth){
   const def = getDef(card.defId);
   if(!def.active) return;
   if(depth === 0) return;                 // Active abilities require being Buried (Sec.19)
-  if(card.sick || card.abilityUsedThisTurn) return;
+  if(card.sick || abilityExhausted(card)) return;
   if(def.active.cooldown && card.cooldownTurnsLeft > 0) return;
   if(def.active.type === 'necromancerRevive' && p.necromancerUsed) return;
 
@@ -921,7 +1224,7 @@ function tryActivateAbility(side, stackIdx, depth){
     return;
   }
 
-  card.abilityUsedThisTurn = true;
+  card.abilityUsesUsed++;
   if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
 
   if(def.active.type === 'goblinAssault'){
@@ -940,6 +1243,26 @@ function tryActivateAbility(side, stackIdx, depth){
     state.pendingAbility = { kind:'necromancerPickCard', side, sourceName: def.name };
     log(`${p.name} activates Necromancer — choose a dead card to Revive.`);
     openDeathPicker();
+  } else if(def.active.type === 'playerGainHealth'){
+    p.maxHp += def.active.amount;
+    p.hp += def.active.amount;
+    log(`${p.name} activates ${def.name} — permanently gains +${def.active.amount} Player Health. (${p.hp}/${p.maxHp})`);
+  } else if(def.active.type === 'fountainSelfDestruct'){
+    p.fountain = (p.fountain||0) + def.active.amount;
+    log(`${p.name} activates ${def.name} — gains permanent Fountain +${def.active.amount} Mana, then ${def.name} dies.`);
+    killCardByUid(side, card.uid);
+  } else if(def.active.type === 'becomeImpatient'){
+    p.impatientNext = true;
+    log(`${p.name} activates ${def.name} — ${p.name} will take a second consecutive turn next.`);
+  } else if(def.active.type === 'slowCard'){
+    state.pendingAbility = { kind:'slowCard', side, sourceName: def.name };
+    log(`${p.name} activates ${def.name} — choose an enemy Top card to Slow.`);
+  } else if(def.active.type === 'yelnatsStrike'){
+    state.pendingAbility = { kind:'yelnatsStrike', side, amount: def.active.amount, sourceName: def.name };
+    log(`${p.name} activates ${def.name} — choose any enemy card (Exposed or Buried) to strike for ${def.active.amount} damage.`);
+  } else if(def.active.type === 'fountainGain'){
+    p.fountain = (p.fountain||0) + def.active.amount;
+    log(`${p.name} activates ${def.name} — permanently gains Fountain +${def.active.amount} Mana. (Total Fountain: +${p.fountain})`);
   }
   render();
 }
@@ -969,6 +1292,10 @@ function resolveSelfTargetAbility(pa, stackIdx, depth){
       delete stack.infection;
     }
     log(`${pa.sourceName} Cleanses ${card.name} of all DoTs and negative statuses.`);
+  } else if(pa.kind === 'accelerateChoice'){
+    card.attacksAllowed += 1;
+    card.abilityUsesAllowed += 1;
+    log(`${pa.sourceName} Accelerates ${card.name} — one extra action this turn (still can't act while newly played / sick).`);
   }
   state.pendingAbility = null;
   render();
@@ -984,6 +1311,30 @@ function resolveStackTargetAbility(pa, stackIdx){
     stack.infection = { dmg: pa.dmg, casterSide: pa.side };
     log(`${pa.sourceName} infects ${opp.name}'s Stack ${stackIdx+1} with a spreading DoT.`);
   }
+  state.pendingAbility = null;
+  render();
+}
+
+function resolveSlowCard(stackIdx){
+  const pa = state.pendingAbility;
+  if(!pa || pa.kind !== 'slowCard') return;
+  const opp = sideObj(oppSide(pa.side));
+  const stack = opp.board[stackIdx];
+  if(!stack || stack.length === 0) return;
+  const card = stack[0];
+  card.slowedTurnsLeft = 1;
+  log(`${pa.sourceName} Slows ${card.name} — no actions for it on ${opp.name}'s next turn.`);
+  state.pendingAbility = null;
+  render();
+}
+
+function resolveYelnatsStrike(stackIdx, depth){
+  const pa = state.pendingAbility;
+  if(!pa || pa.kind !== 'yelnatsStrike') return;
+  const opp = sideObj(oppSide(pa.side));
+  const stack = opp.board[stackIdx];
+  if(!stack || depth === null || depth === undefined || !stack[depth]) return;
+  applyDamageToTarget(pa.side, pa.amount, {type:'card', stackIdx, depth}, pa.sourceName);
   state.pendingAbility = null;
   render();
 }
@@ -1027,11 +1378,11 @@ function aiUseAbilities(){
       const card = stack[depth];
       const def = getDef(card.defId);
       if(!def.active) continue;
-      if(card.sick || card.abilityUsedThisTurn) continue;
+      if(card.sick || abilityExhausted(card)) continue;
       if(def.active.cooldown && card.cooldownTurnsLeft > 0) continue;
 
       if(def.active.type === 'goblinAssault'){
-        card.abilityUsedThisTurn = true;
+        card.abilityUsesUsed++;
         log(`${ai.name} activates ${def.name}'s Goblin Assault.`);
         for(let h=0; h<def.active.hits; h++){
           applyDamageToTarget('enemy', def.active.dmgEach, pickAiAbilityTarget(def.active.dmgEach), def.name);
@@ -1043,7 +1394,7 @@ function aiUseAbilities(){
           if(deficit > worstDeficit){ worstDeficit = deficit; target = c; }
         }));
         if(target){
-          card.abilityUsedThisTurn = true;
+          card.abilityUsesUsed++;
           const before = target.hp;
           target.hp = Math.min(target.maxHp, target.hp + def.active.amount);
           log(`${ai.name}'s ${def.name} restores ${target.hp-before} Health to ${target.name}.`);
@@ -1057,7 +1408,7 @@ function aiUseAbilities(){
           ai.board.forEach(st=>st.forEach(c=>{ if(c.dots.length && !target) target = c; }));
         }
         if(target){
-          card.abilityUsedThisTurn = true;
+          card.abilityUsesUsed++;
           if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
           target.dots = [];
           if(targetStack){ delete targetStack.weakened; delete targetStack.infection; }
@@ -1067,7 +1418,7 @@ function aiUseAbilities(){
         let target = -1, bestHp = -1;
         state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].hp>bestHp){ bestHp = st[0].hp; target = idx; } });
         if(target !== -1){
-          card.abilityUsedThisTurn = true;
+          card.abilityUsesUsed++;
           state.player.board[target].weakened = { turnsLeft: def.active.turns, casterSide: 'enemy' };
           log(`${ai.name}'s ${def.name} Weakens your Stack ${target+1}.`);
         }
@@ -1082,7 +1433,7 @@ function aiUseAbilities(){
           let targetStack = -1;
           ai.board.forEach((st, idx)=>{ if(targetStack===-1 && st.length < STACK_MAX) targetStack = idx; });
           if(targetStack !== -1){
-            card.abilityUsedThisTurn = true;
+            card.abilityUsesUsed++;
             const ok = reviveCard(best, 'enemy', { forcedStackIdx: targetStack });
             if(ok){
               ai.necromancerUsed = true;
@@ -1091,6 +1442,43 @@ function aiUseAbilities(){
             }
           }
         }
+      } else if(def.active.type === 'playerGainHealth'){
+        card.abilityUsesUsed++;
+        ai.maxHp += def.active.amount;
+        ai.hp += def.active.amount;
+        log(`${ai.name}'s ${def.name} permanently gains +${def.active.amount} Player Health.`);
+      } else if(def.active.type === 'fountainSelfDestruct'){
+        card.abilityUsesUsed++;
+        ai.fountain = (ai.fountain||0) + def.active.amount;
+        log(`${ai.name}'s ${def.name} gains Fountain +${def.active.amount}, then dies.`);
+        killCardByUid('enemy', card.uid);
+      } else if(def.active.type === 'becomeImpatient'){
+        card.abilityUsesUsed++;
+        if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+        ai.impatientNext = true;
+        log(`${ai.name} activates ${def.name} — will take a second consecutive turn next.`);
+      } else if(def.active.type === 'slowCard'){
+        let target = -1, bestDmg = -1;
+        state.player.board.forEach((st, idx)=>{ if(st.length>0 && st[0].dmg>bestDmg){ bestDmg = st[0].dmg; target = idx; } });
+        if(target !== -1){
+          card.abilityUsesUsed++;
+          state.player.board[target][0].slowedTurnsLeft = 1;
+          log(`${ai.name}'s ${def.name} Slows your Stack ${target+1}'s Top card.`);
+        }
+      } else if(def.active.type === 'yelnatsStrike'){
+        let best = null, bestHp = Infinity;
+        state.player.board.forEach((st, idx)=>{
+          st.forEach((c, d)=>{ if(c.hp < bestHp){ bestHp = c.hp; best = {stackIdx: idx, depth: d}; } });
+        });
+        if(best){
+          card.abilityUsesUsed++;
+          applyDamageToTarget('enemy', def.active.amount, {type:'card', stackIdx: best.stackIdx, depth: best.depth}, def.name);
+        }
+      } else if(def.active.type === 'fountainGain'){
+        card.abilityUsesUsed++;
+        if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
+        ai.fountain = (ai.fountain||0) + def.active.amount;
+        log(`${ai.name}'s ${def.name} gains Fountain +${def.active.amount}.`);
       }
     }
   });
@@ -1106,6 +1494,85 @@ function pickAiAbilityTarget(dmg){
     }
   });
   return best || {type:'player'};
+}
+
+/* ============================================================
+   RANDOM TARGETING HELPERS
+   (Random selection is not "normal targeting" — Buried cards are eligible
+   unless a card explicitly restricts itself to Top/Exposed. Picking N
+   distinct targets never repeats one; fewer than N valid targets means
+   as many as possible are affected.)
+   ============================================================ */
+function collectAllLivingCards(sides){
+  const pool = [];
+  sides.forEach(side=>{
+    sideObj(side).board.forEach(stack=>{
+      stack.forEach(card=>{
+        if(card.hp > 0) pool.push({side, uid: card.uid});
+      });
+    });
+  });
+  return pool;
+}
+
+function pickRandomDistinct(pool, n){
+  const copy = pool.slice();
+  for(let i=copy.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [copy[i],copy[j]] = [copy[j],copy[i]];
+  }
+  return copy.slice(0, Math.min(n, copy.length));
+}
+
+function findCardLocation(side, uid){
+  const p = sideObj(side);
+  for(let si=0; si<p.board.length; si++){
+    const depth = p.board[si].findIndex(c=>c.uid===uid);
+    if(depth !== -1) return {stackIdx: si, depth};
+  }
+  return null;
+}
+
+function dealRandomDamage(sourceName, dmg, targets){
+  let count = 0;
+  targets.forEach(t=>{
+    const loc = findCardLocation(t.side, t.uid);
+    if(!loc) return; // already dead/removed by an earlier hit in this same batch
+    const p = sideObj(t.side);
+    const stack = p.board[loc.stackIdx];
+    const card = stack[loc.depth];
+    if(!card) return;
+    dealDamageToCard(stack, card, dmg);
+    log(`${sourceName} randomly hits ${card.name} for ${dmg} damage. (${Math.max(0,card.hp)} HP left)`);
+    count++;
+    if(card.hp <= 0){
+      processCardDeath(t.side, loc.stackIdx, loc.depth);
+    }
+  });
+  if(count === 0) log(`${sourceName} finds no valid random targets.`);
+  checkGameOver();
+}
+
+function resolveGlobalNuke(def){
+  const dmg = def.onReveal.dmg;
+  ['player','enemy'].forEach(s=>{
+    const p = sideObj(s);
+    p.board.forEach((stack, stackIdx)=>{
+      let depth = 0;
+      while(depth < stack.length){
+        const c = stack[depth];
+        dealDamageToCard(stack, c, dmg);
+        if(c.hp <= 0){
+          processCardDeath(s, stackIdx, depth); // splices this depth out; do not advance
+        } else {
+          depth++;
+        }
+      }
+    });
+    p.hp = Math.max(0, p.hp - dmg);
+  });
+  log(`${def.name} detonates! ${dmg} damage dealt to every card in play and both Players.`);
+  checkGameOver();
 }
 
 /* ============================================================
@@ -1126,6 +1593,7 @@ function dealDamageToCard(stack, card, rawAmount){
 }
 
 // Returns {died:boolean} so callers (e.g. On Kill) can react.
+// target: {type:'player'} | {type:'card', stackIdx, depth?}  (depth defaults to 0 — the Exposed card)
 function applyDamageToTarget(casterSide, amount, target, sourceName){
   const defSide = oppSide(casterSide);
   const defP = sideObj(defSide);
@@ -1138,14 +1606,15 @@ function applyDamageToTarget(casterSide, amount, target, sourceName){
   }
 
   if(target.type === 'card'){
+    const depth = target.depth || 0;
     const stack = defP.board[target.stackIdx];
-    if(stack.length === 0) return {died:false};
-    const defender = stack[0];
+    if(!stack || stack.length <= depth) return {died:false};
+    const defender = stack[depth];
     const hadShield = defender.shield > 0;
     dealDamageToCard(stack, defender, amount);
     log(`${sourceName} hits ${defender.name} for ${amount} damage${hadShield ? ' (Shield absorbed some)' : ''}.`);
     if(defender.hp <= 0){
-      processCardDeath(defSide, target.stackIdx, 0);
+      processCardDeath(defSide, target.stackIdx, depth);
       checkGameOver();
       return {died:true};
     }
@@ -1160,9 +1629,9 @@ function performAttack(atkSide, atkStackIdx, target){
   const stack = atkP.board[atkStackIdx];
   if(stack.length === 0) return false;
   const attacker = stack[0];
-  if(attacker.sick || attacker.attacked) return false;
+  if(attacker.sick || attacksExhausted(attacker)) return false;
   const result = applyDamageToTarget(atkSide, attacker.dmg, target, attacker.name);
-  attacker.attacked = true;
+  attacker.attacksUsed++;
   if(result.died){
     const def = getDef(attacker.defId);
     if(def.onKill) resolveOnKill(attacker, def);
@@ -1229,6 +1698,15 @@ function resolveOnDeath(controllerSide, def){
     });
     log(`${def.name}'s death deals ${def.onDeath.dmg} damage to ${count} enemy card(s).`);
     checkGameOver();
+  } else if(def.onDeath.type === 'randomDamageMultiple'){
+    const pool = collectAllLivingCards(['player','enemy']);
+    const targets = pickRandomDistinct(pool, def.onDeath.count);
+    dealRandomDamage(def.name, def.onDeath.dmg, targets);
+  } else if(def.onDeath.type === 'randomDamageSingleEnemy'){
+    const oppS = oppSide(controllerSide);
+    const pool = collectAllLivingCards([oppS]);
+    const targets = pickRandomDistinct(pool, 1);
+    dealRandomDamage(def.name, def.onDeath.dmg, targets);
   }
 }
 
@@ -1288,17 +1766,22 @@ function runAiTurn(){
   let guard = 0;
   while(guard++ < 20){
     let bestIdx = -1, bestCost = -1;
-    ai.hand.forEach((defId, idx)=>{
-      const def = getDef(defId);
+    ai.hand.forEach((entry, idx)=>{
+      const def = getDef(entry.defId);
       if(def.cost <= ai.mana && def.cost > bestCost){ bestCost = def.cost; bestIdx = idx; }
     });
     if(bestIdx === -1) break;
-    let target = -1, bestLen = 99;
+    const chosenDef = getDef(ai.hand[bestIdx].defId);
+    let target = -1, bestLen = 99, targetHasCards = false;
     ai.board.forEach((st,i)=>{
-      if(st.length < STACK_MAX && st.length < bestLen){ bestLen = st.length; target = i; }
+      if(st.length >= STACK_MAX) return;
+      const topDef = st.length>0 ? getDef(st[0].defId) : null;
+      if(topDef && topDef.noCover && chosenDef.keyword !== 'dig') return;
+      if(st.length < bestLen){ bestLen = st.length; target = i; targetHasCards = st.length > 0; }
     });
     if(target === -1) break;
-    playCard('enemy', bestIdx, target, false);
+    const digUnder = chosenDef.keyword === 'dig' && targetHasCards;
+    playCard('enemy', bestIdx, target, digUnder);
   }
   while(ai.mana >= DRAW_COST && ai.hand.length < 3 && ai.deck.length > 0){
     ai.mana -= DRAW_COST;
@@ -1312,7 +1795,7 @@ function runAiTurn(){
     ai.board.forEach((stack, idx)=>{
       if(stack.length===0) return;
       const attacker = stack[0];
-      if(attacker.sick || attacker.attacked) return;
+      if(attacker.sick || attacksExhausted(attacker)) return;
       const pl = state.player;
       let bestTarget = null, bestHp = Infinity;
       pl.board.forEach((pstack, pIdx)=>{
@@ -1372,27 +1855,36 @@ function render(){
 
 function renderHp(side){
   const p = sideObj(side);
-  const pct = Math.max(0, Math.min(100, (p.hp/START_HP)*100));
+  const maxHp = p.maxHp || START_HP;
+  const pct = Math.max(0, Math.min(100, (p.hp/maxHp)*100));
   const bar = document.getElementById(side==='player' ? 'hpBarPlayer' : 'hpBarEnemy');
   bar.style.width = pct + '%';
   bar.classList.toggle('low', pct <= 30);
-  document.getElementById(side==='player' ? 'hpNumPlayer' : 'hpNumEnemy').textContent = `${Math.max(0,p.hp)} / ${START_HP} HP`;
+  document.getElementById(side==='player' ? 'hpNumPlayer' : 'hpNumEnemy').textContent = `${Math.max(0,p.hp)} / ${maxHp} HP`;
 }
 
 function renderMana(side){
   const p = sideObj(side);
   const el = document.getElementById(side==='player' ? 'manaPlayer' : 'manaEnemy');
   el.innerHTML = '';
-  for(let i=0;i<BASE_MANA;i++){
+  const fountain = p.fountain || 0;
+  const bucket = p.bucket || 0;
+  const totalSlots = BASE_MANA + fountain + bucket;
+  for(let i=0;i<totalSlots;i++){
     const pip = document.createElement('div');
-    pip.className = 'pip' + (i < p.mana ? ' on' : '');
+    let cls = 'pip' + (i < p.mana ? ' on' : '');
+    if(i >= BASE_MANA + fountain) cls += ' bucket';
+    else if(i >= BASE_MANA) cls += ' fountain';
+    pip.className = cls;
+    if(i >= BASE_MANA + fountain) pip.title = 'Bucket (next turn only)';
+    else if(i >= BASE_MANA) pip.title = 'Fountain (permanent bonus Mana)';
     el.appendChild(pip);
   }
-  for(let i=0;i<p.bucket;i++){
-    const pip = document.createElement('div');
-    pip.className = 'pip bucket';
-    pip.title = 'Bucket (next turn only)';
-    el.appendChild(pip);
+  if(p.depletedNext){
+    const tag = document.createElement('span');
+    tag.className = 'depletedTag';
+    tag.textContent = `Depleted -${p.depletedNext} next turn`;
+    el.appendChild(tag);
   }
 }
 
@@ -1402,7 +1894,7 @@ function cardEl(inst, side, opts){
   const div = document.createElement('div');
   div.className = 'card' + (opts.exposed ? ' exposed' : ' buried');
   if(inst.sick) div.classList.add('sick');
-  if(inst.attacked) div.classList.add('attacked');
+  if(attacksExhausted(inst)) div.classList.add('attacked');
   if(opts.attackable) div.classList.add('attackable');
   if(opts.targetable) div.classList.add('targetable');
   if(opts.selected) div.classList.add('selectedAttacker');
@@ -1419,8 +1911,17 @@ function cardEl(inst, side, opts){
   if(def && def.active && def.active.cooldown && inst.cooldownTurnsLeft > 0){
     badges.push(`<span class="cbadge">⏳${inst.cooldownTurnsLeft}</span>`);
   }
+  if(inst.slowedTurnsLeft > 0){
+    badges.push(`<span class="cbadge">❄Slowed</span>`);
+  }
+  if(inst.attacksAllowed > 1 || inst.abilityUsesAllowed > 1){
+    badges.push(`<span class="cbadge">⚡Accel</span>`);
+  }
   if(inst.ownerSide && inst.ownerSide !== side){
     badges.push(`<span class="cbadge">🔓Stolen</span>`);
+  }
+  if(inst.borrowed){
+    badges.push(`<span class="cbadge">🎁Borrowed</span>`);
   }
 
   div.innerHTML = `<div class="cname">${inst.name}</div>
@@ -1438,9 +1939,10 @@ function renderBoard(side){
   const blockingMode = !!(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice);
   const pa = state.pendingAbility;
   const abilityMode = !!pa;
-  const wantsEnemyCardTarget = !!state.selectedAttackerLoc || (pa && pa.kind === 'goblinAssault');
+  const wantsEnemyCardTargetExposedOnly = !!state.selectedAttackerLoc || (pa && (pa.kind === 'goblinAssault' || pa.kind === 'slowCard'));
+  const wantsEnemyCardTargetAnyDepth = pa && pa.kind === 'yelnatsStrike';
   const wantsEnemyStackTarget = pa && (pa.kind === 'weakenStack' || pa.kind === 'toxiousInfect');
-  const wantsOwnCardTarget = pa && (pa.kind === 'restoreHealth' || pa.kind === 'cleanse');
+  const wantsOwnCardTarget = pa && (pa.kind === 'restoreHealth' || pa.kind === 'cleanse' || pa.kind === 'accelerateChoice');
   const wantsOwnStackTarget = pa && (pa.kind === 'sacrificeBuff' || pa.kind === 'necromancerPickStack');
 
   p.board.forEach((stack, idx)=>{
@@ -1449,8 +1951,8 @@ function renderBoard(side){
 
     const isOwnBoard = side === 'player';
     const canDropHere = isPlayerTurn && isOwnBoard && !blockingMode && !abilityMode && state.selectedHandIdx !== null &&
-                         canAffordIdx('player', state.selectedHandIdx) && stack.length < STACK_MAX;
-    const isAttackTargetStack = (isPlayerTurn && side==='enemy' && wantsEnemyCardTarget && stack.length>0) ||
+                         canPlaceHandCardInStack('player', state.selectedHandIdx, idx);
+    const isAttackTargetStack = (isPlayerTurn && side==='enemy' && (wantsEnemyCardTargetExposedOnly || wantsEnemyCardTargetAnyDepth) && stack.length>0) ||
                                  (isPlayerTurn && side==='enemy' && wantsEnemyStackTarget);
     const isEvoTargetStack = isPlayerTurn && isOwnBoard &&
                               ((state.pendingEvoPlacement && stack.length < STACK_MAX) ||
@@ -1479,9 +1981,10 @@ function renderBoard(side){
         const exposed = depth===0;
         const onCooldown = def.active && def.active.cooldown && inst.cooldownTurnsLeft > 0;
         const necroBlocked = def.active && def.active.type==='necromancerRevive' && sideObj(side).necromancerUsed;
-        const attackable = isPlayerTurn && side==='player' && exposed && !inst.sick && !inst.attacked && !blockingMode && !abilityMode;
-        const targetable = isPlayerTurn && side==='enemy' && exposed && wantsEnemyCardTarget;
-        const activatable = isPlayerTurn && side==='player' && !exposed && def.active && !inst.sick && !inst.abilityUsedThisTurn &&
+        const attackable = isPlayerTurn && side==='player' && exposed && !inst.sick && !attacksExhausted(inst) && !blockingMode && !abilityMode;
+        const targetable = isPlayerTurn && side==='enemy' &&
+                            ((exposed && wantsEnemyCardTargetExposedOnly) || wantsEnemyCardTargetAnyDepth);
+        const activatable = isPlayerTurn && side==='player' && !exposed && def.active && !inst.sick && !abilityExhausted(inst) &&
                              !onCooldown && !necroBlocked && !blockingMode && !abilityMode && state.selectedHandIdx===null;
         const ownCardTargetable = isPlayerTurn && side==='player' &&
                                    ((state.pendingShieldChoice && exposed) || wantsOwnCardTarget);
@@ -1506,14 +2009,16 @@ function renderHand(){
   hand.innerHTML = '';
   const isPlayerTurn = state.turn==='player' && !state.over;
   const blocked = !!(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingAbility || state.pendingHandDigChoice);
-  state.player.hand.forEach((defId, idx)=>{
-    const def = getDef(defId);
+  state.player.hand.forEach((entry, idx)=>{
+    const def = getDef(entry.defId);
     const div = document.createElement('div');
     const affordable = state.player.mana >= def.cost;
+    const stolen = entry.ownerSide !== 'player';
+    const effDmg = def.dmg + (entry.bonusDmg||0);
     div.className = 'handcard' + (!affordable ? ' unaffordable' : '') + (state.selectedHandIdx===idx ? ' selected' : '');
     div.innerHTML = `<div class="cost">${def.cost}</div>
-      <div class="cname">${def.name}</div>
-      <div class="stats"><span class="dmg">⚔${def.dmg}</span><span class="hp">♥${def.hp}</span></div>
+      <div class="cname">${def.name}${stolen ? ' 🔓' : ''}</div>
+      <div class="stats"><span class="dmg">⚔${effDmg}</span><span class="hp">♥${def.hp}</span></div>
       ${def.blurb ? `<div class="blurb">${def.blurb}</div>` : ''}`;
     div.addEventListener('click', (e)=>{
       e.stopPropagation();
@@ -1534,8 +2039,9 @@ function renderEvoPool(){
     const reqDef = getDef(req.requiresId);
     const yourCount = Math.min(countAliveOfType('player', req.requiresId), req.requiresCount);
     const theirCount = Math.min(countAliveOfType('enemy', req.requiresId), req.requiresCount);
-    const yourStatus = state.player.evoPool[def.id].available ? `${yourCount}/${req.requiresCount} ${reqDef.name}s` : 'Claimed';
-    const theirStatus = state.enemy.evoPool[def.id].available ? `${theirCount}/${req.requiresCount} ${reqDef.name}s` : 'Claimed';
+    const reqNamePlural = reqDef.namePlural || reqDef.name + 's';
+    const yourStatus = state.player.evoPool[def.id].available ? `${yourCount}/${req.requiresCount} ${reqNamePlural}` : 'Claimed';
+    const theirStatus = state.enemy.evoPool[def.id].available ? `${theirCount}/${req.requiresCount} ${reqNamePlural}` : 'Claimed';
     return `<div class="evoCard">
       <div class="evoName">${def.name}</div>
       <div class="evoReq">${def.blurb}</div>
@@ -1574,6 +2080,15 @@ function updateModeBanner(){
   } else if(pa && pa.kind === 'necromancerPickStack'){
     banner.style.display = 'block';
     banner.textContent = `Choose one of YOUR stacks to place the Revived ${getDef(pa.chosenEntry.defId).name} on top.`;
+  } else if(pa && pa.kind === 'yelnatsStrike'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose any enemy card (Exposed OR Buried) to strike for ${pa.amount} damage.`;
+  } else if(pa && pa.kind === 'slowCard'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose an enemy Top card to apply Slowed to.`;
+  } else if(pa && pa.kind === 'accelerateChoice'){
+    banner.style.display = 'block';
+    banner.textContent = `Choose one of YOUR cards (any Stack, any depth) to Accelerate.`;
   } else {
     banner.style.display = 'none';
   }
@@ -1645,8 +2160,29 @@ function onStackClick(side, stackIdx, evt){
       }
       return;
     }
+    if(pa.kind === 'accelerateChoice'){
+      if(side === 'player'){
+        const stack = state.player.board[stackIdx];
+        if(stack.length > 0 && depth !== null) resolveSelfTargetAbility(pa, stackIdx, depth);
+      }
+      return;
+    }
     if(pa.kind === 'weakenStack' || pa.kind === 'toxiousInfect'){
       if(side === 'enemy') resolveStackTargetAbility(pa, stackIdx);
+      return;
+    }
+    if(pa.kind === 'slowCard'){
+      if(side === 'enemy'){
+        const stack = state.enemy.board[stackIdx];
+        if(stack.length > 0 && depth === 0) resolveSlowCard(stackIdx);
+      }
+      return;
+    }
+    if(pa.kind === 'yelnatsStrike'){
+      if(side === 'enemy'){
+        const stack = state.enemy.board[stackIdx];
+        if(stack.length > 0 && depth !== null) resolveYelnatsStrike(stackIdx, depth);
+      }
       return;
     }
     if(pa.kind === 'sacrificeBuff'){
@@ -1678,9 +2214,20 @@ function onStackClick(side, stackIdx, evt){
     if(!canAffordIdx('player', handIdx)) return;
     const stack = state.player.board[stackIdx];
     if(stack.length >= STACK_MAX) return;
-    const defId = state.player.hand[handIdx];
-    const def = getDef(defId);
+    const entry = state.player.hand[handIdx];
+    const def = getDef(entry.defId);
+    const topDef = stack.length>0 ? getDef(stack[0].defId) : null;
+    if(topDef && topDef.noCover && def.keyword !== 'dig'){
+      log(`${topDef.name} can't be covered — nothing may be stacked on top of her while she's Exposed.`);
+      return;
+    }
     if(def.keyword === 'dig' && stack.length > 0){
+      if(topDef && topDef.noCover){
+        playCard('player', handIdx, stackIdx, true);
+        clearSelections();
+        render();
+        return;
+      }
       state.pendingHandDigChoice = {handIdx, stackIdx};
       document.getElementById('placementPromptText').textContent =
         `Place ${def.name} on top of Stack ${stackIdx+1}, or Dig him underneath the current top card?`;
@@ -1699,7 +2246,7 @@ function onStackClick(side, stackIdx, evt){
     if(stack.length===0) return;
     if(depth === 0){
       const top = stack[0];
-      if(top.sick || top.attacked) return;
+      if(top.sick || attacksExhausted(top)) return;
       state.selectedAttackerLoc = (state.selectedAttackerLoc && state.selectedAttackerLoc.stackIdx===stackIdx)
         ? null : {side:'player', stackIdx};
       render();
@@ -1756,6 +2303,21 @@ document.getElementById('drawBtn').addEventListener('click', ()=>{
 document.getElementById('endTurnBtn').addEventListener('click', endTurn);
 document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
 document.getElementById('playAgainBtn').addEventListener('click', ()=>{ location.reload(); });
+
+/* ============================================================
+   MOBILE MENU DRAWER (log / evo pool / rules live off-canvas on small screens)
+   ============================================================ */
+function openSideDrawer(){
+  document.getElementById('sideCol').classList.add('open');
+  document.getElementById('sideColOverlay').classList.add('show');
+}
+function closeSideDrawer(){
+  document.getElementById('sideCol').classList.remove('open');
+  document.getElementById('sideColOverlay').classList.remove('show');
+}
+document.getElementById('menuBtn').addEventListener('click', openSideDrawer);
+document.getElementById('sideColOverlay').addEventListener('click', closeSideDrawer);
+document.getElementById('sideColCloseBtn').addEventListener('click', closeSideDrawer);
 
 /* ============================================================
    GAME OVER
