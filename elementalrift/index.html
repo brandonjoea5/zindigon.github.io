@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Elemental Rift | Free Browser RPG — Master the Elements</title>
-<!-- v3.29.0 -->
+<!-- v3.30.0 -->
 
 <!-- SEO Meta Tags -->
 <meta name="description" content="Elemental Rift is a free browser RPG. Choose Mage, Warrior, or Rogue, master Fire, Water, Grass, Poison, Electric, Ice, Rock, and Wind abilities, battle waves of enemies, collect gear, and compete on the global leaderboard. No download required.">
@@ -1981,7 +1981,7 @@ window.watchAdStatus = function(ins) {
 </div>
 <script>
 // Single source of truth for the version stamp on the name screen — bump with each release.
-const GAME_VERSION = '3.29.0';
+const GAME_VERSION = '3.30.0';
 (function(){
   const el = document.getElementById('game-version-footer');
   if(el) el.textContent = 'v' + GAME_VERSION;
@@ -3689,6 +3689,16 @@ function saveGame() {
 // Flushes an immediate save before the tab hides/closes — covers refresh, tab switch, backgrounding.
 function flushAllSaves() {
   if(!G.playerClass || !G.playerImbue) return; // no character in progress yet
+  // onDeath() deliberately clears the save the instant a run ends, so death is permanent — but
+  // G.playerClass/G.playerImbue are never reset while the "You Have Fallen" screen is up, so this
+  // function's only guard above still passed right through. Backgrounding the tab (or navigating
+  // away via "Play Again", which fires pagehide on its way out) called buildSaveObject() again with
+  // the still-populated pre-death G state and wrote the exact same run straight back into
+  // localStorage — silently undoing onDeath()'s cleanup and handing back a "Continue as <name>"
+  // button that resumed the same run, full HP and all. Honorable Death already avoids this by
+  // reloading immediately after clearing; accidental death instead sits on a results screen for as
+  // long as the player wants, so it needs its own guard here for that whole window.
+  if(G._deathInProgress) return;
   try { localStorage.setItem('elementalRift_v3', JSON.stringify(buildSaveObject())); } catch(e){}
   if(sbUser) {
     cloudSave().catch(()=>{});
@@ -5844,6 +5854,14 @@ function onDeath() {
   stopStatusTick();
   clearInterval(G.bossTimerInterval);
   localStorage.removeItem('elementalRift_v3');
+  // Deletes the cloud save the same way executeHonorableDeath() already does, closing the
+  // signed-in equivalent of the local-storage revive exploit: without this, a stale cloud row
+  // written by the last mid-fight/wave-transition autosave (from BEFORE the player died) would
+  // still be sitting on the server. syncCloudSaveIntoLocal() treats the cloud copy as the source
+  // of truth once signed in, and pulls it straight into localStorage — including on an EMPTY
+  // local save (a missing local save doesn't block the overwrite, only an actually-newer one
+  // does) — so the very next sign-in or reload would silently hand the same dead run right back.
+  if(sbUser && sb) sb.from('player_saves').delete().eq('player_id', sbUser.id).then(()=>{}, ()=>{});
   // Accidental death Trinity XP (utility lane). This used to require the Survivor's Legacy
   // node (util_3) to be unlocked before granting ANY bonus here — without it, _deathTrinXP was
   // undefined/0 and the whole block was a no-op, so a natural death paid out nothing beyond
@@ -9178,7 +9196,15 @@ let spPhase = 'skill';  // 'skill' = class/stat, 'passive' = passive tree
 // the enemy landing hits behind it with no way for the player to see or react — reported as a
 // death that happened entirely off-screen behind the sign-in form.
 const TUTORIAL_BLOCKING_IDS = ['sp-popup','vendor-modal','item-modal','boss-results-modal','ability-picker-modal','map-screen','auth-modal'];
-function isTutorialBlocked() {
+// excludeMapScreen: the Loadout tutorial step is the one step with no waitForCombat/minSegWave
+// gate and nothing it needs from an active fight — its target button lives in the side-menu,
+// which renders at z-index:500, well above map-screen's z-index:150, so it's fully reachable and
+// usable while the map is showing. Treating map-screen as blocking for every OTHER step is
+// correct (they need a live fight underneath), but for Loadout it meant the tutorial couldn't
+// finish until the player had already committed to a brand-new path — "Tap Loadout to finish the
+// tutorial" stayed stuck through the post-Merchant map screen the whole time Loadout was sitting
+// right there, perfectly tappable, the entire time.
+function isTutorialBlocked(excludeMapScreen) {
   if(document.getElementById('wave-boss-prompt')) return true;
   // The loot Equip/Sell decision popup (showVendorItemDecision()) is built with
   // document.createElement and appended straight to <body> — same dynamic-creation pattern as
@@ -9196,6 +9222,7 @@ function isTutorialBlocked() {
   const menuPanel = document.getElementById('menu-panel');
   if(menuPanel && menuPanel.style.display && menuPanel.style.display !== 'none') return true;
   return TUTORIAL_BLOCKING_IDS.some(id => {
+    if(excludeMapScreen && id === 'map-screen') return false;
     const el = document.getElementById(id);
     return el && !el.classList.contains('hidden');
   });
@@ -9648,6 +9675,7 @@ const TUT_STEPS = [
     title: ' Attack Slot',
     desc: 'Tap any ability to toggle AUTO on — it fires automatically. Tap again to stop. Skills fire as soon as their cooldown ends.',
     hint: 'Tap the Attack button now',
+    doneHint: 'Attack enabled! Finish the wave to continue.',
     waitForTap: 'slot-basic',
     // Both this and the _tutStateWatcher's combatLost check (below) apply to any ability-slot
     // step, not just Heal — without it, an enemy dying while this step is still up left the
@@ -9662,6 +9690,7 @@ const TUT_STEPS = [
     title: ' Skill 1',
     desc: 'Tap to toggle auto — it will fire automatically every time the cooldown resets. Tap again to turn off.',
     hint: 'Tap Skill 1 to try it',
+    doneHint: 'Skill 1 enabled! Finish the wave to continue.',
     waitForTap: 'slot-reg1',
     // Gates this step to Wave 2+ instead of reactively detecting a blocking overlay, removing the race entirely.
     minSegWave: 2,
@@ -9674,6 +9703,7 @@ const TUT_STEPS = [
     title: 'Heal Slot',
     desc: 'This is your heal. Tapping it heals you immediately and turns on auto-heal, which fires again whenever your HP drops low. Costs 30 mana and has a cooldown.',
     hint: 'Tap Heal to restore health',
+    doneHint: 'Heal enabled! Finish the wave to continue.',
     waitForTap: 'slot-heal',
     // Holds the Heal step until the next wave's combat has actually started, since healing is disabled between waves.
     waitForCombat: true,
@@ -9769,9 +9799,11 @@ function pauseTutorialForModal(step) {
     _tutCurrentHandler = null;
   }
   tutPollStop(_tutBlockPoll);
+  const _pausedStepDef = TUT_STEPS[step];
+  const _pausedIsLoadout = _pausedStepDef && _pausedStepDef.slotId === 'loadout-btn';
   _tutBlockPoll = tutPollStart(400, () => {
     if(!tutActive) { tutPollStop(_tutBlockPoll); _tutBlockPoll = null; return; }
-    if(!isTutorialBlocked()) {
+    if(!isTutorialBlocked(_pausedIsLoadout)) {
       tutPollStop(_tutBlockPoll);
       _tutBlockPoll = null;
       showTutStep(step);
@@ -9818,7 +9850,7 @@ function showTutStep(step) {
     return;
   }
 
-  if(isTutorialBlocked()) { pauseTutorialForModal(step); return; }
+  if(isTutorialBlocked(s.slotId === 'loadout-btn')) { pauseTutorialForModal(step); return; }
 
   // Makes sure the Heal step is always completable — tops up mana and ensures HP is missing before it renders.
   if (s.slotId === 'slot-heal') {
@@ -9837,7 +9869,7 @@ function showTutStep(step) {
       // render the Loadout spotlight/bubble straight over it regardless, since renderTutStep() here
       // ran unconditionally. Re-checking fresh right before actually rendering closes that gap —
       // and closes the side menu we just opened for nothing, so it doesn't linger behind the modal.
-      if(isTutorialBlocked()) { closeMenu(); pauseTutorialForModal(step); return; }
+      if(isTutorialBlocked(true)) { closeMenu(); pauseTutorialForModal(step); return; }
       renderTutStep(step, s);
     }, 260);
     return;
@@ -9960,6 +9992,16 @@ function renderTutStep(step, s) {
       tutPollStop(_tutStateWatcher);
       document.removeEventListener('click', _tutGlobalTapCheck, true);
       document.removeEventListener('touchend', _tutGlobalTapCheck, true);
+      // advanceTutStep() below fades the bubble to opacity:0 immediately, which should be enough
+      // on its own — but real-device reports kept describing this exact hint staying visibly
+      // stuck ("Tap the Attack button now") well after the action was already done, something no
+      // amount of local Playwright/headless testing has been able to reproduce. Rather than leave
+      // players reading an instruction to do something they already did if that fade is ever
+      // delayed or skipped for a reason this hasn't caught, swap the wording itself the instant
+      // satisfaction is detected — so even a stuck-visible bubble reads as "done," never as a
+      // stale command.
+      const hintEl = document.getElementById('tut-hint');
+      if(hintEl) hintEl.textContent = s.doneHint || 'Done! Complete the wave to continue.';
       advanceTutStep(el, s, true);
     }
   };
@@ -9992,7 +10034,7 @@ function renderTutStep(step, s) {
     // player to tap an ability that was already non-functional. Checking combat readiness here
     // too closes it immediately instead of waiting for whatever overlay eventually shows up.
     const combatLost = s.waitForCombat && !(G.combatActive && G.enemy);
-    if (isTutorialBlocked() || combatLost) {
+    if (isTutorialBlocked(s.slotId === 'loadout-btn') || combatLost) {
       finished = true;
       tutPollStop(_tutStateWatcher);
       pauseTutorialForModal(step);
