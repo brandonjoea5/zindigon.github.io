@@ -136,17 +136,6 @@
   #endTurnBtn{background:var(--accent);color:#0f1115;border:none;}
   #endTurnBtn:hover{filter:brightness(1.08);}
 
-  #digPrompt{
-    position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;
-  }
-  #digPrompt.show{display:flex;}
-  #digPromptBox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;text-align:center;max-width:320px;}
-  #digPromptBox h3{margin:0 0 6px;font-size:14px;}
-  #digPromptBox p{margin:0 0 16px;color:var(--dim);font-size:12px;}
-  #digPromptBox .row{display:flex;gap:10px;}
-  #digPromptBox button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600;}
-  #digPromptBox button:hover{border-color:var(--accent);}
-
   /* ---------- RPS + game over overlays ---------- */
   .overlay{position:fixed;inset:0;background:rgba(8,9,12,.88);display:flex;align-items:center;justify-content:center;z-index:100;text-align:center;}
   .overlay .box{max-width:420px;padding:30px;}
@@ -230,23 +219,12 @@
             <li>Only the top card of a stack is exposed: it can Basic Attack once/turn and can be targeted.</li>
             <li>Buried cards are protected but (in this vanilla-only prototype) have no Active ability to use yet.</li>
             <li>New cards can't attack the turn they're played (no retaliation on Basic Attacks).</li>
-            <li>Dig lets a played card slot in beneath the current top card instead of on top.</li>
+            <li>Every played card goes on top of its stack — no current card has the Dig keyword yet, so playing on top and burying whatever was underneath is the only placement.</li>
+            <li>Damage is permanent: a card's Health only ever goes down (or is removed on death) — it never resets or heals on its own.</li>
             <li>Reduce the enemy Player to 0 Health to win.</li>
           </ul>
         </details>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Dig placement prompt -->
-<div id="digPrompt">
-  <div id="digPromptBox">
-    <h3>Place card</h3>
-    <p id="digPromptText"></p>
-    <div class="row">
-      <button id="digTopBtn">Play on Top</button>
-      <button id="digUnderBtn">Dig (place underneath)</button>
     </div>
   </div>
 </div>
@@ -361,7 +339,6 @@ function initGame(firstPlayer){
     turnNumber: 1,
     selectedHandIdx: null,
     selectedAttackerLoc: null,  // {side:'player', stackIdx}
-    pendingDig: null,           // {handIdx, stackIdx}
     over: false
   };
   log(`Match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
@@ -441,7 +418,7 @@ function canAffordIdx(side, handIdx){
   return def && p.mana >= def.cost;
 }
 
-function playCardToStack(side, handIdx, stackIdx, digUnder){
+function playCardToStack(side, handIdx, stackIdx){
   const p = sideObj(side);
   const defId = p.hand[handIdx];
   const def = CARD_DEFS.find(d=>d.id===defId);
@@ -454,13 +431,12 @@ function playCardToStack(side, handIdx, stackIdx, digUnder){
   p.mana -= def.cost;
   p.hand.splice(handIdx,1);
 
-  if(stack.length === 0 || !digUnder){
-    stack.unshift(inst); // goes on top
-  } else {
-    // Dig: place directly beneath current top card (Sec.20 / open rule Sec.76 simplified for prototype)
-    stack.splice(1,0,inst);
-  }
-  log(`${p.name} plays ${def.name}${digUnder && stack.length>1 ? ' (Dig — buried)' : ''} into Stack ${stackIdx+1}.`);
+  // No card in the current vanilla set has the Dig keyword, so every play goes on top
+  // of the stack (Sec.9-14) — this naturally buries whatever card was already there.
+  const buried = stack.length > 0;
+  stack.unshift(inst);
+
+  log(`${p.name} plays ${def.name} into Stack ${stackIdx+1}${buried ? ' (burying the card beneath it)' : ''}.`);
   return true;
 }
 
@@ -529,7 +505,7 @@ function runAiTurn(){
       if(st.length < STACK_MAX && st.length < bestLen){ bestLen = st.length; target = i; }
     });
     if(target === -1) break; // board full
-    playCardToStack('enemy', bestIdx, target, false);
+    playCardToStack('enemy', bestIdx, target);
   }
   // spend spare mana (>=6 left, keep it simple) drawing cards if hand is thin
   while(ai.mana >= DRAW_COST && ai.hand.length < 3 && ai.deck.length > 0){
@@ -574,7 +550,6 @@ function runAiTurn(){
 function clearSelections(){
   state.selectedHandIdx = null;
   state.selectedAttackerLoc = null;
-  state.pendingDig = null;
 }
 
 /* ============================================================
@@ -652,7 +627,6 @@ function renderBoard(side){
   container.innerHTML = '';
 
   const isPlayerTurn = state.turn === 'player' && !state.over;
-  const dig = state.pendingDig; // handIdx pending stack selection is handled via prompt, not here
 
   p.board.forEach((stack, idx)=>{
     const stackDiv = document.createElement('div');
@@ -724,20 +698,16 @@ function onStackClick(side, stackIdx){
   const isPlayerTurn = state.turn === 'player';
   if(!isPlayerTurn) return;
 
-  // Case 1: playing a selected hand card onto own board
+  // Case 1: playing a selected hand card onto own board — always goes on top
+  // (no card in the current set has the Dig keyword yet), burying whatever was there.
   if(side==='player' && state.selectedHandIdx !== null){
     const handIdx = state.selectedHandIdx;
     if(!canAffordIdx('player', handIdx)) return;
     const stack = state.player.board[stackIdx];
     if(stack.length >= STACK_MAX) return;
-    if(stack.length === 0){
-      playCardToStack('player', handIdx, stackIdx, false);
-      clearSelections();
-      render();
-    } else {
-      // ask Play on Top vs Dig
-      openDigPrompt(handIdx, stackIdx);
-    }
+    playCardToStack('player', handIdx, stackIdx);
+    clearSelections();
+    render();
     return;
   }
 
@@ -762,31 +732,6 @@ function onStackClick(side, stackIdx){
     render();
     return;
   }
-}
-
-function openDigPrompt(handIdx, stackIdx){
-  state.pendingDig = {handIdx, stackIdx};
-  const def = CARD_DEFS.find(d=>d.id===state.player.hand[handIdx]);
-  document.getElementById('digPromptText').textContent =
-    `Place ${def.name} on top of Stack ${stackIdx+1}, or Dig it in underneath the current top card (protected, but can't attack while buried)?`;
-  document.getElementById('digPrompt').classList.add('show');
-}
-
-document.getElementById('digTopBtn').addEventListener('click', ()=>{
-  const pd = state.pendingDig;
-  if(pd) playCardToStack('player', pd.handIdx, pd.stackIdx, false);
-  closeDigPrompt();
-});
-document.getElementById('digUnderBtn').addEventListener('click', ()=>{
-  const pd = state.pendingDig;
-  if(pd) playCardToStack('player', pd.handIdx, pd.stackIdx, true);
-  closeDigPrompt();
-});
-function closeDigPrompt(){
-  state.pendingDig = null;
-  clearSelections();
-  document.getElementById('digPrompt').classList.remove('show');
-  render();
 }
 
 document.getElementById('attackPlayerBtn').addEventListener('click', ()=>{
