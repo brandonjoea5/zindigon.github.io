@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stackforge — Prototype</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --panel2:#1e222b;
+    --line:#2a2f3a;
+    --text:#e8e9ee;
+    --dim:#8b90a0;
+    --accent:#7c9eff;
+    --accent2:#ff8a7c;
+    --good:#5fd68e;
+    --bad:#ff6b6b;
+    --gold:#e0b34c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+  #app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+  /* ---------- top bar ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  header h1{font-size:17px;margin:0;letter-spacing:.5px;font-weight:600;}
+  header h1 span{color:var(--accent);}
+  .badge{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:3px 8px;border-radius:20px;}
+  #restartBtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px;}
+  #restartBtn:hover{border-color:var(--accent);}
+
+  /* ---------- main layout ---------- */
+  #main{flex:1;display:flex;overflow:hidden;}
+  #boardCol{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px 14px;gap:8px;}
+  #sideCol{width:290px;flex-shrink:0;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;overflow:hidden;}
+
+  .zone{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
+  .zoneLabel{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+
+  /* player status rows */
+  .pstatus{display:flex;align-items:center;gap:14px;}
+  .hpwrap{flex:1;}
+  .hpbar-outer{height:10px;background:#2a2f3a;border-radius:6px;overflow:hidden;}
+  .hpbar-inner{height:100%;background:linear-gradient(90deg,var(--good),#3fae70);transition:width .3s;}
+  .hpbar-inner.low{background:linear-gradient(90deg,var(--bad),#c94747);}
+  .hp-num{font-size:12px;color:var(--dim);margin-top:3px;}
+  .mana-pips{display:flex;gap:4px;}
+  .pip{width:14px;height:14px;border-radius:3px;background:#2a2f3a;border:1px solid var(--line);}
+  .pip.on{background:var(--accent);border-color:var(--accent);}
+  .name-row{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;}
+  .turn-dot{width:8px;height:8px;border-radius:50%;background:var(--line);}
+  .turn-dot.active{background:var(--gold);box-shadow:0 0 8px var(--gold);}
+
+  /* ---------- boards ---------- */
+  #enemyBoard, #playerBoard{display:flex;gap:10px;justify-content:center;padding:6px 0;}
+  .stack{
+    width:96px;min-height:150px;border:1px dashed #333849;border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding:4px;gap:3px;position:relative;transition:border-color .15s, background .15s;
+  }
+  .stack.dropTarget{border-color:var(--accent);background:rgba(124,158,255,.08);cursor:pointer;}
+  .stack.atkTarget{border-color:var(--accent2);background:rgba(255,138,124,.10);cursor:crosshair;}
+  .stack .slotIdx{position:absolute;bottom:2px;right:5px;font-size:9px;color:#444a5a;}
+
+  .card{
+    width:88px;border-radius:8px;padding:5px 6px 6px;font-size:11px;position:relative;
+    border:1px solid var(--line);background:linear-gradient(160deg,#232838,#1b1e27);
+    box-shadow:0 2px 4px rgba(0,0,0,.4);
+  }
+  .card .cname{font-weight:700;font-size:11.5px;margin-bottom:3px;line-height:1.1;}
+  .card .stats{display:flex;justify-content:space-between;font-size:11px;}
+  .card .dmg{color:var(--accent2);font-weight:700;}
+  .card .hp{color:var(--good);font-weight:700;}
+  .card.exposed{border-color:#4a5270;box-shadow:0 0 0 1px #4a5270, 0 3px 8px rgba(0,0,0,.5);}
+  .card.buried{opacity:.62;transform:scale(.94);margin-top:-14px;}
+  .card.buried .cname{font-size:10px;}
+  .card.sick::after{
+    content:"NEW";position:absolute;top:-6px;left:-6px;background:var(--gold);color:#1a1a1a;
+    font-size:8px;font-weight:800;padding:1px 4px;border-radius:4px;
+  }
+  .card.attacked{filter:grayscale(.5) brightness(.75);}
+  .card.attackable{cursor:pointer;box-shadow:0 0 0 2px var(--accent);}
+  .card.targetable{cursor:crosshair;box-shadow:0 0 0 2px var(--accent2);}
+  .card.selectedAttacker{box-shadow:0 0 0 2px var(--gold);}
+
+  .empty-slot-hint{color:#3d4254;font-size:10px;text-align:center;margin-top:auto;margin-bottom:auto;}
+
+  /* midline */
+  #midline{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0;}
+  #attackPlayerBtn{
+    background:var(--panel2);border:1px solid var(--accent2);color:var(--accent2);border-radius:8px;
+    padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;display:none;
+  }
+  #attackPlayerBtn.show{display:inline-block;}
+  #attackPlayerBtn:hover{background:rgba(255,138,124,.15);}
+  #cancelAtkBtn{display:none;background:transparent;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;}
+  #cancelAtkBtn.show{display:inline-block;}
+
+  /* ---------- hand ---------- */
+  #handZone{min-height:150px;}
+  #hand{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;min-height:126px;}
+  .handcard{
+    width:98px;flex-shrink:0;border-radius:9px;padding:7px 8px;cursor:pointer;
+    border:1px solid var(--line);background:linear-gradient(160deg,#242a3c,#1a1d26);
+    transition:transform .12s, box-shadow .12s;position:relative;
+  }
+  .handcard:hover{transform:translateY(-4px);}
+  .handcard.selected{box-shadow:0 0 0 2px var(--accent);transform:translateY(-6px);}
+  .handcard.unaffordable{opacity:.4;cursor:not-allowed;}
+  .handcard .cost{
+    position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;
+    background:var(--accent);color:#101218;font-weight:800;font-size:12px;
+    display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);
+  }
+  .handcard .cname{font-weight:700;font-size:12px;margin:4px 0 6px;}
+  .handcard .stats{display:flex;justify-content:space-between;font-size:12px;}
+
+  /* ---------- side col ---------- */
+  #logZone{flex:1;overflow-y:auto;padding:10px 12px;font-size:12px;color:#c7cadb;}
+  #logZone div{margin-bottom:6px;line-height:1.4;}
+  #logZone .t{color:var(--dim);font-size:10px;margin-right:4px;}
+  #rulesZone{border-top:1px solid var(--line);padding:10px 12px;font-size:11.5px;color:var(--dim);}
+  #rulesZone summary{cursor:pointer;color:var(--text);font-weight:600;margin-bottom:6px;}
+  #rulesZone ul{margin:6px 0 0 16px;padding:0;}
+  #rulesZone li{margin-bottom:4px;}
+
+  #actionBar{display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .actbtn{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:8px 6px;font-size:12px;cursor:pointer;font-weight:600;}
+  .actbtn:hover:not(:disabled){border-color:var(--accent);}
+  .actbtn:disabled{opacity:.35;cursor:not-allowed;}
+  #endTurnBtn{background:var(--accent);color:#0f1115;border:none;}
+  #endTurnBtn:hover{filter:brightness(1.08);}
+
+  #digPrompt{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50;
+  }
+  #digPrompt.show{display:flex;}
+  #digPromptBox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;text-align:center;max-width:320px;}
+  #digPromptBox h3{margin:0 0 6px;font-size:14px;}
+  #digPromptBox p{margin:0 0 16px;color:var(--dim);font-size:12px;}
+  #digPromptBox .row{display:flex;gap:10px;}
+  #digPromptBox button{flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-size:12px;font-weight:600;}
+  #digPromptBox button:hover{border-color:var(--accent);}
+
+  /* ---------- RPS + game over overlays ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(8,9,12,.88);display:flex;align-items:center;justify-content:center;z-index:100;text-align:center;}
+  .overlay .box{max-width:420px;padding:30px;}
+  .overlay h2{margin:0 0 6px;font-size:22px;}
+  .overlay p{color:var(--dim);font-size:13px;margin:0 0 22px;}
+  .rpsRow{display:flex;gap:14px;justify-content:center;}
+  .rpsBtn{width:72px;height:72px;border-radius:50%;background:var(--panel2);border:2px solid var(--line);font-size:28px;cursor:pointer;color:var(--text);}
+  .rpsBtn:hover{border-color:var(--accent);}
+  #rpsResult{margin-top:20px;font-size:14px;min-height:20px;color:var(--gold);}
+  #gameOverTitle{font-size:28px;}
+  #gameOverTitle.win{color:var(--good);}
+  #gameOverTitle.lose{color:var(--bad);}
+  .overlay .bigbtn{margin-top:18px;background:var(--accent);color:#0f1115;border:none;border-radius:8px;padding:10px 22px;font-weight:700;cursor:pointer;font-size:13px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>Stack<span>forge</span> <span class="badge">early prototype</span></h1>
+    <button id="restartBtn">Restart Match</button>
+  </header>
+
+  <div id="main">
+    <div id="boardCol">
+
+      <!-- Enemy status -->
+      <div class="zone">
+        <div class="name-row"><span class="turn-dot" id="dotEnemy"></span> Opponent</div>
+        <div class="pstatus">
+          <div class="hpwrap">
+            <div class="hpbar-outer"><div class="hpbar-inner" id="hpBarEnemy"></div></div>
+            <div class="hp-num" id="hpNumEnemy"></div>
+          </div>
+          <div class="mana-pips" id="manaEnemy"></div>
+        </div>
+      </div>
+
+      <div id="enemyBoard"></div>
+
+      <div id="midline">
+        <button id="attackPlayerBtn">⚔ Attack Enemy Player</button>
+        <button id="cancelAtkBtn">Cancel Attack</button>
+      </div>
+
+      <div id="playerBoard"></div>
+
+      <!-- Player status -->
+      <div class="zone">
+        <div class="name-row"><span class="turn-dot" id="dotPlayer"></span> You</div>
+        <div class="pstatus">
+          <div class="hpwrap">
+            <div class="hpbar-outer"><div class="hpbar-inner" id="hpBarPlayer"></div></div>
+            <div class="hp-num" id="hpNumPlayer"></div>
+          </div>
+          <div class="mana-pips" id="manaPlayer"></div>
+        </div>
+      </div>
+
+      <div class="zone" id="handZone">
+        <div class="zoneLabel"><span>Your Hand</span><span id="deckCount"></span></div>
+        <div id="hand"></div>
+      </div>
+
+      <div id="actionBar">
+        <button class="actbtn" id="drawBtn">Draw a Card (3 Mana)</button>
+        <button class="actbtn" id="endTurnBtn">End Turn</button>
+      </div>
+
+    </div>
+
+    <div id="sideCol">
+      <div id="logZone"></div>
+      <div id="rulesZone">
+        <details>
+          <summary>Quick rules reference</summary>
+          <ul>
+            <li>5 Mana every turn (no ramp). 5-card starting hand, draw 1/turn.</li>
+            <li>3 Mana → draw a card, any number of times per turn.</li>
+            <li>5 stacks per side, 3 cards max per stack.</li>
+            <li>Only the top card of a stack is exposed: it can Basic Attack once/turn and can be targeted.</li>
+            <li>Buried cards are protected but (in this vanilla-only prototype) have no Active ability to use yet.</li>
+            <li>New cards can't attack the turn they're played (no retaliation on Basic Attacks).</li>
+            <li>Dig lets a played card slot in beneath the current top card instead of on top.</li>
+            <li>Reduce the enemy Player to 0 Health to win.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dig placement prompt -->
+<div id="digPrompt">
+  <div id="digPromptBox">
+    <h3>Place card</h3>
+    <p id="digPromptText"></p>
+    <div class="row">
+      <button id="digTopBtn">Play on Top</button>
+      <button id="digUnderBtn">Dig (place underneath)</button>
+    </div>
+  </div>
+</div>
+
+<!-- RPS overlay -->
+<div class="overlay" id="rpsOverlay">
+  <div class="box">
+    <h2>Rock, Paper, Scissors</h2>
+    <p>Winner takes the first turn.</p>
+    <div class="rpsRow">
+      <button class="rpsBtn" data-choice="rock">🪨</button>
+      <button class="rpsBtn" data-choice="paper">📄</button>
+      <button class="rpsBtn" data-choice="scissors">✂️</button>
+    </div>
+    <div id="rpsResult"></div>
+  </div>
+</div>
+
+<!-- Game over overlay -->
+<div class="overlay" id="overOverlay" style="display:none;">
+  <div class="box">
+    <h2 id="gameOverTitle"></h2>
+    <p id="gameOverSub"></p>
+    <button class="bigbtn" id="playAgainBtn">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   CARD DEFINITIONS  (Section 56-69: vanilla set, no abilities)
+   ============================================================ */
+const CARD_DEFS = [
+  {id:'fairy',      name:'Fairy',      cost:1, dmg:2,  hp:1},
+  {id:'beetle',     name:'Beetle',     cost:1, dmg:0,  hp:2},
+  {id:'goblin',     name:'Goblin',     cost:2, dmg:1,  hp:3},
+  {id:'gnome',      name:'Gnome',      cost:2, dmg:3,  hp:1},
+  {id:'wolf',       name:'Wolf',       cost:3, dmg:4,  hp:3},
+  {id:'bats',       name:'Bats',       cost:3, dmg:6,  hp:1},
+  {id:'troll',      name:'Troll',      cost:4, dmg:4,  hp:5},
+  {id:'leprechaun', name:'Leprechaun', cost:4, dmg:0,  hp:9},
+  {id:'giant',      name:'Giant',      cost:5, dmg:5,  hp:7},
+  {id:'elf',        name:'Elf',        cost:5, dmg:8,  hp:3},
+  {id:'pegasus',    name:'Pegasus',    cost:6, dmg:10, hp:4},
+  {id:'titan',      name:'Titan',      cost:6, dmg:3,  hp:12},
+];
+const COPIES_PER_CARD = 4;   // deck size not finalized in the spec (Sec.76) — placeholder for this prototype
+const BASE_MANA = 5;
+const STACK_COUNT = 5;
+const STACK_MAX = 3;
+const START_HP = 50;
+const START_HAND = 5;
+const DRAW_COST = 3;
+
+let uidCounter = 1;
+function nextUid(){ return uidCounter++; }
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = null;
+
+function buildDeck(){
+  const deck = [];
+  CARD_DEFS.forEach(def=>{
+    for(let i=0;i<COPIES_PER_CARD;i++) deck.push(def.id);
+  });
+  // shuffle
+  for(let i=deck.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]] = [deck[j],deck[i]];
+  }
+  return deck;
+}
+
+function makeCardInstance(defId){
+  const def = CARD_DEFS.find(d=>d.id===defId);
+  return {
+    uid: nextUid(),
+    defId: def.id,
+    name: def.name,
+    cost: def.cost,
+    dmg: def.dmg,
+    maxHp: def.hp,
+    hp: def.hp,
+    sick: true,      // can't act the turn it's played
+    attacked: false
+  };
+}
+
+function newPlayer(name, isAI){
+  const deckIds = buildDeck();
+  const hand = [];
+  for(let i=0;i<START_HAND;i++) hand.push(deckIds.pop());
+  return {
+    name, isAI,
+    hp: START_HP,
+    mana: BASE_MANA,
+    deck: deckIds,          // array of defIds, draw from end
+    hand: hand,              // array of defIds
+    board: Array.from({length:STACK_COUNT}, ()=>[])  // each stack: array of card instances, [0]=top/exposed
+  };
+}
+
+function initGame(firstPlayer){
+  state = {
+    player: newPlayer('You', false),
+    enemy: newPlayer('Opponent', true),
+    turn: firstPlayer,        // 'player' | 'enemy'
+    turnNumber: 1,
+    selectedHandIdx: null,
+    selectedAttackerLoc: null,  // {side:'player', stackIdx}
+    pendingDig: null,           // {handIdx, stackIdx}
+    over: false
+  };
+  log(`Match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
+  startTurn(firstPlayer, true);
+  render();
+}
+
+/* ============================================================
+   LOGGING
+   ============================================================ */
+function log(msg){
+  const el = document.getElementById('logZone');
+  const line = document.createElement('div');
+  const t = document.createElement('span');
+  t.className='t';
+  t.textContent = `T${state ? state.turnNumber : 0}`;
+  line.appendChild(t);
+  line.appendChild(document.createTextNode(msg));
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ============================================================
+   TURN MANAGEMENT
+   ============================================================ */
+function sideObj(side){ return side==='player' ? state.player : state.enemy; }
+function oppSide(side){ return side==='player' ? 'enemy' : 'player'; }
+
+function startTurn(side, isFirstOfMatch){
+  const p = sideObj(side);
+  p.mana = BASE_MANA;
+  // clear sickness / attacked flags for this player's own cards only
+  p.board.forEach(stack=>{
+    stack.forEach(c=>{ c.sick = false; c.attacked = false; });
+  });
+  if(!isFirstOfMatch){
+    drawCard(side, true);
+  } else {
+    // natural draw still happens even on turn 1 per spec (Sec.7), hand already has 5 starting cards
+    drawCard(side, true);
+  }
+  log(`${p.name}'s turn begins. Mana refreshed to ${BASE_MANA}.`);
+  if(side === 'enemy'){
+    setTimeout(runAiTurn, 550);
+  }
+}
+
+function drawCard(side, isNatural){
+  const p = sideObj(side);
+  if(p.deck.length===0){
+    log(`${p.name} has no cards left to draw! (Empty-deck rule not yet finalized — no penalty applied in this prototype.)`);
+    return false;
+  }
+  const id = p.deck.pop();
+  p.hand.push(id);
+  if(!isNatural) log(`${p.name} spends ${DRAW_COST} Mana to draw a card.`);
+  return true;
+}
+
+function endTurn(){
+  if(state.over) return;
+  clearSelections();
+  const finishing = state.turn;
+  if(finishing === 'enemy') state.turnNumber++;
+  state.turn = oppSide(finishing);
+  startTurn(state.turn, false);
+  render();
+}
+
+/* ============================================================
+   PLAYING CARDS
+   ============================================================ */
+function canAffordIdx(side, handIdx){
+  const p = sideObj(side);
+  const defId = p.hand[handIdx];
+  const def = CARD_DEFS.find(d=>d.id===defId);
+  return def && p.mana >= def.cost;
+}
+
+function playCardToStack(side, handIdx, stackIdx, digUnder){
+  const p = sideObj(side);
+  const defId = p.hand[handIdx];
+  const def = CARD_DEFS.find(d=>d.id===defId);
+  const stack = p.board[stackIdx];
+  if(!def) return false;
+  if(p.mana < def.cost) return false;
+  if(stack.length >= STACK_MAX) return false;
+
+  const inst = makeCardInstance(defId);
+  p.mana -= def.cost;
+  p.hand.splice(handIdx,1);
+
+  if(stack.length === 0 || !digUnder){
+    stack.unshift(inst); // goes on top
+  } else {
+    // Dig: place directly beneath current top card (Sec.20 / open rule Sec.76 simplified for prototype)
+    stack.splice(1,0,inst);
+  }
+  log(`${p.name} plays ${def.name}${digUnder && stack.length>1 ? ' (Dig — buried)' : ''} into Stack ${stackIdx+1}.`);
+  return true;
+}
+
+/* ============================================================
+   COMBAT
+   ============================================================ */
+function performAttack(atkSide, atkStackIdx, target){
+  const atkP = sideObj(atkSide);
+  const defSide = oppSide(atkSide);
+  const defP = sideObj(defSide);
+  const stack = atkP.board[atkStackIdx];
+  if(stack.length===0) return false;
+  const attacker = stack[0];
+  if(attacker.sick || attacker.attacked) return false;
+
+  if(target.type === 'player'){
+    defP.hp = Math.max(0, defP.hp - attacker.dmg);
+    log(`${attacker.name} hits ${defP.name} for ${attacker.dmg} damage. (${defP.name}: ${defP.hp} HP)`);
+    attacker.attacked = true;
+    checkGameOver();
+    return true;
+  }
+
+  if(target.type === 'card'){
+    const defStack = defP.board[target.stackIdx];
+    if(defStack.length===0) return false;
+    const defender = defStack[0]; // only top/exposed cards are legal targets
+    defender.hp -= attacker.dmg;
+    log(`${attacker.name} attacks ${defender.name} for ${attacker.dmg} damage.`);
+    attacker.attacked = true;
+    if(defender.hp <= 0){
+      log(`${defender.name} dies. Stack ${target.stackIdx+1} collapses.`);
+      defStack.shift(); // remove dead top card, stack collapses upward automatically (array shift)
+    }
+    checkGameOver();
+    return true;
+  }
+  return false;
+}
+
+function checkGameOver(){
+  if(state.player.hp <= 0 || state.enemy.hp <= 0){
+    state.over = true;
+  }
+}
+
+/* ============================================================
+   SIMPLE AI
+   ============================================================ */
+function runAiTurn(){
+  if(state.over) return;
+  const ai = state.enemy;
+
+  // --- play phase: greedily play the most expensive affordable card each pass ---
+  let guard = 0;
+  while(guard++ < 20){
+    let bestIdx = -1, bestCost = -1;
+    ai.hand.forEach((defId, idx)=>{
+      const def = CARD_DEFS.find(d=>d.id===defId);
+      if(def.cost <= ai.mana && def.cost > bestCost){ bestCost = def.cost; bestIdx = idx; }
+    });
+    if(bestIdx === -1) break;
+    // find a stack: prefer empty, else the stack with the fewest cards that still has room
+    let target = -1, bestLen = 99;
+    ai.board.forEach((st,i)=>{
+      if(st.length < STACK_MAX && st.length < bestLen){ bestLen = st.length; target = i; }
+    });
+    if(target === -1) break; // board full
+    playCardToStack('enemy', bestIdx, target, false);
+  }
+  // spend spare mana (>=6 left, keep it simple) drawing cards if hand is thin
+  while(ai.mana >= DRAW_COST && ai.hand.length < 3 && ai.deck.length > 0){
+    ai.mana -= DRAW_COST;
+    drawCard('enemy', false);
+  }
+
+  render();
+
+  // --- attack phase ---
+  setTimeout(()=>{
+    ai.board.forEach((stack, idx)=>{
+      if(stack.length===0) return;
+      const attacker = stack[0];
+      if(attacker.sick || attacker.attacked) return;
+      // pick a target: weakest exposed enemy card if it can kill it, else the player
+      const pl = state.player;
+      let bestTarget = null, bestHp = Infinity;
+      pl.board.forEach((pstack, pIdx)=>{
+        if(pstack.length===0) return;
+        const def = pstack[0];
+        if(def.hp <= attacker.dmg && def.hp < bestHp){ bestHp = def.hp; bestTarget = {type:'card', stackIdx:pIdx}; }
+      });
+      if(!bestTarget){
+        // no killable card found — attack the player directly
+        bestTarget = {type:'player'};
+      }
+      performAttack('enemy', idx, bestTarget);
+    });
+    render();
+    if(!state.over){
+      setTimeout(()=>{ endTurn(); }, 500);
+    } else {
+      render();
+    }
+  }, 500);
+}
+
+/* ============================================================
+   UI HELPERS / SELECTION STATE
+   ============================================================ */
+function clearSelections(){
+  state.selectedHandIdx = null;
+  state.selectedAttackerLoc = null;
+  state.pendingDig = null;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  if(!state) return;
+
+  document.getElementById('dotPlayer').classList.toggle('active', state.turn==='player' && !state.over);
+  document.getElementById('dotEnemy').classList.toggle('active', state.turn==='enemy' && !state.over);
+
+  renderHp('player'); renderHp('enemy');
+  renderMana('player'); renderMana('enemy');
+  renderBoard('player'); renderBoard('enemy');
+  renderHand();
+
+  document.getElementById('deckCount').textContent = `${state.player.deck.length} cards left in deck`;
+
+  const isPlayerTurn = state.turn==='player' && !state.over;
+  document.getElementById('drawBtn').disabled = !isPlayerTurn || state.player.mana < DRAW_COST || state.player.deck.length===0;
+  document.getElementById('endTurnBtn').disabled = !isPlayerTurn;
+
+  const atkBtn = document.getElementById('attackPlayerBtn');
+  const cancelBtn = document.getElementById('cancelAtkBtn');
+  if(state.selectedAttackerLoc){
+    atkBtn.classList.add('show');
+    cancelBtn.classList.add('show');
+  } else {
+    atkBtn.classList.remove('show');
+    cancelBtn.classList.remove('show');
+  }
+
+  if(state.over){
+    showGameOver();
+  }
+}
+
+function renderHp(side){
+  const p = sideObj(side);
+  const pct = Math.max(0, Math.min(100, (p.hp/START_HP)*100));
+  const bar = document.getElementById(side==='player' ? 'hpBarPlayer' : 'hpBarEnemy');
+  bar.style.width = pct + '%';
+  bar.classList.toggle('low', pct <= 30);
+  document.getElementById(side==='player' ? 'hpNumPlayer' : 'hpNumEnemy').textContent = `${Math.max(0,p.hp)} / ${START_HP} HP`;
+}
+
+function renderMana(side){
+  const p = sideObj(side);
+  const el = document.getElementById(side==='player' ? 'manaPlayer' : 'manaEnemy');
+  el.innerHTML = '';
+  for(let i=0;i<BASE_MANA;i++){
+    const pip = document.createElement('div');
+    pip.className = 'pip' + (i < p.mana ? ' on' : '');
+    el.appendChild(pip);
+  }
+}
+
+function cardEl(inst, opts){
+  opts = opts || {};
+  const div = document.createElement('div');
+  div.className = 'card' + (opts.exposed ? ' exposed' : ' buried');
+  if(inst.sick) div.classList.add('sick');
+  if(inst.attacked) div.classList.add('attacked');
+  if(opts.attackable) div.classList.add('attackable');
+  if(opts.targetable) div.classList.add('targetable');
+  if(opts.selected) div.classList.add('selectedAttacker');
+  div.innerHTML = `<div class="cname">${inst.name}</div>
+    <div class="stats"><span class="dmg">⚔${inst.dmg}</span><span class="hp">♥${inst.hp}</span></div>`;
+  return div;
+}
+
+function renderBoard(side){
+  const p = sideObj(side);
+  const container = document.getElementById(side==='player' ? 'playerBoard' : 'enemyBoard');
+  container.innerHTML = '';
+
+  const isPlayerTurn = state.turn === 'player' && !state.over;
+  const dig = state.pendingDig; // handIdx pending stack selection is handled via prompt, not here
+
+  p.board.forEach((stack, idx)=>{
+    const stackDiv = document.createElement('div');
+    stackDiv.className = 'stack';
+
+    // Determine interaction mode
+    const isOwnBoard = side === 'player';
+    const canDropHere = isPlayerTurn && isOwnBoard && state.selectedHandIdx !== null &&
+                         canAffordIdx('player', state.selectedHandIdx) && stack.length < STACK_MAX;
+    const isAttackTargetStack = isPlayerTurn && side==='enemy' && state.selectedAttackerLoc && stack.length>0;
+
+    if(canDropHere) stackDiv.classList.add('dropTarget');
+    if(isAttackTargetStack) stackDiv.classList.add('atkTarget');
+
+    if(stack.length===0){
+      const hint = document.createElement('div');
+      hint.className='empty-slot-hint';
+      hint.textContent = 'empty';
+      stackDiv.appendChild(hint);
+    } else {
+      // render top first (index 0) visually at top
+      stack.forEach((inst, depth)=>{
+        const exposed = depth===0;
+        const attackable = isPlayerTurn && side==='player' && exposed && !inst.sick && !inst.attacked;
+        const targetable = isPlayerTurn && side==='enemy' && exposed && state.selectedAttackerLoc;
+        const el = cardEl(inst, {exposed, attackable, targetable});
+        stackDiv.appendChild(el);
+      });
+    }
+
+    const idxTag = document.createElement('div');
+    idxTag.className = 'slotIdx';
+    idxTag.textContent = idx+1;
+    stackDiv.appendChild(idxTag);
+
+    stackDiv.addEventListener('click', ()=> onStackClick(side, idx));
+    container.appendChild(stackDiv);
+  });
+}
+
+function renderHand(){
+  const hand = document.getElementById('hand');
+  hand.innerHTML = '';
+  const isPlayerTurn = state.turn==='player' && !state.over;
+  state.player.hand.forEach((defId, idx)=>{
+    const def = CARD_DEFS.find(d=>d.id===defId);
+    const div = document.createElement('div');
+    const affordable = state.player.mana >= def.cost;
+    div.className = 'handcard' + (!affordable ? ' unaffordable' : '') + (state.selectedHandIdx===idx ? ' selected' : '');
+    div.innerHTML = `<div class="cost">${def.cost}</div>
+      <div class="cname">${def.name}</div>
+      <div class="stats"><span class="dmg">⚔${def.dmg}</span><span class="hp">♥${def.hp}</span></div>`;
+    div.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(!isPlayerTurn || !affordable) return;
+      state.selectedAttackerLoc = null;
+      state.selectedHandIdx = (state.selectedHandIdx===idx) ? null : idx;
+      render();
+    });
+    hand.appendChild(div);
+  });
+}
+
+/* ============================================================
+   INTERACTION HANDLERS
+   ============================================================ */
+function onStackClick(side, stackIdx){
+  if(state.over) return;
+  const isPlayerTurn = state.turn === 'player';
+  if(!isPlayerTurn) return;
+
+  // Case 1: playing a selected hand card onto own board
+  if(side==='player' && state.selectedHandIdx !== null){
+    const handIdx = state.selectedHandIdx;
+    if(!canAffordIdx('player', handIdx)) return;
+    const stack = state.player.board[stackIdx];
+    if(stack.length >= STACK_MAX) return;
+    if(stack.length === 0){
+      playCardToStack('player', handIdx, stackIdx, false);
+      clearSelections();
+      render();
+    } else {
+      // ask Play on Top vs Dig
+      openDigPrompt(handIdx, stackIdx);
+    }
+    return;
+  }
+
+  // Case 2: selecting one of your own exposed attackers
+  if(side==='player' && state.selectedHandIdx===null){
+    const stack = state.player.board[stackIdx];
+    if(stack.length===0) return;
+    const top = stack[0];
+    if(top.sick || top.attacked) return;
+    state.selectedAttackerLoc = (state.selectedAttackerLoc && state.selectedAttackerLoc.stackIdx===stackIdx)
+      ? null : {side:'player', stackIdx};
+    render();
+    return;
+  }
+
+  // Case 3: attacking an enemy stack's exposed card
+  if(side==='enemy' && state.selectedAttackerLoc){
+    const stack = state.enemy.board[stackIdx];
+    if(stack.length===0) return;
+    performAttack('player', state.selectedAttackerLoc.stackIdx, {type:'card', stackIdx});
+    state.selectedAttackerLoc = null;
+    render();
+    return;
+  }
+}
+
+function openDigPrompt(handIdx, stackIdx){
+  state.pendingDig = {handIdx, stackIdx};
+  const def = CARD_DEFS.find(d=>d.id===state.player.hand[handIdx]);
+  document.getElementById('digPromptText').textContent =
+    `Place ${def.name} on top of Stack ${stackIdx+1}, or Dig it in underneath the current top card (protected, but can't attack while buried)?`;
+  document.getElementById('digPrompt').classList.add('show');
+}
+
+document.getElementById('digTopBtn').addEventListener('click', ()=>{
+  const pd = state.pendingDig;
+  if(pd) playCardToStack('player', pd.handIdx, pd.stackIdx, false);
+  closeDigPrompt();
+});
+document.getElementById('digUnderBtn').addEventListener('click', ()=>{
+  const pd = state.pendingDig;
+  if(pd) playCardToStack('player', pd.handIdx, pd.stackIdx, true);
+  closeDigPrompt();
+});
+function closeDigPrompt(){
+  state.pendingDig = null;
+  clearSelections();
+  document.getElementById('digPrompt').classList.remove('show');
+  render();
+}
+
+document.getElementById('attackPlayerBtn').addEventListener('click', ()=>{
+  if(!state.selectedAttackerLoc) return;
+  performAttack('player', state.selectedAttackerLoc.stackIdx, {type:'player'});
+  state.selectedAttackerLoc = null;
+  render();
+});
+document.getElementById('cancelAtkBtn').addEventListener('click', ()=>{
+  state.selectedAttackerLoc = null;
+  render();
+});
+
+document.getElementById('drawBtn').addEventListener('click', ()=>{
+  if(state.turn!=='player' || state.player.mana < DRAW_COST || state.player.deck.length===0) return;
+  state.player.mana -= DRAW_COST;
+  drawCard('player', false);
+  render();
+});
+
+document.getElementById('endTurnBtn').addEventListener('click', endTurn);
+document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{ location.reload(); });
+
+/* ============================================================
+   GAME OVER
+   ============================================================ */
+function showGameOver(){
+  const overlay = document.getElementById('overOverlay');
+  const title = document.getElementById('gameOverTitle');
+  const sub = document.getElementById('gameOverSub');
+  const youWon = state.enemy.hp <= 0 && state.player.hp > 0;
+  const youLost = state.player.hp <= 0 && state.enemy.hp > 0;
+  if(youWon){ title.textContent = 'Victory!'; title.className='win'; sub.textContent = "You reduced your opponent's Health to 0."; }
+  else if(youLost){ title.textContent = 'Defeat'; title.className='lose'; sub.textContent = 'Your Health reached 0.'; }
+  else { title.textContent = 'Draw'; title.className=''; sub.textContent = 'Both players fell at once.'; }
+  overlay.style.display = 'flex';
+}
+
+/* ============================================================
+   ROCK PAPER SCISSORS — decide first turn (Sec.3)
+   ============================================================ */
+const beats = {rock:'scissors', paper:'rock', scissors:'paper'};
+document.querySelectorAll('.rpsBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const player = btn.getAttribute('data-choice');
+    const options = ['rock','paper','scissors'];
+    const ai = options[Math.floor(Math.random()*3)];
+    let resultText, firstPlayer;
+    if(player===ai){
+      resultText = `Both chose ${player}. Replay!`;
+      document.getElementById('rpsResult').textContent = resultText;
+      return;
+    } else if(beats[player]===ai){
+      resultText = `You chose ${player}, opponent chose ${ai} — you go first!`;
+      firstPlayer = 'player';
+    } else {
+      resultText = `You chose ${player}, opponent chose ${ai} — opponent goes first.`;
+      firstPlayer = 'enemy';
+    }
+    document.getElementById('rpsResult').textContent = resultText;
+    setTimeout(()=>{
+      document.getElementById('rpsOverlay').style.display = 'none';
+      initGame(firstPlayer);
+    }, 900);
+  });
+});
+
+})();
+</script>
+</body>
+</html>
