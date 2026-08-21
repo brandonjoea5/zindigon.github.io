@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stackforge - Prototype v0.1.0</title>
+<title>Stackforge - Prototype v0.1.1</title>
 <style>
   :root{
     --bg:#0f1115;
@@ -377,7 +377,7 @@
 <div id="app">
 
   <header>
-    <h1>Stack<span>forge</span> <span class="verbadge">v0.1.0</span></h1>
+    <h1>Stack<span>forge</span> <span class="verbadge">v0.1.1</span></h1>
     <div class="headerBtns">
       <button id="menuBtn" aria-label="Menu">☰ Menu</button>
       <button id="restartBtn">Restart Match</button>
@@ -559,7 +559,7 @@
 (function(){
 "use strict";
 
-const GAME_VERSION = '0.1.0';
+const GAME_VERSION = '0.1.1';
 
 /* ============================================================
    CARD DEFINITIONS
@@ -603,7 +603,7 @@ const CARD_DEFS = [
   {id:'grylyn',     name:'Grylyn',     cost:2, dmg:0,  hp:1, keyword:'dig',
     blurb:'Dig • Active: Restore 2 Health to a target card',
     active:{type:'restoreHealth', amount:2}},
-  {id:'toxious',    name:'Toxious',    cost:5, dmg:0,  hp:6,
+  {id:'toxious',    name:'Toxious',    namePlural:'Toxious',    cost:5, dmg:0,  hp:6,
     blurb:'On Reveal: Infect an enemy stack with a spreading DoT 1',
     onReveal:{type:'chooseEnemyStackInfect', dmg:1}},
   {id:'azelia',     name:'Azelia',     cost:4, dmg:2,  hp:3,
@@ -875,7 +875,9 @@ function newPlayer(name, isAI, side, customDeckIds, customEvoIds){
   const deckIds = customDeckIds && customDeckIds.length ? shuffle(customDeckIds.slice()) : buildRandomDeck();
   const hand = [];
   for(let i=0;i<START_HAND;i++) hand.push(makeHandEntry(deckIds.pop(), side));
-  const evoIds = (customEvoIds && customEvoIds.length) ? customEvoIds : EVOLUTION_DEFS.map(d=>d.id);
+  // Array.isArray (not customEvoIds.length) so an intentional, valid empty selection --
+  // "I chose 0 of my allowed Evolutions" -- isn't mistaken for "none provided, default to all".
+  const evoIds = Array.isArray(customEvoIds) ? customEvoIds : EVOLUTION_DEFS.map(d=>d.id);
   return {
     name, isAI,
     hp: START_HP,
@@ -1051,6 +1053,14 @@ async function beginReplay(){
   replaying = true;
   captureActive = false;      // stop buffering - log() now writes straight to the visible log again
   const liveP = state.player, liveE = state.enemy;
+  // turnNumber/over are primitives directly on state, mutated for real during planning
+  // (turnNumber incremented, over possibly flipped true) -- save them now so they can be
+  // restored after the reveal loop, same as liveP/liveE. Without this, every display swap
+  // below (the "before" picture, then each step's snapshot) overwrites state.turnNumber
+  // with an old, pre-round value, and that stale value is what's left behind once replay
+  // ends -- which is why the turn counter and anything derived from it never advances.
+  const liveTurnNumber = state.turnNumber;
+  const liveOver = state.over;
 
   // Show the frozen "before" picture first, so the reveal has a clear starting point.
   state.player = state.roundSnapshot.player;
@@ -1069,10 +1079,12 @@ async function beginReplay(){
     }
   }
 
-  // Restore the authoritative objects - they were mutated for real throughout planning;
-  // the snapshots above only ever existed for the display.
+  // Restore the authoritative objects and primitives - they were mutated for real
+  // throughout planning; the snapshots above only ever existed for the display.
   state.player = liveP;
   state.enemy = liveE;
+  state.turnNumber = liveTurnNumber;
+  state.over = liveOver;
   liveP.turnSteps = [];
   liveE.turnSteps = [];
   state.turnsCompletedThisRound = 0;
