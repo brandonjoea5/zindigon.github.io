@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stackforge - Prototype v0.1.1</title>
+<title>Stackforge - Prototype v0.1.2</title>
 <style>
   :root{
     --bg:#0f1115;
@@ -377,7 +377,7 @@
 <div id="app">
 
   <header>
-    <h1>Stack<span>forge</span> <span class="verbadge">v0.1.1</span></h1>
+    <h1>Stack<span>forge</span> <span class="verbadge">v0.1.2</span></h1>
     <div class="headerBtns">
       <button id="menuBtn" aria-label="Menu">☰ Menu</button>
       <button id="restartBtn">Restart Match</button>
@@ -509,7 +509,7 @@
     </div>
     <div class="chatBubble">
       <span class="bubbleTag">How to play</span>
-      Each side has 5 Stacks, and cards can pile up to 3 deep on each one - only the top (Exposed) card can attack or be attacked normally, while cards Buried underneath are protected but can still use their Active abilities. Playing and activating cards costs Mana (shown at the top of the screen), which refills and grows each turn. Before the match starts you'll build a 30-card deck (max 3 copies of any card) and choose up to 2 Evolutions - powerful cards that rise once you've fed them enough of the right ingredient cards on the battlefield. Whoever reduces the opponent's Health to 0 first wins!
+      Each side has 5 Stacks, and cards can pile up to 3 deep on each one - only the top (Exposed) card can attack or be attacked normally, while cards Buried underneath are protected but can still use their Active abilities. Playing and activating cards costs Mana (shown at the top of the screen), which refills each turn and can be permanently increased by certain cards. Before the match starts you'll build a 30-card deck (max 3 copies of any card) and choose up to 2 Evolutions - powerful cards that rise once you've fed them enough of the right ingredient cards on the battlefield. Whoever reduces the opponent's Health to 0 first wins!
     </div>
     <button class="bigbtn" id="welcomeContinueBtn">Continue to Deck Builder</button>
   </div>
@@ -559,7 +559,7 @@
 (function(){
 "use strict";
 
-const GAME_VERSION = '0.1.1';
+const GAME_VERSION = '0.1.2';
 
 /* ============================================================
    CARD DEFINITIONS
@@ -729,13 +729,13 @@ let uidCounter = 1;
 function nextUid(){ return uidCounter++; }
 
 // TURN-PLAN / REPLAY CONTROL - see "TURN PLAN CAPTURE & REPLAY" below for the full system.
-// While captureActive is true (both players' entire round), actions execute for real
+// While captureActive is true (the acting side's current turn), actions execute for real
 // immediately (so mana/board/targeting stay correct for chained decisions) but nothing is
 // shown on screen except the acting player's own board - everything else stays frozen at
-// the round's start until beginReplay() reveals the whole round, in order, afterward.
+// this turn's start until revealTurn() reveals that turn, in order, the moment it ends.
 let captureActive = false;
 let captureLines = [];      // log() lines buffered since the last cutFrame
-let replaying = false;      // true only while the end-of-round reveal animation is running
+let replaying = false;      // true only while a turn's end-of-turn reveal animation is running
 let pendingAnimHint = null; // optional {type, ...} describing the next frame's flourish
 
 // sleep() only really delays during the replay reveal - during planning (captureActive)
@@ -761,10 +761,12 @@ function markJustPlaced(uid){ recentlyPlayedUids.add(uid); }
 
 /* ============================================================
    TURN PLAN CAPTURE & REPLAY
-   (Both players fully decide their whole turn - placements, activations, attacks - before
-   anything is shown. Once both sides have ended their turn, the entire round replays in
-   order: the round-starter's actions first, then the other side's, each with a brief
-   animated reveal. See render()/renderPlanningView() for how the board stays frozen.)
+   (Each side fully decides its whole turn - placements, activations, attacks - before
+   anything is shown to the other side. The instant that turn ends, it replays right away,
+   in order, with a brief animated reveal - then control passes on. This way nobody ever
+   has to plan their own turn against a board that's secretly already changed by a turn
+   that finished but hasn't been shown yet. See render()/renderPlanningView() for how the
+   board stays frozen while the acting side plans.)
    ============================================================ */
 
 // Structural deep clone that (unlike JSON.stringify) preserves extra named properties
@@ -913,9 +915,7 @@ function initGame(firstPlayer, playerDeckSelection){
     pendingShieldChoice: null,   // {side, amount, defName}
     pendingHandDigChoice: null,  // {handIdx, stackIdx}
     over: false,
-    roundSnapshot: null,          // frozen {player,enemy,turn,turnNumber,over} shown throughout planning
-    roundFirstSide: null,         // whichever side starts each round (turns always strictly alternate)
-    turnsCompletedThisRound: 0    // 0 or 1 while planning; hits 2 to trigger the round's replay
+    turnStartSnapshot: null       // frozen {player,enemy,turn,turnNumber,over} shown throughout the current turn's planning
   };
   log(`Stackforge prototype v${GAME_VERSION} - match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
   startTurn(firstPlayer, true);
@@ -945,13 +945,12 @@ function sideObj(side){ return side==='player' ? state.player : state.enemy; }
 function oppSide(side){ return side==='player' ? 'enemy' : 'player'; }
 
 function startTurn(side, isFirstOfMatch){
-  // A fresh round begins the moment the FIRST of the two sides starts their turn - freeze
-  // the display here and start capturing every action (both sides') until the round replays.
-  if(state.turnsCompletedThisRound === 0){
-    state.roundFirstSide = side;
-    state.roundSnapshot = cloneForSnapshot();
-    captureActive = true;
-  }
+  // Every turn (not just the match's very first) freezes the display and starts capturing
+  // this side's actions right here, so the OTHER side is never planning against a board
+  // that's secretly already changed -- each turn gets its own hide-then-reveal cycle.
+  if(!isFirstOfMatch) state.turnNumber++;
+  state.turnStartSnapshot = cloneForSnapshot();
+  captureActive = true;
   const p = sideObj(side);
   let mana = BASE_MANA + (p.fountain || 0) + (p.bucket || 0);
   if(p.depletedNext){
@@ -1018,65 +1017,37 @@ function endTurn(){
   finishTurnProcessing(finishing);
 }
 
-// Decides what happens once a side's turn-ending processing is done: take a bonus
-// (Impatient) turn, hand off to the other side's planning phase, or - once BOTH sides
-// have finished their turn this round - kick off the replay of the whole round.
+// Every turn - whichever side, whether it ends normally, ends the match, or is about to
+// chain into an Impatient bonus turn - gets its own immediate reveal the moment it's done.
+// This is what makes going second fair: the other side never has to plan against a board
+// that's secretly already changed, because nothing stays hidden past the turn that made it.
 function finishTurnProcessing(finishing){
-  if(state.over){
-    beginReplay();
-    return;
-  }
-  const finishingP = sideObj(finishing);
-  if(finishingP.impatientNext){
-    finishingP.impatientNext = false;
-    log(`${finishingP.name} is Impatient and takes another turn!`);
-    cutFrame(finishing);
-    startTurn(finishing, false);
-    render();
-    return;
-  }
-  state.turnsCompletedThisRound++;
-  if(finishing === 'enemy') state.turnNumber++;
-  if(state.turnsCompletedThisRound >= 2){
-    beginReplay();
-    return;
-  }
-  state.turn = oppSide(finishing);
-  startTurn(state.turn, false);
-  render();
+  revealTurn(finishing);
 }
 
-// Reveals the whole round - the round-starter's queued actions in order, then the other
-// side's - with a brief animated pause per step, then hands off to the next round's
-// planning phase (or shows Game Over, if this round ended the match).
-async function beginReplay(){
+// Reveals the side that just finished acting - their queued actions, in order, with a
+// brief animated pause per step - then hands off to whatever comes next: a bonus
+// (Impatient) turn for the same side, the other side's planning phase, or Game Over.
+async function revealTurn(finishing){
   replaying = true;
   captureActive = false;      // stop buffering - log() now writes straight to the visible log again
   const liveP = state.player, liveE = state.enemy;
   // turnNumber/over are primitives directly on state, mutated for real during planning
   // (turnNumber incremented, over possibly flipped true) -- save them now so they can be
   // restored after the reveal loop, same as liveP/liveE. Without this, every display swap
-  // below (the "before" picture, then each step's snapshot) overwrites state.turnNumber
-  // with an old, pre-round value, and that stale value is what's left behind once replay
-  // ends -- which is why the turn counter and anything derived from it never advances.
+  // below (each step's snapshot) overwrites state.turnNumber with an old, pre-turn value,
+  // and that stale value is what's left behind once the reveal ends.
   const liveTurnNumber = state.turnNumber;
   const liveOver = state.over;
+  const finishingP = (finishing === 'player') ? liveP : liveE;
+  const takesBonusTurn = !liveOver && finishingP.impatientNext;
 
-  // Show the frozen "before" picture first, so the reveal has a clear starting point.
-  state.player = state.roundSnapshot.player;
-  state.enemy = state.roundSnapshot.enemy;
-  state.turn = state.roundSnapshot.turn;
-  state.turnNumber = state.roundSnapshot.turnNumber;
-  state.over = state.roundSnapshot.over;
-  render();
-  await sleep(500);
-
-  const order = [state.roundFirstSide, oppSide(state.roundFirstSide)];
-  for(const side of order){
-    const steps = (side === 'player' ? liveP : liveE).turnSteps;
-    for(const step of steps){
-      await revealStep(side, step);
-    }
+  // No separate "before" frame is needed here: the display is already showing exactly
+  // that (the frozen turnStartSnapshot, for whichever side was frozen) right up until the
+  // first step below swaps it forward.
+  const steps = finishingP.turnSteps;
+  for(const step of steps){
+    await revealStep(finishing, step);
   }
 
   // Restore the authoritative objects and primitives - they were mutated for real
@@ -1085,15 +1056,19 @@ async function beginReplay(){
   state.enemy = liveE;
   state.turnNumber = liveTurnNumber;
   state.over = liveOver;
-  liveP.turnSteps = [];
-  liveE.turnSteps = [];
-  state.turnsCompletedThisRound = 0;
-  state.roundSnapshot = null;
+  finishingP.turnSteps = [];
   replaying = false;
 
-  if(state.over){ render(); return; }
-  state.turn = state.roundFirstSide;
-  startTurn(state.turn, false);
+  if(liveOver){ render(); return; }
+
+  if(takesBonusTurn){
+    finishingP.impatientNext = false;
+    log(`${finishingP.name} is Impatient and takes another turn!`);
+    startTurn(finishing, false);
+  } else {
+    state.turn = oppSide(finishing);
+    startTurn(state.turn, false);
+  }
   render();
 }
 
@@ -2209,16 +2184,20 @@ function resolveGlobalNuke(def){
   ['player','enemy'].forEach(s=>{
     const p = sideObj(s);
     p.board.forEach((stack, stackIdx)=>{
-      let depth = 0;
-      while(depth < stack.length){
-        const c = stack[depth];
+      // Snapshot which cards were actually here when the Nuke went off, and hit only
+      // those -- by reference, not by depth index. A card an On Death effect summons
+      // mid-resolution (e.g. Little Foot -> Boot) is a new arrival, not one of the cards
+      // the Nuke was aimed at, so it should never take a hit from this same detonation,
+      // even though it may land at the exact depth its dead predecessor just vacated.
+      const originalCards = stack.slice();
+      originalCards.forEach(c=>{
+        const depth = stack.indexOf(c);
+        if(depth === -1) return; // already removed by an earlier hit's chain reaction this same pass
         dealDamageToCard(stack, c, dmg);
         if(c.hp <= 0){
-          processCardDeath(s, stackIdx, depth); // splices this depth out; do not advance
-        } else {
-          depth++;
+          processCardDeath(s, stackIdx, depth);
         }
-      }
+      });
     });
     p.hp = Math.max(0, p.hp - dmg);
     grantRevengeShield(s, dmg);
@@ -2394,7 +2373,7 @@ function processMountainDecay(){
    snapping straight to the final state.)
    ============================================================ */
 function triggerAnimClass(el, cls){
-  if(!replaying) return; // flourishes only ever play during the round replay reveal
+  if(!replaying) return; // flourishes only ever play during a turn's replay reveal
   if(!el) return;
   el.classList.remove(cls);
   void el.offsetWidth; // force reflow so the animation restarts if the class was already present
@@ -2416,7 +2395,7 @@ function flashPlayerZone(side, cls){
 
 // Shared attack primitive used by BOTH the player's manual attack clicks and the AI's
 // turn. Resolves instantly and silently (no visual) - attacks are only ever seen later,
-// during the round replay, via playAttackFlourish below.
+// during the reveal, via playAttackFlourish below.
 function resolveAttack(atkSide, atkStackIdx, target){
   const atkP = sideObj(atkSide);
   const attacker = atkP.board[atkStackIdx] && atkP.board[atkStackIdx][0];
@@ -2530,17 +2509,20 @@ function resolveOnDeath(controllerSide, def, ctx){
     const opp = sideObj(oppS);
     let count = 0;
     opp.board.forEach((stack, stackIdx)=>{
-      let depth = 0;
-      while(depth < stack.length){
-        const card = stack[depth];
+      // Snapshot first, same reasoning as resolveGlobalNuke: only cards that were
+      // actually on this stack when the effect fired take the hit, by reference, so an
+      // On Death summon that arrives mid-resolution (filling the depth its dead
+      // predecessor just vacated) is a new arrival and is never caught by it.
+      const originalCards = stack.slice();
+      originalCards.forEach(card=>{
+        const depth = stack.indexOf(card);
+        if(depth === -1) return; // already removed by an earlier hit's chain reaction this same pass
         dealDamageToCard(stack, card, def.onDeath.dmg);
         count++;
         if(card.hp <= 0){
-          processCardDeath(oppS, stackIdx, depth); // splices this depth out; do not advance
-        } else {
-          depth++;
+          processCardDeath(oppS, stackIdx, depth);
         }
-      }
+      });
     });
     log(`${def.name}'s death deals ${def.onDeath.dmg} damage to ${count} enemy card(s).`);
     checkGameOver();
@@ -2659,7 +2641,7 @@ async function runAiTurn(){
 
   render();
   await sleep(350);
-  if(replaying) return; // a lethal action already kicked off this round's replay - don't double-end-turn
+  if(replaying) return; // a lethal action already kicked off this turn's reveal - don't double-end-turn
   if(!state.over){
     endTurn();
   } else {
@@ -2682,7 +2664,7 @@ function clearSelections(){
 // Dispatcher: during planning (captureActive), every render() call both cuts a replay
 // frame for whatever action just happened AND redraws the "planning view" (the acting
 // side's own board live, everything else frozen). Outside of that - pre-match, mid-replay,
-// or once a round is fully resolved - it's just the normal live board.
+// or once a turn is fully revealed - it's just the normal live board.
 function render(){
   if(!state) return;
   const appEl = document.getElementById('app');
@@ -2719,7 +2701,7 @@ function renderNormal(){
   document.getElementById('drawBtn').disabled = !isPlayerTurn || blockingMode || replaying || state.player.mana < DRAW_COST || state.player.deck.length===0;
   document.getElementById('endTurnBtn').disabled = !isPlayerTurn || blockingMode || replaying;
 
-  // Suppress the Game Over overlay while a round is still silently planning/deciding -
+  // Suppress the Game Over overlay while a turn is still silently planning/deciding -
   // even a lethal action stays hidden until its replay step actually reveals it.
   if(state.over && !captureActive){
     showGameOver();
@@ -2728,17 +2710,17 @@ function renderNormal(){
 
 // During planning, the acting side sees their own board/HP/mana/hand live (so they can
 // click through their own queued plan) while everything else - the other side entirely,
-// during the AI's silent decide - stays frozen at the round's starting picture.
+// during the AI's silent decide - stays frozen at this turn's starting picture.
 function renderPlanningView(){
   const realPlayer = state.player, realEnemy = state.enemy;
   if(state.turn === 'player'){
-    state.enemy = state.roundSnapshot.enemy;
+    state.enemy = state.turnStartSnapshot.enemy;
   } else {
     // AI silently deciding: freeze both boards. Keep state.turn as the real 'enemy' (not
-    // the round-start snapshot's turn) so isPlayerTurn reads false and every interactive
+    // the turn-start snapshot's turn) so isPlayerTurn reads false and every interactive
     // highlight (attackable/activatable/targetable) correctly stays off.
-    state.player = state.roundSnapshot.player;
-    state.enemy = state.roundSnapshot.enemy;
+    state.player = state.turnStartSnapshot.player;
+    state.enemy = state.turnStartSnapshot.enemy;
   }
   renderNormal();
   state.player = realPlayer;
@@ -2974,7 +2956,7 @@ function updateModeBanner(){
   const pa = state.pendingAbility;
   if(replaying){
     banner.style.display = 'block';
-    banner.textContent = `▶ Replaying the round...`;
+    banner.textContent = `▶ Replaying the turn...`;
     return;
   }
   if(captureActive && state.turn === 'enemy'){
