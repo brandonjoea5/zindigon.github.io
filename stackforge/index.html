@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stackforge — Prototype v0.0.9</title>
+<title>Stackforge - Prototype v0.1.0</title>
 <style>
   :root{
     --bg:#0f1115;
@@ -22,6 +22,7 @@
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
   #app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+  #app.replaying{pointer-events:none;}
 
   /* ---------- top bar ---------- */
   header{
@@ -376,7 +377,7 @@
 <div id="app">
 
   <header>
-    <h1>Stack<span>forge</span> <span class="verbadge">v0.0.9</span></h1>
+    <h1>Stack<span>forge</span> <span class="verbadge">v0.1.0</span></h1>
     <div class="headerBtns">
       <button id="menuBtn" aria-label="Menu">☰ Menu</button>
       <button id="restartBtn">Restart Match</button>
@@ -452,20 +453,20 @@
           <summary>Quick rules reference</summary>
           <ul>
             <li>5 base Mana every turn (plus permanent Fountain bonuses). 5-card starting hand, draw 1/turn. 3 Mana → draw a card, any number of times per turn.</li>
-            <li>5 stacks per side, 3 cards max per stack. Only the Top card is Exposed (can Basic Attack, can be targeted by normal attacks) — Buried cards are protected from normal targeting. Any card with an Active ability may use it whether Exposed or Buried, so a Top card can Attack AND activate its Active in the same turn.</li>
+            <li>5 stacks per side, 3 cards max per stack. Only the Top card is Exposed (can Basic Attack, can be targeted by normal attacks) - Buried cards are protected from normal targeting. Any card with an Active ability may use it whether Exposed or Buried, so a Top card can Attack AND activate its Active in the same turn.</li>
             <li>New cards, new Evolutions, and Revived cards can't act the turn they enter play (sickness), even if something Accelerates them.</li>
-            <li>Only cards with the Dig keyword can be placed beneath another card — everything else always goes on top, burying whatever was there.</li>
+            <li>Only cards with the Dig keyword can be placed beneath another card - everything else always goes on top, burying whatever was there.</li>
             <li><b>Evolution Pool:</b> lives outside the normal deck. 3 living Goblins on your board auto-consumes them and pulls Goblin King from the pool.</li>
             <li><b>Shield</b> absorbs damage before Health. <b>DoT</b> ticks at the end of the caster's own turns. <b>Weakened</b> adds +1 per damage instance that reaches Health.</li>
-            <li><b>Revive</b> returns a card to the top of the stack it died in (unless a card says otherwise) and re-triggers its On Reveal. A full stack blocks that specific Revive — no searching for another spot.</li>
-            <li><b>Gain Health</b> raises current AND max Health permanently. <b>Restore</b> only heals up to the existing max. <b>Gain Damage</b> permanently raises a card's Damage stat — can even apply to a Stolen card while it's still sitting in hand.</li>
+            <li><b>Revive</b> returns a card to the top of the stack it died in (unless a card says otherwise) and re-triggers its On Reveal. A full stack blocks that specific Revive - no searching for another spot.</li>
+            <li><b>Gain Health</b> raises current AND max Health permanently. <b>Restore</b> only heals up to the existing max. <b>Gain Damage</b> permanently raises a card's Damage stat - can even apply to a Stolen card while it's still sitting in hand.</li>
             <li><b>Bucket +N</b> grants +N Mana on the very next turn only. <b>Fountain +N</b> permanently raises base Mana every turn. <b>Depleted -N</b> temporarily reduces Mana, but only on the affected player's very next turn.</li>
             <li><b>Cooldowns</b> block re-use for the stated number of the controller's own turns. <b>Slowed</b> zeroes out a card's attacks/abilities for its controller's very next turn only.</li>
-            <li><b>Accelerated</b> grants one extra eligible action (attack or ability) this turn — it never lets a newly-played/Revived card bypass sickness.</li>
-            <li>Effects that hit "a random card in play" or "a random enemy card" can select Buried cards — random selection isn't normal targeting, so Buried protection doesn't apply unless the card says otherwise. Picking N random cards never repeats a target; if fewer than N exist, it hits as many as it can.</li>
+            <li><b>Accelerated</b> grants one extra eligible action (attack or ability) this turn - it never lets a newly-played/Revived card bypass sickness.</li>
+            <li>Effects that hit "a random card in play" or "a random enemy card" can select Buried cards - random selection isn't normal targeting, so Buried protection doesn't apply unless the card says otherwise. Picking N random cards never repeats a target; if fewer than N exist, it hits as many as it can.</li>
             <li>Player Health Gain permanently raises a Player's max Health, same as Gain Health does for a card.</li>
-            <li><b>Stolen</b> means a card began the match in the OPPONENT's deck. <b>Borrowed</b> means a card began the match in NEITHER Player's deck (e.g. Tryxee's random summons) — the two never overlap.</li>
-            <li>Random Summoning creates a card straight into play — the Evolution Pool is excluded, it needs a legal stack with room (or the summon fails), it triggers On Reveal immediately, and it can't act the turn it arrives. It always places on top — the Dig keyword doesn't apply to a summon unless the effect specifically allows it.</li>
+            <li><b>Stolen</b> means a card began the match in the OPPONENT's deck. <b>Borrowed</b> means a card began the match in NEITHER Player's deck (e.g. Tryxee's random summons) - the two never overlap.</li>
+            <li>Random Summoning creates a card straight into play - the Evolution Pool is excluded, it needs a legal stack with room (or the summon fails), it triggers On Reveal immediately, and it can't act the turn it arrives. It always places on top - the Dig keyword doesn't apply to a summon unless the effect specifically allows it.</li>
             <li>A 0-Health card's On Reveal still resolves in full before it dies (e.g. Sacrifice, Nuke).</li>
             <li>Each match starts with a Deck Builder: choose exactly 30 cards (max 3 copies of any one card) and up to 2 Evolutions before playing. The Opponent gets a random legal deck under the same limits.</li>
             <li>Reduce the enemy Player to 0 Health to win.</li>
@@ -504,11 +505,11 @@
     <h2>👋 Welcome to Stack Forge</h2>
     <div class="chatBubble">
       <span class="bubbleTag">Message from the devs</span>
-      Hello! Welcome to Stack Forge. This is still the prototype phase &mdash; cards are still being created and game structure is still in design. For now you simply go against an AI opponent. Eventually this will be a PVP game. Please enjoy and let us know what you think at <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>.
+      Hello! Welcome to Stack Forge. This is still the prototype phase - cards are still being created and game structure is still in design. For now you simply go against an AI opponent. Eventually this will be a PVP game. Please enjoy and let us know what you think at <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>.
     </div>
     <div class="chatBubble">
       <span class="bubbleTag">How to play</span>
-      Each side has 5 Stacks, and cards can pile up to 3 deep on each one &mdash; only the top (Exposed) card can attack or be attacked normally, while cards Buried underneath are protected but can still use their Active abilities. Playing and activating cards costs Mana (shown at the top of the screen), which refills and grows each turn. Before the match starts you'll build a 30-card deck (max 3 copies of any card) and choose up to 2 Evolutions &mdash; powerful cards that rise once you've fed them enough of the right ingredient cards on the battlefield. Whoever reduces the opponent's Health to 0 first wins!
+      Each side has 5 Stacks, and cards can pile up to 3 deep on each one - only the top (Exposed) card can attack or be attacked normally, while cards Buried underneath are protected but can still use their Active abilities. Playing and activating cards costs Mana (shown at the top of the screen), which refills and grows each turn. Before the match starts you'll build a 30-card deck (max 3 copies of any card) and choose up to 2 Evolutions - powerful cards that rise once you've fed them enough of the right ingredient cards on the battlefield. Whoever reduces the opponent's Health to 0 first wins!
     </div>
     <button class="bigbtn" id="welcomeContinueBtn">Continue to Deck Builder</button>
   </div>
@@ -521,7 +522,7 @@
     <p>Choose exactly <b id="deckSizeLabel"></b> cards for your deck (max <b id="maxCopiesLabel"></b> copies of any card), then up to <b id="maxEvoLabel"></b> Evolutions.</p>
     <div id="deckCountBanner">0 selected</div>
     <div id="deckBuilderGrid"></div>
-    <div class="zoneLabel" style="margin-top:16px;">Evolutions — choose up to <span id="maxEvoLabel2"></span></div>
+    <div class="zoneLabel" style="margin-top:16px;">Evolutions - choose up to <span id="maxEvoLabel2"></span></div>
     <div id="evoPickerGrid"></div>
     <div class="row" id="deckBuilderRow">
       <button id="deckRandomBtn">🎲 Randomize</button>
@@ -558,13 +559,13 @@
 (function(){
 "use strict";
 
-const GAME_VERSION = '0.0.9';
+const GAME_VERSION = '0.1.0';
 
 /* ============================================================
    CARD DEFINITIONS
    ============================================================ */
 
-// Drawable cards — live in the normal deck.
+// Drawable cards - live in the normal deck.
 const CARD_DEFS = [
   {id:'fairy',      name:'Fairy',      cost:1, dmg:2,  hp:1,  blurb:''},
   {id:'beetle',     name:'Beetle',     cost:1, dmg:0,  hp:2,  blurb:''},
@@ -606,7 +607,7 @@ const CARD_DEFS = [
     blurb:'On Reveal: Infect an enemy stack with a spreading DoT 1',
     onReveal:{type:'chooseEnemyStackInfect', dmg:1}},
   {id:'azelia',     name:'Azelia',     cost:4, dmg:2,  hp:3,
-    blurb:'Active: Cleanse a target — 2-turn cooldown',
+    blurb:'Active: Cleanse a target - 2-turn cooldown',
     active:{type:'cleanse', cooldown:2}},
   {id:'sacrifice',  name:'Sacrifice',  cost:2, dmg:0,  hp:0,
     blurb:'On Reveal: Chosen friendly stack gains +2 Health, then Sacrifice dies',
@@ -639,7 +640,7 @@ const CARD_DEFS = [
     blurb:'Active, no cooldown: Gain Fountain +1 permanent Mana, then Nymph dies',
     active:{type:'fountainSelfDestruct', amount:1}},
   {id:'boss',       name:'Boss',       cost:4, dmg:3,  hp:2,
-    blurb:'Active: Become Impatient — take a second consecutive turn next. 2-turn cooldown',
+    blurb:'Active: Become Impatient - take a second consecutive turn next. 2-turn cooldown',
     active:{type:'becomeImpatient', cooldown:2}},
   {id:'succubus',   name:'Succubus',   cost:2, dmg:1,  hp:3,
     blurb:"On Reveal: Deplete the enemy Player -2 Mana next turn. No card may be stacked on top of her while she's Exposed",
@@ -648,7 +649,7 @@ const CARD_DEFS = [
     blurb:'Active, no cooldown: Apply Slowed to a chosen enemy Top card',
     active:{type:'slowCard'}},
   {id:'clock',      name:'Clock',      cost:2, dmg:1,  hp:2, keyword:'dig',
-    blurb:"Dig • On Reveal: Choose a friendly card to Accelerate (one extra action this turn — can't bypass sickness)",
+    blurb:"Dig • On Reveal: Choose a friendly card to Accelerate (one extra action this turn - can't bypass sickness)",
     onReveal:{type:'accelerateChoice'}},
   {id:'tryxee',     name:'Tryxee',     cost:3, dmg:3,  hp:2,
     blurb:"On Reveal: Summon 1 random Borrowed card for each Player into a random legal stack they control (Evolution Pool excluded)",
@@ -681,28 +682,28 @@ const CARD_DEFS = [
     blurb:'On Reveal: Transform into a copy of a random card from the opponent’s hand (the original stays in their hand)',
     onReveal:{type:'transformIntoRandomEnemyHandCard'}},
   {id:'mountain',   name:'Mountain',   cost:4, dmg:0,  hp:12,
-    blurb:'Passive: Loses 1 Health at the end of every Player’s turn (not damage — Shield and Weakened don’t apply)',
+    blurb:'Passive: Loses 1 Health at the end of every Player’s turn (not damage - Shield and Weakened don’t apply)',
     passive:{type:'endOfTurnLoseHealth', amount:1}},
   {id:'tunnel',     name:'Tunnel',     cost:2, dmg:0,  hp:1,
     blurb:'On Reveal: Move the card directly underneath Tunnel to the bottom of this stack',
     onReveal:{type:'moveCardBelowToBottom'}},
 ];
 
-// Special/generated cards — never in a starting deck or the deck builder, created only
+// Special/generated cards - never in a starting deck or the deck builder, created only
 // by another card's effect (e.g. Little Foot's On Death). Still full card identities.
 const SPECIAL_DEFS = [
   {id:'boot', name:'Boot', cost:3, dmg:4, hp:2,
-    blurb:'Paired with Little Foot — summoned free when Little Foot dies. Not included in any starting deck.'},
+    blurb:'Paired with Little Foot - summoned free when Little Foot dies. Not included in any starting deck.'},
 ];
 
-// Evolution cards — live in each player's Evolution Pool, never in the deck or hand.
+// Evolution cards - live in each player's Evolution Pool, never in the deck or hand.
 const EVOLUTION_DEFS = [
   {id:'goblinking', name:'Goblin King', type:'evolution', dmg:3, hp:6, keyword:'dig',
     blurb:'Evolution • Requires 3 Goblins Alive • Dig • Active: Goblin Assault',
     evolution:{requiresId:'goblin', requiresCount:3},
     active:{type:'goblinAssault', hits:2, dmgEach:1}},
   {id:'kingrat',    name:'King Rat',   type:'evolution', dmg:2, hp:6,
-    blurb:'Evolution • Requires 3 Mice Alive • Active: Fountain +3 — 2-round cooldown',
+    blurb:'Evolution • Requires 3 Mice Alive • Active: Fountain +3 - 2-round cooldown',
     evolution:{requiresId:'mouse', requiresCount:3},
     active:{type:'fountainGain', amount:3, cooldown:2}},
   {id:'volcanic',   name:'Volcanic',   type:'evolution', dmg:0, hp:3,
@@ -727,9 +728,24 @@ const DRAW_COST = 3;
 let uidCounter = 1;
 function nextUid(){ return uidCounter++; }
 
-function sleep(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+// TURN-PLAN / REPLAY CONTROL - see "TURN PLAN CAPTURE & REPLAY" below for the full system.
+// While captureActive is true (both players' entire round), actions execute for real
+// immediately (so mana/board/targeting stay correct for chained decisions) but nothing is
+// shown on screen except the acting player's own board - everything else stays frozen at
+// the round's start until beginReplay() reveals the whole round, in order, afterward.
+let captureActive = false;
+let captureLines = [];      // log() lines buffered since the last cutFrame
+let replaying = false;      // true only while the end-of-round reveal animation is running
+let pendingAnimHint = null; // optional {type, ...} describing the next frame's flourish
 
-// Pacing for the sequential AI-turn playback (see SIMPLE AI section) — long enough to read, short enough not to drag.
+// sleep() only really delays during the replay reveal - during planning (captureActive)
+// every action must resolve instantly since nothing is being watched yet.
+function sleep(ms){
+  if(replaying) return new Promise(resolve=>setTimeout(resolve, ms));
+  return Promise.resolve();
+}
+
+// Pacing for the sequential AI-turn playback (see SIMPLE AI section) - long enough to read, short enough not to drag.
 const AI_STEP_DELAY = 480;
 
 /* ============================================================
@@ -738,10 +754,62 @@ const AI_STEP_DELAY = 480;
 let state = null;
 
 // Any card uid inserted here gets a one-shot "flip into place" reveal animation the
-// next time it's rendered (see cardEl), then is removed from the set — covers every
+// next time it's rendered (see cardEl), then is removed from the set - covers every
 // way a new instance can land on a board: hand plays, Revives, Evolutions, and Summons.
 let recentlyPlayedUids = new Set();
 function markJustPlaced(uid){ recentlyPlayedUids.add(uid); }
+
+/* ============================================================
+   TURN PLAN CAPTURE & REPLAY
+   (Both players fully decide their whole turn - placements, activations, attacks - before
+   anything is shown. Once both sides have ended their turn, the entire round replays in
+   order: the round-starter's actions first, then the other side's, each with a brief
+   animated reveal. See render()/renderPlanningView() for how the board stays frozen.)
+   ============================================================ */
+
+// Structural deep clone that (unlike JSON.stringify) preserves extra named properties
+// attached directly to arrays - e.g. stack.infection / stack.weakened live on the board
+// stack arrays themselves, not as indexed elements, and would silently vanish otherwise.
+function deepClone(obj){
+  if(Array.isArray(obj)){
+    const copy = obj.map(deepClone);
+    Object.keys(obj).forEach(key=>{
+      if(!/^\d+$/.test(key)) copy[key] = deepClone(obj[key]);
+    });
+    return copy;
+  }
+  if(obj && typeof obj === 'object'){
+    const copy = {};
+    Object.keys(obj).forEach(key=>{ copy[key] = deepClone(obj[key]); });
+    return copy;
+  }
+  return obj;
+}
+
+function cloneForSnapshot(){
+  return {
+    player: deepClone(state.player),
+    enemy: deepClone(state.enemy),
+    turn: state.turn,
+    turnNumber: state.turnNumber,
+    over: state.over
+  };
+}
+
+// Call after any atomic action (both immediately and via every render() during planning) -
+// bundles whatever log lines that action produced into one replayable step, tagged with an
+// optional flourish hint. A no-op if nothing was actually logged (e.g. an invalid click).
+function cutFrame(side){
+  if(!captureActive) return;
+  if(captureLines.length === 0){ pendingAnimHint = null; return; }
+  sideObj(side).turnSteps.push({
+    lines: captureLines.slice(),
+    snapshot: cloneForSnapshot(),
+    anim: pendingAnimHint
+  });
+  captureLines.length = 0;
+  pendingAnimHint = null;
+}
 
 // AI's deck: a random legal 30-card deck respecting the same max-3-copies rule the
 // player's deck builder enforces, so both sides play under identical constraints.
@@ -800,7 +868,7 @@ function makeCardInstance(defId, ownerSide, bonusDmg, borrowed){
 function attacksExhausted(card){ return card.attacksUsed >= card.attacksAllowed; }
 function abilityExhausted(card){ return card.abilityUsesUsed >= card.abilityUsesAllowed; }
 
-// customDeckIds/customEvoIds come from the pre-match Deck Builder (player only — the
+// customDeckIds/customEvoIds come from the pre-match Deck Builder (player only - the
 // AI always gets a random legal deck and access to every Evolution, matching the old
 // behavior for a fair, deck-builder-free opponent).
 function newPlayer(name, isAI, side, customDeckIds, customEvoIds){
@@ -816,10 +884,11 @@ function newPlayer(name, isAI, side, customDeckIds, customEvoIds){
     bucket: 0,
     fountain: 0,               // Nymph's permanent bonus base Mana
     depletedNext: 0,           // Succubus's temporary Mana reduction, applied on the next startTurn only
-    impatientNext: false,      // Boss's effect — take a second consecutive turn
+    impatientNext: false,      // Boss's effect - take a second consecutive turn
     necromancerUsed: false,
     revengeActive: false,      // Revenge: until end of this turn, Player damage grants Shield to all allied cards
     pendingPlayBuffs: [],      // Avenger: queued +Damage/+Health buffs, one consumed per normally-played card
+    turnSteps: [],              // Turn-plan replay: ordered {lines, snapshot, anim} frames for this side's turn
     deck: deckIds,
     hand: hand,                // [{defId, ownerSide, bonusDmg}]
     board: Array.from({length:STACK_COUNT}, ()=>[]),  // stack[0] = top/exposed
@@ -841,9 +910,12 @@ function initGame(firstPlayer, playerDeckSelection){
     pendingEvoPlacement: null,   // {side, instance, chosenStackIdx?}
     pendingShieldChoice: null,   // {side, amount, defName}
     pendingHandDigChoice: null,  // {handIdx, stackIdx}
-    over: false
+    over: false,
+    roundSnapshot: null,          // frozen {player,enemy,turn,turnNumber,over} shown throughout planning
+    roundFirstSide: null,         // whichever side starts each round (turns always strictly alternate)
+    turnsCompletedThisRound: 0    // 0 or 1 while planning; hits 2 to trigger the round's replay
   };
-  log(`Stackforge prototype v${GAME_VERSION} — match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
+  log(`Stackforge prototype v${GAME_VERSION} - match start. ${firstPlayer === 'player' ? 'You' : 'Opponent'} take the first turn.`);
   startTurn(firstPlayer, true);
   render();
 }
@@ -852,6 +924,7 @@ function initGame(firstPlayer, playerDeckSelection){
    LOGGING
    ============================================================ */
 function log(msg){
+  if(captureActive){ captureLines.push(msg); return; }
   const el = document.getElementById('logZone');
   const line = document.createElement('div');
   const t = document.createElement('span');
@@ -870,6 +943,13 @@ function sideObj(side){ return side==='player' ? state.player : state.enemy; }
 function oppSide(side){ return side==='player' ? 'enemy' : 'player'; }
 
 function startTurn(side, isFirstOfMatch){
+  // A fresh round begins the moment the FIRST of the two sides starts their turn - freeze
+  // the display here and start capturing every action (both sides') until the round replays.
+  if(state.turnsCompletedThisRound === 0){
+    state.roundFirstSide = side;
+    state.roundSnapshot = cloneForSnapshot();
+    captureActive = true;
+  }
   const p = sideObj(side);
   let mana = BASE_MANA + (p.fountain || 0) + (p.bucket || 0);
   if(p.depletedNext){
@@ -910,7 +990,7 @@ function startTurn(side, isFirstOfMatch){
 function drawCard(side, isNatural){
   const p = sideObj(side);
   if(p.deck.length===0){
-    log(`${p.name} has no cards left to draw! (Empty-deck rule not yet finalized — no penalty applied in this prototype.)`);
+    log(`${p.name} has no cards left to draw! (Empty-deck rule not yet finalized - no penalty applied in this prototype.)`);
     return false;
   }
   const id = p.deck.pop();
@@ -921,28 +1001,114 @@ function drawCard(side, isNatural){
 
 function endTurn(){
   if(state.over) return;
+  if(replaying) return;
   if(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice) return; // must resolve first
   clearSelections();
   const finishing = state.turn;
   sideObj(finishing).revengeActive = false;   // Revenge: "until end of this turn" expires right here
   processDotTicks(finishing);
-  if(state.over){ render(); return; }
+  if(state.over){ cutFrame(finishing); finishTurnProcessing(finishing); return; }
   processInfections(finishing);
-  if(state.over){ render(); return; }
+  if(state.over){ cutFrame(finishing); finishTurnProcessing(finishing); return; }
   processMountainDecay();   // Mountain loses 1 Health at the end of EVERY Player's turn, not just its controller's
-  if(state.over){ render(); return; }
+  if(state.over){ cutFrame(finishing); finishTurnProcessing(finishing); return; }
+  cutFrame(finishing);
+  finishTurnProcessing(finishing);
+}
+
+// Decides what happens once a side's turn-ending processing is done: take a bonus
+// (Impatient) turn, hand off to the other side's planning phase, or - once BOTH sides
+// have finished their turn this round - kick off the replay of the whole round.
+function finishTurnProcessing(finishing){
+  if(state.over){
+    beginReplay();
+    return;
+  }
   const finishingP = sideObj(finishing);
   if(finishingP.impatientNext){
     finishingP.impatientNext = false;
     log(`${finishingP.name} is Impatient and takes another turn!`);
+    cutFrame(finishing);
     startTurn(finishing, false);
     render();
     return;
   }
+  state.turnsCompletedThisRound++;
   if(finishing === 'enemy') state.turnNumber++;
+  if(state.turnsCompletedThisRound >= 2){
+    beginReplay();
+    return;
+  }
   state.turn = oppSide(finishing);
   startTurn(state.turn, false);
   render();
+}
+
+// Reveals the whole round - the round-starter's queued actions in order, then the other
+// side's - with a brief animated pause per step, then hands off to the next round's
+// planning phase (or shows Game Over, if this round ended the match).
+async function beginReplay(){
+  replaying = true;
+  captureActive = false;      // stop buffering - log() now writes straight to the visible log again
+  const liveP = state.player, liveE = state.enemy;
+
+  // Show the frozen "before" picture first, so the reveal has a clear starting point.
+  state.player = state.roundSnapshot.player;
+  state.enemy = state.roundSnapshot.enemy;
+  state.turn = state.roundSnapshot.turn;
+  state.turnNumber = state.roundSnapshot.turnNumber;
+  state.over = state.roundSnapshot.over;
+  render();
+  await sleep(500);
+
+  const order = [state.roundFirstSide, oppSide(state.roundFirstSide)];
+  for(const side of order){
+    const steps = (side === 'player' ? liveP : liveE).turnSteps;
+    for(const step of steps){
+      await revealStep(side, step);
+    }
+  }
+
+  // Restore the authoritative objects - they were mutated for real throughout planning;
+  // the snapshots above only ever existed for the display.
+  state.player = liveP;
+  state.enemy = liveE;
+  liveP.turnSteps = [];
+  liveE.turnSteps = [];
+  state.turnsCompletedThisRound = 0;
+  state.roundSnapshot = null;
+  replaying = false;
+
+  if(state.over){ render(); return; }
+  state.turn = state.roundFirstSide;
+  startTurn(state.turn, false);
+  render();
+}
+
+async function revealStep(side, step){
+  if(step.anim && step.anim.type === 'attack'){
+    await playAttackFlourish(step.anim, side);
+  }
+
+  const snap = step.snapshot;
+  state.player = snap.player;
+  state.enemy = snap.enemy;
+  state.turn = snap.turn;
+  state.turnNumber = snap.turnNumber;
+  state.over = snap.over;
+  render();
+  step.lines.forEach(l => log(l));
+
+  if(step.anim){
+    if(step.anim.type === 'attack' && step.anim.atkUid){
+      flashCardByUid(side, step.anim.atkUid, 'settleBack');
+    } else if(step.anim.type === 'ability' && step.anim.sourceUid){
+      flashCardByUid(side, step.anim.sourceUid, 'abilityGlow');
+    } else if(step.anim.type === 'play' && step.anim.uid){
+      flashCardByUid(side, step.anim.uid, 'justPlayed');
+    }
+  }
+  await sleep(700);
 }
 
 /* ============================================================
@@ -955,7 +1121,7 @@ function canAffordIdx(side, handIdx){
   return !!def && p.mana >= def.cost;
 }
 
-// Shared legality check for dropping a hand card into a stack — affordability,
+// Shared legality check for dropping a hand card into a stack - affordability,
 // room, and Succubus's "no cover while Exposed" restriction (Dig cards go
 // underneath her, so they're exempt; only non-Dig plays that would bury her are blocked).
 function canPlaceHandCardInStack(side, handIdx, stackIdx){
@@ -1008,7 +1174,7 @@ function playCardToStack(side, handIdx, stackIdx, digUnder){
   }
   markJustPlaced(inst.uid);
 
-  log(`${p.name} plays ${def.name} into Stack ${stackIdx+1}${digUnder && buried ? ' (Dig — buried)' : buried ? ' (burying the card beneath it)' : ''}.`);
+  log(`${p.name} plays ${def.name} into Stack ${stackIdx+1}${digUnder && buried ? ' (Dig - buried)' : buried ? ' (burying the card beneath it)' : ''}.`);
   return inst;
 }
 
@@ -1019,6 +1185,7 @@ function playCard(side, handIdx, stackIdx, digUnder){
   const def = getDef(entry.defId);
   const inst = playCardToStack(side, handIdx, stackIdx, digUnder);
   if(!inst) return false;
+  pendingAnimHint = { type:'play', uid: inst.uid };
   afterCardEntersPlay(side, inst, def);
   return true;
 }
@@ -1147,7 +1314,7 @@ function onCardRevealed(side, card, def){
     const stack = p.board[stackIdx];
     const others = stack.filter(c=>c.uid !== card.uid);
     if(others.length === 0){
-      log(`${p.name}'s ${def.name} has no other card in its stack to Merge with — it stays as-is.`);
+      log(`${p.name}'s ${def.name} has no other card in its stack to Merge with - it stays as-is.`);
       return;
     }
     const receiver = others[Math.floor(Math.random()*others.length)];
@@ -1160,7 +1327,7 @@ function onCardRevealed(side, card, def){
   if(def.onReveal.type === 'transformIntoRandomEnemyHandCard'){
     const opp = sideObj(oppSide(side));
     if(opp.hand.length === 0){
-      log(`${p.name}'s ${def.name} finds the opponent's hand empty — nothing to transform into.`);
+      log(`${p.name}'s ${def.name} finds the opponent's hand empty - nothing to transform into.`);
       return;
     }
     const entry = opp.hand[Math.floor(Math.random()*opp.hand.length)];
@@ -1221,7 +1388,7 @@ function onCardRevealed(side, card, def){
   if(def.onReveal.type === 'stealFromOpponentDeck'){
     const opp = sideObj(oppSide(side));
     if(opp.deck.length === 0){
-      log(`${p.name}'s ${def.name} finds the opponent's deck empty — nothing to steal.`);
+      log(`${p.name}'s ${def.name} finds the opponent's deck empty - nothing to steal.`);
       return;
     }
     const stolenDefId = opp.deck.pop();
@@ -1280,12 +1447,12 @@ function onCardRevealed(side, card, def){
       const stack = p.board[stackIdx];
       if(stack.length >= STACK_MAX) break;
       if(p.deck.length === 0){
-        log(`${p.name}'s ${def.name} finds the deck empty — no more cards to pull.`);
+        log(`${p.name}'s ${def.name} finds the deck empty - no more cards to pull.`);
         break;
       }
       const pulledDefId = p.deck.pop();
       const pulledDef = getDef(pulledDefId);
-      const inst = makeCardInstance(pulledDefId, side, 0, false); // straight from own deck — Not Stolen, Not Borrowed
+      const inst = makeCardInstance(pulledDefId, side, 0, false); // straight from own deck - Not Stolen, Not Borrowed
       stack.unshift(inst); // placed directly above Advantage (ignores Dig, per Summoning-vs-Dig rule)
       markJustPlaced(inst.uid);
       pulled++;
@@ -1314,7 +1481,7 @@ function summonRandomCardForSide(side, sourceName){
     legalStacks.push(idx);
   });
   if(legalStacks.length === 0){
-    log(`${sourceName} tries to summon a card for ${p.name}, but no legal stack has room — that summon fails.`);
+    log(`${sourceName} tries to summon a card for ${p.name}, but no legal stack has room - that summon fails.`);
     return null;
   }
   const stackIdx = legalStacks[Math.floor(Math.random()*legalStacks.length)];
@@ -1370,7 +1537,7 @@ function reviveCard(deathEntry, controllerSide, opts){
   const stack = p.board[targetStackIdx];
   const def = getDef(deathEntry.defId);
   if(!stack || stack.length >= STACK_MAX){
-    log(`${p.name} tries to Revive ${deathEntry.name}, but Stack ${targetStackIdx+1} is full — the Revive fails (no search for another spot).`);
+    log(`${p.name} tries to Revive ${deathEntry.name}, but Stack ${targetStackIdx+1} is full - the Revive fails (no search for another spot).`);
     return false;
   }
   const inst = makeCardInstance(deathEntry.defId, deathEntry.ownerSide);
@@ -1414,12 +1581,12 @@ function triggerEvolution(side, evoId){
     for(let i=stack.length-1; i>=0 && consumed < evoDef.evolution.requiresCount; i--){
       if(stack[i].defId === evoDef.evolution.requiresId && stack[i].hp > 0){
         consumedUids.push(stack[i].uid);
-        stack.splice(i,1); // Consumed, not Dead — no processCardDeath, no deathLog entry, no On Death
+        stack.splice(i,1); // Consumed, not Dead - no processCardDeath, no deathLog entry, no On Death
         consumed++;
       }
     }
   });
-  log(`${p.name}'s ${evoDef.evolution.requiresCount} ${reqDef.namePlural || reqDef.name+'s'} are Consumed (not killed — no On Death triggers)! ${evoDef.name} rises from the Evolution Pool.`);
+  log(`${p.name}'s ${evoDef.evolution.requiresCount} ${reqDef.namePlural || reqDef.name+'s'} are Consumed (not killed - no On Death triggers)! ${evoDef.name} rises from the Evolution Pool.`);
 
   if(evoDef.evolution.cancelsCasterInfections && consumedUids.length){
     let cancelled = 0;
@@ -1503,7 +1670,7 @@ function handleEvoPlacementClick(stackIdx){
   if(def.keyword === 'dig'){
     pe.chosenStackIdx = stackIdx;
     document.getElementById('placementPromptText').textContent =
-      `Place ${pe.instance.name} on top of Stack ${stackIdx+1}, or Dig him underneath the current top card (protected — lets him use his Active ability while buried)?`;
+      `Place ${pe.instance.name} on top of Stack ${stackIdx+1}, or Dig him underneath the current top card (protected - lets him use his Active ability while buried)?`;
     document.getElementById('placementPrompt').classList.add('show');
   } else {
     stack.unshift(pe.instance);
@@ -1516,6 +1683,7 @@ function handleEvoPlacementClick(stackIdx){
 }
 
 document.getElementById('placeTopBtn').addEventListener('click', ()=>{
+  if(replaying) return;
   if(state.pendingEvoPlacement){
     const pe = state.pendingEvoPlacement;
     const p = sideObj(pe.side);
@@ -1534,6 +1702,7 @@ document.getElementById('placeTopBtn').addEventListener('click', ()=>{
   closePlacementPrompt();
 });
 document.getElementById('placeDigBtn').addEventListener('click', ()=>{
+  if(replaying) return;
   if(state.pendingEvoPlacement){
     const pe = state.pendingEvoPlacement;
     const p = sideObj(pe.side);
@@ -1560,13 +1729,14 @@ function closePlacementPrompt(){
    ACTIVE ABILITIES
    ============================================================ */
 function tryActivateAbility(side, stackIdx, depth){
+  if(replaying) return;
   const p = sideObj(side);
   const stack = p.board[stackIdx];
   const card = stack[depth];
   if(!card) return;
   const def = getDef(card.defId);
   if(!def.active) return;
-  // Active abilities can be used regardless of Exposed/Buried status — a Top card can
+  // Active abilities can be used regardless of Exposed/Buried status - a Top card can
   // Attack AND activate its Active in the same turn (attacksUsed/abilityUsesUsed are
   // independent counters, so using one never consumes the other).
   if(card.sick || abilityExhausted(card)) return;
@@ -1574,52 +1744,53 @@ function tryActivateAbility(side, stackIdx, depth){
   if(def.active.type === 'necromancerRevive' && p.necromancerUsed) return;
 
   if(def.active.type === 'necromancerRevive' && state.deathLog.length === 0){
-    log(`${p.name} activates Necromancer, but no cards have died yet — the ability fizzles without being spent.`);
+    log(`${p.name} activates Necromancer, but no cards have died yet - the ability fizzles without being spent.`);
     return;
   }
 
+  pendingAnimHint = { type:'ability', sourceUid: card.uid };
   card.abilityUsesUsed++;
   if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
 
   if(def.active.type === 'goblinAssault'){
     state.pendingAbility = { kind:'goblinAssault', side, hitsRemaining: def.active.hits, dmgEach: def.active.dmgEach, sourceName: def.name, sourceUid: card.uid };
-    log(`${p.name} activates ${def.name}'s Goblin Assault — choose ${def.active.hits} target(s).`);
+    log(`${p.name} activates ${def.name}'s Goblin Assault - choose ${def.active.hits} target(s).`);
   } else if(def.active.type === 'restoreHealth'){
     state.pendingAbility = { kind:'restoreHealth', side, amount: def.active.amount, sourceName: def.name };
-    log(`${p.name} activates ${def.name} — choose one of your cards to Restore ${def.active.amount} Health.`);
+    log(`${p.name} activates ${def.name} - choose one of your cards to Restore ${def.active.amount} Health.`);
   } else if(def.active.type === 'cleanse'){
     state.pendingAbility = { kind:'cleanse', side, sourceName: def.name };
-    log(`${p.name} activates ${def.name} — choose one of your cards to Cleanse.`);
+    log(`${p.name} activates ${def.name} - choose one of your cards to Cleanse.`);
   } else if(def.active.type === 'weakenStack'){
     state.pendingAbility = { kind:'weakenStack', side, turns: def.active.turns, sourceName: def.name };
-    log(`${p.name} activates ${def.name} — choose an enemy stack to Weaken.`);
+    log(`${p.name} activates ${def.name} - choose an enemy stack to Weaken.`);
   } else if(def.active.type === 'necromancerRevive'){
     state.pendingAbility = { kind:'necromancerPickCard', side, sourceName: def.name };
-    log(`${p.name} activates Necromancer — choose a dead card to Revive.`);
+    log(`${p.name} activates Necromancer - choose a dead card to Revive.`);
     openDeathPicker();
   } else if(def.active.type === 'playerGainHealth'){
     p.maxHp += def.active.amount;
     p.hp += def.active.amount;
-    log(`${p.name} activates ${def.name} — permanently gains +${def.active.amount} Player Health. (${p.hp}/${p.maxHp})`);
+    log(`${p.name} activates ${def.name} - permanently gains +${def.active.amount} Player Health. (${p.hp}/${p.maxHp})`);
   } else if(def.active.type === 'fountainSelfDestruct'){
     p.fountain = (p.fountain||0) + def.active.amount;
-    log(`${p.name} activates ${def.name} — gains permanent Fountain +${def.active.amount} Mana, then ${def.name} dies.`);
+    log(`${p.name} activates ${def.name} - gains permanent Fountain +${def.active.amount} Mana, then ${def.name} dies.`);
     killCardByUid(side, card.uid);
   } else if(def.active.type === 'becomeImpatient'){
     p.impatientNext = true;
-    log(`${p.name} activates ${def.name} — ${p.name} will take a second consecutive turn next.`);
+    log(`${p.name} activates ${def.name} - ${p.name} will take a second consecutive turn next.`);
   } else if(def.active.type === 'slowCard'){
     state.pendingAbility = { kind:'slowCard', side, sourceName: def.name };
-    log(`${p.name} activates ${def.name} — choose an enemy Top card to Slow.`);
+    log(`${p.name} activates ${def.name} - choose an enemy Top card to Slow.`);
   } else if(def.active.type === 'yelnatsStrike'){
     state.pendingAbility = { kind:'yelnatsStrike', side, amount: def.active.amount, sourceName: def.name, sourceUid: card.uid };
-    log(`${p.name} activates ${def.name} — choose any enemy card (Exposed or Buried) to strike for ${def.active.amount} damage.`);
+    log(`${p.name} activates ${def.name} - choose any enemy card (Exposed or Buried) to strike for ${def.active.amount} damage.`);
   } else if(def.active.type === 'fountainGain'){
     p.fountain = (p.fountain||0) + def.active.amount;
-    log(`${p.name} activates ${def.name} — permanently gains Fountain +${def.active.amount} Mana. (Total Fountain: +${p.fountain})`);
+    log(`${p.name} activates ${def.name} - permanently gains Fountain +${def.active.amount} Mana. (Total Fountain: +${p.fountain})`);
   } else if(def.active.type === 'revengeCharge'){
     p.revengeActive = true;
-    log(`${p.name} activates ${def.name} — until end of turn, Player damage grants matching Shield to every allied card.`);
+    log(`${p.name} activates ${def.name} - until end of turn, Player damage grants matching Shield to every allied card.`);
   }
   render();
 }
@@ -1627,6 +1798,7 @@ function tryActivateAbility(side, stackIdx, depth){
 function resolveAbilityHit(target){
   const pa = state.pendingAbility;
   if(!pa || pa.kind !== 'goblinAssault') return;
+  pendingAnimHint = { type:'ability', sourceUid: pa.sourceUid };
   applyDamageToTarget(pa.side, pa.dmgEach, target, pa.sourceName, pa.sourceUid);
   pa.hitsRemaining--;
   if(pa.hitsRemaining <= 0) state.pendingAbility = null;
@@ -1652,7 +1824,7 @@ function resolveSelfTargetAbility(pa, stackIdx, depth){
   } else if(pa.kind === 'accelerateChoice'){
     card.attacksAllowed += 1;
     card.abilityUsesAllowed += 1;
-    log(`${pa.sourceName} Accelerates ${card.name} — one extra action this turn (still can't act while newly played / sick).`);
+    log(`${pa.sourceName} Accelerates ${card.name} - one extra action this turn (still can't act while newly played / sick).`);
   }
   state.pendingAbility = null;
   render();
@@ -1680,7 +1852,7 @@ function resolveSlowCard(stackIdx){
   if(!stack || stack.length === 0) return;
   const card = stack[0];
   card.slowedTurnsLeft = 1;
-  log(`${pa.sourceName} Slows ${card.name} — no actions for it on ${opp.name}'s next turn.`);
+  log(`${pa.sourceName} Slows ${card.name} - no actions for it on ${opp.name}'s next turn.`);
   state.pendingAbility = null;
   render();
 }
@@ -1691,6 +1863,7 @@ function resolveYelnatsStrike(stackIdx, depth){
   const opp = sideObj(oppSide(pa.side));
   const stack = opp.board[stackIdx];
   if(!stack || depth === null || depth === undefined || !stack[depth]) return;
+  pendingAnimHint = { type:'ability', sourceUid: pa.sourceUid };
   applyDamageToTarget(pa.side, pa.amount, {type:'card', stackIdx, depth}, pa.sourceName, pa.sourceUid);
   state.pendingAbility = null;
   render();
@@ -1734,7 +1907,7 @@ function findNextAiAbilityAction(skipUids){
   const ai = state.enemy;
   for(let stackIdx=0; stackIdx<ai.board.length; stackIdx++){
     const stack = ai.board[stackIdx];
-    // depth 0 (Exposed/top) included too — a card can Attack and activate its Active
+    // depth 0 (Exposed/top) included too - a card can Attack and activate its Active
     // in the same turn, so the AI shouldn't ignore its own top card's abilities.
     for(let depth=0; depth<stack.length; depth++){
       const card = stack[depth];
@@ -1751,7 +1924,7 @@ function findNextAiAbilityAction(skipUids){
 
 // Executes exactly one AI ability activation and reports back what (if anything) it
 // hit, so the caller can flash the right card/zone. Returns {ok:false} without
-// mutating anything if no valid target exists — same as the original single-pass
+// mutating anything if no valid target exists - same as the original single-pass
 // behavior, just split so it can be replayed one action at a time.
 function executeAiAbilityAction(found){
   const ai = state.enemy;
@@ -1854,7 +2027,7 @@ function executeAiAbilityAction(found){
     card.abilityUsesUsed++;
     if(def.active.cooldown) card.cooldownTurnsLeft = def.active.cooldown;
     ai.impatientNext = true;
-    log(`${ai.name} activates ${def.name} — will take a second consecutive turn next.`);
+    log(`${ai.name} activates ${def.name} - will take a second consecutive turn next.`);
     return {ok:true};
   }
 
@@ -1891,7 +2064,7 @@ function executeAiAbilityAction(found){
   if(def.active.type === 'revengeCharge'){
     card.abilityUsesUsed++;
     ai.revengeActive = true;
-    log(`${ai.name} activates ${def.name} — until end of turn, Player damage grants matching Shield to every allied card.`);
+    log(`${ai.name} activates ${def.name} - until end of turn, Player damage grants matching Shield to every allied card.`);
     return {ok:true};
   }
 
@@ -1907,8 +2080,9 @@ async function aiAnimatedAbilityAction(skipUids){
   const result = executeAiAbilityAction(found);
   if(!result.ok){
     skipUids.add(found.card.uid);
-    return true; // consumed a decision slot, but nothing visible happened — no pause needed
+    return true; // consumed a decision slot, but nothing visible happened - no pause needed
   }
+  pendingAnimHint = { type:'ability', sourceUid: found.card.uid, targetUid: result.targetUid || null, targetSide: result.targetSide || null };
   render();
   await sleep(20);
   flashCardByUid('enemy', found.card.uid, 'abilityGlow');
@@ -1963,7 +2137,7 @@ function pickAiAbilityTarget(dmg){
 
 /* ============================================================
    RANDOM TARGETING HELPERS
-   (Random selection is not "normal targeting" — Buried cards are eligible
+   (Random selection is not "normal targeting" - Buried cards are eligible
    unless a card explicitly restricts itself to Top/Exposed. Picking N
    distinct targets never repeats one; fewer than N valid targets means
    as many as possible are affected.)
@@ -2045,7 +2219,7 @@ function resolveGlobalNuke(def){
    DAMAGE / COMBAT
    ============================================================ */
 // Applies damage to a card, honoring Shield (absorbs first) and Weakened (+1 per
-// instance that reaches Health — Sec.42/43). `stack` is the card's containing stack,
+// instance that reaches Health - Sec.42/43). `stack` is the card's containing stack,
 // used only to check stack.weakened.
 function dealDamageToCard(stack, card, rawAmount){
   let amount = rawAmount;
@@ -2058,7 +2232,7 @@ function dealDamageToCard(stack, card, rawAmount){
   if(amount > 0) card.hp -= amount;
 }
 
-// LOSE HEALTH (Mountain): a card loses Health directly — not damage, so Shield does not
+// LOSE HEALTH (Mountain): a card loses Health directly - not damage, so Shield does not
 // prevent it and Weakened does not increase it. Can still bring a card to 0 and kill it.
 function loseHealth(card, amount){
   card.hp -= amount;
@@ -2066,7 +2240,7 @@ function loseHealth(card, amount){
 
 // EXECUTE: kills a target card outright, bypassing Shield/Health entirely (Shield does not
 // prevent it, and the amount of Shield does not count toward the target's Health when an
-// effect is checking Execute eligibility — callers check inst.hp directly for that, not this
+// effect is checking Execute eligibility - callers check inst.hp directly for that, not this
 // function). On Death still triggers normally, and the executing card (if given) is credited
 // for On Kill, same as a combat kill.
 function executeCard(side, stackIdx, depth, sourceInfo){
@@ -2103,7 +2277,7 @@ function grantRevengeShield(side, amount){
 }
 
 // Returns {died:boolean} so callers (e.g. On Kill) can react.
-// target: {type:'player'} | {type:'card', stackIdx, depth?}  (depth defaults to 0 — the Exposed card)
+// target: {type:'player'} | {type:'card', stackIdx, depth?}  (depth defaults to 0 - the Exposed card)
 // sourceUid: uid of the specific card responsible for this damage (Basic Attack or card
 // ability), used only so Barbed Wire's On Death can retaliate against the right card.
 function applyDamageToTarget(casterSide, amount, target, sourceName, sourceUid){
@@ -2160,7 +2334,7 @@ function resolveOnKill(card, def){
   }
 }
 
-// MERGE (Cup of Joe): merger stops existing as a separate card — not a death, not a Consume
+// MERGE (Cup of Joe): merger stops existing as a separate card - not a death, not a Consume
 // (no On Death, no deathLog entry). Its current stats add onto the receiver, which otherwise
 // keeps its own stats/keywords/triggers/actives untouched. Permanently-Accelerated propagates
 // and, generously, applies immediately this turn too (not just from the receiver's next turn).
@@ -2208,6 +2382,7 @@ function processMountainDecay(){
    snapping straight to the final state.)
    ============================================================ */
 function triggerAnimClass(el, cls){
+  if(!replaying) return; // flourishes only ever play during the round replay reveal
   if(!el) return;
   el.classList.remove(cls);
   void el.offsetWidth; // force reflow so the animation restarts if the class was already present
@@ -2228,20 +2403,37 @@ function flashPlayerZone(side, cls){
 }
 
 // Shared attack primitive used by BOTH the player's manual attack clicks and the AI's
-// turn so every attack — whoever makes it — visibly lunges toward its target and back
-// before the board snaps to the final (post-damage) state.
-async function animatedAttack(atkSide, atkStackIdx, target){
+// turn. Resolves instantly and silently (no visual) - attacks are only ever seen later,
+// during the round replay, via playAttackFlourish below.
+function resolveAttack(atkSide, atkStackIdx, target){
   const atkP = sideObj(atkSide);
   const attacker = atkP.board[atkStackIdx] && atkP.board[atkStackIdx][0];
   if(!attacker) return false;
 
-  const attackerEl = findCardEl(atkSide, attacker.uid);
+  let targetUid = null;
   const defSide = oppSide(atkSide);
-  let targetEl = null;
   if(target.type === 'card'){
     const defStack = sideObj(defSide).board[target.stackIdx];
     const tCard = defStack && defStack[target.depth || 0];
-    if(tCard) targetEl = findCardEl(defSide, tCard.uid);
+    if(tCard) targetUid = tCard.uid;
+  }
+  pendingAnimHint = { type:'attack', atkUid: attacker.uid, targetType: target.type, targetUid };
+
+  const ok = performAttack(atkSide, atkStackIdx, target);
+  render();
+  return ok;
+}
+
+// Replay-only visual: lunges the attacker toward its (pre-attack) target and flashes the
+// target, using whatever's currently on screen (the PREVIOUS step's picture) - the real
+// damage was already applied for good back when the action was actually queued.
+async function playAttackFlourish(anim, side){
+  if(!replaying) return;
+  const attackerEl = findCardEl(side, anim.atkUid);
+  const defSide = oppSide(side);
+  let targetEl = null;
+  if(anim.targetType === 'card' && anim.targetUid){
+    targetEl = findCardEl(defSide, anim.targetUid);
   } else {
     targetEl = document.getElementById(defSide === 'player' ? 'playerStatusZone' : 'enemyStatusZone');
   }
@@ -2259,23 +2451,13 @@ async function animatedAttack(atkSide, atkStackIdx, target){
     triggerAnimClass(targetEl, 'hitFlash');
     await sleep(150);
   }
-
-  const ok = performAttack(atkSide, atkStackIdx, target);
-  render();
-
-  if(ok){
-    await sleep(20);
-    const newAttackerEl = findCardEl(atkSide, attacker.uid);
-    if(newAttackerEl) triggerAnimClass(newAttackerEl, 'settleBack');
-  }
-  return ok;
 }
 
 /* ============================================================
    DEATH PROCESSING (shared by combat, DoT, infection, on-reveal 0 HP)
    ============================================================ */
 // source: optional {side, uid} identifying the specific card that dealt the killing blow
-// (Basic Attack or card ability only — see applyDamageToTarget/executeCard) — used solely
+// (Basic Attack or card ability only - see applyDamageToTarget/executeCard) - used solely
 // by Barbed Wire's On Death retaliation.
 function processCardDeath(controllerSide, stackIdx, depthInStack, source){
   const p = sideObj(controllerSide);
@@ -2303,7 +2485,7 @@ function resolveOnDeath(controllerSide, def, ctx){
     log(`${p.name} gains Bucket +${def.onDeath.amount} (extra Mana next turn) from ${def.name}'s death.`);
   } else if(def.onDeath.type === 'summonInPlace'){
     const bootDef = getDef(def.onDeath.defId);
-    const inst = makeCardInstance(def.onDeath.defId, controllerSide, 0, true); // Borrowed — never in a starting deck
+    const inst = makeCardInstance(def.onDeath.defId, controllerSide, 0, true); // Borrowed - never in a starting deck
     if(ctx.stack){
       ctx.stack.splice(ctx.depthInStack, 0, inst);
       markJustPlaced(inst.uid);
@@ -2313,12 +2495,12 @@ function resolveOnDeath(controllerSide, def, ctx){
   } else if(def.onDeath.type === 'retaliateOnKiller'){
     const src = ctx.source;
     if(!src){
-      log(`${def.name}'s death has no clear killer to retaliate against — the effect fizzles.`);
+      log(`${def.name}'s death has no clear killer to retaliate against - the effect fizzles.`);
       return;
     }
     const srcLoc = findCardLocation(src.side, src.uid);
     if(!srcLoc){
-      log(`${def.name} tries to retaliate, but its killer is no longer a valid target — the effect fails.`);
+      log(`${def.name} tries to retaliate, but its killer is no longer a valid target - the effect fails.`);
       return;
     }
     const srcStack = sideObj(src.side).board[srcLoc.stackIdx];
@@ -2412,16 +2594,18 @@ function processInfections(casterSide){
    SIMPLE AI
    ============================================================ */
 async function runAiTurn(){
-  if(state.over) return;
+  if(state.over || replaying) return;
   const ai = state.enemy;
 
   // Phase 1: play cards, one at a time, each fully animated before the next begins.
   let playGuard = 0;
   while(playGuard++ < 20){
-    if(state.over) return;
+    if(state.over || replaying) return;
     const playedOne = await aiAnimatedPlayOneCard();
     if(!playedOne) break;
   }
+
+  if(state.over || replaying) return;
 
   // Phase 2: draw (instant, unchanged) then a brief pause so the hand update is visible.
   while(ai.mana >= DRAW_COST && ai.hand.length < 3 && ai.deck.length > 0){
@@ -2430,20 +2614,21 @@ async function runAiTurn(){
   }
   render();
   await sleep(250);
-  if(state.over) return;
+  if(state.over || replaying) return;
 
   // Phase 3: abilities, one at a time, each glowing its source and flashing its target.
   const abilitySkipUids = new Set();
   let abilityGuard = 0;
   while(abilityGuard++ < 30){
-    if(state.over) return;
+    if(state.over || replaying) return;
     const didSomething = await aiAnimatedAbilityAction(abilitySkipUids);
     if(!didSomething) break;
   }
+  if(state.over || replaying) return;
 
   // Phase 4: attacks, in board order, each a full lunge-and-return animation before the next starts.
   for(let idx=0; idx<ai.board.length; idx++){
-    if(state.over) return;
+    if(state.over || replaying) return;
     const stack = ai.board[idx];
     if(stack.length===0) continue;
     const attacker = stack[0];
@@ -2456,12 +2641,13 @@ async function runAiTurn(){
       if(def.hp <= attacker.dmg && def.hp < bestHp){ bestHp = def.hp; bestTarget = {type:'card', stackIdx:pIdx}; }
     });
     if(!bestTarget) bestTarget = {type:'player'};
-    await animatedAttack('enemy', idx, bestTarget);
+    resolveAttack('enemy', idx, bestTarget);
     await sleep(180);
   }
 
   render();
   await sleep(350);
+  if(replaying) return; // a lethal action already kicked off this round's replay - don't double-end-turn
   if(!state.over){
     endTurn();
   } else {
@@ -2481,9 +2667,28 @@ function clearSelections(){
 /* ============================================================
    RENDER
    ============================================================ */
+// Dispatcher: during planning (captureActive), every render() call both cuts a replay
+// frame for whatever action just happened AND redraws the "planning view" (the acting
+// side's own board live, everything else frozen). Outside of that - pre-match, mid-replay,
+// or once a round is fully resolved - it's just the normal live board.
 function render(){
   if(!state) return;
+  const appEl = document.getElementById('app');
+  if(appEl) appEl.classList.toggle('replaying', replaying);
+  if(captureActive && !replaying){
+    const actingSide = state.turn;
+    cutFrame(actingSide);
+    renderPlanningView();
+    // A lethal action during planning ends the match immediately - there's no "End Turn"
+    // click coming (the button disables itself the instant state.over flips), so kick off
+    // the replay of whatever's been queued so far right here instead of waiting for one.
+    if(state.over) finishTurnProcessing(actingSide);
+    return;
+  }
+  renderNormal();
+}
 
+function renderNormal(){
   document.getElementById('dotPlayer').classList.toggle('active', state.turn==='player' && !state.over);
   document.getElementById('dotEnemy').classList.toggle('active', state.turn==='enemy' && !state.over);
 
@@ -2499,12 +2704,33 @@ function render(){
 
   const isPlayerTurn = state.turn==='player' && !state.over;
   const blockingMode = !!(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice);
-  document.getElementById('drawBtn').disabled = !isPlayerTurn || blockingMode || state.player.mana < DRAW_COST || state.player.deck.length===0;
-  document.getElementById('endTurnBtn').disabled = !isPlayerTurn || blockingMode;
+  document.getElementById('drawBtn').disabled = !isPlayerTurn || blockingMode || replaying || state.player.mana < DRAW_COST || state.player.deck.length===0;
+  document.getElementById('endTurnBtn').disabled = !isPlayerTurn || blockingMode || replaying;
 
-  if(state.over){
+  // Suppress the Game Over overlay while a round is still silently planning/deciding -
+  // even a lethal action stays hidden until its replay step actually reveals it.
+  if(state.over && !captureActive){
     showGameOver();
   }
+}
+
+// During planning, the acting side sees their own board/HP/mana/hand live (so they can
+// click through their own queued plan) while everything else - the other side entirely,
+// during the AI's silent decide - stays frozen at the round's starting picture.
+function renderPlanningView(){
+  const realPlayer = state.player, realEnemy = state.enemy;
+  if(state.turn === 'player'){
+    state.enemy = state.roundSnapshot.enemy;
+  } else {
+    // AI silently deciding: freeze both boards. Keep state.turn as the real 'enemy' (not
+    // the round-start snapshot's turn) so isPlayerTurn reads false and every interactive
+    // highlight (attackable/activatable/targetable) correctly stays off.
+    state.player = state.roundSnapshot.player;
+    state.enemy = state.roundSnapshot.enemy;
+  }
+  renderNormal();
+  state.player = realPlayer;
+  state.enemy = realEnemy;
 }
 
 function renderHp(side){
@@ -2591,7 +2817,7 @@ function cardEl(inst, side, opts){
     recentlyPlayedUids.delete(inst.uid);
   }
 
-  // Explicit, unmissable affordance for activating an Active ability — separate from
+  // Explicit, unmissable affordance for activating an Active ability - separate from
   // clicking the card body (which selects an attacker for an Exposed top card), and
   // works the same way whether the card is Exposed or Buried.
   if(opts.activatable){
@@ -2661,7 +2887,7 @@ function renderBoard(side){
         const attackable = isPlayerTurn && side==='player' && exposed && !inst.sick && !attacksExhausted(inst) && !blockingMode && !abilityMode;
         const targetable = isPlayerTurn && side==='enemy' &&
                             ((exposed && wantsEnemyCardTargetExposedOnly) || wantsEnemyCardTargetAnyDepth);
-        // Active abilities are usable regardless of Exposed/Buried status — a Top card
+        // Active abilities are usable regardless of Exposed/Buried status - a Top card
         // can Attack AND activate its Active in the same turn (independent action counters).
         const activatable = isPlayerTurn && side==='player' && def.active && !inst.sick && !abilityExhausted(inst) &&
                              !onCooldown && !necroBlocked && !blockingMode && !abilityMode && state.selectedHandIdx===null;
@@ -2701,7 +2927,7 @@ function renderHand(){
       ${def.blurb ? `<div class="blurb">${def.blurb}</div>` : ''}`;
     div.addEventListener('click', (e)=>{
       e.stopPropagation();
-      if(!isPlayerTurn || !affordable || blocked) return;
+      if(replaying || !isPlayerTurn || !affordable || blocked) return;
       state.selectedAttackerLoc = null;
       state.selectedHandIdx = (state.selectedHandIdx===idx) ? null : idx;
       render();
@@ -2734,6 +2960,16 @@ function renderEvoPool(){
 function updateModeBanner(){
   const banner = document.getElementById('modeBanner');
   const pa = state.pendingAbility;
+  if(replaying){
+    banner.style.display = 'block';
+    banner.textContent = `▶ Replaying the round...`;
+    return;
+  }
+  if(captureActive && state.turn === 'enemy'){
+    banner.style.display = 'block';
+    banner.textContent = `${state.enemy.name} is planning their turn...`;
+    return;
+  }
   if(state.pendingEvoPlacement){
     banner.style.display = 'block';
     banner.textContent = `Choose a stack on YOUR board for ${state.pendingEvoPlacement.instance.name} (Evolution!)`;
@@ -2754,7 +2990,7 @@ function updateModeBanner(){
     banner.textContent = `Choose one of the OPPONENT's stacks to infect its Top card with a spreading DoT.`;
   } else if(pa && pa.kind === 'sacrificeBuff'){
     banner.style.display = 'block';
-    banner.textContent = `Choose one of YOUR stacks — every card in it gains +${pa.amount} Health.`;
+    banner.textContent = `Choose one of YOUR stacks - every card in it gains +${pa.amount} Health.`;
   } else if(pa && pa.kind === 'necromancerPickCard'){
     banner.style.display = 'block';
     banner.textContent = `Choose a dead card to Revive from the popup.`;
@@ -2804,7 +3040,7 @@ function updateMidline(){
    INTERACTION HANDLERS
    ============================================================ */
 async function onStackClick(side, stackIdx, evt){
-  if(state.over) return;
+  if(state.over || replaying) return;
   const isPlayerTurn = state.turn === 'player';
   if(!isPlayerTurn) return;
 
@@ -2881,7 +3117,7 @@ async function onStackClick(side, stackIdx, evt){
           state.pendingAbility = null;
           render();
         } else {
-          log(`Stack ${stackIdx+1} is full — choose another stack for the Revive.`);
+          log(`Stack ${stackIdx+1} is full - choose another stack for the Revive.`);
         }
       }
       return;
@@ -2899,7 +3135,7 @@ async function onStackClick(side, stackIdx, evt){
     const def = getDef(entry.defId);
     const topDef = stack.length>0 ? getDef(stack[0].defId) : null;
     if(topDef && topDef.noCover && def.keyword !== 'dig'){
-      log(`${topDef.name} can't be covered — nothing may be stacked on top of her while she's Exposed.`);
+      log(`${topDef.name} can't be covered - nothing may be stacked on top of her while she's Exposed.`);
       return;
     }
     if(def.keyword === 'dig' && stack.length > 0){
@@ -2943,25 +3179,23 @@ async function onStackClick(side, stackIdx, evt){
     if(stack.length===0) return;
     const atkStackIdx = state.selectedAttackerLoc.stackIdx;
     state.selectedAttackerLoc = null;
-    render();
-    await animatedAttack('player', atkStackIdx, {type:'card', stackIdx});
-    render();
+    resolveAttack('player', atkStackIdx, {type:'card', stackIdx});
     return;
   }
 }
 
-document.getElementById('attackPlayerBtn').addEventListener('click', async ()=>{
+document.getElementById('attackPlayerBtn').addEventListener('click', ()=>{
+  if(replaying) return;
   if(state.selectedAttackerLoc){
     const atkStackIdx = state.selectedAttackerLoc.stackIdx;
     state.selectedAttackerLoc = null;
-    render();
-    await animatedAttack('player', atkStackIdx, {type:'player'});
+    resolveAttack('player', atkStackIdx, {type:'player'});
   } else if(state.pendingAbility && state.pendingAbility.kind === 'goblinAssault'){
     resolveAbilityHit({type:'player'});
   }
-  render();
 });
 document.getElementById('cancelAtkBtn').addEventListener('click', ()=>{
+  if(replaying) return;
   if(state.selectedAttackerLoc){
     state.selectedAttackerLoc = null;
   } else if(state.pendingAbility){
@@ -2978,6 +3212,7 @@ document.getElementById('cancelAtkBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('drawBtn').addEventListener('click', ()=>{
+  if(replaying) return;
   if(state.turn!=='player' || state.player.mana < DRAW_COST || state.player.deck.length===0) return;
   if(state.pendingEvoPlacement || state.pendingShieldChoice || state.pendingHandDigChoice) return;
   state.player.mana -= DRAW_COST;
@@ -3020,12 +3255,12 @@ function showGameOver(){
 }
 
 /* ============================================================
-   DECK BUILDER — pre-match: choose 30 cards (max 3 copies each) + up to 2 Evolutions
+   DECK BUILDER - pre-match: choose 30 cards (max 3 copies each) + up to 2 Evolutions
    ============================================================ */
 const deckBuilderSelections = {};
 CARD_DEFS.forEach(def=>{ deckBuilderSelections[def.id] = 0; });
 const deckBuilderEvoIds = new Set();
-let pendingPlayerDeck = null;   // {ids, evoIds} — consumed by initGame() once RPS resolves
+let pendingPlayerDeck = null;   // {ids, evoIds} - consumed by initGame() once RPS resolves
 
 function deckBuilderTotal(){
   return Object.values(deckBuilderSelections).reduce((a,b)=>a+b, 0);
@@ -3124,7 +3359,7 @@ document.getElementById('deckStartBtn').addEventListener('click', ()=>{
 renderDeckBuilder();
 
 /* ============================================================
-   ROCK PAPER SCISSORS — decide first turn
+   ROCK PAPER SCISSORS - decide first turn
    ============================================================ */
 const beats = {rock:'scissors', paper:'rock', scissors:'paper'};
 document.querySelectorAll('.rpsBtn').forEach(btn=>{
@@ -3138,10 +3373,10 @@ document.querySelectorAll('.rpsBtn').forEach(btn=>{
       document.getElementById('rpsResult').textContent = resultText;
       return;
     } else if(beats[player]===ai){
-      resultText = `You chose ${player}, opponent chose ${ai} — you go first!`;
+      resultText = `You chose ${player}, opponent chose ${ai} - you go first!`;
       firstPlayer = 'player';
     } else {
-      resultText = `You chose ${player}, opponent chose ${ai} — opponent goes first.`;
+      resultText = `You chose ${player}, opponent chose ${ai} - opponent goes first.`;
       firstPlayer = 'enemy';
     }
     document.getElementById('rpsResult').textContent = resultText;
