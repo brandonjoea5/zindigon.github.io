@@ -43,7 +43,7 @@ body {
   flex-direction: column;
   background:
     linear-gradient(rgba(7, 11, 20, 0.70), rgba(7, 11, 20, 0.86)),
-    url("../images/superhero-background.jpg") center / cover fixed;
+    url("superhero-background.jpg") center / cover fixed;
   background-color: var(--bg-deep);
 }
 
