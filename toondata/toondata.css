@@ -2,11 +2,24 @@
    Built on top of /assets/site.css (shared Zindigon design system).
    Reuses --bg, --bg-elev, --line, --fg, --accent, --serif, --sans, --mono, --r etc. */
 
-/* Hero background image, overlaid on the shared dark surface.
-   No "fixed" attachment — mobile browsers (iOS Safari especially) are
-   unreliable about painting a fixed background at all when combined with
-   the site's overflow-x:hidden body, so this uses plain scroll instead. */
+/* Hero background image, held fixed in the viewport so all page content
+   scrolls in front of it instead of the image scrolling with the page.
+   This is done with a fixed, full-viewport ::before layer behind
+   everything rather than `background-attachment: fixed` directly on
+   body — plain "fixed" backgrounds are notoriously unreliable on mobile
+   Safari (they can fail to paint at all, especially combined with this
+   site's overflow-x:hidden body), while a fixed pseudo-element renders
+   consistently everywhere and gives the same "stays put" effect. */
 body.toondata {
+  background: var(--bg);
+  position: relative;
+  z-index: 0;
+}
+body.toondata::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background:
     linear-gradient(rgba(10, 10, 12, 0.72), rgba(10, 10, 12, 0.90)),
     url("superhero-background.jpg") center / cover no-repeat;
@@ -370,21 +383,37 @@ body.toondata {
   }
 }
 
-.td-gear-details summary.td-section-label {
+.td-gear-details summary.td-section-label,
+.td-extra-slots summary.td-section-label {
   cursor: pointer;
   margin: 0;
   list-style: none;
 }
-.td-gear-details summary.td-section-label::-webkit-details-marker { display: none; }
-.td-gear-details summary.td-section-label::before {
+.td-gear-details summary.td-section-label::-webkit-details-marker,
+.td-extra-slots summary.td-section-label::-webkit-details-marker { display: none; }
+.td-gear-details summary.td-section-label::before,
+.td-extra-slots summary.td-section-label::before {
   content: "▸";
   display: inline-block;
   margin-right: 6px;
   color: var(--accent);
   transition: transform 0.15s;
 }
-.td-gear-details[open] summary.td-section-label::before { transform: rotate(90deg); }
+.td-gear-details[open] summary.td-section-label::before,
+.td-extra-slots[open] summary.td-section-label::before { transform: rotate(90deg); }
 .td-gear-details .td-gear-table { margin-top: 14px; }
+
+/* Slots outside the known 0-14 range (weapon/offhand/trinket/stat-mod,
+   etc.) — kept out of the fixed flanking columns so they can't stretch
+   the paperdoll, but still surfaced here instead of only existing in the
+   full items table below. */
+.td-extra-slots { margin-bottom: 20px; }
+.td-extra-slots-grid {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 
 .td-gear-table {
   width: 100%;

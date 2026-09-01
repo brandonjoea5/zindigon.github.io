@@ -222,30 +222,24 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     </tr>
   `).join("");
 
-  // Paperdoll — slot 0-7 flank the left, 8-14 flank the right. Which slot
-  // is which body part isn't mapped yet, so this is just even spacing for
-  // now, not anatomically placed.
+  // Paperdoll — slot 0-7 flank the left, 8-14 flank the right, fixed at
+  // that size so the two columns stay a predictable height next to the
+  // silhouette instead of stretching it. Which slot is which body part
+  // isn't mapped yet, so this is just even spacing for now, not
+  // anatomically placed.
   //
-  // Slots 0-14 always get a chip, even when empty, so the layout is
-  // consistent across characters. But not every equipped item lives in
-  // that range — weapon/offhand/trinket/artifact/stat-mod slots (24-27,
-  // per what's been confirmed so far) use higher slot IDs that aren't
-  // mapped yet. Those items still show up in the "All equipped items"
-  // table below, since that table lists everything. If the paperdoll only
-  // ever rendered 0-14, an item sitting in one of those higher slots would
-  // exist in the table with nothing to match it above — which is exactly
-  // what was reported as slots "showing empty" while the list has items.
-  // So: any slot actually present on this character, known or not, gets
-  // appended here too. Nothing can appear in the table without also
-  // appearing as a chip.
+  // Not every equipped item lives in that 0-14 range — weapon/offhand/
+  // trinket/artifact/stat-mod slots (24-27, per what's been confirmed so
+  // far) use higher slot IDs that aren't mapped yet. Those still show up
+  // in the "All equipped items" table below. Rather than appending them
+  // to the flanking columns (which is what made the paperdoll balloon and
+  // stretch when a character had gear in those slots), they get their own
+  // small expandable list right under the paperdoll — collapsed by
+  // default, same pattern as the equipped-items table — so nothing is
+  // silently missing from view without the fixed layout blowing up.
   const bySlot = {};
   items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
   const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-  const extraSlots = Object.keys(bySlot)
-    .map(Number)
-    .filter(n => !KNOWN_SLOTS.includes(n))
-    .sort((a, b) => a - b);
-  const allSlots = [...KNOWN_SLOTS, ...extraSlots];
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
     return `<div class="td-slot-chip">
@@ -253,9 +247,14 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
     </div>`;
   };
-  const half = Math.ceil(allSlots.length / 2);
-  const leftSlots = allSlots.slice(0, half).map(slotChip).join("");
-  const rightSlots = allSlots.slice(half).map(slotChip).join("");
+  const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
+  const rightSlots = [8, 9, 10, 11, 12, 13, 14].map(slotChip).join("");
+
+  const extraSlotIds = Object.keys(bySlot)
+    .map(Number)
+    .filter(n => !KNOWN_SLOTS.includes(n))
+    .sort((a, b) => a - b);
+  const extraSlotsHtml = extraSlotIds.map(slotChip).join("");
 
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
@@ -301,6 +300,13 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
           </div>
           <div class="td-paperdoll-slots">${rightSlots}</div>
         </div>
+
+        ${extraSlotIds.length ? `
+        <details class="td-extra-slots">
+          <summary class="td-section-label">More equipped slots (${extraSlotIds.length})</summary>
+          <div class="td-extra-slots-grid">${extraSlotsHtml}</div>
+        </details>
+        ` : ""}
 
         <details class="td-gear-details">
           <summary class="td-section-label">All equipped items (${items.length})</summary>
