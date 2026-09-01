@@ -193,22 +193,32 @@ modeLeagueBtn.addEventListener("click", () => setMode("league"));
 // browser navigation rather than just an in-page state change — without
 // that, there'd be nothing for Back to actually go back *to*.
 // ---------------------------------------------------------------------
-const viewCache = new Map(); // viewKey -> { resultHTML, fetchedAt }
+// The cache stores the underlying DATA for a view (not rendered HTML) and
+// applyView re-runs the real render function against it. Caching a raw
+// HTML string and reinjecting it via innerHTML was tried first, but that
+// produces brand-new DOM nodes with no event listeners attached — so any
+// interactive part of the view (sortable roster headers, clicking through
+// to a member's profile) went permanently dead the moment a cached view
+// was restored. Re-rendering from data keeps every listener live.
+const viewCache = new Map(); // viewKey -> { data, fetchedAt }
 
-function cacheView(key) {
-  viewCache.set(key, { resultHTML: resultEl.innerHTML, fetchedAt: Date.now() });
+function cacheView(key, data) {
+  viewCache.set(key, { data, fetchedAt: Date.now() });
 }
 function getFreshView(key) {
   const entry = viewCache.get(key);
   if (!entry) return null;
   if (Date.now() - entry.fetchedAt > VIEW_CACHE_TTL_MS) return null;
-  return entry;
+  return entry.data;
 }
-function applyView(entry) {
+function applyView(data) {
   clearStatus();
   clearMatches();
-  resultEl.innerHTML = entry.resultHTML;
-  resultEl.className = "td-result show";
+  if (data.type === "character") {
+    renderCharacter(data.character, data.equippedItems, data.completedFeats, data.activeFeats, data.league);
+  } else if (data.type === "league") {
+    renderRoster(data.guildId, data.guildName, data.members, data.byId, data.sortState);
+  }
 }
 function pushView(hash) {
   if (location.hash !== hash) {
@@ -323,7 +333,7 @@ async function showCharacter(character, opts) {
 
     clearStatus();
     renderCharacter(character, equippedItems, completedFeats, activeFeats, league);
-    cacheView(cacheKey);
+    cacheView(cacheKey, { type: "character", character, equippedItems, completedFeats, activeFeats, league });
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
@@ -460,7 +470,6 @@ async function loadLeagueRoster(guildId, knownName, opts) {
 
     clearStatus();
     renderRoster(guildId, guildName, members, byId);
-    cacheView(cacheKey);
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
@@ -474,8 +483,12 @@ async function loadLeagueRoster(guildId, knownName, opts) {
 // they sink to the bottom instead of interrupting the ranking.
 const ROSTER_SORT_KEYS = { name: true, cr: true, sp: true };
 
-function renderRoster(guildId, guildName, members, byId) {
-  const sortState = { key: null, dir: 1 }; // dir: 1 = ascending, -1 = descending
+function renderRoster(guildId, guildName, members, byId, resumeSort) {
+  // dir: 1 = ascending, -1 = descending. resumeSort carries the sort the
+  // user had chosen when this same roster was last rendered (Back, or
+  // searching the same league again within the cache window), so it isn't
+  // silently reset to fetch order.
+  const sortState = resumeSort ? { ...resumeSort } : { key: null, dir: 1 };
 
   function sortValue(key, m) {
     const c = byId[m.character_id];
@@ -530,14 +543,20 @@ function renderRoster(guildId, guildName, members, byId) {
     });
   }
 
+  // Caches the data behind this exact roster view, including whatever sort
+  // is currently active, so a later Back or repeat search re-renders (with
+  // listeners intact — see the view cache block above) in the same order
+  // instead of resetting to fetch order.
+  function cacheCurrent() {
+    cacheView(`league:${guildId}`, { type: "league", guildId, guildName, members, byId, sortState: { ...sortState } });
+  }
+
   function renderTbody() {
     const tbody = resultEl.querySelector(".td-roster-table tbody");
     tbody.innerHTML = buildRowsHtml(sortedMembers());
     attachRowHandlers();
     updateHeaderIndicators();
-    // Re-cache so Back (within the TTL window) restores the roster in
-    // whatever sort order was last chosen, not the original fetch order.
-    cacheView(`league:${guildId}`);
+    cacheCurrent();
   }
 
   resultEl.innerHTML = `
@@ -551,13 +570,15 @@ function renderRoster(guildId, guildName, members, byId) {
           <th class="sortable" data-sort-key="sp">Skill Points</th>
           <th>Rank</th>
         </tr></thead>
-        <tbody>${buildRowsHtml(members)}</tbody>
+        <tbody>${buildRowsHtml(sortedMembers())}</tbody>
       </table>
       <p class="td-roster-note">Click a member to see their full profile. Click Name, Combat Rating, or Skill Points to sort — click again to reverse. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
     </div>
   `;
   resultEl.className = "td-result show";
   attachRowHandlers();
+  updateHeaderIndicators();
+  cacheCurrent();
 
   resultEl.querySelectorAll(".td-roster-table th[data-sort-key]").forEach(th => {
     th.addEventListener("click", () => {
