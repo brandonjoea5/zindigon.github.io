@@ -1,9 +1,7 @@
-// ---------------------------------------------------------------------
-// Zindigon ToonData — Census API client
+// Zindigon ToonData | Census API client
 // Docs: https://census.daybreakgames.com/
-// ---------------------------------------------------------------------
 
-// swap for your approved service ID once Daybreak confirms it (see README)
+// swap for the approved service ID once Daybreak confirms it
 const SERVICE_ID = "s:example";
 const CENSUS_BASE = "https://census.daybreakgames.com";
 const NAMESPACE = "dcuo:v1";
@@ -52,10 +50,10 @@ async function censusGet(collection, params) {
 }
 
 class RateLimitError extends Error {
-  constructor() { super("Rate limited by Census (10 requests/minute on s:example). Please wait a minute and try again."); }
+  constructor() { super("Too many searches right now. Please wait a minute and try again."); }
 }
 class AuthWallError extends Error {
-  constructor(collection) { super(`Collection '${collection}' requires OAuth login and can't be read with a service ID.`); }
+  constructor(collection) { super(`That information requires the player to be logged in and isn't available here.`); }
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -84,21 +82,20 @@ const matchListEl = document.getElementById("matchList");
 const resultEl = document.getElementById("result");
 const searchBtn = document.getElementById("searchBtn");
 const nameInput = document.getElementById("charName");
-const worldInput = document.getElementById("worldId");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
-  statusEl.className = `status show ${type || "info"}`;
+  statusEl.className = `status-line show ${type || ""}`;
 }
 function clearStatus() {
-  statusEl.className = "status";
+  statusEl.className = "status-line";
   statusEl.textContent = "";
 }
 function clearMatches() {
   matchListEl.innerHTML = "";
 }
 function clearResult() {
-  resultEl.className = "result";
+  resultEl.className = "td-result";
   resultEl.innerHTML = "";
 }
 
@@ -115,7 +112,7 @@ async function runSearch(name, worldId) {
   clearStatus();
   clearMatches();
   clearResult();
-  setStatus("Looking up character...", "info");
+  setStatus("Looking up character...");
   searchBtn.disabled = true;
 
   try {
@@ -126,22 +123,20 @@ async function runSearch(name, worldId) {
     const matches = charJson.character_list || [];
 
     if (matches.length === 0) {
-      setStatus(`No character named "${name}"${worldId ? ` on world_id ${worldId}` : ""} was found.`, "error");
+      setStatus(`No character named "${name}" was found.`, "error");
       return;
     }
 
     if (matches.length > 1) {
-      setStatus(`Multiple characters named "${name}" exist across different worlds. Pick one:`, "warn");
+      setStatus(`More than one character is named "${name}". Pick the right one:`, "warn");
       matchListEl.innerHTML = matches.map(m => `
-        <div class="match-item" data-character-id="${esc(m.character_id)}" data-world-id="${esc(m.world_id)}">
-          <span>${esc(m.name)} — Level ${esc(m.level)}, CR ${esc(m.combat_rating)}</span>
-          <span>World ID ${esc(m.world_id)}</span>
+        <div class="td-match-item" data-character-id="${esc(m.character_id)}" data-world-id="${esc(m.world_id)}">
+          <span>${esc(m.name)}, Level ${esc(m.level)}</span>
+          <span>Combat Rating ${esc(m.combat_rating)}</span>
         </div>
       `).join("");
       [...matchListEl.children].forEach(el => {
         el.addEventListener("click", () => {
-          nameInput.value = name;
-          worldInput.value = el.dataset.worldId;
           runSearch(name, el.dataset.worldId);
         });
       });
@@ -151,18 +146,16 @@ async function runSearch(name, worldId) {
     const character = matches[0];
     const characterId = character.character_id;
 
-    setStatus("Fetching equipped gear...", "info");
+    setStatus("Fetching gear...");
     const itemsJson = await censusGet("characters_item", { character_id: characterId, "c:limit": 500 });
     const equippedItems = (itemsJson.characters_item_list || [])
       .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
 
-    setStatus("Fetching completed feats (this can take a few requests for veteran characters)...", "info");
+    setStatus("Fetching feats...");
     const completedFeats = await fetchAllPages("characters_completed_feat", { character_id: characterId });
-
-    setStatus("Fetching in-progress feats...", "info");
     const activeFeats = await fetchAllPages("characters_active_feat", { character_id: characterId });
 
-    setStatus("Fetching league info...", "info");
+    setStatus("Fetching league...");
     let league = null;
     try {
       const rosterJson = await censusGet("guild_roster", { character_id: characterId });
@@ -173,126 +166,117 @@ async function runSearch(name, worldId) {
         league = { guild_id: membership.guild_id, rank: membership.rank, name: guildInfo ? guildInfo.name : null };
       }
     } catch (e) {
-      league = { error: e.message };
+      league = null;
     }
 
     clearStatus();
     renderCharacter(character, equippedItems, completedFeats, activeFeats, league);
 
   } catch (err) {
-    if (err instanceof RateLimitError) {
-      setStatus(err.message, "error");
-    } else if (err instanceof AuthWallError) {
-      setStatus(err.message, "error");
-    } else {
-      setStatus(`Something went wrong: ${err.message}`, "error");
-    }
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
   } finally {
     searchBtn.disabled = false;
   }
 }
 
 function renderCharacter(c, items, completedFeats, activeFeats, league) {
-  const statBlock = (label, value) => `
-    <div class="stat"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div></div>
-  `;
+  const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
+  const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
 
   const itemRows = items.map(it => `
     <tr>
       <td>${esc(it.equipment_slot_id)}</td>
       <td>${esc(it.item_id)}</td>
       <td>${it.is_bound === "true" ? "Yes" : "No"}</td>
-      <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "—"}</td>
+      <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "None"}</td>
     </tr>
   `).join("");
 
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
-  const leagueHtml = league
-    ? (league.error
-        ? `<p class="limitations">League lookup failed: ${esc(league.error)}</p>`
-        : `<div class="stat-grid">
-             ${statBlock("League", league.name || "Unknown")}
-             ${statBlock("Your Rank", league.rank)}
-             ${statBlock("Guild ID", league.guild_id)}
-           </div>`)
-    : `<p class="limitations">This character is not in a league, or league data wasn't available.</p>`;
+  const leagueHtml = league && league.name
+    ? `<span class="td-league">League<strong>${esc(league.name)}</strong></span>`
+    : `<span class="td-league">League<strong>None</strong></span>`;
 
   resultEl.innerHTML = `
-    <div class="card">
-      <div class="char-header">
-        <div class="name">${esc(c.name)}</div>
-        <div class="meta">World ID ${esc(c.world_id)} &middot; Character ID ${esc(c.character_id)}</div>
+    <div class="td-columns">
+      <div>
+        <p class="td-section-label">Gear</p>
+        <table class="td-gear-table">
+          <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
       </div>
-      <div class="stat-grid">
-        ${statBlock("Level", c.level)}
-        ${statBlock("Combat Rating", c.combat_rating)}
-        ${statBlock("PvP CR", c.pvp_combat_rating)}
-        ${statBlock("Skill Points", c.skill_points)}
-        ${statBlock("Max Feat Points", c.max_feats)}
-        ${statBlock("Health", `${c.current_health} / ${c.max_health}`)}
-        ${statBlock("Power", `${c.current_power} / ${c.max_power}`)}
-        ${statBlock("Might", c.might)}
-        ${statBlock("Precision", c.precision)}
-        ${statBlock("Restoration", c.restoration)}
-        ${statBlock("Vitalization", c.vitalization)}
-        ${statBlock("Dominance", c.dominance)}
-        ${statBlock("Defense", c.defense)}
-        ${statBlock("Toughness", c.toughness)}
-        ${statBlock("Power Type ID", c.power_type_id)}
-        ${statBlock("Power Source ID", c.power_source_id)}
-        ${statBlock("Movement Mode ID", c.movement_mode_id)}
-        ${statBlock("Alignment ID", c.alignment_id)}
-        ${statBlock("Gender ID", c.gender_id)}
-        ${statBlock("Origin ID", c.origin_id)}
-        ${statBlock("Title ID", c.title_id)}
-        ${statBlock("Personality ID", c.personality_id)}
-        ${statBlock("Region ID", c.region_id)}
-        ${statBlock("Active", c.active === "true" ? "Yes" : "No")}
+
+      <div>
+        <div class="td-header-row">
+          <div class="td-name">${esc(c.name)}</div>
+          ${leagueHtml}
+        </div>
+
+        <div class="td-kv">
+          ${kv("Level", c.level)}
+          ${kv("Combat Rating", c.combat_rating)}
+          ${kv("PvP Combat Rating", c.pvp_combat_rating)}
+          ${kv("Skill Points", c.skill_points)}
+        </div>
+
+        <div class="td-kv">
+          ${kv("Power Type", c.power_type_id)}
+          ${kv("Power Source", c.power_source_id)}
+          ${kv("Movement Mode", c.movement_mode_id)}
+        </div>
+
+        <div class="td-rows">
+          ${row("Health", c.current_health + " / " + c.max_health)}
+          ${row("Power", c.current_power + " / " + c.max_power)}
+          ${row("Might", c.might)}
+          ${row("Precision", c.precision)}
+          ${row("Restoration", c.restoration)}
+          ${row("Vitalization", c.vitalization)}
+          ${row("Dominance", c.dominance)}
+          ${row("Defense", c.defense)}
+          ${row("Toughness", c.toughness)}
+        </div>
+
+        <div class="td-kv">
+          ${kv("Gender", c.gender_id)}
+          ${kv("Origin", c.origin_id)}
+          ${kv("Title", c.title_id)}
+          ${kv("Personality", c.personality_id)}
+          ${kv("Region", c.region_id)}
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Equipped Gear (${items.length} items)</h2>
-      <table>
-        <thead><tr><th>Slot ID</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
-        <tbody>${itemRows}</tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>Feats</h2>
-      <div class="feat-summary">
-        <div class="stat"><div class="label">Completed</div><div class="value">${completedFeats.length}</div></div>
-        <div class="stat"><div class="label">In Progress</div><div class="value">${activeFeats.length}</div></div>
+    <div class="card" style="margin-top:32px;">
+      <p class="td-section-label">Feats</p>
+      <div class="td-feat-summary">
+        <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}</div></div>
+        <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
       </div>
       <details>
         <summary>Show completed feat IDs (${completedFeats.length})</summary>
-        <div class="feat-id-list">${featIdSpans(completedFeats)}</div>
+        <div class="td-feat-ids">${featIdSpans(completedFeats)}</div>
       </details>
-      <details>
+      <details style="margin-top:10px;">
         <summary>Show in-progress feat IDs (${activeFeats.length})</summary>
-        <div class="feat-id-list">${featIdSpans(activeFeats)}</div>
+        <div class="td-feat-ids">${featIdSpans(activeFeats)}</div>
       </details>
     </div>
 
-    <div class="card">
-      <h2>League</h2>
-      ${leagueHtml}
-    </div>
-
-    <div class="card">
-      <h2>About this data</h2>
-      <ul class="limitations">
-        <li>Item and feat IDs are shown raw — the Census API exposes no name/reference lookup for items, feats, powers, or movement modes for DCUO.</li>
-        <li>In-progress feats show only that they've been started, not a numeric progress amount.</li>
-        <li>Completed feats have no completion date attached.</li>
-        <li>House items and anything under the "auth_" collections require the character owner to log in via OAuth and aren't reachable here.</li>
-        <li>Artifacts, allies, currencies, general inventory, daily mission completion, raid history, and scoreboard damage are not exposed by this API at all.</li>
+    <div class="card" style="margin-top:20px;">
+      <p class="td-section-label">About this data</p>
+      <ul class="td-limitations">
+        <li>Item and feat IDs are shown raw. The Census API doesn't provide names for items, feats, powers, or movement modes.</li>
+        <li>In-progress feats show only that they've been started, not how close they are to completion.</li>
+        <li>Completed feats don't have a completion date attached.</li>
+        <li>House items and account-restricted data require the player to be logged in and aren't available here.</li>
+        <li>Artifacts, allies, currencies, inventory, daily mission completion, raid history, and scoreboard damage aren't exposed by this API.</li>
       </ul>
     </div>
   `;
-  resultEl.className = "result show";
+  resultEl.className = "td-result show";
 }
 
 // ---------------------------------------------------------------------
@@ -300,13 +284,11 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 // ---------------------------------------------------------------------
 searchBtn.addEventListener("click", () => {
   const name = nameInput.value.trim();
-  const worldId = worldInput.value.trim();
   if (!name) {
     setStatus("Enter a character name first.", "error");
     return;
   }
-  runSearch(name, worldId);
+  runSearch(name);
 });
 
 nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") searchBtn.click(); });
-worldInput.addEventListener("keydown", (e) => { if (e.key === "Enter") searchBtn.click(); });

@@ -3,71 +3,83 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Zindigon ToonData — DC Universe Online Character Lookup</title>
-<meta name="description" content="Independent character-data tools for DC Universe Online players." />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css" />
+<title>ToonData | Zindigon</title>
+<meta name="description" content="Look up your DC Universe Online character's stats, gear, and feats." />
+<link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
+<link rel="stylesheet" href="toondata.css" />
 </head>
-<body>
+<body class="toondata">
 
 <header class="site-header">
-  <div class="site-header-inner">
-    <a href="index.html" class="brand">Zindigon <span>ToonData</span></a>
-    <nav class="site-nav">
-      <a href="index.html" class="active">Lookup</a>
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="https://zindigon.com/">
+      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" aria-current="page">ToonData</a>
       <a href="about.html">About</a>
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
-    </nav>
-  </div>
+    </div>
+  </nav>
 </header>
 
-<div class="wrap">
-  <h1>Character Lookup</h1>
-  <p class="subtitle">Independent character-data tools for DC Universe Online players. Every search pulls live data straight from Daybreak's public Census API — nothing is cached or stored by ToonData.</p>
+<main>
+  <section class="hero" style="padding-top:24px;">
+    <span class="eyebrow"><span class="dot"></span>DC Universe Online</span>
+    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Character Lookup</h1>
+    <p class="lede">Look up your DC Universe Online character's stats, gear, and feats.</p>
 
-  <div class="search-bar">
-    <input id="charName" type="text" placeholder="Character name (e.g. Threshholder)" autocomplete="off" />
-    <input id="worldId" type="text" placeholder="World ID (optional)" autocomplete="off" />
-    <button id="searchBtn">Search</button>
-  </div>
+    <div class="td-lookup-form">
+      <input id="charName" class="input" type="text" placeholder="Character name" autocomplete="off" />
+      <button id="searchBtn" class="btn btn-primary">Search</button>
+    </div>
 
-  <div class="notice-box security">
-    <span class="notice-icon">🔒</span>
-    <span>Search using a public character name only. ToonData will <strong>never</strong> ask for your Daybreak, PlayStation, Xbox, Nintendo, Steam, or other gaming-account password.</span>
-  </div>
+    <div class="notice" style="margin-top:16px;">
+      <span>Search using a public character name only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
+    </div>
 
-  <div class="notice-box">
-    <span class="notice-icon">ℹ️</span>
-    <span>Character information is retrieved live from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData is unable to update or correct information maintained by Daybreak.</span>
-  </div>
+    <div class="notice" style="margin-top:10px;">
+      <span>Character information comes straight from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData can't update or correct information Daybreak maintains.</span>
+    </div>
 
-  <div id="status" class="status"></div>
-  <div id="matchList" class="match-list"></div>
+    <div id="status" class="status-line"></div>
+    <div id="matchList" class="td-match-list"></div>
 
-  <div id="result" class="result"></div>
-
-  <p class="footer-disclaimer" style="margin-top:32px;">
-    Using the shared public test key <code>s:example</code>, which Daybreak rate-limits to
-    <strong>10 requests per minute per IP</strong>. A single lookup can use several requests
-    depending on how many feats the character has, so back-to-back searches may briefly hit that
-    limit — if you see a rate-limit message, just wait about a minute.
-  </p>
-</div>
+    <div id="result" class="td-result"></div>
+  </section>
+</main>
 
 <footer class="site-footer">
-  <div class="site-footer-inner">
-    <p class="footer-disclaimer">Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.</p>
-    <p class="footer-disclaimer">Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.</p>
-    <div class="footer-links">
-      <a href="about.html">About</a>
-      <a href="terms.html">Terms of Use</a>
-      <a href="privacy.html">Privacy Policy</a>
-      <a href="mailto:banderson@zindigon.com">Contact</a>
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
+        Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.
+      </p>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
+        Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
+      </p>
     </div>
-    <p class="footer-meta">DC Universe Online is a trademark of its respective owners. Zindigon ToonData is an independent fan project.</p>
+    <div class="footer-col"><h4>ToonData</h4><ul>
+      <li><a href="index.html">Lookup</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Legal</h4><ul>
+      <li><a href="terms.html">Terms of Use</a></li>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Reach</h4><ul>
+      <li><a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></li>
+    </ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span>2026 Zindigon</span>
+    <span>Not affiliated with Daybreak Game Company, DC Comics, or Warner Bros. Entertainment</span>
   </div>
 </footer>
 

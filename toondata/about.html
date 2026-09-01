@@ -3,53 +3,73 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>About — Zindigon ToonData</title>
+<title>About | Zindigon ToonData</title>
 <meta name="description" content="About Zindigon ToonData, an independent DC Universe Online character-data tool." />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
+<link rel="stylesheet" href="toondata.css" />
 </head>
-<body>
+<body class="toondata">
 
 <header class="site-header">
-  <div class="site-header-inner">
-    <a href="index.html" class="brand">Zindigon <span>ToonData</span></a>
-    <nav class="site-nav">
-      <a href="index.html">Lookup</a>
-      <a href="about.html" class="active">About</a>
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="https://zindigon.com/">
+      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">ToonData</a>
+      <a href="about.html" aria-current="page">About</a>
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
-    </nav>
-  </div>
+    </div>
+  </nav>
 </header>
 
-<div class="wrap narrow">
-  <h1>About Zindigon ToonData</h1>
+<main>
+  <section style="padding-top:24px; max-width:68ch;">
+    <span class="eyebrow"><span class="dot"></span>About</span>
+    <h1 class="display" style="font-size:clamp(32px,5vw,52px); max-width:18ch;">About ToonData</h1>
 
-  <div class="page-content">
-    <p>Zindigon ToonData is a free, independently developed tool that helps DC Universe Online players view and understand publicly available character information.</p>
+    <p class="lede" style="margin-top:20px;">Zindigon ToonData is a free, independently developed tool that helps DC Universe Online players view and understand publicly available character information.</p>
 
-    <p>Character data displayed by ToonData is obtained through the Daybreak Game Company Census API. Zindigon does not have access to Daybreak accounts, passwords, payment information, private messages, or information that is not provided through the public API.</p>
+    <p style="margin-top:24px; font-size:15px;">Character data displayed by ToonData is obtained through the Daybreak Game Company Census API. Zindigon does not have access to Daybreak accounts, passwords, payment information, private messages, or information that is not provided through the public API.</p>
 
-    <p>Zindigon ToonData is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates.</p>
+    <p style="margin-top:14px; font-size:15px;">Zindigon ToonData is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates.</p>
 
-    <h3>Questions or concerns</h3>
-    <p>Reach out any time at <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>.</p>
-  </div>
-</div>
+    <h3 class="title" style="margin-top:40px; font-size:20px;">Questions or concerns</h3>
+    <p style="margin-top:10px; font-size:15px;">Reach out any time at <a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a>.</p>
+  </section>
+</main>
 
 <footer class="site-footer">
-  <div class="site-footer-inner">
-    <p class="footer-disclaimer">Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.</p>
-    <p class="footer-disclaimer">Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.</p>
-    <div class="footer-links">
-      <a href="about.html">About</a>
-      <a href="terms.html">Terms of Use</a>
-      <a href="privacy.html">Privacy Policy</a>
-      <a href="mailto:banderson@zindigon.com">Contact</a>
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
+        Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.
+      </p>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
+        Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
+      </p>
     </div>
-    <p class="footer-meta">DC Universe Online is a trademark of its respective owners. Zindigon ToonData is an independent fan project.</p>
+    <div class="footer-col"><h4>ToonData</h4><ul>
+      <li><a href="index.html">Lookup</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Legal</h4><ul>
+      <li><a href="terms.html">Terms of Use</a></li>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Reach</h4><ul>
+      <li><a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></li>
+    </ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span>2026 Zindigon</span>
+    <span>Not affiliated with Daybreak Game Company, DC Comics, or Warner Bros. Entertainment</span>
   </div>
 </footer>
 

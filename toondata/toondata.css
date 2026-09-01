@@ -1,0 +1,209 @@
+/* ToonData: page-specific styles.
+   Built on top of /assets/site.css (shared Zindigon design system).
+   Reuses --bg, --bg-elev, --line, --fg, --accent, --serif, --sans, --mono, --r etc. */
+
+/* Hero background image, overlaid on the shared dark surface */
+body.toondata {
+  background:
+    linear-gradient(rgba(10, 10, 12, 0.72), rgba(10, 10, 12, 0.90)),
+    url("superhero-background.jpg") center / cover fixed;
+}
+
+.td-lookup-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.td-lookup-form .input { flex: 1; min-width: 200px; }
+
+.status-line {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--fg-soft);
+  display: none;
+}
+.status-line.show { display: block; }
+.status-line.error { border-color: rgba(220,80,80,0.4); color: #ff8a8a; }
+.status-line.warn  { border-color: var(--accent-line); color: var(--fg); }
+
+.td-match-list { margin-top: 14px; display: grid; gap: 10px; }
+.td-match-item {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  transition: border-color 0.15s;
+}
+.td-match-item:hover { border-color: var(--accent-line); }
+
+.td-result { margin-top: 40px; display: none; }
+.td-result.show { display: block; }
+
+.td-columns {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 880px) {
+  .td-columns { grid-template-columns: 1fr; }
+}
+
+.td-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.td-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: -0.01em;
+}
+.td-league {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  text-align: right;
+}
+.td-league strong {
+  display: block;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--fg);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
+.td-kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.td-kv > div {
+  padding: 14px 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.td-kv .k {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.td-kv .v {
+  font-family: var(--serif);
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+.td-rows {
+  border-top: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.td-rows .td-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.td-rows .td-row .k {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.td-rows .td-row .v {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--fg);
+}
+
+.td-section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 0 0 14px;
+}
+
+.td-gear-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.td-gear-table th, .td-gear-table td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.td-gear-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  font-weight: 500;
+}
+.td-gear-table td { color: var(--fg-soft); font-family: var(--mono); font-size: 12px; }
+.td-gear-table tr:last-child td { border-bottom: none; }
+
+.td-feat-summary { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+.td-feat-summary .kv-single .k {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--fg-mute);
+}
+.td-feat-summary .kv-single .v {
+  font-family: var(--serif); font-size: 26px; margin-top: 4px;
+}
+
+.td-feat-ids {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.td-feat-ids span {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  color: var(--fg-mute);
+}
+
+.td-limitations {
+  font-size: 13px;
+  color: var(--fg-soft);
+  line-height: 1.7;
+  padding-left: 18px;
+}
+.td-limitations li { margin-bottom: 6px; }
