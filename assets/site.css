@@ -96,6 +96,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
+body.bg-nebula {
+  background:
+    linear-gradient(180deg, rgba(10,10,12,0.60), rgba(10,10,12,0.88)),
+    url("bg-nebula.jpg") center / cover fixed;
+}
 
 /* ───────── Header ───────── */
 .site-header {
