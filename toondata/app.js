@@ -69,6 +69,25 @@ async function censusGet(collection, params) {
       if (json.error === "login_required") {
         throw new AuthWallError(collection);
       }
+      // The shared "s:example" service ID doesn't get a real HTTP 429 when
+      // it's rate-limited — Census answers with HTTP 200 and a body like
+      // {"error":"Missing Service ID.  A valid Service ID is required for
+      // continued api use.  The Service ID s:example is for casual use
+      // only.  (...)"}. Before this check existed, that response fell
+      // through untouched: fetchAllPages saw no *_list key, treated it as
+      // an empty page, and quietly stopped paginating — so a rate-limited
+      // request came back looking like "this character has 0 (or fewer)
+      // feats" instead of failing. That's the confirmed root cause of the
+      // Compare feature's corrupted/nondeterministic feat counts. Treating
+      // it as a RateLimitError routes it through the same retry/backoff as
+      // a real 429, and only surfaces as a visible error if every retry is
+      // exhausted — instead of silently returning bad data. This is
+      // distinct from the legitimate {"error":"No data found."} response,
+      // which doesn't match this pattern and still passes through as a
+      // normal empty result.
+      if (typeof json.error === "string" && /casual use|missing service id/i.test(json.error)) {
+        throw new RateLimitError();
+      }
       if (json.errorCode) {
         throw new Error(`Census error on ${collection}: ${json.errorCode} - ${json.errorMessage || ""}`);
       }
@@ -623,9 +642,10 @@ compareGoBtn.addEventListener("click", () => {
   loadComparison(compareSelection.A.id, compareSelection.B.id);
 });
 
-// Loads two full character profiles (in parallel) and renders them side by
-// side. Pushes #compare/<idA>/<idB> and caches the same way character and
-// league views do, so Back returns here instantly within the cache window.
+// Loads two full character profiles, one after the other, and renders them
+// side by side. Pushes #compare/<idA>/<idB> and caches the same way
+// character and league views do, so Back returns here instantly within the
+// cache window.
 async function loadComparison(idA, idB, opts) {
   opts = opts || {};
   const cacheKey = `compare:${idA}:${idB}`;
@@ -640,12 +660,19 @@ async function loadComparison(idA, idB, opts) {
   clearStatus();
   clearMatches();
   clearResult();
-  setStatus("Loading both characters...");
+  // Fetched one at a time, not in parallel. The shared "s:example" Census
+  // key has a tight, undocumented rate limit, and comparing doubles the
+  // number of requests in flight at once (character + gear + two feat
+  // collections + league, times two people). Running both characters
+  // concurrently was making that limit far more likely to be hit — which,
+  // before the censusGet fix above, silently corrupted the results instead
+  // of failing loudly. Sequential fetches keep peak load the same as a
+  // single character lookup.
+  setStatus("Loading first character...");
   try {
-    const [dataA, dataB] = await Promise.all([
-      fetchCharacterFullData(idA),
-      fetchCharacterFullData(idB),
-    ]);
+    const dataA = await fetchCharacterFullData(idA);
+    setStatus("Loading second character...");
+    const dataB = await fetchCharacterFullData(idB);
 
     if (!dataA || !dataB) {
       setStatus("One of those characters couldn't be loaded — they may have transferred, been renamed, or been deleted.", "error");
@@ -1146,6 +1173,18 @@ function renderComparison(dataA, dataB) {
     ? list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("")
     : `<span class="td-roster-note" style="margin:0;">None</span>`;
 
+  // Defense-in-depth: even with the censusGet rate-limit fix, don't let the
+  // page confidently show "no feat differences" when the two characters'
+  // Skill Point totals prove that can't be right. Two distinct characters
+  // whose completed-feat sets are byte-for-byte identical, but whose SP
+  // differs, means the feat data behind this particular comparison is
+  // incomplete — surface that instead of implying they're feat-identical.
+  const spA = Number(a.skill_points);
+  const spB = Number(b.skill_points);
+  const spDiffers = !Number.isNaN(spA) && !Number.isNaN(spB) && spA !== spB;
+  const noFeatDiff = onlyA.length === 0 && onlyB.length === 0;
+  const featDataSuspect = noFeatDiff && spDiffers;
+
   resultEl.innerHTML = `
     <div class="td-compare">
       <div class="td-compare-columns td-compare-identity-row">
@@ -1191,6 +1230,11 @@ function renderComparison(dataA, dataB) {
 
       <div class="card" style="margin-top:20px;">
         <p class="td-section-label">Feats — completed by one, not the other</p>
+        ${featDataSuspect ? `
+        <div class="notice" style="margin-bottom:14px;">
+          <span>No differences were returned by Census, although the characters' Skill Point totals differ. Feat data may be incomplete — try running the comparison again.</span>
+        </div>
+        ` : ""}
         <div class="td-compare-columns">
           <div>
             <p class="td-compare-side-label" style="font-size:15px;">Only ${nameA} (${onlyA.length})</p>
