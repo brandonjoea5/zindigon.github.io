@@ -29,9 +29,39 @@ body.toondata::before {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 32px;
+  margin-top: 20px;
 }
 .td-lookup-form .input { flex: 1; min-width: 200px; }
+
+/* Character / League mode toggle above the search box. */
+.td-mode-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.td-mode-tab {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  background: none;
+  border: none;
+  padding: 10px 4px 12px;
+  margin-right: 18px;
+  cursor: pointer;
+  position: relative;
+}
+.td-mode-tab:hover { color: var(--fg-soft); }
+.td-mode-tab.active { color: var(--fg); }
+.td-mode-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+}
 
 .status-line {
   margin-top: 16px;
@@ -435,6 +465,38 @@ body.toondata::before {
 }
 .td-gear-table td { color: var(--fg-soft); font-family: var(--mono); font-size: 12px; }
 .td-gear-table tr:last-child td { border-bottom: none; }
+
+/* League roster — same table language as the gear table, but rows are
+   clickable through to that member's own character view. */
+.td-roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.td-roster-table th, .td-roster-table td {
+  text-align: left;
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.td-roster-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  font-weight: 500;
+}
+.td-roster-table td { color: var(--fg-soft); font-family: var(--sans); font-size: 13px; }
+.td-roster-table td:first-child { color: var(--fg); font-weight: 500; }
+.td-roster-table tr:last-child td { border-bottom: none; }
+.td-roster-row { cursor: pointer; transition: background 0.15s; }
+.td-roster-row:hover, .td-roster-row:focus-visible { background: var(--accent-soft); outline: none; }
+.td-roster-note {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-faint);
+}
 
 .td-feat-summary { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
 .td-feat-summary .kv-single .k {

@@ -8,6 +8,9 @@ const NAMESPACE = "dcuo:v1";
 const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for feat collections
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
 const MAX_RETRIES = 3;
+const ROSTER_LIMIT = 500;      // safety cap on how many members a single league roster fetch returns
+const CHAR_BATCH_SIZE = 40;    // how many character_ids get resolved to names per batched request
+const VIEW_CACHE_TTL_MS = 5 * 60 * 1000; // how long a character/roster view is reused on Back before refetching
 
 // Census doesn't provide a name lookup for these IDs, so this is a small
 // hand-maintained table of the ones that are known. Anything not listed
@@ -37,6 +40,10 @@ const GENDER_NAMES = {
   "0": "Male",
   "1": "Female",
 };
+// alignment_id isn't documented by Daybreak, but it only ever takes two
+// values and cross-checking name patterns (Batman/Superman-themed names
+// vs. Joker/Harley Quinn-themed names) confirms which is which.
+const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
 
 // ---------------------------------------------------------------------
 // Low-level Census fetch with retry/backoff on 429 / transient errors
@@ -111,6 +118,12 @@ const matchListEl = document.getElementById("matchList");
 const resultEl = document.getElementById("result");
 const searchBtn = document.getElementById("searchBtn");
 const nameInput = document.getElementById("charName");
+const leagueSearchBtn = document.getElementById("leagueSearchBtn");
+const leagueNameInput = document.getElementById("leagueName");
+const modeCharBtn = document.getElementById("modeCharBtn");
+const modeLeagueBtn = document.getElementById("modeLeagueBtn");
+const charSearchForm = document.getElementById("charSearchForm");
+const leagueSearchForm = document.getElementById("leagueSearchForm");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
@@ -134,8 +147,83 @@ function esc(str) {
   }[c]));
 }
 
+// Formats a stat number with comma separators. Some characters are
+// genuinely missing fields Census would normally compute (seen directly on
+// a real low-level toon with no combat_rating at all), so this falls back
+// to an em dash instead of printing "NaN".
+function fmt(n) {
+  if (n === undefined || n === null || n === "") return "—";
+  const num = Number(n);
+  return Number.isNaN(num) ? "—" : num.toLocaleString();
+}
+
 // ---------------------------------------------------------------------
-// Main search flow
+// Mode toggle (Character search vs. League search)
+// ---------------------------------------------------------------------
+function setMode(mode) {
+  const isChar = mode === "character";
+  charSearchForm.style.display = isChar ? "" : "none";
+  leagueSearchForm.style.display = isChar ? "none" : "";
+  modeCharBtn.classList.toggle("active", isChar);
+  modeCharBtn.setAttribute("aria-selected", String(isChar));
+  modeLeagueBtn.classList.toggle("active", !isChar);
+  modeLeagueBtn.setAttribute("aria-selected", String(!isChar));
+}
+modeCharBtn.addEventListener("click", () => setMode("character"));
+modeLeagueBtn.addEventListener("click", () => setMode("league"));
+
+// ---------------------------------------------------------------------
+// View cache + history — lets the browser Back/Forward buttons return to
+// a character or league view without re-hitting Census, as long as that
+// view was loaded within the last few minutes (VIEW_CACHE_TTL_MS). Older
+// than that, it refetches, in case the underlying data changed since.
+//
+// Every character or roster view gets its own URL fragment
+// (#char/<id> or #league/<id>) via history.pushState, so Back is a real
+// browser navigation rather than just an in-page state change — without
+// that, there'd be nothing for Back to actually go back *to*.
+// ---------------------------------------------------------------------
+const viewCache = new Map(); // viewKey -> { resultHTML, fetchedAt }
+
+function cacheView(key) {
+  viewCache.set(key, { resultHTML: resultEl.innerHTML, fetchedAt: Date.now() });
+}
+function getFreshView(key) {
+  const entry = viewCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.fetchedAt > VIEW_CACHE_TTL_MS) return null;
+  return entry;
+}
+function applyView(entry) {
+  clearStatus();
+  clearMatches();
+  resultEl.innerHTML = entry.resultHTML;
+  resultEl.className = "td-result show";
+}
+function pushView(hash) {
+  if (location.hash !== hash) {
+    history.pushState({ tdView: true }, "", hash);
+  }
+}
+
+window.addEventListener("popstate", () => {
+  handleHash(location.hash, { skipPush: true });
+});
+
+function handleHash(hash, opts) {
+  const charMatch = hash.match(/^#char\/(\d+)$/);
+  const leagueMatch = hash.match(/^#league\/([^/?#]+)$/);
+  if (charMatch) {
+    loadCharacterById(charMatch[1], opts);
+  } else if (leagueMatch) {
+    loadLeagueRoster(leagueMatch[1], null, opts);
+  }
+  // Anything else (empty hash, or Back past the first result) — nothing
+  // to load, just leave whatever's already on screen.
+}
+
+// ---------------------------------------------------------------------
+// Character search flow
 // ---------------------------------------------------------------------
 async function runSearch(name, worldId) {
   clearStatus();
@@ -172,10 +260,35 @@ async function runSearch(name, worldId) {
       return;
     }
 
-    const character = matches[0];
-    const characterId = character.character_id;
+    await showCharacter(matches[0]);
 
-    setStatus("Fetching gear...");
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    searchBtn.disabled = false;
+  }
+}
+
+// Renders a character we already have the full Census object for (from a
+// name search). Pushes its own #char/<id> history entry and caches the
+// rendered result so Back/Forward can reuse it — see the view cache block
+// above. opts.skipPush is set when this is being restored by popstate,
+// since the URL already reflects this view in that case.
+async function showCharacter(character, opts) {
+  opts = opts || {};
+  const characterId = character.character_id;
+  const cacheKey = `char:${characterId}`;
+  if (!opts.skipPush) pushView(`#char/${characterId}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearMatches();
+  setStatus("Fetching gear...");
+  try {
     const itemsJson = await censusGet("characters_item", { character_id: characterId, "c:limit": 500 });
     const equippedItems = (itemsJson.characters_item_list || [])
       .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
@@ -200,18 +313,189 @@ async function runSearch(name, worldId) {
 
     clearStatus();
     renderCharacter(character, equippedItems, completedFeats, activeFeats, league);
+    cacheView(cacheKey);
+
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+// Renders a character we only have the character_id for (a league roster
+// row). Looks the character up by ID first, then hands off to
+// showCharacter for the rest — same caching/history behavior either way.
+async function loadCharacterById(characterId, opts) {
+  opts = opts || {};
+  const cacheKey = `char:${characterId}`;
+  if (!opts.skipPush) pushView(`#char/${characterId}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Loading character...");
+  try {
+    const charJson = await censusGet("character", { character_id: characterId });
+    const character = (charJson.character_list || [])[0];
+    if (!character) {
+      setStatus("That character couldn't be loaded — they may have transferred, been renamed, or been deleted.", "error");
+      return;
+    }
+    await showCharacter(character, { skipPush: true });
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+// ---------------------------------------------------------------------
+// League search flow
+// ---------------------------------------------------------------------
+async function runLeagueSearch(name) {
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Looking up league...");
+  leagueSearchBtn.disabled = true;
+
+  try {
+    const guildJson = await censusGet("guild", { name: `^${name}`, "c:limit": 20 });
+    const matches = guildJson.guild_list || [];
+
+    if (matches.length === 0) {
+      setStatus(`No league named "${name}" was found.`, "error");
+      return;
+    }
+
+    if (matches.length > 1) {
+      setStatus(`More than one league matches "${name}". Pick the right one:`, "warn");
+      matchListEl.innerHTML = matches.map(m => `
+        <div class="td-match-item" data-guild-id="${esc(m.guild_id)}" data-guild-name="${esc(m.name)}">
+          <span>${esc(m.name)}</span>
+          <span>World #${esc(m.world_id)}</span>
+        </div>
+      `).join("");
+      [...matchListEl.children].forEach(el => {
+        el.addEventListener("click", () => {
+          loadLeagueRoster(el.dataset.guildId, el.dataset.guildName);
+        });
+      });
+      return;
+    }
+
+    await loadLeagueRoster(matches[0].guild_id, matches[0].name);
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
   } finally {
-    searchBtn.disabled = false;
+    leagueSearchBtn.disabled = false;
   }
 }
 
+// Loads a full league roster by guild_id and renders it as a clickable
+// member table. Pushes its own #league/<id> history entry and caches the
+// rendered result, same pattern as showCharacter above — so clicking into
+// a member's profile and hitting Back returns here instantly if it's
+// still within the cache window, instead of re-fetching the whole roster.
+async function loadLeagueRoster(guildId, knownName, opts) {
+  opts = opts || {};
+  const cacheKey = `league:${guildId}`;
+  if (!opts.skipPush) pushView(`#league/${guildId}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Loading roster...");
+  try {
+    const rosterJson = await censusGet("guild_roster", { guild_id: guildId, "c:limit": ROSTER_LIMIT });
+    const members = rosterJson.guild_roster_list || [];
+
+    if (members.length === 0) {
+      setStatus("That league has no members, or couldn't be loaded.", "error");
+      return;
+    }
+
+    let guildName = knownName;
+    let guildInfo = null;
+    if (!guildName) {
+      const guildJson = await censusGet("guild", { guild_id: guildId });
+      guildInfo = (guildJson.guild_list || [])[0];
+      guildName = guildInfo ? guildInfo.name : "League";
+    }
+
+    setStatus(`Loading ${members.length} member${members.length === 1 ? "" : "s"}...`);
+    // Resolve character_id -> name/level/CR in batches. A batch failing
+    // (rate limit, etc.) shouldn't take down the whole roster — those
+    // members just fall back to showing their raw ID below.
+    const byId = {};
+    for (let i = 0; i < members.length; i += CHAR_BATCH_SIZE) {
+      const batch = members.slice(i, i + CHAR_BATCH_SIZE);
+      const idsParam = batch.map(m => m.character_id).join(",");
+      try {
+        const charJson = await censusGet("character", { character_id: idsParam, "c:limit": CHAR_BATCH_SIZE });
+        (charJson.character_list || []).forEach(c => { byId[c.character_id] = c; });
+      } catch (e) {
+        // leave this batch unresolved rather than aborting the roster
+      }
+    }
+
+    clearStatus();
+    renderRoster(guildId, guildName, members, byId);
+    cacheView(cacheKey);
+
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+function renderRoster(guildId, guildName, members, byId) {
+  const rows = members.map(m => {
+    const c = byId[m.character_id];
+    const name = c ? esc(c.name) : `Character #${esc(m.character_id)}`;
+    const level = c ? fmt(c.level) : "—";
+    const cr = c ? fmt(c.combat_rating) : "—";
+    return `<tr class="td-roster-row" data-character-id="${esc(m.character_id)}" tabindex="0">
+      <td>${name}</td>
+      <td>${level}</td>
+      <td>${cr}</td>
+      <td>${esc(m.rank)}</td>
+    </tr>`;
+  }).join("");
+
+  resultEl.innerHTML = `
+    <div class="td-roster">
+      <p class="td-section-label">League — ${esc(guildName)} (${members.length} member${members.length === 1 ? "" : "s"})</p>
+      <table class="td-roster-table">
+        <thead><tr><th>Name</th><th>Level</th><th>Combat Rating</th><th>Rank</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="td-roster-note">Click a member to see their full profile. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
+    </div>
+  `;
+  resultEl.className = "td-result show";
+
+  resultEl.querySelectorAll(".td-roster-row").forEach(row => {
+    const go = () => loadCharacterById(row.dataset.characterId);
+    row.addEventListener("click", go);
+    row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  });
+}
+
+// ---------------------------------------------------------------------
+// Character render
+// ---------------------------------------------------------------------
 function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
-  const fmt = (n) => Number(n).toLocaleString();
 
   const itemRows = items.map(it => `
     <tr>
@@ -258,13 +542,12 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
-  // alignment_id isn't documented by Daybreak, but it only ever takes two
-  // values and cross-checking name patterns (Batman/Superman-themed names
-  // vs. Joker/Harley Quinn-themed names) confirms which is which.
-  const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
   const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
 
   const leagueName = league && league.name ? esc(league.name) : "None";
+  const leagueLink = league && league.guild_id
+    ? `<a href="#league/${esc(league.guild_id)}" class="td-league-link" data-guild-id="${esc(league.guild_id)}" data-guild-name="${leagueName}">${leagueName}</a>`
+    : leagueName;
 
   // Simple stroke icons matching the site's brand-mark style. Power source
   // still has no known name lookup, so it's shown as a raw ID further down.
@@ -280,7 +563,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
         <div class="td-name">${esc(c.name)}</div>
         <div class="td-identity-tags">
           ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
-          <span class="td-tag">League <strong>${leagueName}</strong></span>
+          <span class="td-tag">League <strong>${leagueLink}</strong></span>
           <span class="td-tag" title="World ID ${esc(c.world_id)}">Server <strong>${esc(worldLabel)}</strong></span>
         </div>
       </div>
@@ -383,6 +666,14 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     </div>
   `;
   resultEl.className = "td-result show";
+
+  const leagueLinkEl = resultEl.querySelector(".td-league-link");
+  if (leagueLinkEl) {
+    leagueLinkEl.addEventListener("click", (e) => {
+      e.preventDefault();
+      loadLeagueRoster(leagueLinkEl.dataset.guildId, leagueLinkEl.dataset.guildName);
+    });
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -396,5 +687,21 @@ searchBtn.addEventListener("click", () => {
   }
   runSearch(name);
 });
-
 nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") searchBtn.click(); });
+
+leagueSearchBtn.addEventListener("click", () => {
+  const name = leagueNameInput.value.trim();
+  if (!name) {
+    setStatus("Enter a league name first.", "error");
+    return;
+  }
+  runLeagueSearch(name);
+});
+leagueNameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") leagueSearchBtn.click(); });
+
+// Deep-link support: if the page loads directly on a #char/... or
+// #league/... URL (a bookmark, a shared link, or a refresh), load that
+// view instead of leaving the page on the empty search screen.
+if (location.hash) {
+  handleHash(location.hash, { skipPush: true });
+}

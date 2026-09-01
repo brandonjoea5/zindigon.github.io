@@ -6,7 +6,7 @@
 <title>ToonData | Zindigon</title>
 <meta name="description" content="Look up your DC Universe Online character's stats, gear, and feats." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="toondata.css?v=8" />
+<link rel="stylesheet" href="toondata.css?v=9" />
 </head>
 <body class="toondata">
 
@@ -43,20 +43,30 @@
 <main>
   <section class="hero" style="padding-top:24px;">
     <span class="eyebrow"><span class="dot"></span>DC Universe Online</span>
-    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Character Lookup</h1>
-    <p class="lede">Look up your DC Universe Online character's stats, gear, and feats.</p>
+    <h1 class="display" style="font-size:clamp(34px,6vw,60px);" id="pageTitle">Character Lookup</h1>
+    <p class="lede" id="pageLede">Look up your DC Universe Online character's stats, gear, and feats.</p>
 
-    <div class="td-lookup-form">
+    <div class="td-mode-tabs" role="tablist" aria-label="Lookup type">
+      <button type="button" class="td-mode-tab active" id="modeCharBtn" role="tab" aria-selected="true">Character</button>
+      <button type="button" class="td-mode-tab" id="modeLeagueBtn" role="tab" aria-selected="false">League</button>
+    </div>
+
+    <div class="td-lookup-form" id="charSearchForm">
       <input id="charName" class="input" type="text" placeholder="Character name" autocomplete="off" />
       <button id="searchBtn" class="btn btn-primary">Search</button>
     </div>
 
+    <div class="td-lookup-form" id="leagueSearchForm" style="display:none;">
+      <input id="leagueName" class="input" type="text" placeholder="League name" autocomplete="off" />
+      <button id="leagueSearchBtn" class="btn btn-primary">Search</button>
+    </div>
+
     <div class="notice" style="margin-top:16px;">
-      <span>Search using a public character name only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
+      <span>Search using a public character or league name only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
     </div>
 
     <div class="notice" style="margin-top:10px;">
-      <span>Character information comes straight from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData can't update or correct information Daybreak maintains.</span>
+      <span>Character and league information comes straight from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData can't update or correct information Daybreak maintains.</span>
     </div>
 
     <div id="status" class="status-line"></div>
@@ -99,6 +109,6 @@
 </footer>
 
 <script src="https://zindigon.com/assets/site.js"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
