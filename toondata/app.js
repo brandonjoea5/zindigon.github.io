@@ -182,6 +182,12 @@ async function runSearch(name, worldId) {
 function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
+  const fmt = (n) => Number(n).toLocaleString();
+  const pct = (cur, max) => {
+    const m = Number(max);
+    if (!m) return 0;
+    return Math.max(0, Math.min(100, (Number(cur) / m) * 100));
+  };
 
   const itemRows = items.map(it => `
     <tr>
@@ -194,11 +200,31 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
-  const leagueHtml = league && league.name
-    ? `<span class="td-league">League<strong>${esc(league.name)}</strong></span>`
-    : `<span class="td-league">League<strong>None</strong></span>`;
+  const leagueName = league && league.name ? esc(league.name) : "None";
+  const healthPct = pct(c.current_health, c.max_health);
+  const powerPct = pct(c.current_power, c.max_power);
+
+  // Simple stroke icons matching the site's brand-mark style. Power type,
+  // power source, and movement mode have no name lookup in the Census API,
+  // so the values next to them are still raw IDs.
+  const powerIcon = `<svg viewBox="0 0 16 16"><path d="M9 1 L3 9 L7 9 L6 15 L13 6 L9 6 Z"/></svg>`;
+  const moveIcon = `<svg viewBox="0 0 16 16"><path d="M2 11 L7 6 M5 13 L10 8 M8 15 L13 10"/></svg>`;
 
   resultEl.innerHTML = `
+    <div class="td-identity">
+      <div>
+        <div class="td-name">${esc(c.name)}</div>
+        <div class="td-identity-tags">
+          <span class="td-tag">League <strong>${leagueName}</strong></span>
+          <span class="td-tag">Server <strong>#${esc(c.world_id)}</strong></span>
+        </div>
+      </div>
+      <div class="td-identity-icons">
+        <span class="td-icon-chip" title="Power type ID">${powerIcon}<span>${esc(c.power_type_id)}</span></span>
+        <span class="td-icon-chip" title="Movement mode ID">${moveIcon}<span>${esc(c.movement_mode_id)}</span></span>
+      </div>
+    </div>
+
     <div class="td-columns">
       <div>
         <p class="td-section-label">Gear</p>
@@ -209,27 +235,34 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       </div>
 
       <div>
-        <div class="td-header-row">
-          <div class="td-name">${esc(c.name)}</div>
-          ${leagueHtml}
+        <div class="td-hero-stats">
+          <div class="td-hero-stat">
+            <div class="v">${esc(c.combat_rating)}</div>
+            <div class="k">Combat Rating</div>
+          </div>
+          <div class="td-hero-stat">
+            <div class="v">${esc(c.skill_points)}</div>
+            <div class="k">Skill Points</div>
+          </div>
         </div>
 
-        <div class="td-kv">
-          ${kv("Level", c.level)}
-          ${kv("Combat Rating", c.combat_rating)}
-          ${kv("PvP Combat Rating", c.pvp_combat_rating)}
-          ${kv("Skill Points", c.skill_points)}
+        <div class="td-secondary-stats">
+          <div><div class="k">Level</div><div class="v td-level">${esc(c.level)}</div></div>
+          <div><div class="k">PvP Combat Rating</div><div class="v td-pvp">${esc(c.pvp_combat_rating)}</div></div>
         </div>
 
-        <div class="td-kv">
-          ${kv("Power Type", c.power_type_id)}
-          ${kv("Power Source", c.power_source_id)}
-          ${kv("Movement Mode", c.movement_mode_id)}
+        <div class="td-bars">
+          <div class="td-bar-row">
+            <div class="k"><span>Health</span><span class="v">${fmt(c.current_health)} / ${fmt(c.max_health)}</span></div>
+            <div class="td-bar-track"><div class="td-bar-fill" style="width:${healthPct}%"></div></div>
+          </div>
+          <div class="td-bar-row">
+            <div class="k"><span>Power</span><span class="v">${fmt(c.current_power)} / ${fmt(c.max_power)}</span></div>
+            <div class="td-bar-track"><div class="td-bar-fill power" style="width:${powerPct}%"></div></div>
+          </div>
         </div>
 
         <div class="td-rows">
-          ${row("Health", c.current_health + " / " + c.max_health)}
-          ${row("Power", c.current_power + " / " + c.max_power)}
           ${row("Might", c.might)}
           ${row("Precision", c.precision)}
           ${row("Restoration", c.restoration)}
@@ -240,6 +273,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
         </div>
 
         <div class="td-kv">
+          ${kv("Power Source", c.power_source_id)}
           ${kv("Gender", c.gender_id)}
           ${kv("Origin", c.origin_id)}
           ${kv("Title", c.title_id)}
