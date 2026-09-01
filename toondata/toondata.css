@@ -489,6 +489,23 @@ body.toondata::before {
 .td-roster-table td { color: var(--fg-soft); font-family: var(--sans); font-size: 13px; }
 .td-roster-table td:first-child { color: var(--fg); font-weight: 500; }
 .td-roster-table tr:last-child td { border-bottom: none; }
+.td-roster-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.td-roster-table th.sortable:hover { color: var(--fg-soft); }
+.td-roster-table th.sortable::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  margin-left: 5px;
+}
+.td-roster-table th.sortable.sorted-asc::after,
+.td-roster-table th.sortable.sorted-desc::after {
+  color: var(--accent);
+}
+.td-roster-table th.sortable.sorted-asc::after { content: "▲"; }
+.td-roster-table th.sortable.sorted-desc::after { content: "▼"; }
 .td-roster-row { cursor: pointer; transition: background 0.15s; }
 .td-roster-row:hover, .td-roster-row:focus-visible { background: var(--accent-soft); outline: none; }
 .td-roster-note {

@@ -457,36 +457,113 @@ async function loadLeagueRoster(guildId, knownName, opts) {
   }
 }
 
+// Roster columns that can be sorted client-side (no re-fetch needed — the
+// full member list and their resolved character records are already in
+// hand). "name" sorts alphabetically; "cr" and "sp" sort numerically, with
+// unresolved members (no matching character record) treated as lowest so
+// they sink to the bottom instead of interrupting the ranking.
+const ROSTER_SORT_KEYS = { name: true, cr: true, sp: true };
+
 function renderRoster(guildId, guildName, members, byId) {
-  const rows = members.map(m => {
+  const sortState = { key: null, dir: 1 }; // dir: 1 = ascending, -1 = descending
+
+  function sortValue(key, m) {
     const c = byId[m.character_id];
-    const name = c ? esc(c.name) : `Character #${esc(m.character_id)}`;
-    const level = c ? fmt(c.level) : "—";
-    const cr = c ? fmt(c.combat_rating) : "—";
-    return `<tr class="td-roster-row" data-character-id="${esc(m.character_id)}" tabindex="0">
-      <td>${name}</td>
-      <td>${level}</td>
-      <td>${cr}</td>
-      <td>${esc(m.rank)}</td>
-    </tr>`;
-  }).join("");
+    if (key === "name") return (c ? c.name : `Character #${m.character_id}`).toLowerCase();
+    if (key === "cr") return c && c.combat_rating !== undefined && c.combat_rating !== null ? Number(c.combat_rating) : -1;
+    if (key === "sp") return c && c.skill_points !== undefined && c.skill_points !== null ? Number(c.skill_points) : -1;
+    return 0;
+  }
+
+  function sortedMembers() {
+    if (!sortState.key) return members;
+    return [...members].sort((a, b) => {
+      const va = sortValue(sortState.key, a);
+      const vb = sortValue(sortState.key, b);
+      if (va < vb) return -1 * sortState.dir;
+      if (va > vb) return 1 * sortState.dir;
+      return 0;
+    });
+  }
+
+  function buildRowsHtml(list) {
+    return list.map(m => {
+      const c = byId[m.character_id];
+      const name = c ? esc(c.name) : `Character #${esc(m.character_id)}`;
+      const level = c ? fmt(c.level) : "—";
+      const cr = c ? fmt(c.combat_rating) : "—";
+      const sp = c ? fmt(c.skill_points) : "—";
+      return `<tr class="td-roster-row" data-character-id="${esc(m.character_id)}" tabindex="0">
+        <td>${name}</td>
+        <td>${level}</td>
+        <td>${cr}</td>
+        <td>${sp}</td>
+        <td>${esc(m.rank)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function attachRowHandlers() {
+    resultEl.querySelectorAll(".td-roster-row").forEach(row => {
+      const go = () => loadCharacterById(row.dataset.characterId);
+      row.addEventListener("click", go);
+      row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    });
+  }
+
+  function updateHeaderIndicators() {
+    resultEl.querySelectorAll(".td-roster-table th[data-sort-key]").forEach(th => {
+      th.classList.remove("sorted-asc", "sorted-desc");
+      if (th.dataset.sortKey === sortState.key) {
+        th.classList.add(sortState.dir === 1 ? "sorted-asc" : "sorted-desc");
+      }
+    });
+  }
+
+  function renderTbody() {
+    const tbody = resultEl.querySelector(".td-roster-table tbody");
+    tbody.innerHTML = buildRowsHtml(sortedMembers());
+    attachRowHandlers();
+    updateHeaderIndicators();
+    // Re-cache so Back (within the TTL window) restores the roster in
+    // whatever sort order was last chosen, not the original fetch order.
+    cacheView(`league:${guildId}`);
+  }
 
   resultEl.innerHTML = `
     <div class="td-roster">
       <p class="td-section-label">League — ${esc(guildName)} (${members.length} member${members.length === 1 ? "" : "s"})</p>
       <table class="td-roster-table">
-        <thead><tr><th>Name</th><th>Level</th><th>Combat Rating</th><th>Rank</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <thead><tr>
+          <th class="sortable" data-sort-key="name">Name</th>
+          <th>Level</th>
+          <th class="sortable" data-sort-key="cr">Combat Rating</th>
+          <th class="sortable" data-sort-key="sp">Skill Points</th>
+          <th>Rank</th>
+        </tr></thead>
+        <tbody>${buildRowsHtml(members)}</tbody>
       </table>
-      <p class="td-roster-note">Click a member to see their full profile. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
+      <p class="td-roster-note">Click a member to see their full profile. Click Name, Combat Rating, or Skill Points to sort — click again to reverse. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
     </div>
   `;
   resultEl.className = "td-result show";
+  attachRowHandlers();
 
-  resultEl.querySelectorAll(".td-roster-row").forEach(row => {
-    const go = () => loadCharacterById(row.dataset.characterId);
-    row.addEventListener("click", go);
-    row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  resultEl.querySelectorAll(".td-roster-table th[data-sort-key]").forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.sortKey;
+      if (!ROSTER_SORT_KEYS[key]) return;
+      if (sortState.key === key) {
+        sortState.dir *= -1;
+      } else {
+        sortState.key = key;
+        // Name defaults to A-Z; the numeric columns default to highest
+        // first, since that's the order people usually want to rank a
+        // roster by combat rating or skill points.
+        sortState.dir = key === "name" ? 1 : -1;
+      }
+      renderTbody();
+    });
   });
 }
 
