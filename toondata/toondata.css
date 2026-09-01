@@ -63,6 +63,50 @@ body.toondata::before {
   background: var(--accent);
 }
 
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Compare mode — two independent "find a character" mini-forms side by
+   side, each with its own match picker, plus a Compare button that only
+   lights up once both sides have resolved to one specific character. */
+.td-compare-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.td-compare-side .td-lookup-form { margin-top: 0; }
+.td-compare-selected {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-soft);
+  background: var(--bg-elev);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+}
+.td-compare-selected strong { font-family: var(--sans); color: var(--fg); font-weight: 500; }
+.td-compare-selected button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--fg-mute);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.td-compare-selected button:hover { color: var(--fg); }
+#compareGoBtn { align-self: flex-start; }
+
 .status-line {
   margin-top: 16px;
   padding: 12px 14px;
@@ -514,6 +558,69 @@ body.toondata::before {
   font-size: 11px;
   color: var(--fg-faint);
 }
+
+/* Roster checkbox column — narrow, and doesn't trigger the row's
+   click-through to a profile (that's guarded in JS too). */
+.td-roster-select-th, .td-roster-select-td {
+  width: 34px;
+  text-align: center !important;
+}
+.td-roster-checkbox { cursor: pointer; }
+.td-roster-checkbox:disabled { cursor: not-allowed; opacity: 0.35; }
+.td-roster-actions { margin-top: 16px; }
+
+/* Comparison view — two equal columns wherever a stat, gear, or feat block
+   needs to sit side by side. Stacks to one column on narrow screens, same
+   breakpoint as the character view's own two-column layout. */
+.td-compare-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 880px) {
+  .td-compare-columns { grid-template-columns: 1fr; }
+}
+.td-compare-side-label {
+  font-family: var(--serif);
+  font-size: 20px;
+  margin: 0 0 14px;
+}
+.td-compare-identity-row { margin-bottom: 28px; }
+
+.td-compare-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.td-compare-stats-table th, .td-compare-stats-table td {
+  text-align: left;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.td-compare-stats-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  font-weight: 500;
+}
+.td-compare-stats-table th:first-child { visibility: hidden; }
+.td-compare-stats-table td:first-child {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.td-compare-stats-table td:not(:first-child) {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--fg);
+}
+.td-compare-stats-table td.td-stat-better { color: var(--accent); }
+.td-compare-stats-table tr:last-child td { border-bottom: none; }
 
 .td-feat-summary { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
 .td-feat-summary .kv-single .k {

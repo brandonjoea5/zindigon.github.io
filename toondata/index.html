@@ -6,7 +6,7 @@
 <title>ToonData | Zindigon</title>
 <meta name="description" content="Look up your DC Universe Online character's stats, gear, and feats." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="toondata.css?v=10" />
+<link rel="stylesheet" href="toondata.css?v=11" />
 </head>
 <body class="toondata">
 
@@ -49,6 +49,7 @@
     <div class="td-mode-tabs" role="tablist" aria-label="Lookup type">
       <button type="button" class="td-mode-tab active" id="modeCharBtn" role="tab" aria-selected="true">Character</button>
       <button type="button" class="td-mode-tab" id="modeLeagueBtn" role="tab" aria-selected="false">League</button>
+      <button type="button" class="td-mode-tab" id="modeCompareBtn" role="tab" aria-selected="false">Compare</button>
     </div>
 
     <div class="td-lookup-form" id="charSearchForm">
@@ -61,8 +62,28 @@
       <button id="leagueSearchBtn" class="btn btn-primary">Search</button>
     </div>
 
+    <div class="td-compare-form" id="compareSearchForm" style="display:none;">
+      <div class="td-compare-side">
+        <div class="td-lookup-form">
+          <input id="compareNameA" class="input" type="text" placeholder="First character name" autocomplete="off" />
+          <button id="compareSearchABtn" class="btn btn-secondary">Find</button>
+        </div>
+        <div id="compareSelectedA" class="td-compare-selected" style="display:none;"></div>
+        <div id="compareMatchListA" class="td-match-list"></div>
+      </div>
+      <div class="td-compare-side">
+        <div class="td-lookup-form">
+          <input id="compareNameB" class="input" type="text" placeholder="Second character name" autocomplete="off" />
+          <button id="compareSearchBBtn" class="btn btn-secondary">Find</button>
+        </div>
+        <div id="compareSelectedB" class="td-compare-selected" style="display:none;"></div>
+        <div id="compareMatchListB" class="td-match-list"></div>
+      </div>
+      <button id="compareGoBtn" class="btn btn-primary" disabled>Compare</button>
+    </div>
+
     <div class="notice" style="margin-top:16px;">
-      <span>Search using a public character or league name only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
+      <span>Search using public character or league names only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
     </div>
 
     <div class="notice" style="margin-top:10px;">
@@ -109,6 +130,6 @@
 </footer>
 
 <script src="https://zindigon.com/assets/site.js"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

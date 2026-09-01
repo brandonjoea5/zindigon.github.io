@@ -126,6 +126,17 @@ const charSearchForm = document.getElementById("charSearchForm");
 const leagueSearchForm = document.getElementById("leagueSearchForm");
 const pageTitleEl = document.getElementById("pageTitle");
 const pageLedeEl = document.getElementById("pageLede");
+const modeCompareBtn = document.getElementById("modeCompareBtn");
+const compareSearchForm = document.getElementById("compareSearchForm");
+const compareNameA = document.getElementById("compareNameA");
+const compareNameB = document.getElementById("compareNameB");
+const compareSearchABtn = document.getElementById("compareSearchABtn");
+const compareSearchBBtn = document.getElementById("compareSearchBBtn");
+const compareMatchListA = document.getElementById("compareMatchListA");
+const compareMatchListB = document.getElementById("compareMatchListB");
+const compareSelectedA = document.getElementById("compareSelectedA");
+const compareSelectedB = document.getElementById("compareSelectedB");
+const compareGoBtn = document.getElementById("compareGoBtn");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
@@ -160,27 +171,39 @@ function fmt(n) {
 }
 
 // ---------------------------------------------------------------------
-// Mode toggle (Character search vs. League search)
+// Mode toggle (Character search / League search / Compare)
 // ---------------------------------------------------------------------
+const MODES = {
+  character: {
+    btn: () => modeCharBtn, form: () => charSearchForm,
+    title: "Character Lookup",
+    lede: "Look up your DC Universe Online character's stats, gear, and feats.",
+  },
+  league: {
+    btn: () => modeLeagueBtn, form: () => leagueSearchForm,
+    title: "League Lookup",
+    lede: "Look up a DC Universe Online league's roster and members.",
+  },
+  compare: {
+    btn: () => modeCompareBtn, form: () => compareSearchForm,
+    title: "Compare Characters",
+    lede: "Search two characters to compare their stats, gear, and feats side by side.",
+  },
+};
 function setMode(mode) {
-  const isChar = mode === "character";
-  charSearchForm.style.display = isChar ? "" : "none";
-  leagueSearchForm.style.display = isChar ? "none" : "";
-  modeCharBtn.classList.toggle("active", isChar);
-  modeCharBtn.setAttribute("aria-selected", String(isChar));
-  modeLeagueBtn.classList.toggle("active", !isChar);
-  modeLeagueBtn.setAttribute("aria-selected", String(!isChar));
-
-  if (isChar) {
-    pageTitleEl.textContent = "Character Lookup";
-    pageLedeEl.textContent = "Look up your DC Universe Online character's stats, gear, and feats.";
-  } else {
-    pageTitleEl.textContent = "League Lookup";
-    pageLedeEl.textContent = "Look up a DC Universe Online league's roster and members.";
-  }
+  Object.keys(MODES).forEach(key => {
+    const m = MODES[key];
+    const active = key === mode;
+    m.form().style.display = active ? "" : "none";
+    m.btn().classList.toggle("active", active);
+    m.btn().setAttribute("aria-selected", String(active));
+  });
+  pageTitleEl.textContent = MODES[mode].title;
+  pageLedeEl.textContent = MODES[mode].lede;
 }
 modeCharBtn.addEventListener("click", () => setMode("character"));
 modeLeagueBtn.addEventListener("click", () => setMode("league"));
+modeCompareBtn.addEventListener("click", () => setMode("compare"));
 
 // ---------------------------------------------------------------------
 // View cache + history — lets the browser Back/Forward buttons return to
@@ -218,6 +241,8 @@ function applyView(data) {
     renderCharacter(data.character, data.equippedItems, data.completedFeats, data.activeFeats, data.league);
   } else if (data.type === "league") {
     renderRoster(data.guildId, data.guildName, data.members, data.byId, data.sortState);
+  } else if (data.type === "compare") {
+    renderComparison(data.dataA, data.dataB);
   }
 }
 function pushView(hash) {
@@ -233,10 +258,13 @@ window.addEventListener("popstate", () => {
 function handleHash(hash, opts) {
   const charMatch = hash.match(/^#char\/(\d+)$/);
   const leagueMatch = hash.match(/^#league\/([^/?#]+)$/);
+  const compareMatch = hash.match(/^#compare\/(\d+)\/(\d+)$/);
   if (charMatch) {
     loadCharacterById(charMatch[1], opts);
   } else if (leagueMatch) {
     loadLeagueRoster(leagueMatch[1], null, opts);
+  } else if (compareMatch) {
+    loadComparison(compareMatch[1], compareMatch[2], opts);
   }
   // Anything else (empty hash, or Back past the first result) — nothing
   // to load, just leave whatever's already on screen.
@@ -371,6 +399,40 @@ async function loadCharacterById(characterId, opts) {
   }
 }
 
+// Fetches everything renderCharacter/renderComparison need for one
+// character_id — the character record itself plus gear/feats/league —
+// as a single bundle. Used by the comparison flow, which needs two of
+// these at once. Kept separate from showCharacter (which assumes the
+// caller already has the character record from a name search) so that
+// existing, already-verified flow isn't touched.
+async function fetchCharacterFullData(characterId) {
+  const charJson = await censusGet("character", { character_id: characterId });
+  const character = (charJson.character_list || [])[0];
+  if (!character) return null;
+
+  const itemsJson = await censusGet("characters_item", { character_id: characterId, "c:limit": 500 });
+  const equippedItems = (itemsJson.characters_item_list || [])
+    .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
+
+  const completedFeats = await fetchAllPages("characters_completed_feat", { character_id: characterId });
+  const activeFeats = await fetchAllPages("characters_active_feat", { character_id: characterId });
+
+  let league = null;
+  try {
+    const rosterJson = await censusGet("guild_roster", { character_id: characterId });
+    const membership = (rosterJson.guild_roster_list || [])[0];
+    if (membership) {
+      const guildJson = await censusGet("guild", { guild_id: membership.guild_id });
+      const guildInfo = (guildJson.guild_list || [])[0];
+      league = { guild_id: membership.guild_id, rank: membership.rank, name: guildInfo ? guildInfo.name : null };
+    }
+  } catch (e) {
+    league = null;
+  }
+
+  return { character, equippedItems, completedFeats, activeFeats, league };
+}
+
 // ---------------------------------------------------------------------
 // League search flow
 // ---------------------------------------------------------------------
@@ -476,6 +538,128 @@ async function loadLeagueRoster(guildId, knownName, opts) {
   }
 }
 
+// ---------------------------------------------------------------------
+// Compare flow — resolve two character names to two character_ids (each
+// side independently, since a name can be ambiguous on either side), then
+// load both full profiles and render them side by side.
+// ---------------------------------------------------------------------
+const compareSelection = { A: null, B: null }; // { id, name } per side, once resolved
+
+function compareSideRefs(side) {
+  return side === "A"
+    ? { input: compareNameA, btn: compareSearchABtn, matchList: compareMatchListA, selectedEl: compareSelectedA }
+    : { input: compareNameB, btn: compareSearchBBtn, matchList: compareMatchListB, selectedEl: compareSelectedB };
+}
+
+function setCompareSelection(side, id, name) {
+  compareSelection[side] = id ? { id, name } : null;
+  const { matchList, selectedEl, input } = compareSideRefs(side);
+  matchList.innerHTML = "";
+  if (id) {
+    selectedEl.style.display = "";
+    selectedEl.innerHTML = `Selected: <strong>${esc(name)}</strong> <button type="button">Change</button>`;
+    selectedEl.querySelector("button").addEventListener("click", () => {
+      setCompareSelection(side, null, null);
+      input.value = "";
+      input.focus();
+    });
+  } else {
+    selectedEl.style.display = "none";
+    selectedEl.innerHTML = "";
+  }
+  compareGoBtn.disabled = !(compareSelection.A && compareSelection.B);
+}
+
+async function runCompareSideSearch(side) {
+  const { input, btn, matchList } = compareSideRefs(side);
+  const name = input.value.trim();
+  if (!name) {
+    setStatus(`Enter a name for the ${side === "A" ? "first" : "second"} character.`, "error");
+    return;
+  }
+  clearStatus();
+  matchList.innerHTML = "";
+  btn.disabled = true;
+  try {
+    const charJson = await censusGet("character", { name });
+    const matches = charJson.character_list || [];
+
+    if (matches.length === 0) {
+      setStatus(`No character named "${name}" was found.`, "error");
+      return;
+    }
+    if (matches.length > 1) {
+      setStatus(`More than one character is named "${name}". Pick the right one:`, "warn");
+      matchList.innerHTML = matches.map(m => `
+        <div class="td-match-item" data-character-id="${esc(m.character_id)}" data-character-name="${esc(m.name)}">
+          <span>${esc(m.name)}, Level ${esc(m.level)}</span>
+          <span>Combat Rating ${esc(m.combat_rating)}</span>
+        </div>
+      `).join("");
+      [...matchList.children].forEach(el => {
+        el.addEventListener("click", () => {
+          clearStatus();
+          setCompareSelection(side, el.dataset.characterId, el.dataset.characterName);
+        });
+      });
+      return;
+    }
+
+    clearStatus();
+    setCompareSelection(side, matches[0].character_id, matches[0].name);
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+compareSearchABtn.addEventListener("click", () => runCompareSideSearch("A"));
+compareSearchBBtn.addEventListener("click", () => runCompareSideSearch("B"));
+compareNameA.addEventListener("keydown", (e) => { if (e.key === "Enter") runCompareSideSearch("A"); });
+compareNameB.addEventListener("keydown", (e) => { if (e.key === "Enter") runCompareSideSearch("B"); });
+compareGoBtn.addEventListener("click", () => {
+  if (!compareSelection.A || !compareSelection.B) return;
+  loadComparison(compareSelection.A.id, compareSelection.B.id);
+});
+
+// Loads two full character profiles (in parallel) and renders them side by
+// side. Pushes #compare/<idA>/<idB> and caches the same way character and
+// league views do, so Back returns here instantly within the cache window.
+async function loadComparison(idA, idB, opts) {
+  opts = opts || {};
+  const cacheKey = `compare:${idA}:${idB}`;
+  if (!opts.skipPush) pushView(`#compare/${idA}/${idB}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Loading both characters...");
+  try {
+    const [dataA, dataB] = await Promise.all([
+      fetchCharacterFullData(idA),
+      fetchCharacterFullData(idB),
+    ]);
+
+    if (!dataA || !dataB) {
+      setStatus("One of those characters couldn't be loaded — they may have transferred, been renamed, or been deleted.", "error");
+      return;
+    }
+
+    clearStatus();
+    renderComparison(dataA, dataB);
+    cacheView(cacheKey, { type: "compare", idA, idB, dataA, dataB });
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
 // Roster columns that can be sorted client-side (no re-fetch needed — the
 // full member list and their resolved character records are already in
 // hand). "name" sorts alphabetically; "cr" and "sp" sort numerically, with
@@ -489,6 +673,11 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
   // searching the same league again within the cache window), so it isn't
   // silently reset to fetch order.
   const sortState = resumeSort ? { ...resumeSort } : { key: null, dir: 1 };
+  // Roster members picked for a head-to-head compare, capped at 2. Resets
+  // whenever this roster is freshly loaded (a new search, or navigating
+  // back into it after the sort/back-button fixes above) — carrying a
+  // selection across an unrelated view isn't worth the added complexity.
+  const selected = new Set();
 
   function sortValue(key, m) {
     const c = byId[m.character_id];
@@ -516,7 +705,9 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
       const level = c ? fmt(c.level) : "—";
       const cr = c ? fmt(c.combat_rating) : "—";
       const sp = c ? fmt(c.skill_points) : "—";
+      const checked = selected.has(m.character_id) ? "checked" : "";
       return `<tr class="td-roster-row" data-character-id="${esc(m.character_id)}" tabindex="0">
+        <td class="td-roster-select-td"><input type="checkbox" class="td-roster-checkbox" data-character-id="${esc(m.character_id)}" data-character-name="${name}" ${checked} /></td>
         <td>${name}</td>
         <td>${level}</td>
         <td>${cr}</td>
@@ -528,9 +719,54 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
 
   function attachRowHandlers() {
     resultEl.querySelectorAll(".td-roster-row").forEach(row => {
-      const go = () => loadCharacterById(row.dataset.characterId);
+      const go = (e) => {
+        // Clicking the checkbox should select it, not navigate away.
+        if (e.target && e.target.closest(".td-roster-checkbox")) return;
+        loadCharacterById(row.dataset.characterId);
+      };
       row.addEventListener("click", go);
-      row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+      row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
+    });
+    resultEl.querySelectorAll(".td-roster-checkbox").forEach(cb => {
+      cb.addEventListener("click", (e) => e.stopPropagation());
+      cb.addEventListener("change", () => {
+        const id = cb.dataset.characterId;
+        if (cb.checked) {
+          if (selected.size >= 2) { cb.checked = false; return; }
+          selected.add(id);
+        } else {
+          selected.delete(id);
+        }
+        updateCheckboxAvailability();
+        updateCompareButtonState();
+      });
+    });
+  }
+
+  // Once 2 members are picked, grey out the remaining checkboxes rather
+  // than silently ignoring further clicks — makes the 2-person cap obvious
+  // instead of the roster just appearing to stop responding.
+  function updateCheckboxAvailability() {
+    const atLimit = selected.size >= 2;
+    resultEl.querySelectorAll(".td-roster-checkbox").forEach(cb => {
+      if (!cb.checked) cb.disabled = atLimit;
+    });
+  }
+
+  function updateCompareButtonState() {
+    const btn = resultEl.querySelector("#rosterCompareBtn");
+    if (!btn) return;
+    btn.disabled = selected.size !== 2;
+    btn.textContent = selected.size === 2 ? "Compare Selected" : `Compare Selected (${selected.size}/2)`;
+  }
+
+  function attachCompareButton() {
+    const btn = resultEl.querySelector("#rosterCompareBtn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const ids = [...selected];
+      if (ids.length !== 2) return;
+      loadComparison(ids[0], ids[1]);
     });
   }
 
@@ -556,6 +792,8 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
     tbody.innerHTML = buildRowsHtml(sortedMembers());
     attachRowHandlers();
     updateHeaderIndicators();
+    updateCheckboxAvailability();
+    updateCompareButtonState();
     cacheCurrent();
   }
 
@@ -564,6 +802,7 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
       <p class="td-section-label">League — ${esc(guildName)} (${members.length} member${members.length === 1 ? "" : "s"})</p>
       <table class="td-roster-table">
         <thead><tr>
+          <th class="td-roster-select-th">Compare</th>
           <th class="sortable" data-sort-key="name">Name</th>
           <th>Level</th>
           <th class="sortable" data-sort-key="cr">Combat Rating</th>
@@ -572,12 +811,18 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
         </tr></thead>
         <tbody>${buildRowsHtml(sortedMembers())}</tbody>
       </table>
-      <p class="td-roster-note">Click a member to see their full profile. Click Name, Combat Rating, or Skill Points to sort — click again to reverse. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
+      <p class="td-roster-note">Click a member to see their full profile. Click Name, Combat Rating, or Skill Points to sort — click again to reverse. Check exactly 2 members and click Compare Selected to see them side by side. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
+      <div class="td-roster-actions">
+        <button type="button" id="rosterCompareBtn" class="btn btn-secondary" disabled>Compare Selected (0/2)</button>
+      </div>
     </div>
   `;
   resultEl.className = "td-result show";
   attachRowHandlers();
   updateHeaderIndicators();
+  updateCheckboxAvailability();
+  updateCompareButtonState();
+  attachCompareButton();
   cacheCurrent();
 
   resultEl.querySelectorAll(".td-roster-table th[data-sort-key]").forEach(th => {
@@ -782,6 +1027,185 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       loadLeagueRoster(leagueLinkEl.dataset.guildId, leagueLinkEl.dataset.guildName);
     });
   }
+}
+
+// ---------------------------------------------------------------------
+// Comparison render — two characters, side by side: identity, stats, gear,
+// and a two-way feat diff (completed feats one has that the other doesn't).
+// ---------------------------------------------------------------------
+
+// Builds the same paperdoll markup renderCharacter uses, factored out so
+// the comparison view can render one per side without duplicating the
+// slot-layout logic twice inline. renderCharacter keeps its own inline
+// copy rather than being refactored to call this, so that already-verified
+// code path stays untouched.
+function buildPaperdollHtml(items) {
+  const bySlot = {};
+  items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
+  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+  const slotChip = (slotId) => {
+    const it = bySlot[slotId];
+    return `<div class="td-slot-chip">
+      <span class="n">Slot ${slotId}</span>
+      <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
+    </div>`;
+  };
+  const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
+  const rightSlots = [8, 9, 10, 11, 12, 13, 14].map(slotChip).join("");
+  const extraSlotIds = Object.keys(bySlot).map(Number).filter(n => !KNOWN_SLOTS.includes(n)).sort((a, b) => a - b);
+  const extraSlotsHtml = extraSlotIds.map(slotChip).join("");
+
+  return `
+    <div class="td-paperdoll">
+      <div class="td-paperdoll-slots">${leftSlots}</div>
+      <div class="td-paperdoll-figure"><img src="paperdoll-silhouette.png" alt="" /></div>
+      <div class="td-paperdoll-slots">${rightSlots}</div>
+    </div>
+    ${extraSlotIds.length ? `
+    <details class="td-extra-slots">
+      <summary class="td-section-label">More equipped slots (${extraSlotIds.length})</summary>
+      <div class="td-extra-slots-grid">${extraSlotsHtml}</div>
+    </details>
+    ` : ""}
+  `;
+}
+
+function buildItemRowsHtml(items) {
+  return items.map(it => `
+    <tr>
+      <td>${esc(it.equipment_slot_id)}</td>
+      <td>${esc(it.item_id)}</td>
+      <td>${it.is_bound === "true" ? "Yes" : "No"}</td>
+      <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "None"}</td>
+    </tr>
+  `).join("");
+}
+
+function renderComparison(dataA, dataB) {
+  const { character: a, equippedItems: itemsA, completedFeats: completedA, league: leagueA } = dataA;
+  const { character: b, equippedItems: itemsB, completedFeats: completedB, league: leagueB } = dataB;
+
+  const nameA = esc(a.name);
+  const nameB = esc(b.name);
+
+  const identitySide = (c, league) => {
+    const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
+    const leagueLabel = league && league.name ? esc(league.name) : "None";
+    const worldLabel = esc(WORLD_NAMES[c.world_id] || `#${c.world_id}`);
+    return `
+      <div>
+        <div class="td-compare-side-label">${esc(c.name)}</div>
+        <div class="td-identity-tags">
+          ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
+          <span class="td-tag">League <strong>${leagueLabel}</strong></span>
+          <span class="td-tag">Server <strong>${worldLabel}</strong></span>
+        </div>
+      </div>
+    `;
+  };
+
+  // Stat rows shown side by side, with the higher value (when the two
+  // differ and both are real numbers) highlighted so the comparison is
+  // readable at a glance rather than requiring the reader to do the math.
+  const STAT_ROWS = [
+    ["Combat Rating", "combat_rating"],
+    ["Skill Points", "skill_points"],
+    ["Level", "level"],
+    ["PvP Combat Rating", "pvp_combat_rating"],
+    ["Health", "max_health"],
+    ["Power", "max_power"],
+    ["Might", "might"],
+    ["Precision", "precision"],
+    ["Restoration", "restoration"],
+    ["Vitalization", "vitalization"],
+    ["Dominance", "dominance"],
+    ["Defense", "defense"],
+    ["Toughness", "toughness"],
+  ];
+  const statRowsHtml = STAT_ROWS.map(([label, field]) => {
+    const rawA = Number(a[field]);
+    const rawB = Number(b[field]);
+    const bothNumeric = !Number.isNaN(rawA) && !Number.isNaN(rawB) && a[field] !== undefined && b[field] !== undefined;
+    const aHigher = bothNumeric && rawA > rawB;
+    const bHigher = bothNumeric && rawB > rawA;
+    return `<tr>
+      <td>${esc(label)}</td>
+      <td class="${aHigher ? "td-stat-better" : ""}">${fmt(a[field])}</td>
+      <td class="${bHigher ? "td-stat-better" : ""}">${fmt(b[field])}</td>
+    </tr>`;
+  }).join("");
+
+  // Two-way feat diff: completed feats unique to each side. Shared feats
+  // and feats neither has completed aren't shown — the point is to
+  // surface the difference, not repeat the full list twice.
+  const idsA = new Set(completedA.map(f => f.feat_id));
+  const idsB = new Set(completedB.map(f => f.feat_id));
+  const onlyA = completedA.filter(f => !idsB.has(f.feat_id));
+  const onlyB = completedB.filter(f => !idsA.has(f.feat_id));
+  const featIdSpans = (list) => list.length
+    ? list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("")
+    : `<span class="td-roster-note" style="margin:0;">None</span>`;
+
+  resultEl.innerHTML = `
+    <div class="td-compare">
+      <div class="td-compare-columns td-compare-identity-row">
+        ${identitySide(a, leagueA)}
+        ${identitySide(b, leagueB)}
+      </div>
+
+      <div class="card">
+        <p class="td-section-label">Stats</p>
+        <table class="td-compare-stats-table">
+          <thead><tr><th></th><th>${nameA}</th><th>${nameB}</th></tr></thead>
+          <tbody>${statRowsHtml}</tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <p class="td-section-label">Gear</p>
+        <div class="td-compare-columns">
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">${nameA}</p>
+            ${buildPaperdollHtml(itemsA)}
+            <details class="td-gear-details">
+              <summary class="td-section-label">All equipped items (${itemsA.length})</summary>
+              <table class="td-gear-table">
+                <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
+                <tbody>${buildItemRowsHtml(itemsA)}</tbody>
+              </table>
+            </details>
+          </div>
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">${nameB}</p>
+            ${buildPaperdollHtml(itemsB)}
+            <details class="td-gear-details">
+              <summary class="td-section-label">All equipped items (${itemsB.length})</summary>
+              <table class="td-gear-table">
+                <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
+                <tbody>${buildItemRowsHtml(itemsB)}</tbody>
+              </table>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <p class="td-section-label">Feats — completed by one, not the other</p>
+        <div class="td-compare-columns">
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">Only ${nameA} (${onlyA.length})</p>
+            <div class="td-feat-ids">${featIdSpans(onlyA)}</div>
+          </div>
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">Only ${nameB} (${onlyB.length})</p>
+            <div class="td-feat-ids">${featIdSpans(onlyB)}</div>
+          </div>
+        </div>
+        <p class="td-roster-note" style="margin-top:16px;">Shared completed feats, and feats neither has completed, aren't listed here — this only shows the difference. Feat IDs are shown raw; Census doesn't provide feat names.</p>
+      </div>
+    </div>
+  `;
+  resultEl.className = "td-result show";
 }
 
 // ---------------------------------------------------------------------
