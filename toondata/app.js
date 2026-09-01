@@ -886,13 +886,13 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     </tr>
   `).join("");
 
-  // Paperdoll — slot 0-7 flank the left, 8-14 flank the right, fixed at
+  // Paperdoll — slot 0-7 flank the left, 8-15 flank the right, fixed at
   // that size so the two columns stay a predictable height next to the
   // silhouette instead of stretching it. Which slot is which body part
   // isn't mapped yet, so this is just even spacing for now, not
   // anatomically placed.
   //
-  // Not every equipped item lives in that 0-14 range — weapon/offhand/
+  // Not every equipped item lives in that 0-15 range — weapon/offhand/
   // trinket/artifact/stat-mod slots (24-27, per what's been confirmed so
   // far) use higher slot IDs that aren't mapped yet. Those still show up
   // in the "All equipped items" table below. Rather than appending them
@@ -901,9 +901,20 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   // small expandable list right under the paperdoll — collapsed by
   // default, same pattern as the equipped-items table — so nothing is
   // silently missing from view without the fixed layout blowing up.
+  //
+  // Slots 2 and 8 specifically are not a display bug: real Census data for
+  // every character checked so far (including this one) simply has no
+  // item recorded at those two IDs at all, so "Empty" here is accurate,
+  // not a matching failure.
   const bySlot = {};
   items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
-  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+  // Slot 15 was missing from this list even though it's clearly a body-gear
+  // slot like 0-14 (its item ID sits right in the same cluster as the
+  // other core slots' item IDs, unlike the weapon/artifact/trinket-style
+  // slots at 17+) — it was falling into the "extra slots" bucket below
+  // instead of the paperdoll. Confirmed against real equipped items before
+  // adding it here.
+  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
     return `<div class="td-slot-chip">
@@ -912,7 +923,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     </div>`;
   };
   const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
-  const rightSlots = [8, 9, 10, 11, 12, 13, 14].map(slotChip).join("");
+  const rightSlots = [8, 9, 10, 11, 12, 13, 14, 15].map(slotChip).join("");
 
   const extraSlotIds = Object.keys(bySlot)
     .map(Number)
@@ -1069,7 +1080,9 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 function buildPaperdollHtml(items) {
   const bySlot = {};
   items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
-  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+  // Kept in sync with the KNOWN_SLOTS list in renderCharacter above —
+  // slot 15 belongs in the paperdoll grid, not the "extra slots" bucket.
+  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
     return `<div class="td-slot-chip">
@@ -1078,7 +1091,7 @@ function buildPaperdollHtml(items) {
     </div>`;
   };
   const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
-  const rightSlots = [8, 9, 10, 11, 12, 13, 14].map(slotChip).join("");
+  const rightSlots = [8, 9, 10, 11, 12, 13, 14, 15].map(slotChip).join("");
   const extraSlotIds = Object.keys(bySlot).map(Number).filter(n => !KNOWN_SLOTS.includes(n)).sort((a, b) => a - b);
   const extraSlotsHtml = extraSlotIds.map(slotChip).join("");
 
