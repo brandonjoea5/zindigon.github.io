@@ -1,60 +1,166 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ToonData | Zindigon</title>
-<meta name="description" content="Look up your DC Universe Online character's stats, gear, and feats." />
-<link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="toondata.css?v=4" />
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Zindigon — Independent studio. Games, worlds, and the web.</title>
+  <meta name="description" content="Zindigon is an independent studio building games, original worlds, and modern websites."/>
+  <link rel="stylesheet" href="assets/site.css"/>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1PJ7GDPE20"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1PJ7GDPE20');
+  </script>
 </head>
-<body class="toondata">
+<body class="bg-nebula">
+
+<div id="fx" aria-hidden="true">
+  <div class="fx-grid"></div>
+  <div class="fx-glow"></div>
+  <div class="fx-grain"></div>
+</div>
 
 <header class="site-header">
   <nav class="nav" aria-label="Primary">
-    <a class="brand" href="https://zindigon.com/">
-      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg>
+      </span>
       <span class="brand-name">Zindigon<em>studio</em></span>
     </a>
     <div class="nav-links">
-      <a href="index.html" aria-current="page">ToonData</a>
-      <a href="about.html">About</a>
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
+      <a href="/" aria-current="page">Home</a>
+      <a href="/projects.html">Projects</a>
+      <a href="/work.html">Work</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/toondata/" title="ToonData — a DC Universe Online character lookup tool">ToonData</a>
     </div>
-    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+    <span class="nav-clock" id="navClock">—</span>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="mobileNav">Menu</button>
   </nav>
   <div class="mobile-nav" id="mobileNav">
-    <a href="index.html">ToonData</a>
-    <a href="about.html">About</a>
-    <a href="terms.html">Terms</a>
-    <a href="privacy.html">Privacy</a>
+    <a href="/">Home</a>
+    <a href="/projects.html">Projects</a>
+    <a href="/work.html">Work</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/toondata/">ToonData — DCUO character lookup</a>
   </div>
 </header>
 
 <main>
-  <section class="hero" style="padding-top:24px;">
-    <span class="eyebrow"><span class="dot"></span>DC Universe Online</span>
-    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Character Lookup</h1>
-    <p class="lede">Look up your DC Universe Online character's stats, gear, and feats.</p>
-
-    <div class="td-lookup-form">
-      <input id="charName" class="input" type="text" placeholder="Character name" autocomplete="off" />
-      <button id="searchBtn" class="btn btn-primary">Search</button>
+  <section class="hero" data-screen-label="01 Home Hero">
+    <span class="eyebrow"><span class="dot"></span> Independent studio · est. 2024</span>
+    <h1 class="display">Games, worlds,<br/><em>and the web.</em></h1>
+    <p class="lede">Zindigon ships original games and the systems behind them — built by one developer with a habit of finishing things. Right now, that means <em>Elemental Rift</em>.</p>
+    <div class="row">
+      <a class="btn btn-primary" href="/elementalrift/">Play Elemental Rift <span class="arrow">→</span></a>
+      <a class="btn btn-secondary" href="/projects.html">All projects</a>
     </div>
-
-    <div class="notice" style="margin-top:16px;">
-      <span>Search using a public character name only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
+    <div class="hero-meta">
+      <div class="item">Status<strong id="lastUpdate">—</strong></div>
+      <div class="item">Games shipped<strong>4 live</strong></div>
+      <div class="item">Active project<strong>Elemental Rift</strong></div>
+      <div class="item">Available for<strong>Web work</strong></div>
     </div>
+  </section>
 
-    <div class="notice" style="margin-top:10px;">
-      <span>Character information comes straight from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData can't update or correct information Daybreak maintains.</span>
+  <section data-screen-label="02 Featured">
+    <div class="section-head">
+      <span class="label">— Featured</span>
+      <h2>Elemental Rift</h2>
+      <span class="meta">Live playtest · open</span>
     </div>
+    <div class="featured">
+      <div class="featured-grid">
+        <div class="featured-body">
+          <span class="featured-eyebrow">Now playing</span>
+          <h2>Master the elements.<br/>Climb the rift.</h2>
+          <p>A tower-defense roguelike where elements stack, classes evolve, and bosses adapt. Built around tight loops, real progression, and runs that actually feel different.</p>
+          <div class="featured-stats">
+            <div class="stat"><div class="k">Updates</div><div class="v">70+</div></div>
+            <div class="stat"><div class="k">Saves</div><div class="v">Cloud</div></div>
+            <div class="stat"><div class="k">Cost</div><div class="v">Free</div></div>
+          </div>
+          <div class="featured-cta row">
+            <a class="btn btn-primary" href="/elementalrift/">Play now <span class="arrow">→</span></a>
+            <a class="btn btn-ghost" href="/elementalrift/version-history/">Version history</a>
+          </div>
+        </div>
+        <aside class="featured-side">
+          <div class="versions-head">
+            <span class="t">Recent updates</span>
+            <span class="live">Live</span>
+          </div>
+          <ul class="versions" id="versions-list"></ul>
+        </aside>
+      </div>
+    </div>
+  </section>
 
-    <div id="status" class="status-line"></div>
-    <div id="matchList" class="td-match-list"></div>
+  <section data-screen-label="03 Leaderboard">
+    <div class="section-head">
+      <span class="label">— Live</span>
+      <h2>Boss damage leaderboard</h2>
+      <span class="meta" id="lb-meta">loading…</span>
+    </div>
+    <div class="lb">
+      <div class="lb-head">
+        <span class="t">Top runs · all classes</span>
+        <button class="lb-refresh" id="lb-refresh">↻ Refresh</button>
+      </div>
+      <div id="lb-body" data-limit="10">
+        <div class="lb-loading">Loading scores<span class="dots"><i></i><i></i><i></i></span></div>
+      </div>
+    </div>
+  </section>
 
-    <div id="result" class="td-result"></div>
+  <section data-screen-label="04 Projects">
+    <div class="section-head">
+      <span class="label">— Catalog</span>
+      <h2>Other projects</h2>
+      <a class="link-arrow" href="/projects.html">View all →</a>
+    </div>
+    <div class="projects">
+      <a class="project" href="/aetherfall/">
+        <span class="num">02</span>
+        <span class="tag">Game · Tower defense</span>
+        <h3>AetherFall</h3>
+        <p>Mobile-first roguelike with keepers, upgrades, and endless waves. Coming soon to iOS and Google Play.</p>
+        <div class="foot"><span class="status">Coming soon</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/hypercell/">
+        <span class="num">03</span>
+        <span class="tag">Game · Arcade runner</span>
+        <h3>HyperCell</h3>
+        <p>Fast-paced cube runner. Speed, precision, momentum, reaction. Designed to be replayed in 90 seconds.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/nexusdefense/">
+        <span class="num">04</span>
+        <span class="tag">Game · Strategy</span>
+        <h3>Nexus Defense</h3>
+        <p>Build defenses, survive escalating waves, and experiment with evolving strategy systems.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project" href="/tornix/">
+        <span class="num">05</span>
+        <span class="tag">Game · Action</span>
+        <h3>Tornix</h3>
+        <p>Compact action prototype. Tight controls, escalating chaos, and a focus on moment-to-moment feel.</p>
+        <div class="foot"><span class="status live">Live</span><span class="arrow-icon">→</span></div>
+      </a>
+      <a class="project wide" href="/bloodlinezero/">
+        <span class="num">06</span>
+        <span class="tag">Anime · World building</span>
+        <h3>Bloodline Zero</h3>
+        <p>Adult-leaning sci-fi about bloodlines, powers, and an organization that treats humans like software. Episodes and world bible built in public.</p>
+        <div class="foot"><span class="status">In development</span><span class="arrow-icon">→</span></div>
+      </a>
+    </div>
   </section>
 </main>
 
@@ -62,35 +168,31 @@
   <div class="footer-inner">
     <div class="footer-col">
       <div class="brand" style="margin-bottom:14px;">
-        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"/></svg></span>
         <span class="brand-name">Zindigon<em>studio</em></span>
       </div>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
-        Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.
-      </p>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
-        Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
-      </p>
+      <p style="font-size:13px; max-width:36ch;">Independent studio. Games, worlds, and the web.</p>
     </div>
-    <div class="footer-col"><h4>ToonData</h4><ul>
-      <li><a href="index.html">Lookup</a></li>
-      <li><a href="about.html">About</a></li>
+    <div class="footer-col"><h4>Studio</h4><ul>
+      <li><a href="/projects.html">Projects</a></li><li><a href="/work.html">Work with me</a></li><li><a href="/contact.html">Contact</a></li>
     </ul></div>
-    <div class="footer-col"><h4>Legal</h4><ul>
-      <li><a href="terms.html">Terms of Use</a></li>
-      <li><a href="privacy.html">Privacy Policy</a></li>
+    <div class="footer-col"><h4>Games</h4><ul>
+      <li><a href="/elementalrift/">Elemental Rift</a></li><li><a href="/aetherfall/">AetherFall</a></li>
+      <li><a href="/hypercell/">HyperCell</a></li><li><a href="/nexusdefense/">Nexus Defense</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Fan Tools</h4><ul>
+      <li><a href="/toondata/">ToonData</a> — DC Universe Online character lookup</li>
     </ul></div>
     <div class="footer-col"><h4>Reach</h4><ul>
-      <li><a href="mailto:banderson@zindigon.com">banderson@zindigon.com</a></li>
+      <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li><li><a href="/contact.html">Contact form</a></li>
     </ul></div>
   </div>
   <div class="footer-bottom">
-    <span>2026 Zindigon</span>
-    <span>Not affiliated with Daybreak Game Company, DC Comics, or Warner Bros. Entertainment</span>
+    <span>© <span data-year></span> Zindigon</span>
+    <span>Independent · solo dev · built in public</span>
   </div>
 </footer>
 
-<script src="https://zindigon.com/assets/site.js"></script>
-<script src="app.js?v=6"></script>
+<script src="assets/site.js" defer></script>
 </body>
 </html>
