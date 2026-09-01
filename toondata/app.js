@@ -200,6 +200,12 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
+  // alignment_id isn't documented by Daybreak, but it only ever takes two
+  // values and cross-checking name patterns (Batman/Superman-themed names
+  // vs. Joker/Harley Quinn-themed names) confirms which is which.
+  const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
+  const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
+
   const leagueName = league && league.name ? esc(league.name) : "None";
   const healthPct = pct(c.current_health, c.max_health);
   const powerPct = pct(c.current_power, c.max_power);
@@ -215,6 +221,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       <div>
         <div class="td-name">${esc(c.name)}</div>
         <div class="td-identity-tags">
+          ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
           <span class="td-tag">League <strong>${leagueName}</strong></span>
           <span class="td-tag">Server <strong>#${esc(c.world_id)}</strong></span>
         </div>

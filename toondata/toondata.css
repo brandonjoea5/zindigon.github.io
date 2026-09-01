@@ -93,6 +93,13 @@ body.toondata {
   border-radius: 999px;
   padding: 5px 11px 5px 11px;
 }
+.td-role-tag {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--fg);
+  font-weight: 600;
+  padding: 5px 13px;
+}
 .td-tag strong {
   font-family: var(--sans);
   font-weight: 500;
