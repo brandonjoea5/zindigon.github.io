@@ -268,11 +268,9 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     <div class="card" style="margin-top:20px;">
       <p class="td-section-label">About this data</p>
       <ul class="td-limitations">
-        <li>Item and feat IDs are shown raw. The Census API doesn't provide names for items, feats, powers, or movement modes.</li>
+        <li>Feat IDs are shown raw. The Census API doesn't provide feat names.</li>
         <li>In-progress feats show only that they've been started, not how close they are to completion.</li>
         <li>Completed feats don't have a completion date attached.</li>
-        <li>House items and account-restricted data require the player to be logged in and aren't available here.</li>
-        <li>Artifacts, allies, currencies, inventory, daily mission completion, raid history, and scoreboard damage aren't exposed by this API.</li>
       </ul>
     </div>
   `;
