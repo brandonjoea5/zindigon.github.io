@@ -212,48 +212,6 @@ body.toondata {
 .td-secondary-stats .v.td-level { font-size: 15px; color: var(--fg-soft); }
 .td-secondary-stats .v.td-pvp   { font-size: 13px; color: var(--fg-mute); }
 
-/* Health / power bars */
-.td-bars {
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-  margin-bottom: 22px;
-  display: grid;
-  gap: 14px;
-}
-.td-bar-row .k {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg-mute);
-  margin-bottom: 6px;
-}
-.td-bar-row .k .v {
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--fg-soft);
-}
-.td-bar-track {
-  height: 8px;
-  border-radius: 999px;
-  background: var(--bg-elev-2);
-  border: 1px solid var(--line);
-  overflow: hidden;
-}
-.td-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, color-mix(in oklch, var(--accent) 55%, transparent), var(--accent));
-}
-.td-bar-fill.power {
-  background: linear-gradient(90deg, color-mix(in oklch, var(--accent) 25%, transparent), color-mix(in oklch, var(--accent) 55%, transparent));
-}
-
 .td-kv {
   display: grid;
   grid-template-columns: 1fr 1fr;

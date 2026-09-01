@@ -9,6 +9,25 @@ const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for f
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
 const MAX_RETRIES = 3;
 
+// Census doesn't provide a name lookup for these IDs, so this is a small
+// hand-maintained table of the ones that are known. Anything not listed
+// here just falls back to showing the raw ID. Add to these as more get
+// confirmed.
+const POWER_TYPE_NAMES = {
+  "1992462": "Rage",
+  "2784": "Earth",
+  "2325": "Electricity",
+  "1810455": "Quantum",
+  "74779": "Nature",
+  "3050978": "Water",
+};
+const MOVEMENT_MODE_NAMES = {
+  "3317": "Super Speed",
+  // 3313 covers both Flight and Skimming — Census exposes the same ID for
+  // both, so there's no way to tell them apart from this field alone.
+  "3313": "Flight / Skimming",
+};
+
 // ---------------------------------------------------------------------
 // Low-level Census fetch with retry/backoff on 429 / transient errors
 // ---------------------------------------------------------------------
@@ -183,11 +202,6 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
   const fmt = (n) => Number(n).toLocaleString();
-  const pct = (cur, max) => {
-    const m = Number(max);
-    if (!m) return 0;
-    return Math.max(0, Math.min(100, (Number(cur) / m) * 100));
-  };
 
   const itemRows = items.map(it => `
     <tr>
@@ -207,14 +221,13 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
 
   const leagueName = league && league.name ? esc(league.name) : "None";
-  const healthPct = pct(c.current_health, c.max_health);
-  const powerPct = pct(c.current_power, c.max_power);
 
-  // Simple stroke icons matching the site's brand-mark style. Power type,
-  // power source, and movement mode have no name lookup in the Census API,
-  // so the values next to them are still raw IDs.
+  // Simple stroke icons matching the site's brand-mark style. Power source
+  // still has no known name lookup, so it's shown as a raw ID further down.
   const powerIcon = `<svg viewBox="0 0 16 16"><path d="M9 1 L3 9 L7 9 L6 15 L13 6 L9 6 Z"/></svg>`;
   const moveIcon = `<svg viewBox="0 0 16 16"><path d="M2 11 L7 6 M5 13 L10 8 M8 15 L13 10"/></svg>`;
+  const powerTypeLabel = POWER_TYPE_NAMES[c.power_type_id] || `#${c.power_type_id}`;
+  const movementLabel = MOVEMENT_MODE_NAMES[c.movement_mode_id] || `#${c.movement_mode_id}`;
 
   resultEl.innerHTML = `
     <div class="td-identity">
@@ -227,8 +240,8 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
         </div>
       </div>
       <div class="td-identity-icons">
-        <span class="td-icon-chip" title="Power type ID">${powerIcon}<span>${esc(c.power_type_id)}</span></span>
-        <span class="td-icon-chip" title="Movement mode ID">${moveIcon}<span>${esc(c.movement_mode_id)}</span></span>
+        <span class="td-icon-chip" title="Power type (ID ${esc(c.power_type_id)})">${powerIcon}<span>${esc(powerTypeLabel)}</span></span>
+        <span class="td-icon-chip" title="Movement mode (ID ${esc(c.movement_mode_id)})">${moveIcon}<span>${esc(movementLabel)}</span></span>
       </div>
     </div>
 
@@ -244,39 +257,30 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       <div>
         <div class="td-hero-stats">
           <div class="td-hero-stat">
-            <div class="v">${esc(c.combat_rating)}</div>
+            <div class="v">${fmt(c.combat_rating)}</div>
             <div class="k">Combat Rating</div>
           </div>
           <div class="td-hero-stat">
-            <div class="v">${esc(c.skill_points)}</div>
+            <div class="v">${fmt(c.skill_points)}</div>
             <div class="k">Skill Points</div>
           </div>
         </div>
 
         <div class="td-secondary-stats">
-          <div><div class="k">Level</div><div class="v td-level">${esc(c.level)}</div></div>
-          <div><div class="k">PvP Combat Rating</div><div class="v td-pvp">${esc(c.pvp_combat_rating)}</div></div>
-        </div>
-
-        <div class="td-bars">
-          <div class="td-bar-row">
-            <div class="k"><span>Health</span><span class="v">${fmt(c.current_health)} / ${fmt(c.max_health)}</span></div>
-            <div class="td-bar-track"><div class="td-bar-fill" style="width:${healthPct}%"></div></div>
-          </div>
-          <div class="td-bar-row">
-            <div class="k"><span>Power</span><span class="v">${fmt(c.current_power)} / ${fmt(c.max_power)}</span></div>
-            <div class="td-bar-track"><div class="td-bar-fill power" style="width:${powerPct}%"></div></div>
-          </div>
+          <div><div class="k">Level</div><div class="v td-level">${fmt(c.level)}</div></div>
+          <div><div class="k">PvP Combat Rating</div><div class="v td-pvp">${fmt(c.pvp_combat_rating)}</div></div>
         </div>
 
         <div class="td-rows">
-          ${row("Might", c.might)}
-          ${row("Precision", c.precision)}
-          ${row("Restoration", c.restoration)}
-          ${row("Vitalization", c.vitalization)}
-          ${row("Dominance", c.dominance)}
-          ${row("Defense", c.defense)}
-          ${row("Toughness", c.toughness)}
+          ${row("Health", fmt(c.current_health) + " / " + fmt(c.max_health))}
+          ${row("Power", fmt(c.current_power) + " / " + fmt(c.max_power))}
+          ${row("Might", fmt(c.might))}
+          ${row("Precision", fmt(c.precision))}
+          ${row("Restoration", fmt(c.restoration))}
+          ${row("Vitalization", fmt(c.vitalization))}
+          ${row("Dominance", fmt(c.dominance))}
+          ${row("Defense", fmt(c.defense))}
+          ${row("Toughness", fmt(c.toughness))}
         </div>
 
         <div class="td-kv">
