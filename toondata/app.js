@@ -31,7 +31,7 @@ const MOVEMENT_MODE_NAMES = {
   "3313": "Flight / Skimming",
 };
 const WORLD_NAMES = {
-  "2": "US PC/PS",
+  "2": "US/PS/PC",
 };
 // Confirmed by cross-checking gender_id against character names strongly
 // associated with one gender (Batman/Superman-themed vs. Wonder
@@ -124,6 +124,8 @@ const modeCharBtn = document.getElementById("modeCharBtn");
 const modeLeagueBtn = document.getElementById("modeLeagueBtn");
 const charSearchForm = document.getElementById("charSearchForm");
 const leagueSearchForm = document.getElementById("leagueSearchForm");
+const pageTitleEl = document.getElementById("pageTitle");
+const pageLedeEl = document.getElementById("pageLede");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
@@ -168,6 +170,14 @@ function setMode(mode) {
   modeCharBtn.setAttribute("aria-selected", String(isChar));
   modeLeagueBtn.classList.toggle("active", !isChar);
   modeLeagueBtn.setAttribute("aria-selected", String(!isChar));
+
+  if (isChar) {
+    pageTitleEl.textContent = "Character Lookup";
+    pageLedeEl.textContent = "Look up your DC Universe Online character's stats, gear, and feats.";
+  } else {
+    pageTitleEl.textContent = "League Lookup";
+    pageLedeEl.textContent = "Look up a DC Universe Online league's roster and members.";
+  }
 }
 modeCharBtn.addEventListener("click", () => setMode("character"));
 modeLeagueBtn.addEventListener("click", () => setMode("league"));
@@ -375,7 +385,7 @@ async function runLeagueSearch(name) {
       matchListEl.innerHTML = matches.map(m => `
         <div class="td-match-item" data-guild-id="${esc(m.guild_id)}" data-guild-name="${esc(m.name)}">
           <span>${esc(m.name)}</span>
-          <span>World #${esc(m.world_id)}</span>
+          <span>${esc(WORLD_NAMES[m.world_id] || `World #${m.world_id}`)}</span>
         </div>
       `).join("");
       [...matchListEl.children].forEach(el => {
