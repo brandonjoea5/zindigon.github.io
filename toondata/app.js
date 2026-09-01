@@ -272,8 +272,8 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
         </div>
 
         <div class="td-rows">
-          ${row("Health", fmt(c.current_health) + " / " + fmt(c.max_health))}
-          ${row("Power", fmt(c.current_power) + " / " + fmt(c.max_power))}
+          ${row("Health", fmt(c.max_health))}
+          ${row("Power", fmt(c.max_power))}
           ${row("Might", fmt(c.might))}
           ${row("Precision", fmt(c.precision))}
           ${row("Restoration", fmt(c.restoration))}
