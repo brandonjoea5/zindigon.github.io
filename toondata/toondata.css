@@ -2,11 +2,14 @@
    Built on top of /assets/site.css (shared Zindigon design system).
    Reuses --bg, --bg-elev, --line, --fg, --accent, --serif, --sans, --mono, --r etc. */
 
-/* Hero background image, overlaid on the shared dark surface */
+/* Hero background image, overlaid on the shared dark surface.
+   No "fixed" attachment — mobile browsers (iOS Safari especially) are
+   unreliable about painting a fixed background at all when combined with
+   the site's overflow-x:hidden body, so this uses plain scroll instead. */
 body.toondata {
   background:
     linear-gradient(rgba(10, 10, 12, 0.72), rgba(10, 10, 12, 0.90)),
-    url("superhero-background.jpg") center / cover fixed;
+    url("superhero-background.jpg") center / cover no-repeat;
 }
 
 .td-lookup-form {
@@ -56,6 +59,12 @@ body.toondata {
 }
 @media (max-width: 880px) {
   .td-columns { grid-template-columns: 1fr; }
+  /* On narrow screens, show the stats column (CR, SP, level, health, etc.)
+     before the gear column — the numbers matter more at a glance than the
+     paperdoll when everything is stacked in one line. Source order in the
+     HTML stays gear-first (it's the visually "left" column at desktop
+     width); this just reorders how a grid lays its items out. */
+  .td-columns > div:nth-child(2) { order: -1; }
 }
 
 /* Character identity header — full-width, sits above the two-column layout
@@ -285,8 +294,14 @@ body.toondata {
   position: relative;
   border-radius: var(--r);
   overflow: hidden;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
+  /* The silhouette PNG is mostly transparent, so it needs something behind
+     it to actually read as a shape against the page's near-black surface.
+     A soft mint radial glow (matching the hero-stat cards) plus a faint
+     accent border does that without introducing a new visual language. */
+  background:
+    radial-gradient(75% 75% at 50% 38%, var(--accent-soft) 0%, transparent 72%),
+    var(--bg-elev);
+  border: 1px solid var(--accent-line);
   min-height: 380px;
 }
 .td-paperdoll-figure img {
@@ -326,16 +341,50 @@ body.toondata {
   white-space: nowrap;
 }
 .td-slot-chip .v.empty { color: var(--fg-faint); }
-@media (max-width: 480px) {
-  .td-paperdoll { grid-template-columns: 1fr; }
+
+/* Below ~600px there isn't room to flank the figure with two columns of
+   chips, so the figure moves to the top (shorter, so it doesn't eat the
+   screen) and the two slot columns sit side by side underneath it,
+   wrapping as needed. The figure stays visible — it just changes position
+   — rather than disappearing on small screens. */
+@media (max-width: 600px) {
+  .td-paperdoll {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "figure figure"
+      "left   right";
+    gap: 12px;
+  }
+  .td-paperdoll-figure {
+    grid-area: figure;
+    min-height: 220px;
+  }
+  .td-paperdoll-slots:nth-child(1) { grid-area: left; }
+  .td-paperdoll-slots:nth-child(3) { grid-area: right; }
   .td-paperdoll-slots {
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 8px;
+    padding: 0;
   }
-  .td-paperdoll-figure { display: none; }
 }
+
+.td-gear-details summary.td-section-label {
+  cursor: pointer;
+  margin: 0;
+  list-style: none;
+}
+.td-gear-details summary.td-section-label::-webkit-details-marker { display: none; }
+.td-gear-details summary.td-section-label::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--accent);
+  transition: transform 0.15s;
+}
+.td-gear-details[open] summary.td-section-label::before { transform: rotate(90deg); }
+.td-gear-details .td-gear-table { margin-top: 14px; }
 
 .td-gear-table {
   width: 100%;

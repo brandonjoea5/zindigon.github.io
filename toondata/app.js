@@ -225,8 +225,27 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   // Paperdoll — slot 0-7 flank the left, 8-14 flank the right. Which slot
   // is which body part isn't mapped yet, so this is just even spacing for
   // now, not anatomically placed.
+  //
+  // Slots 0-14 always get a chip, even when empty, so the layout is
+  // consistent across characters. But not every equipped item lives in
+  // that range — weapon/offhand/trinket/artifact/stat-mod slots (24-27,
+  // per what's been confirmed so far) use higher slot IDs that aren't
+  // mapped yet. Those items still show up in the "All equipped items"
+  // table below, since that table lists everything. If the paperdoll only
+  // ever rendered 0-14, an item sitting in one of those higher slots would
+  // exist in the table with nothing to match it above — which is exactly
+  // what was reported as slots "showing empty" while the list has items.
+  // So: any slot actually present on this character, known or not, gets
+  // appended here too. Nothing can appear in the table without also
+  // appearing as a chip.
   const bySlot = {};
   items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
+  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+  const extraSlots = Object.keys(bySlot)
+    .map(Number)
+    .filter(n => !KNOWN_SLOTS.includes(n))
+    .sort((a, b) => a - b);
+  const allSlots = [...KNOWN_SLOTS, ...extraSlots];
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
     return `<div class="td-slot-chip">
@@ -234,8 +253,9 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
     </div>`;
   };
-  const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
-  const rightSlots = [8, 9, 10, 11, 12, 13, 14].map(slotChip).join("");
+  const half = Math.ceil(allSlots.length / 2);
+  const leftSlots = allSlots.slice(0, half).map(slotChip).join("");
+  const rightSlots = allSlots.slice(half).map(slotChip).join("");
 
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
@@ -282,11 +302,13 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
           <div class="td-paperdoll-slots">${rightSlots}</div>
         </div>
 
-        <p class="td-section-label">All equipped items</p>
-        <table class="td-gear-table">
-          <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
-          <tbody>${itemRows}</tbody>
-        </table>
+        <details class="td-gear-details">
+          <summary class="td-section-label">All equipped items (${items.length})</summary>
+          <table class="td-gear-table">
+            <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </details>
       </div>
 
       <div>
