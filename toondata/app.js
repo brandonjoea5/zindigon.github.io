@@ -27,6 +27,16 @@ const MOVEMENT_MODE_NAMES = {
   // both, so there's no way to tell them apart from this field alone.
   "3313": "Flight / Skimming",
 };
+const WORLD_NAMES = {
+  "2": "US PC/PS",
+};
+// Confirmed by cross-checking gender_id against character names strongly
+// associated with one gender (Batman/Superman-themed vs. Wonder
+// Woman/Supergirl-themed) — same method used for alignment_id.
+const GENDER_NAMES = {
+  "0": "Male",
+  "1": "Female",
+};
 
 // ---------------------------------------------------------------------
 // Low-level Census fetch with retry/backoff on 429 / transient errors
@@ -212,6 +222,21 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     </tr>
   `).join("");
 
+  // Paperdoll — slot 0-7 flank the left, 8-14 flank the right. Which slot
+  // is which body part isn't mapped yet, so this is just even spacing for
+  // now, not anatomically placed.
+  const bySlot = {};
+  items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
+  const slotChip = (slotId) => {
+    const it = bySlot[slotId];
+    return `<div class="td-slot-chip">
+      <span class="n">Slot ${slotId}</span>
+      <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
+    </div>`;
+  };
+  const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
+  const rightSlots = [8, 9, 10, 11, 12, 13, 14].map(slotChip).join("");
+
   const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
 
   // alignment_id isn't documented by Daybreak, but it only ever takes two
@@ -228,6 +253,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const moveIcon = `<svg viewBox="0 0 16 16"><path d="M2 11 L7 6 M5 13 L10 8 M8 15 L13 10"/></svg>`;
   const powerTypeLabel = POWER_TYPE_NAMES[c.power_type_id] || `#${c.power_type_id}`;
   const movementLabel = MOVEMENT_MODE_NAMES[c.movement_mode_id] || `#${c.movement_mode_id}`;
+  const worldLabel = WORLD_NAMES[c.world_id] || `#${c.world_id}`;
 
   resultEl.innerHTML = `
     <div class="td-identity">
@@ -236,7 +262,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
         <div class="td-identity-tags">
           ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
           <span class="td-tag">League <strong>${leagueName}</strong></span>
-          <span class="td-tag">Server <strong>#${esc(c.world_id)}</strong></span>
+          <span class="td-tag" title="World ID ${esc(c.world_id)}">Server <strong>${esc(worldLabel)}</strong></span>
         </div>
       </div>
       <div class="td-identity-icons">
@@ -248,6 +274,15 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     <div class="td-columns">
       <div>
         <p class="td-section-label">Gear</p>
+        <div class="td-paperdoll">
+          <div class="td-paperdoll-slots">${leftSlots}</div>
+          <div class="td-paperdoll-figure">
+            <img src="paperdoll-silhouette.png" alt="" />
+          </div>
+          <div class="td-paperdoll-slots">${rightSlots}</div>
+        </div>
+
+        <p class="td-section-label">All equipped items</p>
         <table class="td-gear-table">
           <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
           <tbody>${itemRows}</tbody>
@@ -285,7 +320,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
         <div class="td-kv">
           ${kv("Power Source", c.power_source_id)}
-          ${kv("Gender", c.gender_id)}
+          ${kv("Gender", GENDER_NAMES[c.gender_id] || c.gender_id)}
           ${kv("Origin", c.origin_id)}
           ${kv("Title", c.title_id)}
           ${kv("Personality", c.personality_id)}
