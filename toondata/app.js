@@ -1,10 +1,15 @@
 // Zindigon ToonData | Census API client
 // Docs: https://census.daybreakgames.com/
 
-// swap for the approved service ID once Daybreak confirms it
-const SERVICE_ID = "s:example";
-const CENSUS_BASE = "https://census.daybreakgames.com";
-const NAMESPACE = "dcuo:v1";
+// All Census requests go through a Cloudflare Worker proxy instead of
+// hitting Census directly. The Worker holds the real Census Service ID as
+// a hidden server-side secret (never shipped to the browser — nobody can
+// view-source this page and lift it), caches responses at Cloudflare's
+// edge so repeat lookups across all visitors are instant, and detects
+// Census's disguised rate-limit response before it can reach this code.
+// Swapping in the approved Service ID (once Daybreak confirms it) is done
+// entirely on the Worker side — nothing here needs to change for that.
+const WORKER_BASE = "https://toondata-census.brandonjoea3.workers.dev";
 const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for feat collections
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
 const MAX_RETRIES = 3;
@@ -50,7 +55,7 @@ const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
 // ---------------------------------------------------------------------
 async function censusGet(collection, params) {
   const qs = new URLSearchParams(params);
-  const url = `${CENSUS_BASE}/${SERVICE_ID}/get/${NAMESPACE}/${collection}?${qs.toString()}`;
+  const url = `${WORKER_BASE}/${collection}?${qs.toString()}`;
 
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -69,18 +74,22 @@ async function censusGet(collection, params) {
       if (json.error === "login_required") {
         throw new AuthWallError(collection);
       }
-      // The shared "s:example" service ID doesn't get a real HTTP 429 when
-      // it's rate-limited — Census answers with HTTP 200 and a body like
-      // {"error":"Missing Service ID.  A valid Service ID is required for
-      // continued api use.  The Service ID s:example is for casual use
-      // only.  (...)"}. Before this check existed, that response fell
-      // through untouched: fetchAllPages saw no *_list key, treated it as
-      // an empty page, and quietly stopped paginating — so a rate-limited
-      // request came back looking like "this character has 0 (or fewer)
-      // feats" instead of failing. That's the confirmed root cause of the
-      // Compare feature's corrupted/nondeterministic feat counts. Treating
-      // it as a RateLimitError routes it through the same retry/backoff as
-      // a real 429, and only surfaces as a visible error if every retry is
+      // A rate-limited Census service ID doesn't get a real HTTP 429 —
+      // Census answers with HTTP 200 and a body like {"error":"Missing
+      // Service ID.  A valid Service ID is required for continued api use.
+      // The Service ID s:example is for casual use only.  (...)"}. Before
+      // this check existed, that response fell through untouched:
+      // fetchAllPages saw no *_list key, treated it as an empty page, and
+      // quietly stopped paginating — so a rate-limited request came back
+      // looking like "this character has 0 (or fewer) feats" instead of
+      // failing. That's the confirmed root cause of the Compare feature's
+      // corrupted/nondeterministic feat counts. The Worker (WORKER_BASE)
+      // already detects and retries this pattern server-side before it
+      // ever reaches the browser, so in normal operation this check should
+      // never fire — it's kept here as a backstop in case a disguised
+      // rate-limit response ever slips through. Treating it as a
+      // RateLimitError routes it through the same retry/backoff as a real
+      // 429, and only surfaces as a visible error if every retry is
       // exhausted — instead of silently returning bad data. This is
       // distinct from the legitimate {"error":"No data found."} response,
       // which doesn't match this pattern and still passes through as a
