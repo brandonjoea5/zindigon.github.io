@@ -75,10 +75,10 @@ const MOVEMENT_MODE_NAMES = {
 };
 const WORLD_NAMES = {
   "0": "---",
-  "1": "US PC/PS3",
-  "2": "US PC/PS3",
-  "3": "US PC/PS3",
-  "4": "EU PC/PS3",
+  "1": "US PC/PS",
+  "2": "US PC/PS",
+  "3": "US PC/PS",
+  "4": "EU PC/PS",
   "5001": "US Xbox",
   "5002": "EU Xbox",
 };
@@ -322,13 +322,17 @@ function fmt(n) {
 function featChip(f) {
   const id = esc(f.feat_id);
   if (f.feat_name) {
-    // Category is a smaller, separately-matched slice of the recovered
-    // data than the name itself (see FEAT_CATEGORIES in the Worker), so a
-    // named feat doesn't always have one — falls back to just the ID.
+    // Category and description are smaller, separately-matched slices of
+    // the recovered data than the name itself (see FEAT_CATEGORIES in the
+    // Worker), so a named feat doesn't always have either — each falls
+    // back to being left off the tooltip rather than showing a blank.
     const category = f.feat_category
       ? esc(f.feat_subcategory ? `${f.feat_category} › ${f.feat_subcategory}` : f.feat_category)
       : null;
-    const title = category ? `Feat ID ${id} · ${category}` : `Feat ID ${id}`;
+    let title = category ? `Feat ID ${id} · ${category}` : `Feat ID ${id}`;
+    // A literal newline in a title attribute renders as a line break in
+    // the native browser tooltip — no markup needed for it.
+    if (f.feat_desc) title += `\n${esc(f.feat_desc)}`;
     return `<span class="td-feat-named" title="${title}">${esc(f.feat_name)}</span>`;
   }
   return `<span title="Name not recovered yet">#${id}</span>`;
