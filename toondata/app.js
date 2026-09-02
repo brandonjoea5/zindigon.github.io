@@ -1395,6 +1395,9 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
     </div>
 
     <p class="td-section-label" style="margin-top:24px;">Browse by Category</p>
+    <div class="notice" style="margin-bottom:12px;">
+      <span>This category browser is a work in progress — completed/in-progress status here may not be 100% accurate yet.</span>
+    </div>
     <div id="featCategoryTree" class="td-feat-categories">
       <p class="td-roster-note">Loading feat categories…</p>
     </div>
