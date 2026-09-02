@@ -305,17 +305,23 @@ function fmt(n) {
   return Number.isNaN(num) ? "—" : num.toLocaleString();
 }
 
-// Renders one feat as a chip. Census no longer exposes feat names (see the
-// note near FEAT_NAMES's definition in feat-names.js), so this falls back
-// to a raw "#<id>" chip whenever a feat isn't in that recovered — and
-// necessarily partial — lookup table. Known names get a distinct style
-// (see .td-feat-named in toondata.css) so it's obvious at a glance which
-// feats are named vs. still just an ID; the ID is always in the tooltip
-// either way.
+// Renders one feat as a chip. Census stopped exposing feat names years
+// ago, so the Worker (WORKER_BASE) attaches a recovered feat_name to each
+// completed/active feat row itself, server-side, whenever it has one —
+// see enrichFeatNames in the Worker source. This falls back to a raw
+// "#<id>" chip for anything the Worker didn't attach a name to. Known
+// names get a distinct style (see .td-feat-named in toondata.css) so it's
+// obvious at a glance which feats are named vs. still just an ID; the ID
+// is always in the tooltip either way.
+//
+// Deliberately NOT a client-side lookup table: the recovered feat_id ->
+// name data lives only in the Worker, not in anything shipped to the
+// browser (this site's static assets are public in GitHub Pages), so a
+// visitor only ever sees names for the specific feats a specific
+// character has, never the whole recovered dataset in one file.
 function featChip(f) {
   const id = esc(f.feat_id);
-  const name = typeof FEAT_NAMES !== "undefined" ? FEAT_NAMES[f.feat_id] : undefined;
-  if (name) return `<span class="td-feat-named" title="Feat ID ${id}">${esc(name)}</span>`;
+  if (f.feat_name) return `<span class="td-feat-named" title="Feat ID ${id}">${esc(f.feat_name)}</span>`;
   return `<span title="Name not recovered yet">#${id}</span>`;
 }
 
