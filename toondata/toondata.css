@@ -663,9 +663,10 @@ body.toondata::before {
   border: 1px solid var(--line);
   color: var(--fg-mute);
 }
-/* Feats with a recovered name (see feat-names.js) are styled a bit
-   brighter than the plain "#12345" chips so it's obvious at a glance
-   which ones have a real name and which are still just an ID. */
+/* Feats with a recovered name (attached server-side by the Worker — see
+   enrichFeatNames in toondata-census-worker.js) are styled a bit brighter
+   than the plain "#12345" chips so it's obvious at a glance which ones
+   have a real name and which are still just an ID. */
 .td-feat-ids span.td-feat-named {
   font-family: var(--sans);
   letter-spacing: normal;
@@ -681,6 +682,153 @@ body.toondata::before {
   padding-left: 18px;
 }
 .td-limitations li { margin-bottom: 6px; }
+
+/* Feat category browser — an expandable, in-game-style tree (category ->
+   subcategory -> feat rows), built from the Worker's /feat-catalog
+   endpoint. Categories and subcategories are plain <details>/<summary>
+   elements (same pattern as the gear/extra-slots sections above) so
+   expand/collapse works with no extra JS wiring; only the feat-row status
+   colors and the ▸ chevron rotation are custom here. */
+.td-feat-categories { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+.td-feat-category {
+  border: 1px solid var(--line);
+  border-radius: var(--r, 10px);
+  background: rgba(255,255,255,0.02);
+  overflow: hidden;
+}
+.td-feat-category > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--fg);
+}
+.td-feat-category > summary::-webkit-details-marker { display: none; }
+.td-feat-category > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 10px;
+  color: var(--accent);
+  transition: transform 0.15s;
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.td-feat-category[open] > summary::before { transform: rotate(90deg); }
+.td-feat-category-name { flex: 1; }
+.td-feat-category-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--fg-mute);
+  white-space: nowrap;
+}
+.td-feat-category > .td-feat-rows { padding: 0 16px 14px; }
+
+.td-feat-subcategory {
+  margin: 0 16px 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.td-feat-subcategory:last-child { margin-bottom: 4px; }
+.td-feat-subcategory > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-soft);
+  padding-bottom: 2px;
+}
+.td-feat-subcategory > summary::-webkit-details-marker { display: none; }
+.td-feat-subcategory > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--accent);
+  transition: transform 0.15s;
+  font-size: 11px;
+}
+.td-feat-subcategory[open] > summary::before { transform: rotate(90deg); }
+.td-feat-subcategory-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-faint);
+}
+.td-feat-subcategory > .td-feat-rows { margin-top: 10px; }
+
+.td-feat-rows { display: flex; flex-direction: column; gap: 8px; }
+
+/* One row per feat — name + stars on the first line, description (when
+   the recovered data has one) underneath. The colored left border and the
+   status pill are the completed / in-progress / not-completed signal the
+   character's own completed/active feat lists don't otherwise carry once
+   feats are grouped by category instead of shown as a flat chip list. */
+.td-feat-row {
+  border-left: 3px solid var(--line);
+  background: rgba(255,255,255,0.015);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 12px;
+}
+.td-feat-row-complete { border-left-color: #4caf7d; }
+.td-feat-row-inprogress { border-left-color: #d9a441; }
+.td-feat-row-notdone { border-left-color: var(--line); opacity: 0.7; }
+
+.td-feat-row-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.td-feat-row-name {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--fg);
+  font-weight: 500;
+}
+.td-feat-row-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--fg-mute);
+  line-height: 1.5;
+}
+.td-feat-row-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--fg-faint);
+}
+.td-feat-row-complete .td-feat-row-status {
+  color: #8fe0b8;
+  border-color: rgba(76,175,125,0.45);
+  background: rgba(76,175,125,0.10);
+}
+.td-feat-row-inprogress .td-feat-row-status {
+  color: #f0c778;
+  border-color: rgba(217,164,65,0.45);
+  background: rgba(217,164,65,0.10);
+}
+.td-feat-row-notdone .td-feat-row-status {
+  color: var(--fg-faint);
+  border-color: var(--line);
+  background: transparent;
+}
+
+.td-feat-stars { display: inline-flex; align-items: center; gap: 2px; }
+.td-feat-star { width: 13px; height: 13px; display: block; }
 
 /* Combat Rating calculator — a standalone tool (no search involved), so it
    sits in the same spot the other three modes' forms occupy, matching

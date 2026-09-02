@@ -339,6 +339,152 @@ function featChip(f) {
 }
 
 // ---------------------------------------------------------------------
+// Feat category browser — an expandable, game-like tree (category ->
+// subcategory -> feat rows with name/description/star rating) built from
+// the Worker's own /feat-catalog endpoint, cross-referenced against a
+// character's completed/active feats to show a completed / in-progress /
+// not-completed state per feat.
+//
+// This is a deliberate, narrower exception to the "never ship the
+// recovered dataset in bulk" rule featChip's comment above describes: the
+// catalog only ever contains the ~131 feat_ids Bloguide's own public
+// category pages could be cross-matched against (see the FEAT_CATEGORIES
+// comment in the Worker source), never the full 1,127-entry recovered
+// table, and never anything not already independently published on
+// Bloguide. Showing "not completed" state necessarily means the visitor
+// can see a category's full feat list before/without having looked up a
+// character that has those feats — a tradeoff made knowingly for this
+// bounded subset, not the rest of the recovered data.
+// ---------------------------------------------------------------------
+
+// Fetched once and reused for the rest of the page's life — the catalog
+// itself doesn't depend on which character is on screen, so there's no
+// reason to re-fetch it per character view.
+let featCatalogPromise = null;
+function getFeatCatalog() {
+  if (!featCatalogPromise) {
+    featCatalogPromise = fetch(`${WORKER_BASE}/feat-catalog`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => (Array.isArray(data.entries) ? data.entries : []))
+      .catch(() => null); // null marks "couldn't load", distinct from an empty catalog
+  }
+  return featCatalogPromise;
+}
+
+// A handful of known categories get a fixed, game-like ordering; anything
+// else (there isn't anything else today, but this keeps it from silently
+// vanishing if the Worker's catalog ever grows a new one) sorts after them
+// alphabetically instead of just falling off the end.
+const FEAT_CATEGORY_ORDER = ["Collectibles", "Exploration", "Solo", "Styles", "Tokens of Merit"];
+
+function buildFeatCategoryTree(entries) {
+  const byCategory = new Map();
+  for (const entry of entries) {
+    if (!byCategory.has(entry.category)) byCategory.set(entry.category, new Map());
+    const bySub = byCategory.get(entry.category);
+    const subKey = entry.subcategory || "";
+    if (!bySub.has(subKey)) bySub.set(subKey, []);
+    bySub.get(subKey).push(entry);
+  }
+  const categoryNames = Array.from(byCategory.keys()).sort((a, b) => {
+    const ia = FEAT_CATEGORY_ORDER.indexOf(a), ib = FEAT_CATEGORY_ORDER.indexOf(b);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    return a.localeCompare(b);
+  });
+  return categoryNames.map(name => {
+    const bySub = byCategory.get(name);
+    const subNames = Array.from(bySub.keys()).sort((a, b) => a.localeCompare(b));
+    const subcategories = subNames.map(sub => ({
+      name: sub || null,
+      feats: bySub.get(sub).slice().sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+    return { name, subcategories };
+  });
+}
+
+// One star image per point of difficulty (1-3, per Bloguide's own rating —
+// see the FEAT_CATEGORIES comment in the Worker source). Feats the Worker
+// didn't have a star rating for (most of the flat-list categories, like
+// Styles) just render no stars rather than a placeholder.
+function starIcons(count) {
+  const n = Math.max(0, Math.min(3, Number(count) || 0));
+  if (!n) return "";
+  const stars = `<img class="td-feat-star" src="star.png" alt="" />`.repeat(n);
+  return `<span class="td-feat-stars" title="${n} star feat">${stars}</span>`;
+}
+
+function featCategoryRow(entry, completedSet, activeSet) {
+  const id = String(entry.feat_id);
+  let status, statusLabel;
+  if (completedSet.has(id)) { status = "complete"; statusLabel = "Completed"; }
+  else if (activeSet.has(id)) { status = "inprogress"; statusLabel = "In Progress"; }
+  else { status = "notdone"; statusLabel = "Not Completed"; }
+  return `
+    <div class="td-feat-row td-feat-row-${status}">
+      <div class="td-feat-row-main">
+        <span class="td-feat-row-status" title="${statusLabel}">${esc(statusLabel)}</span>
+        <span class="td-feat-row-name">${esc(entry.name)}</span>
+        ${starIcons(entry.stars)}
+      </div>
+      ${entry.desc ? `<div class="td-feat-row-desc">${esc(entry.desc)}</div>` : ""}
+    </div>
+  `;
+}
+
+function renderFeatCategoryTree(tree, completedFeats, activeFeats) {
+  const completedSet = new Set(completedFeats.map(f => String(f.feat_id)));
+  const activeSet = new Set(activeFeats.map(f => String(f.feat_id)));
+  return tree.map(cat => {
+    const generalSub = cat.subcategories.find(s => !s.name);
+    const namedSubs = cat.subcategories.filter(s => s.name);
+    const allFeats = cat.subcategories.flatMap(s => s.feats);
+    const completedCount = allFeats.filter(f => completedSet.has(String(f.feat_id))).length;
+    const generalHtml = generalSub
+      ? `<div class="td-feat-rows">${generalSub.feats.map(f => featCategoryRow(f, completedSet, activeSet)).join("")}</div>`
+      : "";
+    const namedHtml = namedSubs.map(sub => `
+      <details class="td-feat-subcategory">
+        <summary><span>${esc(sub.name)}</span><span class="td-feat-subcategory-count">${sub.feats.length}</span></summary>
+        <div class="td-feat-rows">${sub.feats.map(f => featCategoryRow(f, completedSet, activeSet)).join("")}</div>
+      </details>
+    `).join("");
+    return `
+      <details class="td-feat-category">
+        <summary>
+          <span class="td-feat-category-name">${esc(cat.name)}</span>
+          <span class="td-feat-category-count">${completedCount}/${allFeats.length} completed</span>
+        </summary>
+        ${generalHtml}
+        ${namedHtml}
+      </details>
+    `;
+  }).join("");
+}
+
+// Loads (or reuses the cached) catalog and patches it into the
+// #featCategoryTree placeholder renderCharacter leaves behind — rather
+// than going through a full repaint() — so this works identically whether
+// the view just finished its first feats fetch or was restored straight
+// from the view cache (applyView), without needing catalog state threaded
+// through loadFeatsAndLeague's own state object. Guards against a stale
+// write the same way the rest of the page does: if the visitor has since
+// navigated away, resultEl's activeCharacterId won't match anymore.
+function loadFeatCategoryTreeInto(characterId, completedFeats, activeFeats) {
+  const characterIdStr = String(characterId);
+  getFeatCatalog().then(entries => {
+    if (resultEl.dataset.activeCharacterId !== characterIdStr) return;
+    const container = resultEl.querySelector("#featCategoryTree");
+    if (!container) return;
+    if (!entries || !entries.length) {
+      container.innerHTML = `<p class="td-roster-note">Feat categories aren't available right now.</p>`;
+      return;
+    }
+    const tree = buildFeatCategoryTree(entries);
+    container.innerHTML = renderFeatCategoryTree(tree, completedFeats, activeFeats);
+  });
+}
+
+// ---------------------------------------------------------------------
 // Mode toggle (Character search / League search / Compare)
 // ---------------------------------------------------------------------
 const MODES = {
@@ -1247,12 +1393,18 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
       <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}</div></div>
       <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
     </div>
-    <details>
-      <summary>Show completed feat IDs (${completedFeats.length})</summary>
+
+    <p class="td-section-label" style="margin-top:24px;">Browse by Category</p>
+    <div id="featCategoryTree" class="td-feat-categories">
+      <p class="td-roster-note">Loading feat categories…</p>
+    </div>
+
+    <details style="margin-top:22px;">
+      <summary>Show all completed feat IDs (${completedFeats.length})</summary>
       <div class="td-feat-ids">${featIdSpans(completedFeats)}</div>
     </details>
     <details style="margin-top:10px;">
-      <summary>Show in-progress feat IDs (${activeFeats.length})</summary>
+      <summary>Show all in-progress feat IDs (${activeFeats.length})</summary>
       <div class="td-feat-ids">${featIdSpans(activeFeats)}</div>
     </details>
   `;
@@ -1349,6 +1501,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
       <p class="td-section-label">About this data</p>
       <ul class="td-limitations">
         <li>Feat names come from an archived, recovered list, not Census (it stopped providing feat names years ago) — coverage is partial and frozen at mid-2015, so newer feats show as a raw ID (#…) instead of a name.</li>
+        <li>The category browser only covers feats that could be matched to a public category listing — a smaller slice than the named feats above, so plenty of real feats (especially Races) still only show up in the raw ID lists below it.</li>
         <li>In-progress feats show only that they've been started, not how close they are to completion.</li>
         <li>Completed feats don't have a completion date attached.</li>
       </ul>
@@ -1367,6 +1520,16 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
   const retryFeatsBtn = resultEl.querySelector("#retryFeatsBtn");
   if (retryFeatsBtn && opts.onRetryFeats) {
     retryFeatsBtn.addEventListener("click", opts.onRetryFeats);
+  }
+
+  // Only once real feat data is on screen (not the loading skeleton or the
+  // error state) is there a #featCategoryTree placeholder to patch — and
+  // only then do completedFeats/activeFeats reflect this character rather
+  // than stale/empty defaults. Fires on every renderCharacter call
+  // (fresh load, retry, or a view-cache restore via applyView), which is
+  // fine: getFeatCatalog() only actually fetches once per page.
+  if (!featsLoading && !featsError) {
+    loadFeatCategoryTreeInto(c.character_id, completedFeats, activeFeats);
   }
 }
 
