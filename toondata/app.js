@@ -29,6 +29,12 @@ const POWER_TYPE_NAMES = {
   "74779": "Nature",
   "3050978": "Water",
 };
+// power_source_id — a separate field from power_type_id above (that one's
+// already shown via the icon chip in the identity header). Same
+// hand-confirmed, add-as-more-are-found approach.
+const POWER_SOURCE_NAMES = {
+  "6902": "Atomic",
+};
 const MOVEMENT_MODE_NAMES = {
   "3317": "Super Speed",
   // 3313 covers both Flight and Skimming — Census exposes the same ID for
@@ -49,6 +55,14 @@ const GENDER_NAMES = {
 // values and cross-checking name patterns (Batman/Superman-themed names
 // vs. Joker/Harley Quinn-themed names) confirms which is which.
 const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
+// origin_id only ever takes three values — confirmed by cross-checking
+// against each origin's iconic mentor on both alignments (Tech: Batman /
+// Joker, Magic: Wonder Woman / Circe, Meta: Superman / Lex Luthor).
+const ORIGIN_NAMES = {
+  "21784": "Tech",
+  "21785": "Magic",
+  "21783": "Meta",
+};
 
 // ---------------------------------------------------------------------
 // Low-level Census fetch with retry/backoff on 429 / transient errors
@@ -988,7 +1002,12 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
   // whatever just got rendered — see loadFeatsAndLeague.
   resultEl.dataset.activeCharacterId = String(c.character_id);
 
-  const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
+  // esc() alone turns a genuinely missing field into the literal text
+  // "undefined" (String(undefined) === "undefined") — this is what was
+  // showing up under Title for characters Census doesn't return a
+  // title_id for. Falls back to "None" instead, same as every other
+  // field that uses this helper.
+  const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${value === undefined || value === null || value === "" ? "None" : esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
 
   const itemRows = items.map(it => `
@@ -1166,9 +1185,9 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
         </div>
 
         <div class="td-kv">
-          ${kv("Power Source", c.power_source_id)}
+          ${kv("Power Source", POWER_SOURCE_NAMES[c.power_source_id] || c.power_source_id)}
           ${kv("Gender", GENDER_NAMES[c.gender_id] || c.gender_id)}
-          ${kv("Origin", c.origin_id)}
+          ${kv("Origin", ORIGIN_NAMES[c.origin_id] || c.origin_id)}
           ${kv("Title", c.title_id)}
           ${kv("Personality", c.personality_id)}
           ${kv("Region", c.region_id)}
