@@ -663,6 +663,16 @@ body.toondata::before {
   border: 1px solid var(--line);
   color: var(--fg-mute);
 }
+/* Feats with a recovered name (see feat-names.js) are styled a bit
+   brighter than the plain "#12345" chips so it's obvious at a glance
+   which ones have a real name and which are still just an ID. */
+.td-feat-ids span.td-feat-named {
+  font-family: var(--sans);
+  letter-spacing: normal;
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.16);
+  color: var(--fg-soft);
+}
 
 .td-limitations {
   font-size: 13px;

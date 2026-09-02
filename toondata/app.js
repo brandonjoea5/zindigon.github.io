@@ -305,6 +305,20 @@ function fmt(n) {
   return Number.isNaN(num) ? "—" : num.toLocaleString();
 }
 
+// Renders one feat as a chip. Census no longer exposes feat names (see the
+// note near FEAT_NAMES's definition in feat-names.js), so this falls back
+// to a raw "#<id>" chip whenever a feat isn't in that recovered — and
+// necessarily partial — lookup table. Known names get a distinct style
+// (see .td-feat-named in toondata.css) so it's obvious at a glance which
+// feats are named vs. still just an ID; the ID is always in the tooltip
+// either way.
+function featChip(f) {
+  const id = esc(f.feat_id);
+  const name = typeof FEAT_NAMES !== "undefined" ? FEAT_NAMES[f.feat_id] : undefined;
+  if (name) return `<span class="td-feat-named" title="Feat ID ${id}">${esc(name)}</span>`;
+  return `<span title="Name not recovered yet">#${id}</span>`;
+}
+
 // ---------------------------------------------------------------------
 // Mode toggle (Character search / League search / Compare)
 // ---------------------------------------------------------------------
@@ -1176,7 +1190,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
     .sort((a, b) => a - b);
   const extraSlotsHtml = extraSlotIds.map(slotChip).join("");
 
-  const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
+  const featIdSpans = (list) => list.map(featChip).join("");
 
   const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
 
@@ -1315,7 +1329,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
     <div class="card" style="margin-top:20px;">
       <p class="td-section-label">About this data</p>
       <ul class="td-limitations">
-        <li>Feat IDs are shown raw. The Census API doesn't provide feat names.</li>
+        <li>Feat names come from an archived, recovered list, not Census (it stopped providing feat names years ago) — coverage is partial and frozen at mid-2015, so newer feats show as a raw ID (#…) instead of a name.</li>
         <li>In-progress feats show only that they've been started, not how close they are to completion.</li>
         <li>Completed feats don't have a completion date attached.</li>
       </ul>
@@ -1457,7 +1471,7 @@ function renderComparison(dataA, dataB) {
   const onlyA = completedA.filter(f => !idsB.has(f.feat_id));
   const onlyB = completedB.filter(f => !idsA.has(f.feat_id));
   const featIdSpans = (list) => list.length
-    ? list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("")
+    ? list.map(featChip).join("")
     : `<span class="td-roster-note" style="margin:0;">None</span>`;
 
   // Defense-in-depth: even with the censusGet rate-limit fix, don't let the
@@ -1532,7 +1546,7 @@ function renderComparison(dataA, dataB) {
             <div class="td-feat-ids">${featIdSpans(onlyB)}</div>
           </div>
         </div>
-        <p class="td-roster-note" style="margin-top:16px;">Shared completed feats, and feats neither has completed, aren't listed here — this only shows the difference. Feat IDs are shown raw; Census doesn't provide feat names.</p>
+        <p class="td-roster-note" style="margin-top:16px;">Shared completed feats, and feats neither has completed, aren't listed here — this only shows the difference. Feat names come from an archived, recovered list and are only available for feats that existed by mid-2015; newer feats show as a raw ID.</p>
       </div>
     </div>
   `;
