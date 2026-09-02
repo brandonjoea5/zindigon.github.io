@@ -21,6 +21,16 @@ const VIEW_CACHE_TTL_MS = 5 * 60 * 1000; // how long a character/roster view is 
 // hand-maintained table of the ones that are known. Anything not listed
 // here just falls back to showing the raw ID. Add to these as more get
 // confirmed.
+//
+// This full set (plus WEAPON_NAMES, MOVEMENT_MODE_NAMES, and the rest of
+// WORLD_NAMES below) was cross-verified against the DCUO Bloguide Census
+// app's own production lookup tables (read directly out of their live
+// Angular app scope) and then confirmed against a real character's raw
+// Census response pulled through our own Worker — not just taken on
+// their word. That cross-check also caught a real bug: "6902" is Atomic's
+// power_type_id, not a power_source_id value at all (power_source_id
+// turns out to hold the equipped *weapon* type, not a power name — see
+// WEAPON_NAMES below).
 const POWER_TYPE_NAMES = {
   "1992462": "Rage",
   "2784": "Earth",
@@ -28,21 +38,59 @@ const POWER_TYPE_NAMES = {
   "1810455": "Quantum",
   "74779": "Nature",
   "3050978": "Water",
-};
-// power_source_id — a separate field from power_type_id above (that one's
-// already shown via the icon chip in the identity header). Same
-// hand-confirmed, add-as-more-are-found approach.
-const POWER_SOURCE_NAMES = {
+  "2324": "Ice",
+  "2666": "Fire",
+  "2667": "Light",
   "6902": "Atomic",
+  "7019": "Mental",
+  "175798": "Gadgets",
+  "197247": "Sorcery",
+  "1932154": "Celestial",
+  "2636096": "Munitions",
+};
+// power_source_id actually holds the character's equipped *weapon* type
+// (Bow, Dual Pistol, Shield, etc.) — not a power name. Confirmed against a
+// real character's raw Census response: BatmanI23's power_source_id
+// ("1479215") is Shield, matching what the site itself shows for that
+// character.
+const WEAPON_NAMES = {
+  "2336": "Martial Arts",
+  "3312": "Two-Handed",
+  "3314": "Bow",
+  "3315": "Dual Pistol",
+  "3316": "Dual Wield",
+  "4498": "One-Handed",
+  "4521": "Staff",
+  "9111": "Rifle",
+  "17740": "Brawling",
+  "503870": "Hand Blast",
+  "1479215": "Shield",
 };
 const MOVEMENT_MODE_NAMES = {
   "3317": "Super Speed",
   // 3313 covers both Flight and Skimming — Census exposes the same ID for
   // both, so there's no way to tell them apart from this field alone.
   "3313": "Flight / Skimming",
+  "3527": "Acrobatics",
 };
 const WORLD_NAMES = {
-  "2": "US/PS/PC",
+  "0": "---",
+  "1": "US PC/PS3",
+  "2": "US PC/PS3",
+  "3": "US PC/PS3",
+  "4": "EU PC/PS3",
+  "5001": "US Xbox",
+  "5002": "EU Xbox",
+};
+// personality_id — the character's chosen personality/voice type.
+const PERSONALITY_NAMES = {
+  "389435": "Serious",
+  "457291": "Primal",
+  "457292": "Comical",
+  "457293": "Flirty",
+  "457294": "Powerful",
+  "872983": "Flirty",
+  "2664729": "Serious",
 };
 // Confirmed by cross-checking gender_id against character names strongly
 // associated with one gender (Batman/Superman-themed vs. Wonder
@@ -63,6 +111,42 @@ const ORIGIN_NAMES = {
   "21785": "Magic",
   "21783": "Meta",
 };
+// equipment_slot_id -> real slot name, so the paperdoll and gear table can
+// show "Head" instead of "Slot 0". Sourced from the community DCUO
+// Bloguide's own equipment-import code (the same reference used to verify
+// the Combat Rating calculator above), which maps Census's
+// equipment_slot_id this way when pulling a character's gear in. Slots not
+// listed here fall back to a raw "Slot N" label via slotLabel() below.
+// Notably absent: 2 and 8, which lines up with what this site's own data
+// already showed — no character checked so far has ever had an item in
+// either slot, so they're most likely unused/reserved IDs rather than
+// slots this table is just missing. 14 and 16 are also absent here even
+// though real characters do carry items there; that source simply doesn't
+// name them (they're not part of Combat Rating, so it has no reason to),
+// not evidence that they're unused like 2 and 8 are.
+const ITEM_SLOT_NAMES = {
+  "0": "Head",
+  "1": "Neck",
+  "3": "Shoulders",
+  "4": "Back",
+  "5": "Hands",
+  "6": "Waist",
+  "7": "Feet",
+  "9": "Face",
+  "10": "Chest",
+  "11": "Legs",
+  "12": "Ring 1",
+  "13": "Ring 2",
+  "15": "Trinket",
+  "17": "Weapon",
+  "18": "Trinket 1",
+  "19": "Trinket 2",
+  "20": "Trinket 3",
+  "21": "Trinket 4",
+};
+function slotLabel(slotId) {
+  return ITEM_SLOT_NAMES[slotId] || `Slot ${slotId}`;
+}
 
 // ---------------------------------------------------------------------
 // Low-level Census fetch with retry/backoff on 429 / transient errors
@@ -1026,7 +1110,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
 
   const itemRows = items.map(it => `
     <tr>
-      <td>${esc(it.equipment_slot_id)}</td>
+      <td>${esc(slotLabel(it.equipment_slot_id))} <span class="td-slot-id">(${esc(it.equipment_slot_id)})</span></td>
       <td>${esc(it.item_id)}</td>
       <td>${it.is_bound === "true" ? "Yes" : "No"}</td>
       <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "None"}</td>
@@ -1035,19 +1119,20 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
 
   // Paperdoll — slot 0-7 flank the left, 8-15 flank the right, fixed at
   // that size so the two columns stay a predictable height next to the
-  // silhouette instead of stretching it. Which slot is which body part
-  // isn't mapped yet, so this is just even spacing for now, not
-  // anatomically placed.
+  // silhouette instead of stretching it. Each chip's label now comes from
+  // slotLabel() (Head, Chest, Legs, etc. — see ITEM_SLOT_NAMES above)
+  // rather than a raw slot number; the fixed left/right grouping itself is
+  // still just even spacing, not an anatomical paperdoll layout.
   //
-  // Not every equipped item lives in that 0-15 range — weapon/offhand/
-  // trinket/artifact/stat-mod slots (24-27, per what's been confirmed so
-  // far) use higher slot IDs that aren't mapped yet. Those still show up
-  // in the "All equipped items" table below. Rather than appending them
-  // to the flanking columns (which is what made the paperdoll balloon and
-  // stretch when a character had gear in those slots), they get their own
-  // small expandable list right under the paperdoll — collapsed by
-  // default, same pattern as the equipped-items table — so nothing is
-  // silently missing from view without the fixed layout blowing up.
+  // Not every equipped item lives in that 0-15 range — weapon (17),
+  // trinket (18-21), and further artifact/stat-mod slots beyond that use
+  // higher slot IDs. Those still show up in the "All equipped items" table
+  // below. Rather than appending them to the flanking columns (which is
+  // what made the paperdoll balloon and stretch when a character had gear
+  // in those slots), they get their own small expandable list right under
+  // the paperdoll — collapsed by default, same pattern as the
+  // equipped-items table — so nothing is silently missing from view
+  // without the fixed layout blowing up.
   //
   // Slots 2 and 8 specifically are not a display bug: real Census data for
   // every character checked so far (including this one) simply has no
@@ -1065,7 +1150,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
     return `<div class="td-slot-chip">
-      <span class="n">Slot ${slotId}</span>
+      <span class="n">${esc(slotLabel(String(slotId)))}</span>
       <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
     </div>`;
   };
@@ -1199,11 +1284,11 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
         </div>
 
         <div class="td-kv">
-          ${kv("Power Source", POWER_SOURCE_NAMES[c.power_source_id] || c.power_source_id)}
+          ${kv("Weapon", WEAPON_NAMES[c.power_source_id] || c.power_source_id)}
           ${kv("Gender", GENDER_NAMES[c.gender_id] || c.gender_id)}
           ${kv("Origin", ORIGIN_NAMES[c.origin_id] || c.origin_id)}
           ${kv("Title", c.title_id)}
-          ${kv("Personality", c.personality_id)}
+          ${kv("Personality", PERSONALITY_NAMES[c.personality_id] || c.personality_id)}
           ${kv("Region", c.region_id)}
         </div>
       </div>
@@ -1258,7 +1343,7 @@ function buildPaperdollHtml(items) {
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
     return `<div class="td-slot-chip">
-      <span class="n">Slot ${slotId}</span>
+      <span class="n">${esc(slotLabel(String(slotId)))}</span>
       <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
     </div>`;
   };
@@ -1285,7 +1370,7 @@ function buildPaperdollHtml(items) {
 function buildItemRowsHtml(items) {
   return items.map(it => `
     <tr>
-      <td>${esc(it.equipment_slot_id)}</td>
+      <td>${esc(slotLabel(it.equipment_slot_id))} <span class="td-slot-id">(${esc(it.equipment_slot_id)})</span></td>
       <td>${esc(it.item_id)}</td>
       <td>${it.is_bound === "true" ? "Yes" : "No"}</td>
       <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "None"}</td>
