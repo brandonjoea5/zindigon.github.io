@@ -179,6 +179,9 @@ const compareMatchListB = document.getElementById("compareMatchListB");
 const compareSelectedA = document.getElementById("compareSelectedA");
 const compareSelectedB = document.getElementById("compareSelectedB");
 const compareGoBtn = document.getElementById("compareGoBtn");
+const modeCrCalcBtn = document.getElementById("modeCrCalcBtn");
+const crCalcForm = document.getElementById("crCalcForm");
+const searchNoticesEl = document.getElementById("searchNotices");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
@@ -235,6 +238,15 @@ const MODES = {
     title: "Compare Characters",
     lede: "Search two characters to compare their stats, gear, and feats side by side.",
   },
+  crcalc: {
+    btn: () => modeCrCalcBtn, form: () => crCalcForm,
+    title: "Combat Rating Calculator",
+    lede: "Estimate your Combat Rating from your equipped item levels, or plan what to upgrade next.",
+    // Doesn't call Census at all, so the "we'll never ask for your
+    // password" / "data comes from Census" notices (which are about
+    // searching) don't apply here.
+    hideNotices: true,
+  },
 };
 function setMode(mode) {
   Object.keys(MODES).forEach(key => {
@@ -246,10 +258,12 @@ function setMode(mode) {
   });
   pageTitleEl.textContent = MODES[mode].title;
   pageLedeEl.textContent = MODES[mode].lede;
+  searchNoticesEl.style.display = MODES[mode].hideNotices ? "none" : "";
 }
 modeCharBtn.addEventListener("click", () => setMode("character"));
 modeLeagueBtn.addEventListener("click", () => setMode("league"));
 modeCompareBtn.addEventListener("click", () => setMode("compare"));
+modeCrCalcBtn.addEventListener("click", () => setMode("crcalc"));
 
 // ---------------------------------------------------------------------
 // View cache + history — lets the browser Back/Forward buttons return to
@@ -1426,6 +1440,108 @@ function renderComparison(dataA, dataB) {
   `;
   resultEl.className = "td-result show";
 }
+
+// ---------------------------------------------------------------------
+// Combat Rating calculator — a standalone tool, no Census calls involved.
+//
+// In DCUO, Combat Rating is the weighted average item level of your 14
+// equipped gear slots — but "weighted" is doing a lot of work there: some
+// slots (weapon, chest, legs) count for noticeably more than others (a
+// ring or trinket). Census doesn't expose the weights or the formula
+// itself anywhere, so these are cross-checked against the community
+// reference calculator at
+// https://dcuobloguide.com/tools/combat-rating-calculator/ — read directly
+// out of that page's own calculator script (each slot's <input> carries
+// its weight as a data-weight attribute, e.g. data-weight="0.12" for the
+// weapon slot), not guessed from what's displayed on the page.
+//
+// The 14 weights below sum to 1.15, not 1 — that's not a bug. Combat
+// Rating is defined as 115% of the weighted item level, and that 115% is
+// already baked into the per-slot weights rather than applied as a
+// separate multiplier afterward. So the formula is simply:
+//   CR = sum(itemLevel_i * weight_i) across all 14 slots
+// with no additional step.
+const CR_SLOTS = [
+  { key: "head", label: "Head", weight: 0.11 },
+  { key: "face", label: "Face", weight: 0.06 },
+  { key: "neck", label: "Neck", weight: 0.06 },
+  { key: "shoulders", label: "Shoulders", weight: 0.09 },
+  { key: "chest", label: "Chest", weight: 0.12 },
+  { key: "back", label: "Back (Cape)", weight: 0.08 },
+  { key: "hands", label: "Hands", weight: 0.07 },
+  { key: "waist", label: "Waist (Belt)", weight: 0.07 },
+  { key: "legs", label: "Legs", weight: 0.12 },
+  { key: "feet", label: "Feet (Boots)", weight: 0.07 },
+  { key: "ring1", label: "Ring 1", weight: 0.06 },
+  { key: "ring2", label: "Ring 2", weight: 0.06 },
+  { key: "trinket", label: "Trinket", weight: 0.06 },
+  { key: "weapon", label: "Weapon", weight: 0.12 },
+];
+
+function buildCrCalcHtml() {
+  const slotsHtml = CR_SLOTS.map(s => `
+    <div class="td-cr-slot">
+      <label for="cr-${s.key}">
+        <span class="td-cr-slot-name">${esc(s.label)}</span>
+        <span class="td-cr-slot-weight">${Math.round(s.weight * 100)}%</span>
+      </label>
+      <input type="number" inputmode="numeric" min="0" step="1" id="cr-${s.key}" class="input td-cr-input" placeholder="0" />
+    </div>
+  `).join("");
+
+  crCalcForm.innerHTML = `
+    <div class="td-cr-fillall">
+      <label for="cr-fillall">Set every slot to</label>
+      <input type="number" inputmode="numeric" min="0" step="1" id="cr-fillall" class="input" placeholder="e.g. 400" />
+    </div>
+    <p class="td-roster-note" style="margin-top:8px;">Type an item level above and every slot below fills in with it as you type — then adjust any slots that are different before reading your total.</p>
+
+    <div class="td-cr-grid">${slotsHtml}</div>
+
+    <div class="td-hero-stats" style="grid-template-columns:1fr; margin-top:24px;">
+      <div class="td-hero-stat">
+        <div class="v" id="cr-total">0.00</div>
+        <div class="k">Estimated Combat Rating</div>
+      </div>
+    </div>
+
+    <p class="td-roster-note" style="margin-top:14px;">
+      Some slots count toward Combat Rating more than others — weapon, chest, and legs carry the most weight, rings and trinket the least — which is why maxing out one slot won't move your CR as much as a lower item level spread evenly across all 14. This is an estimate for planning upgrades; your character's actual Combat Rating (visible from the Character tab) is the source of truth.
+    </p>
+  `;
+}
+
+function initCrCalc() {
+  buildCrCalcHtml();
+
+  function recompute() {
+    let total = 0;
+    let anyInvalid = false;
+    CR_SLOTS.forEach(s => {
+      const raw = document.getElementById(`cr-${s.key}`).value.trim();
+      if (raw === "") return; // an empty slot contributes 0, same as the reference calculator
+      const n = Number(raw);
+      if (Number.isNaN(n)) { anyInvalid = true; return; }
+      total += n * s.weight;
+    });
+    document.getElementById("cr-total").textContent = anyInvalid ? "—" : total.toFixed(2);
+  }
+
+  CR_SLOTS.forEach(s => {
+    document.getElementById(`cr-${s.key}`).addEventListener("input", recompute);
+  });
+
+  // Live-fills every slot as you type, rather than waiting for a separate
+  // "Apply" click — matches the reference calculator's behavior, and is
+  // the fast path for the common case where most of a character's gear is
+  // the same item level.
+  document.getElementById("cr-fillall").addEventListener("input", (e) => {
+    const val = e.target.value;
+    CR_SLOTS.forEach(s => { document.getElementById(`cr-${s.key}`).value = val; });
+    recompute();
+  });
+}
+initCrCalc();
 
 // ---------------------------------------------------------------------
 // Wire up UI

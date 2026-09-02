@@ -670,3 +670,62 @@ body.toondata::before {
   padding-left: 18px;
 }
 .td-limitations li { margin-bottom: 6px; }
+
+/* Combat Rating calculator — a standalone tool (no search involved), so it
+   sits in the same spot the other three modes' forms occupy, matching
+   their spacing and card language rather than introducing a new one. */
+.td-cr-calc { margin-top: 20px; }
+
+.td-cr-fillall {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r);
+  padding: 14px 16px;
+}
+.td-cr-fillall label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  white-space: nowrap;
+}
+.td-cr-fillall .input { max-width: 140px; }
+
+.td-cr-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 560px) {
+  .td-cr-grid { grid-template-columns: 1fr; }
+}
+.td-cr-slot {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+}
+.td-cr-slot label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.td-cr-slot-name {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--fg-soft);
+}
+.td-cr-slot-weight {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+}
+.td-cr-input { width: 100%; }

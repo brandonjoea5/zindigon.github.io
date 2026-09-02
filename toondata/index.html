@@ -6,7 +6,7 @@
 <title>ToonData | Zindigon</title>
 <meta name="description" content="Look up your DC Universe Online character's stats, gear, and feats." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="toondata.css?v=12" />
+<link rel="stylesheet" href="toondata.css?v=13" />
 </head>
 <body class="toondata">
 
@@ -50,6 +50,7 @@
       <button type="button" class="td-mode-tab active" id="modeCharBtn" role="tab" aria-selected="true">Character</button>
       <button type="button" class="td-mode-tab" id="modeLeagueBtn" role="tab" aria-selected="false">League</button>
       <button type="button" class="td-mode-tab" id="modeCompareBtn" role="tab" aria-selected="false">Compare</button>
+      <button type="button" class="td-mode-tab" id="modeCrCalcBtn" role="tab" aria-selected="false">CR Calculator</button>
     </div>
 
     <div class="td-lookup-form" id="charSearchForm">
@@ -82,12 +83,20 @@
       <button id="compareGoBtn" class="btn btn-primary" disabled>Compare</button>
     </div>
 
-    <div class="notice" style="margin-top:16px;">
-      <span>Search using public character or league names only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
-    </div>
+    <!-- Combat Rating calculator — a standalone tool with no Census lookups,
+         so it doesn't need the search-related notices below. Its contents
+         are built by initCrCalc() in app.js rather than written out here,
+         since the 14 slot rows are generated from the CR_SLOTS table. -->
+    <div class="td-cr-calc" id="crCalcForm" style="display:none;"></div>
 
-    <div class="notice" style="margin-top:10px;">
-      <span>Character and league information comes straight from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData can't update or correct information Daybreak maintains.</span>
+    <div id="searchNotices">
+      <div class="notice" style="margin-top:16px;">
+        <span>Search using public character or league names only. ToonData will never ask for your Daybreak, PlayStation, Xbox, Nintendo, or Steam password.</span>
+      </div>
+
+      <div class="notice" style="margin-top:10px;">
+        <span>Character and league information comes straight from Daybreak's public Census API and may be delayed, incomplete, or inaccurate. ToonData can't update or correct information Daybreak maintains.</span>
+      </div>
     </div>
 
     <div id="status" class="status-line"></div>
@@ -130,6 +139,6 @@
 </footer>
 
 <script src="https://zindigon.com/assets/site.js"></script>
-<script src="app.js?v=23"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>
