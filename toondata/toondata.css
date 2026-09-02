@@ -622,6 +622,19 @@ body.toondata::before {
 .td-compare-stats-table td.td-stat-better { color: var(--accent); }
 .td-compare-stats-table tr:last-child td { border-bottom: none; }
 
+/* Loading skeleton — used wherever a piece of the page (feats, league) is
+   still being fetched in the background after the rest has already
+   rendered. A slow, subtle opacity pulse reads as "still working" without
+   being distracting. */
+.td-loading {
+  color: var(--fg-faint) !important;
+  animation: td-pulse 1.4s ease-in-out infinite;
+}
+@keyframes td-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
+}
+
 .td-feat-summary { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
 .td-feat-summary .kv-single .k {
   font-family: var(--mono); font-size: 10px; letter-spacing: 0.10em;

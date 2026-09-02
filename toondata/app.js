@@ -180,6 +180,10 @@ function clearMatches() {
 function clearResult() {
   resultEl.className = "td-result";
   resultEl.innerHTML = "";
+  // Invalidates any in-flight background feat/league load from a
+  // previously-rendered character view (see loadFeatsAndLeague) so it
+  // can't repaint over whatever gets rendered next.
+  delete resultEl.dataset.activeCharacterId;
 }
 
 function esc(str) {
@@ -369,31 +373,123 @@ async function showCharacter(character, opts) {
     const equippedItems = (itemsJson.characters_item_list || [])
       .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
 
-    setStatus("Fetching feats...");
-    const completedFeats = await fetchAllPages("characters_completed_feat", { character_id: characterId });
-    const activeFeats = await fetchAllPages("characters_active_feat", { character_id: characterId });
-
-    setStatus("Fetching league...");
-    let league = null;
-    try {
-      const rosterJson = await censusGet("guild_roster", { character_id: characterId });
-      const membership = (rosterJson.guild_roster_list || [])[0];
-      if (membership) {
-        const guildJson = await censusGet("guild", { guild_id: membership.guild_id });
-        const guildInfo = (guildJson.guild_list || [])[0];
-        league = { guild_id: membership.guild_id, rank: membership.rank, name: guildInfo ? guildInfo.name : null };
-      }
-    } catch (e) {
-      league = null;
-    }
-
+    // Identity, stats, and gear are the fast part — one request, already in
+    // hand. Feats and league are the slow part: a character with a lot of
+    // feats can mean several sequential paginated requests, and visitors
+    // shouldn't have to stare at a blank page while those finish. So the
+    // page renders right now with what's already loaded, and feats/league
+    // stream in afterward, updating this same view in place once ready —
+    // see loadFeatsAndLeague below.
     clearStatus();
-    renderCharacter(character, equippedItems, completedFeats, activeFeats, league);
-    cacheView(cacheKey, { type: "character", character, equippedItems, completedFeats, activeFeats, league });
+    loadFeatsAndLeague(character, equippedItems, characterId, cacheKey);
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
   }
+}
+
+// Looks up a character's league membership by character_id. Returns null
+// both when the character isn't in a league and when the lookup itself
+// fails — a missing league tag isn't worth surfacing as an error the way a
+// missing feat list is (feats silently reading as empty was the confirmed
+// cause of the Compare feature's earlier data-corruption bug; a league tag
+// silently reading "None" carries none of that risk).
+async function fetchLeagueInfo(characterId) {
+  try {
+    const rosterJson = await censusGet("guild_roster", { character_id: characterId });
+    const membership = (rosterJson.guild_roster_list || [])[0];
+    if (!membership) return null;
+    const guildJson = await censusGet("guild", { guild_id: membership.guild_id });
+    const guildInfo = (guildJson.guild_list || [])[0];
+    return { guild_id: membership.guild_id, rank: membership.rank, name: guildInfo ? guildInfo.name : null };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Fetches feats and league in the background after showCharacter has
+// already rendered identity/stats/gear, and repaints just that view once
+// each piece is ready — independently, so a slow or failed feats load
+// doesn't hold up a league tag that resolved fine, or vice versa. Kept as
+// its own function (rather than inlined in showCharacter) so the Retry
+// button on a failed feats load — wired up in renderCharacter — can call
+// straight back into it.
+function loadFeatsAndLeague(character, equippedItems, characterId, cacheKey) {
+  const characterIdStr = String(characterId);
+  // completedFeats stays null until that fetch resolves; league stays
+  // undefined until its fetch resolves (null is itself a valid resolved
+  // "no league" answer, so it has to be distinguishable from "not fetched
+  // yet" — undefined is that marker).
+  const state = { completedFeats: null, activeFeats: null, featsError: false, league: undefined };
+
+  // Claims resultEl for this characterId right away, before the first
+  // repaint() call below — otherwise that very first call would find
+  // resultEl still marked with whatever the previous view left behind (or
+  // nothing, right after clearResult()) and immediately think itself stale.
+  // renderCharacter re-sets this on every call anyway; this just covers the
+  // gap before it's run for the first time.
+  resultEl.dataset.activeCharacterId = characterIdStr;
+
+  // If the visitor has navigated to a different view since this load
+  // started (a new search, Back/Forward, a different character), resultEl
+  // no longer belongs to this characterId — clearResult() (called by every
+  // navigation path) deletes this dataset value, and renderCharacter resets
+  // it to whichever character it just rendered. Either way, a mismatch here
+  // means this load is stale and shouldn't touch the DOM anymore.
+  function isStale() { return resultEl.dataset.activeCharacterId !== characterIdStr; }
+
+  function repaint() {
+    if (isStale()) return;
+    const featsLoading = state.completedFeats === null && !state.featsError;
+    const leagueLoading = state.league === undefined;
+    renderCharacter(
+      character, equippedItems,
+      state.completedFeats || [], state.activeFeats || [],
+      state.league || null,
+      {
+        featsLoading, featsError: state.featsError, leagueLoading,
+        onRetryFeats: () => {
+          state.featsError = false;
+          state.completedFeats = null;
+          state.activeFeats = null;
+          repaint();
+          loadFeats();
+        },
+      }
+    );
+    if (!featsLoading && !state.featsError && !leagueLoading) {
+      cacheView(cacheKey, {
+        type: "character", character, equippedItems,
+        completedFeats: state.completedFeats, activeFeats: state.activeFeats, league: state.league,
+      });
+    }
+  }
+
+  function loadFeats() {
+    Promise.all([
+      fetchAllPages("characters_completed_feat", { character_id: characterId }),
+      fetchAllPages("characters_active_feat", { character_id: characterId }),
+    ]).then(([completed, active]) => {
+      state.completedFeats = completed;
+      state.activeFeats = active;
+      state.featsError = false;
+      repaint();
+    }).catch(() => {
+      state.featsError = true;
+      repaint();
+    });
+  }
+
+  function loadLeague() {
+    fetchLeagueInfo(characterId).then(league => {
+      state.league = league;
+      repaint();
+    });
+  }
+
+  repaint(); // paints the loading skeleton immediately
+  loadFeats();
+  loadLeague();
 }
 
 // Renders a character we only have the character_id for (a league roster
@@ -442,21 +538,16 @@ async function fetchCharacterFullData(characterId) {
   const equippedItems = (itemsJson.characters_item_list || [])
     .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
 
-  const completedFeats = await fetchAllPages("characters_completed_feat", { character_id: characterId });
-  const activeFeats = await fetchAllPages("characters_active_feat", { character_id: characterId });
-
-  let league = null;
-  try {
-    const rosterJson = await censusGet("guild_roster", { character_id: characterId });
-    const membership = (rosterJson.guild_roster_list || [])[0];
-    if (membership) {
-      const guildJson = await censusGet("guild", { guild_id: membership.guild_id });
-      const guildInfo = (guildJson.guild_list || [])[0];
-      league = { guild_id: membership.guild_id, rank: membership.rank, name: guildInfo ? guildInfo.name : null };
-    }
-  } catch (e) {
-    league = null;
-  }
+  // Completed/active feats and league are independent requests, so they run
+  // concurrently rather than one after another — same reasoning as the
+  // background load in loadFeatsAndLeague above, just awaited here instead
+  // of streamed in, since the compare flow renders both characters at once
+  // rather than progressively.
+  const [completedFeats, activeFeats, league] = await Promise.all([
+    fetchAllPages("characters_completed_feat", { character_id: characterId }),
+    fetchAllPages("characters_active_feat", { character_id: characterId }),
+    fetchLeagueInfo(characterId),
+  ]);
 
   return { character, equippedItems, completedFeats, activeFeats, league };
 }
@@ -704,6 +795,10 @@ async function loadComparison(idA, idB, opts) {
 const ROSTER_SORT_KEYS = { name: true, cr: true, sp: true };
 
 function renderRoster(guildId, guildName, members, byId, resumeSort) {
+  // Invalidates any in-flight background feat/league load from a
+  // previously-rendered character view (see loadFeatsAndLeague) so it
+  // can't repaint over this roster.
+  delete resultEl.dataset.activeCharacterId;
   // dir: 1 = ascending, -1 = descending. resumeSort carries the sort the
   // user had chosen when this same roster was last rendered (Back, or
   // searching the same league again within the cache window), so it isn't
@@ -882,7 +977,17 @@ function renderRoster(guildId, guildName, members, byId, resumeSort) {
 // ---------------------------------------------------------------------
 // Character render
 // ---------------------------------------------------------------------
-function renderCharacter(c, items, completedFeats, activeFeats, league) {
+function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
+  opts = opts || {};
+  const featsLoading = !!opts.featsLoading;
+  const featsError = !!opts.featsError;
+  const leagueLoading = !!opts.leagueLoading;
+  // Marks this as the character currently on screen, so a background
+  // feat/league load in flight for a DIFFERENT character (or for a view the
+  // visitor has since navigated away from) knows not to repaint over
+  // whatever just got rendered — see loadFeatsAndLeague.
+  resultEl.dataset.activeCharacterId = String(c.character_id);
+
   const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
 
@@ -944,8 +1049,8 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
   const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
 
-  const leagueName = league && league.name ? esc(league.name) : "None";
-  const leagueLink = league && league.guild_id
+  const leagueName = leagueLoading ? "Loading…" : (league && league.name ? esc(league.name) : "None");
+  const leagueLink = !leagueLoading && league && league.guild_id
     ? `<a href="#league/${esc(league.guild_id)}" class="td-league-link" data-guild-id="${esc(league.guild_id)}" data-guild-name="${leagueName}">${leagueName}</a>`
     : leagueName;
 
@@ -957,13 +1062,44 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const movementLabel = MOVEMENT_MODE_NAMES[c.movement_mode_id] || `#${c.movement_mode_id}`;
   const worldLabel = WORLD_NAMES[c.world_id] || `#${c.world_id}`;
 
+  // Feats are the slowest thing this page loads (a well-feated character
+  // can mean several sequential paginated requests), so this section has
+  // three states instead of just one: a loading skeleton shown the instant
+  // the rest of the page renders, an error state with a Retry button if the
+  // background fetch fails, and the real counts/lists once it succeeds. See
+  // loadFeatsAndLeague, which drives which of these gets passed in via opts.
+  const featsSectionHtml = featsLoading ? `
+    <div class="td-feat-summary">
+      <div class="kv-single"><div class="k">Completed</div><div class="v td-loading">···</div></div>
+      <div class="kv-single"><div class="k">In Progress</div><div class="v td-loading">···</div></div>
+    </div>
+    <p class="td-roster-note">Loading feat data — characters with a lot of feats can take a few seconds.</p>
+  ` : featsError ? `
+    <div class="notice">
+      <span>Feat data couldn't be loaded. <button type="button" id="retryFeatsBtn" class="btn btn-secondary" style="margin-left:8px;">Retry</button></span>
+    </div>
+  ` : `
+    <div class="td-feat-summary">
+      <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}</div></div>
+      <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
+    </div>
+    <details>
+      <summary>Show completed feat IDs (${completedFeats.length})</summary>
+      <div class="td-feat-ids">${featIdSpans(completedFeats)}</div>
+    </details>
+    <details style="margin-top:10px;">
+      <summary>Show in-progress feat IDs (${activeFeats.length})</summary>
+      <div class="td-feat-ids">${featIdSpans(activeFeats)}</div>
+    </details>
+  `;
+
   resultEl.innerHTML = `
     <div class="td-identity">
       <div>
         <div class="td-name">${esc(c.name)}</div>
         <div class="td-identity-tags">
           ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
-          <span class="td-tag">League <strong>${leagueLink}</strong></span>
+          <span class="td-tag">League <strong${leagueLoading ? ' class="td-loading"' : ""}>${leagueLink}</strong></span>
           <span class="td-tag" title="World ID ${esc(c.world_id)}">Server <strong>${esc(worldLabel)}</strong></span>
         </div>
       </div>
@@ -1042,18 +1178,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
     <div class="card" style="margin-top:32px;">
       <p class="td-section-label">Feats</p>
-      <div class="td-feat-summary">
-        <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}</div></div>
-        <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
-      </div>
-      <details>
-        <summary>Show completed feat IDs (${completedFeats.length})</summary>
-        <div class="td-feat-ids">${featIdSpans(completedFeats)}</div>
-      </details>
-      <details style="margin-top:10px;">
-        <summary>Show in-progress feat IDs (${activeFeats.length})</summary>
-        <div class="td-feat-ids">${featIdSpans(activeFeats)}</div>
-      </details>
+      ${featsSectionHtml}
     </div>
 
     <div class="card" style="margin-top:20px;">
@@ -1073,6 +1198,11 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
       e.preventDefault();
       loadLeagueRoster(leagueLinkEl.dataset.guildId, leagueLinkEl.dataset.guildName);
     });
+  }
+
+  const retryFeatsBtn = resultEl.querySelector("#retryFeatsBtn");
+  if (retryFeatsBtn && opts.onRetryFeats) {
+    retryFeatsBtn.addEventListener("click", opts.onRetryFeats);
   }
 }
 
@@ -1131,6 +1261,10 @@ function buildItemRowsHtml(items) {
 }
 
 function renderComparison(dataA, dataB) {
+  // Invalidates any in-flight background feat/league load from a
+  // previously-rendered character view (see loadFeatsAndLeague) so it
+  // can't repaint over this comparison.
+  delete resultEl.dataset.activeCharacterId;
   const { character: a, equippedItems: itemsA, completedFeats: completedA, league: leagueA } = dataA;
   const { character: b, equippedItems: itemsB, completedFeats: completedB, league: leagueB } = dataB;
 
