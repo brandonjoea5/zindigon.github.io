@@ -321,7 +321,16 @@ function fmt(n) {
 // character has, never the whole recovered dataset in one file.
 function featChip(f) {
   const id = esc(f.feat_id);
-  if (f.feat_name) return `<span class="td-feat-named" title="Feat ID ${id}">${esc(f.feat_name)}</span>`;
+  if (f.feat_name) {
+    // Category is a smaller, separately-matched slice of the recovered
+    // data than the name itself (see FEAT_CATEGORIES in the Worker), so a
+    // named feat doesn't always have one — falls back to just the ID.
+    const category = f.feat_category
+      ? esc(f.feat_subcategory ? `${f.feat_category} › ${f.feat_subcategory}` : f.feat_category)
+      : null;
+    const title = category ? `Feat ID ${id} · ${category}` : `Feat ID ${id}`;
+    return `<span class="td-feat-named" title="${title}">${esc(f.feat_name)}</span>`;
+  }
   return `<span title="Name not recovered yet">#${id}</span>`;
 }
 
