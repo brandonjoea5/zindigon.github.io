@@ -509,6 +509,7 @@ body.toondata::before {
 }
 .td-gear-table td { color: var(--fg-soft); font-family: var(--mono); font-size: 12px; }
 .td-gear-table tr:last-child td { border-bottom: none; }
+.td-slot-id { color: var(--fg-faint); }
 
 /* League roster — same table language as the gear table, but rows are
    clickable through to that member's own character view. */
@@ -729,3 +730,56 @@ body.toondata::before {
   color: var(--fg-faint);
 }
 .td-cr-input { width: 100%; }
+
+/* Skill Points leaderboard + "still cached" sidebar. The sidebar is
+   deliberately the quiet element here — smaller type, muted color, no
+   card border — so the leaderboard table stays the visual focus and the
+   recent list reads as a minor convenience next to it, not a competing
+   feature. */
+.td-leaderboard { margin-top: 20px; }
+.td-lb-layout {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .td-lb-layout { grid-template-columns: 1fr; }
+}
+.td-lb-recent {
+  padding-top: 4px;
+}
+.td-lb-recent-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  margin-bottom: 8px;
+}
+.td-lb-recent-empty {
+  font-size: 12px;
+  color: var(--fg-faint);
+}
+.td-lb-recent-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 12px;
+}
+.td-lb-recent-item:last-child { border-bottom: none; }
+.td-lb-recent-item:hover, .td-lb-recent-item:focus-visible { color: var(--fg-soft); outline: none; }
+.td-lb-recent-name {
+  color: var(--fg-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.td-lb-recent-sp {
+  color: var(--fg-faint);
+  font-family: var(--mono);
+  white-space: nowrap;
+}

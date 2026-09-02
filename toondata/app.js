@@ -266,6 +266,8 @@ const compareGoBtn = document.getElementById("compareGoBtn");
 const modeCrCalcBtn = document.getElementById("modeCrCalcBtn");
 const crCalcForm = document.getElementById("crCalcForm");
 const searchNoticesEl = document.getElementById("searchNotices");
+const modeLeaderboardBtn = document.getElementById("modeLeaderboardBtn");
+const leaderboardForm = document.getElementById("leaderboardForm");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
@@ -331,6 +333,13 @@ const MODES = {
     // searching) don't apply here.
     hideNotices: true,
   },
+  leaderboard: {
+    btn: () => modeLeaderboardBtn, form: () => leaderboardForm,
+    title: "Skill Points Leaderboard",
+    lede: "The highest Skill Points among characters that have been looked up here. Census doesn't expose a way to rank every character in the game, so this can only ever reflect who's actually been searched — not a true server-wide #1.",
+    // No search box on this tab either.
+    hideNotices: true,
+  },
 };
 function setMode(mode) {
   Object.keys(MODES).forEach(key => {
@@ -348,6 +357,10 @@ modeCharBtn.addEventListener("click", () => setMode("character"));
 modeLeagueBtn.addEventListener("click", () => setMode("league"));
 modeCompareBtn.addEventListener("click", () => setMode("compare"));
 modeCrCalcBtn.addEventListener("click", () => setMode("crcalc"));
+modeLeaderboardBtn.addEventListener("click", () => {
+  setMode("leaderboard");
+  loadLeaderboardData();
+});
 
 // ---------------------------------------------------------------------
 // View cache + history — lets the browser Back/Forward buttons return to
@@ -1627,6 +1640,115 @@ function initCrCalc() {
   });
 }
 initCrCalc();
+
+// ---------------------------------------------------------------------
+// Skill Points leaderboard + "still cached" recently-looked-up list
+//
+// Both come from the Worker's own /leaderboard and /recent endpoints
+// (not real Census collections — see the Worker source). The leaderboard
+// can only ever reflect characters that have actually been searched here,
+// since Census has no "rank everyone" endpoint — that's spelled out in
+// the tab's lede above rather than left implicit.
+//
+// The recently-looked-up list intentionally does NOT show "last N people
+// searched" — it shows only whichever of those are still an actual cache
+// hit right now, verified live by the Worker at request time. Clicking
+// one is guaranteed to load instantly; a lookup that's since fallen out
+// of cache just quietly isn't in the list anymore rather than sitting
+// there as a link that turns out to reload from scratch anyway.
+// ---------------------------------------------------------------------
+function buildLeaderboardSkeleton() {
+  leaderboardForm.innerHTML = `
+    <div class="td-lb-layout">
+      <div class="card td-lb-main">
+        <p class="td-section-label">Skill Points Leaderboard</p>
+        <div id="lbTableWrap"><div class="td-loading" style="height:240px;"></div></div>
+      </div>
+      <aside class="td-lb-recent">
+        <p class="td-lb-recent-title">Still cached — instant load</p>
+        <div id="lbRecentWrap"><span class="td-lb-recent-empty">Loading…</span></div>
+      </aside>
+    </div>
+  `;
+}
+
+function attachLoadOnClick(wrap, selector) {
+  wrap.querySelectorAll(selector).forEach(el => {
+    const go = () => loadCharacterById(el.dataset.characterId);
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  });
+}
+
+function renderLeaderboardTable(entries, wrap) {
+  if (entries.length === 0) {
+    wrap.innerHTML = `<p class="td-roster-note">Nobody's been looked up yet — search a character to be the first one on the board.</p>`;
+    return;
+  }
+  const rows = entries.map((e, i) => `
+    <tr class="td-roster-row" data-character-id="${esc(e.character_id)}" tabindex="0">
+      <td>${i + 1}</td>
+      <td>${esc(e.name)}</td>
+      <td>${esc(WORLD_NAMES[e.world_id] || `World #${e.world_id}`)}</td>
+      <td>${fmt(e.skill_points)}</td>
+    </tr>
+  `).join("");
+  wrap.innerHTML = `
+    <table class="td-roster-table">
+      <thead><tr><th>#</th><th>Character</th><th>Server</th><th>Skill Points</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  attachLoadOnClick(wrap, ".td-roster-row");
+}
+
+function renderRecentList(entries, wrap) {
+  if (entries.length === 0) {
+    wrap.innerHTML = `<span class="td-lb-recent-empty">Nothing cached right now.</span>`;
+    return;
+  }
+  wrap.innerHTML = entries.map(e => `
+    <div class="td-lb-recent-item" data-character-id="${esc(e.character_id)}" tabindex="0">
+      <span class="td-lb-recent-name">${esc(e.name)}</span>
+      <span class="td-lb-recent-sp">${fmt(e.skill_points)} SP</span>
+    </div>
+  `).join("");
+  attachLoadOnClick(wrap, ".td-lb-recent-item");
+}
+
+// Bumped on every call so a slow, superseded fetch (e.g. the tab got
+// clicked twice in a row) can't win a race and repaint over a newer one.
+let lbLoadToken = 0;
+async function loadLeaderboardData() {
+  const token = ++lbLoadToken;
+  const tableWrap = document.getElementById("lbTableWrap");
+  const recentWrap = document.getElementById("lbRecentWrap");
+  tableWrap.innerHTML = `<div class="td-loading" style="height:240px;"></div>`;
+  recentWrap.innerHTML = `<span class="td-lb-recent-empty">Loading…</span>`;
+
+  const [lbResult, recentResult] = await Promise.allSettled([
+    fetch(`${WORKER_BASE}/leaderboard?stat=skill_points&limit=25`).then(r => r.json()),
+    fetch(`${WORKER_BASE}/recent?limit=8`).then(r => r.json()),
+  ]);
+  if (token !== lbLoadToken) return; // a newer load has since taken over
+
+  if (lbResult.status === "fulfilled" && Array.isArray(lbResult.value.entries)) {
+    renderLeaderboardTable(lbResult.value.entries, tableWrap);
+  } else {
+    tableWrap.innerHTML = `<p class="td-roster-note">Couldn't load the leaderboard right now. Please try again in a minute.</p>`;
+  }
+
+  if (recentResult.status === "fulfilled" && Array.isArray(recentResult.value.entries)) {
+    renderRecentList(recentResult.value.entries, recentWrap);
+  } else {
+    recentWrap.innerHTML = `<span class="td-lb-recent-empty">Unavailable right now.</span>`;
+  }
+}
+
+function initLeaderboard() {
+  buildLeaderboardSkeleton();
+}
+initLeaderboard();
 
 // ---------------------------------------------------------------------
 // Wire up UI

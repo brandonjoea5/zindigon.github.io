@@ -6,7 +6,7 @@
 <title>ToonData | Zindigon</title>
 <meta name="description" content="Look up your DC Universe Online character's stats, gear, and feats." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="toondata.css?v=14" />
+<link rel="stylesheet" href="toondata.css?v=15" />
 </head>
 <body class="toondata">
 
@@ -51,6 +51,7 @@
       <button type="button" class="td-mode-tab" id="modeLeagueBtn" role="tab" aria-selected="false">League</button>
       <button type="button" class="td-mode-tab" id="modeCompareBtn" role="tab" aria-selected="false">Compare</button>
       <button type="button" class="td-mode-tab" id="modeCrCalcBtn" role="tab" aria-selected="false">CR Calculator</button>
+      <button type="button" class="td-mode-tab" id="modeLeaderboardBtn" role="tab" aria-selected="false">Leaderboard</button>
     </div>
 
     <div class="td-lookup-form" id="charSearchForm">
@@ -88,6 +89,10 @@
          are built by initCrCalc() in app.js rather than written out here,
          since the 14 slot rows are generated from the CR_SLOTS table. -->
     <div class="td-cr-calc" id="crCalcForm" style="display:none;"></div>
+
+    <!-- Skill Points leaderboard + "still cached" list — also standalone,
+         no Census search box, contents built by JS in loadLeaderboardData(). -->
+    <div class="td-leaderboard" id="leaderboardForm" style="display:none;"></div>
 
     <div id="searchNotices">
       <div class="notice" style="margin-top:16px;">
@@ -139,6 +144,6 @@
 </footer>
 
 <script src="https://zindigon.com/assets/site.js"></script>
-<script src="app.js?v=26"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>
