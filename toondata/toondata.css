@@ -644,6 +644,11 @@ body.toondata::before {
 .td-feat-summary .kv-single .v {
   font-family: var(--serif); font-size: 26px; margin-top: 4px;
 }
+.td-feat-of-total {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--fg-mute);
+}
 
 .td-feat-ids {
   margin-top: 12px;

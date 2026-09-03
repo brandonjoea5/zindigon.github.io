@@ -14,7 +14,21 @@ const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for f
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
 const MAX_RETRIES = 3;
 const ROSTER_LIMIT = 500;      // safety cap on how many members a single league roster fetch returns
-const CHAR_BATCH_SIZE = 40;    // how many character_ids get resolved to names per batched request
+// How many character_ids get resolved to names per batched request. This
+// used to be 40, which sounds reasonable but is silently wrong: verified
+// directly against the live Worker that a character_id=<comma-list> query
+// with more than 6 ids doesn't get filtered at all under our current
+// (casual-use) service ID — Census just ignores the requested ids and
+// hands back the SAME fixed set of ~40 unrelated characters every time,
+// with a normal 200 and a populated character_list, no error field. That's
+// exactly why league rosters were showing "Character #<id>" for nearly
+// every member: byId got filled with 40 random strangers, so real member
+// lookups never matched. 6 is the confirmed-safe batch size (7 already
+// triggers the bad fallback); loadLeagueRoster also validates every
+// returned id is one it actually asked for, and throws the whole batch
+// away rather than trusting it, in case this threshold moves in the
+// future (e.g. if Census's casual-use behavior changes again).
+const CHAR_BATCH_SIZE = 6;
 const VIEW_CACHE_TTL_MS = 5 * 60 * 1000; // how long a character/roster view is reused on Back before refetching
 
 // Census doesn't provide a name lookup for these IDs, so this is a small
@@ -941,13 +955,32 @@ async function loadLeagueRoster(guildId, knownName, opts) {
     // Resolve character_id -> name/level/CR in batches. A batch failing
     // (rate limit, etc.) shouldn't take down the whole roster — those
     // members just fall back to showing their raw ID below.
+    //
+    // Also guards against Census's other, sneakier failure mode here (see
+    // the CHAR_BATCH_SIZE comment above): a multi-id character_id query
+    // that Census can't/won't actually filter doesn't error, it just
+    // returns some unrelated fixed set of characters with a normal 200. A
+    // batch like that would otherwise silently poison byId with the wrong
+    // names for a bunch of unrelated character_ids. So every returned
+    // entry has to be one of the ids this specific batch actually asked
+    // for — if even one isn't, the whole batch is untrustworthy and gets
+    // thrown away rather than partially trusted, since there's no way to
+    // tell which of its entries (if any) are real.
     const byId = {};
     for (let i = 0; i < members.length; i += CHAR_BATCH_SIZE) {
       const batch = members.slice(i, i + CHAR_BATCH_SIZE);
+      const requestedIds = new Set(batch.map(m => m.character_id));
       const idsParam = batch.map(m => m.character_id).join(",");
       try {
         const charJson = await censusGet("character", { character_id: idsParam, "c:limit": CHAR_BATCH_SIZE });
-        (charJson.character_list || []).forEach(c => { byId[c.character_id] = c; });
+        const returned = charJson.character_list || [];
+        const trustworthy = returned.length > 0 && returned.every(c => requestedIds.has(c.character_id));
+        if (trustworthy) {
+          returned.forEach(c => { byId[c.character_id] = c; });
+        }
+        // else: leave this batch unresolved rather than trust data that
+        // doesn't match what was asked for — those members fall back to
+        // showing their raw ID below.
       } catch (e) {
         // leave this batch unresolved rather than aborting the roster
       }
@@ -1390,7 +1423,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
     </div>
   ` : `
     <div class="td-feat-summary">
-      <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}</div></div>
+      <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}${c.max_feats ? ` <span class="td-feat-of-total">/ ${fmt(c.max_feats)}</span>` : ""}</div></div>
       <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
     </div>
 
@@ -1505,6 +1538,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
       <ul class="td-limitations">
         <li>Feat names come from an archived, recovered list, not Census (it stopped providing feat names years ago) — coverage is partial and frozen at mid-2015, so newer feats show as a raw ID (#…) instead of a name.</li>
         <li>The category browser only covers feats that could be matched to a public category listing — a smaller slice than the named feats above, so plenty of real feats (especially Races) still only show up in the raw ID lists below it.</li>
+        <li>The "X / Y" total next to Completed comes straight from Census's own per-character max_feats value, which already appears to account for alignment and other eligibility — not something calculated on this site.</li>
         <li>In-progress feats show only that they've been started, not how close they are to completion.</li>
         <li>Completed feats don't have a completion date attached.</li>
       </ul>
