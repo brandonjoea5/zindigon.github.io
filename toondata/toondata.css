@@ -161,18 +161,23 @@ body.toondata::before {
 
 .td-columns {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
+  /* 60/40 — gear needs the extra room for its own internal paperdoll +
+     detail-panel split (see .td-gear-area below); minmax(0, …) keeps a
+     long-wrapping equipment name or description from stretching this
+     outer grid column past its share. */
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 28px;
   align-items: start;
 }
 @media (max-width: 880px) {
   .td-columns { grid-template-columns: 1fr; }
-  /* On narrow screens, show the stats column (CR, SP, level, health, etc.)
-     before the gear column — the numbers matter more at a glance than the
-     paperdoll when everything is stacked in one line. Source order in the
-     HTML stays gear-first (it's the visually "left" column at desktop
-     width); this just reorders how a grid lays its items out. */
-  .td-columns > div:nth-child(2) { order: -1; }
+  /* Gear stacks above stats on narrow screens (source order, gear is
+     div:nth-child(1)) — the selectable paperdoll is the primary way to
+     drill into an item's info, so it gets the top slot instead of being
+     pushed below CR/SP/health/etc. This used to reorder stats first (back
+     when gear was just a scannable stat-adjacent chip row); the
+     interactive paperdoll+detail-panel redesign is worth surfacing
+     first now, so that override was removed. */
 }
 
 /* Character identity header — full-width, sits above the two-column layout
@@ -539,6 +544,317 @@ body.toondata::before {
 .td-gear-table tr:last-child td { border-bottom: none; }
 .td-slot-id { color: var(--fg-faint); }
 
+/* ---------------------------------------------------------------------
+   Equipped Gear (single-character view only): a selectable paperdoll +
+   a detail panel beside it, replacing the old hover-only chip. See
+   slotButtonHtml/gearDetailHtml/wireGearPanel in app.js. Internally
+   ~55% paperdoll / ~45% detail; the OUTER 60/40 gear/stats split lives
+   on .td-columns above. Compare's own simpler hover-tooltip paperdoll
+   is untouched and still uses .td-paperdoll/.td-slot-chip/.td-gear-table
+   exactly as before — everything below is new, additive classes, not a
+   replacement of what Compare depends on.
+   --------------------------------------------------------------------- */
+.td-gear-area {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.td-paperdoll-wrap { flex: 1 1 55%; min-width: 0; }
+.td-gear-detail {
+  flex: 1 1 45%;
+  min-width: 0;
+  align-self: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-elev);
+  padding: 18px 20px;
+}
+
+/* Below ~700px there isn't room for the paperdoll and the detail panel
+   side by side without either feeling cramped, so the panel drops below
+   the paperdoll (full width) instead of squeezing both — this is
+   independent of the OUTER 880px breakpoint that stacks gear above
+   stats, so a "smaller desktop/tablet" width where gear already has the
+   full page width to itself can still show paperdoll+detail side by
+   side, per spec. */
+@media (max-width: 700px) {
+  .td-gear-area { flex-direction: column; }
+  .td-paperdoll-wrap, .td-gear-detail { flex-basis: auto; width: 100%; }
+}
+
+/* The silhouette + its two flanking slot-button columns. Deliberately its
+   OWN class names (td-gear-paperdoll*, not td-paperdoll*) even though the
+   layout idea echoes Compare's older paperdoll — sharing Compare's actual
+   .td-paperdoll/.td-paperdoll-slots/.td-paperdoll-figure classes would
+   silently couple this redesign to Compare's simpler chip-based paperdoll
+   (a change to one could reflow the other), which the "don't touch
+   Compare" scope for this task rules out. */
+.td-gear-paperdoll {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: stretch;
+  gap: 8px;
+}
+.td-gear-paperdoll-figure {
+  position: relative;
+  border-radius: var(--r);
+  overflow: hidden;
+  /* The silhouette PNG is mostly transparent, so it needs something behind
+     it to actually read as a shape against the page's near-black surface —
+     a soft mint radial glow (matching the hero-stat cards) plus a faint
+     accent border. */
+  background:
+    radial-gradient(75% 75% at 50% 38%, var(--accent-soft) 0%, transparent 72%),
+    var(--bg-elev);
+  border: 1px solid var(--accent-line);
+  min-height: 380px;
+}
+.td-gear-paperdoll-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+.td-gear-paperdoll-slots {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Below ~640px there isn't room to flank the figure with two columns of
+   slot buttons, so the figure moves to the top (shorter, so it doesn't eat
+   the screen) and the two slot columns sit side by side underneath it —
+   each button still spans its own column's full width, so within a
+   column they simply stack vertically. The figure stays visible, it just
+   changes position. Independent of the 700px paperdoll/detail-panel
+   breakpoint above, and of Compare's own (unrelated) 600px reflow. */
+@media (max-width: 640px) {
+  .td-gear-paperdoll {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "figure figure"
+      "left   right";
+    gap: 12px;
+  }
+  .td-gear-paperdoll-figure { grid-area: figure; min-height: 220px; }
+  .td-gear-paperdoll-slots:nth-child(1) { grid-area: left; }
+  .td-gear-paperdoll-slots:nth-child(3) { grid-area: right; }
+}
+
+/* Slot buttons — compact, game-like equipment-slot controls. Icon on
+   top, slot name below it, then either a state dot (identified/
+   unidentified) or the word "Empty" — never a raw item name or ID. */
+.td-slot-btn {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 62px;
+  padding: 8px 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-elev);
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.td-slot-btn:hover { border-color: var(--accent-line); }
+.td-slot-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.td-slot-icon { color: var(--fg-mute); }
+.td-slot-icon svg { width: 18px; height: 18px; display: block; }
+.td-slot-icon svg * { stroke: currentColor; stroke-width: 1.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+.td-slot-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Identified: a small FILLED mint dot. Unidentified: a hollow gray ring —
+   a different shape, not just a different color, so the distinction
+   still reads without relying on color alone. Deliberately not a
+   checkmark, so it's never confused with feat completion elsewhere on
+   the page. */
+.td-slot-state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.4px solid var(--fg-faint);
+  background: none;
+}
+.td-slot-btn.is-identified .td-slot-state-dot { border-color: #4caf7d; background: #4caf7d; }
+.td-slot-btn.is-identified .td-slot-icon,
+.td-slot-btn.is-identified .td-slot-name { color: #8fe0b8; }
+.td-slot-state-text {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.td-slot-btn.is-empty { opacity: 0.62; }
+
+.td-slot-btn.is-selected {
+  border-color: var(--accent);
+  background:
+    radial-gradient(120% 140% at 50% 0%, var(--accent-soft) 0%, transparent 70%),
+    var(--bg-elev);
+  box-shadow: 0 0 0 1px var(--accent-line);
+}
+.td-slot-btn.is-selected .td-slot-icon { color: var(--accent); }
+
+/* Additional Equipment — same slot-button language, wrapped into a
+   collapsed strip so extra trinket/artifact-style slots (or any future
+   slot id) don't crowd the primary 14-slot paperdoll. */
+.td-additional-gear { margin-top: 16px; }
+.td-additional-gear-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.td-additional-gear-grid .td-slot-btn { min-height: 58px; }
+
+/* Detail panel content */
+.td-gear-detail-slot {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin-bottom: 6px;
+}
+.td-gear-detail-title, .td-gear-detail-name {
+  font-family: var(--serif);
+  font-size: 19px;
+  color: var(--fg);
+  margin: 0 0 6px;
+  overflow-wrap: break-word;
+}
+.td-gear-detail-title-unidentified { color: var(--fg-soft); }
+.td-gear-elite-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8fe0b8;
+  border: 1px solid rgba(76,175,125,0.45);
+  background: rgba(76,175,125,0.10);
+  border-radius: 999px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+.td-gear-detail-note {
+  font-size: 13px;
+  color: var(--fg-mute);
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+.td-gear-detail-desc {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--fg-soft);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.td-gear-detail-field {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.td-gear-detail-field .k {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.td-gear-detail-field .v {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--fg);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* Socketed mod(s) get their own visibly separated block — a distinct
+   surface and left accent border — so a mod's name/description can never
+   be mistaken for the equipment's own description above it. */
+.td-gear-mods {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.td-gear-mods-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 0 0 8px;
+}
+.td-gear-mod {
+  border-left: 2px solid var(--accent-line);
+  background: var(--accent-soft);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+.td-gear-mod:last-child { margin-bottom: 0; }
+.td-gear-mod-name { font-size: 13px; color: var(--fg); font-weight: 500; }
+.td-gear-mod-tier { color: var(--fg-mute); font-weight: 400; font-size: 11px; }
+.td-gear-mod-effect { margin-top: 4px; font-size: 12px; color: var(--fg-soft); line-height: 1.5; }
+.td-gear-mod-meta { margin-top: 3px; font-size: 11px; color: var(--fg-mute); }
+
+/* Technical Details — collapsed by default, same disclosure-triangle
+   pattern used elsewhere on the site; this is the ONLY place a raw item
+   ID or augment ID ever shows. */
+.td-gear-technical { margin-top: 14px; }
+.td-gear-technical summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--fg-mute);
+}
+.td-gear-technical summary::-webkit-details-marker { display: none; }
+.td-gear-technical summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--accent);
+  transition: transform 0.15s;
+}
+.td-gear-technical[open] summary::before { transform: rotate(90deg); }
+.td-gear-technical-body { margin-top: 8px; }
+.td-gear-technical-body .td-gear-detail-field:first-child { border-top: none; padding-top: 0; }
+
+.td-gear-summary-counts {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-soft);
+  margin-top: 4px;
+}
+
+/* Small screens: same tightening the rest of the page does. */
+@media (max-width: 560px) {
+  .td-gear-detail { padding: 14px 16px; }
+  .td-slot-btn { min-height: 54px; }
+}
+
 
 /* League roster — same table language as the gear table, but rows are
    clickable through to that member's own character view. */
@@ -741,17 +1057,39 @@ body.toondata::before {
   min-height: 160px;
 }
 
-.td-feat-menu { display: flex; flex-direction: column; gap: 10px; }
-/* .td-feat-subcats and .td-feat-list both set their own `display` below
-   (flex, for their internal layout), which — at equal specificity —
-   otherwise wins the cascade over the browser's default `[hidden] {
-   display: none }` UA rule and silently defeats `element.hidden`. Restate
-   it explicitly for every element this menu toggles via .hidden in
-   app.js, so "hidden" always actually hides regardless of author rule
-   ordering. */
-.td-feat-subcats[hidden], .td-feat-list[hidden] { display: none; }
+/* ---------------------------------------------------------------------
+   Feats: two-column browser. Left column (.td-feat-nav) lists every main
+   category (name, compact total, progress bar) plus, for whichever one is
+   expanded, its subcategories (name + compact total) underneath; picking
+   a subcategory — or Unmapped Feats, which has no subcategory step of its
+   own — fills the right column (.td-feat-results) with that group's feat
+   cards. Only one main category is ever expanded and only one
+   subcategory/Unmapped Feats is ever selected at a time (app.js keeps
+   both single-valued, never a set), so there's only ever one feat list
+   showing anywhere in the browser.
+   Below 860px the two columns become three single-column drill-down
+   "screens" (categories -> subcategories -> results) driven by the root's
+   [data-view] attribute — see the media query near the bottom of this
+   block. That attribute is only ever derived from the same expand/select
+   state the desktop layout uses, never tracked separately, so the two
+   layouts can't drift out of sync with each other.
+   --------------------------------------------------------------------- */
+.td-feat-browser { display: flex; align-items: flex-start; gap: 18px; }
 
-.td-feat-maincat {
+.td-feat-nav {
+  flex: 0 0 300px;
+  min-width: 0;
+  max-height: 78vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 16px;
+  padding-right: 4px;
+}
+.td-feat-nav-maincats { display: flex; flex-direction: column; gap: 8px; }
+
+/* Main categories are the visually dominant tier: bordered card-like
+   rows with the largest type and most padding in the nav. */
+.td-feat-nav-maincat {
   border: 1px solid var(--line);
   border-radius: var(--r, 10px);
   background: rgba(255,255,255,0.02);
@@ -760,12 +1098,17 @@ body.toondata::before {
 /* Green means "everything this category represents is complete" — never
    a partial state — so it's reserved for the main category itself, not
    inherited by anything still inside an incomplete subcategory. */
-.td-feat-maincat.is-complete {
+.td-feat-nav-maincat.is-complete {
   border-color: rgba(76,175,125,0.5);
   background: rgba(76,175,125,0.06);
 }
+.td-feat-nav-maincat.is-expanded {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.045);
+}
+.td-feat-nav-maincat.is-selected { border-color: #6fe0b0; }
 
-.td-feat-maincat-header {
+.td-feat-nav-maincat-header {
   all: unset;
   cursor: pointer;
   width: 100%;
@@ -773,8 +1116,7 @@ body.toondata::before {
   padding: 13px 16px;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 14px;
+  gap: 10px;
   font-family: var(--serif);
   font-size: 16px;
   color: var(--fg);
@@ -787,23 +1129,24 @@ body.toondata::before {
   font-size: 13px;
   flex-shrink: 0;
 }
-.td-feat-maincat-header[aria-expanded="true"] .td-feat-expand-icon { transform: rotate(90deg); }
-.td-feat-maincat-name { flex: 1 1 auto; min-width: 120px; }
-.td-feat-maincat.is-complete .td-feat-maincat-name { color: #8fe0b8; }
-.td-feat-maincat-progress {
+.td-feat-nav-maincat.is-expanded .td-feat-expand-icon { transform: rotate(90deg); }
+.td-feat-nav-maincat-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-feat-nav-maincat.is-complete .td-feat-nav-maincat-name { color: #8fe0b8; }
+.td-feat-nav-maincat-count {
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--fg-mute);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .td-feat-progress-bar {
-  flex-basis: 100%;
   height: 6px;
   border-radius: 999px;
   background: rgba(255,255,255,0.06);
   overflow: hidden;
 }
+.td-feat-nav-maincat > .td-feat-progress-bar { margin: 0 16px 12px; width: calc(100% - 32px); }
 .td-feat-progress-bar-sm { height: 4px; }
 .td-feat-progress-fill {
   height: 100%;
@@ -811,43 +1154,137 @@ body.toondata::before {
   background: var(--accent);
   transition: width 0.2s;
 }
-.td-feat-maincat.is-complete .td-feat-progress-fill,
-.td-feat-subcat.is-complete .td-feat-progress-fill {
-  background: #4caf7d;
+.td-feat-progress-fill.is-complete { background: #4caf7d; }
+
+/* Subcategories are a deliberately lighter, smaller navigation tier
+   nested under the expanded main category — indented, a darker surface
+   color, no progress bar at all (just the compact count) so this tier
+   never gets mistaken for the main-category tier above it. */
+.td-feat-nav-subcats {
+  padding: 4px 10px 12px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0,0,0,0.12);
 }
-
-.td-feat-subcats { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; }
-
-.td-feat-subcat {
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
-}
-.td-feat-subcat.is-complete { border-top-color: rgba(76,175,125,0.35); }
-
-.td-feat-subcat-header {
+.td-feat-nav-subcat {
   all: unset;
   cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border-left: 2px solid transparent;
   font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
   color: var(--fg-soft);
-  padding-bottom: 4px;
 }
-.td-feat-subcat-header .td-feat-expand-icon { font-size: 11px; }
-.td-feat-subcat.is-complete .td-feat-subcat-name { color: #8fe0b8; }
-.td-feat-subcat-name { flex: 1 1 auto; min-width: 100px; }
-.td-feat-subcat-progress {
+.td-feat-nav-subcat:hover { background: rgba(255,255,255,0.04); }
+.td-feat-nav-subcat.is-complete { color: #8fe0b8; }
+/* The selected subcategory's clear, color-plus-border state (never color
+   alone — the left border and count color shift too). */
+.td-feat-nav-subcat.is-selected {
+  border-left-color: #6fe0b0;
+  background: rgba(76,175,125,0.10);
+  color: #cdf5e2;
+}
+.td-feat-nav-subcat-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-feat-nav-subcat-count {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--fg-faint);
   white-space: nowrap;
+  flex-shrink: 0;
 }
+.td-feat-nav-subcat.is-selected .td-feat-nav-subcat-count { color: #9fe8c4; }
+
+/* Only shown in the mobile drill-down (see the 860px media query) — on
+   desktop a main category collapses by clicking its own header again, so
+   no back control is needed there. */
+.td-feat-mobile-back {
+  all: unset;
+  display: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 4px 2px 10px;
+}
+
+/* ---- Right column: selected subcategory / Unmapped Feats results ---- */
+.td-feat-results { flex: 1 1 auto; min-width: 0; }
+.td-feat-results-placeholder {
+  font-size: 13px;
+  color: var(--fg-mute);
+  font-style: italic;
+  padding: 20px 4px;
+}
+.td-feat-breadcrumb {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--fg);
+  margin-bottom: 8px;
+}
+.td-feat-breadcrumb-sep { color: var(--fg-faint); margin: 0 6px; }
+.td-feat-results-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+.td-feat-results-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--fg-mute);
+  white-space: nowrap;
+}
+.td-feat-results-header > .td-feat-progress-bar { flex: 1 1 160px; }
+.td-feat-completed-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.td-feat-completed-divider::before, .td-feat-completed-divider::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+
+.td-feat-unmapped-counts {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--fg-soft);
+  margin-bottom: 8px;
+}
+.td-feat-unmapped-counts strong { color: var(--fg); font-family: var(--mono); }
+.td-feat-search-row { margin-bottom: 10px; }
+.td-feat-unmapped-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.td-feat-unmapped-search:focus { outline: none; border-color: var(--accent); }
 
 .td-feat-list {
   margin-top: 8px;
@@ -870,6 +1307,16 @@ body.toondata::before {
   max-height: 420px;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+/* Sits below the scroll container (outside it, so it's reachable without
+   scrolling to the bottom) and only renders while more unmapped feats
+   remain to be paged in — see UNMAPPED_PAGE_SIZE in app.js. */
+.td-feat-load-more {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 13px;
 }
 
 /* One row per feat — name + stars/points + status on the first line,
@@ -947,13 +1394,36 @@ body.toondata::before {
 .td-feat-stars { display: inline-flex; align-items: center; gap: 2px; }
 .td-feat-star { width: 13px; height: 13px; display: block; }
 
+/* ≥861px: side-by-side two-column browser, both columns always visible.
+   ≤860px: a single-column drill-down through the same hierarchy — only
+   one "screen" (category list / expanded subcategories / results) shows
+   at a time, switched purely by the root's [data-view] attribute (see
+   featBrowserView() in app.js — it's derived, never a separately tracked
+   flag, so it can't drift out of sync with the desktop layout's own
+   expand/select state). The back controls that appear here are the same
+   .td-feat-mobile-back buttons already rendered (but hidden) on desktop. */
+@media (max-width: 860px) {
+  .td-feat-browser { display: block; }
+  .td-feat-nav { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  .td-feat-mobile-back { display: block; }
+
+  .td-feat-browser[data-view="categories"] .td-feat-results { display: none; }
+
+  .td-feat-browser[data-view="subcats"] .td-feat-results { display: none; }
+  .td-feat-browser[data-view="subcats"] .td-feat-nav-maincat-header { display: none; }
+  .td-feat-browser[data-view="subcats"] .td-feat-nav-maincat:not(.is-expanded) { display: none; }
+  .td-feat-browser[data-view="subcats"] .td-feat-nav-maincat.is-expanded { border: none; background: none; }
+  .td-feat-browser[data-view="subcats"] .td-feat-nav-subcats { padding: 4px 4px 12px; background: none; }
+
+  .td-feat-browser[data-view="results"] .td-feat-nav { display: none; }
+}
+
 /* Small screens: the header rows already wrap (flex-wrap above), this
    just tightens padding/font-size so the progress bar's own wrapped line
    and the touch targets stay comfortable rather than cramped. */
 @media (max-width: 560px) {
-  .td-feat-maincat-header { padding: 11px 12px; font-size: 15px; }
-  .td-feat-subcats { padding: 0 12px 12px; }
-  .td-feat-maincat-progress, .td-feat-subcat-progress { font-size: 10px; }
+  .td-feat-nav-maincat-header { padding: 11px 12px; font-size: 15px; }
+  .td-feat-nav-maincat-count, .td-feat-nav-subcat-count { font-size: 10px; }
   .td-feat-row-status { margin-left: 0; }
 }
 
