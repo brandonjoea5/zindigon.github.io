@@ -380,22 +380,43 @@ function featChip(f) {
 }
 
 // ---------------------------------------------------------------------
-// Feat category browser — an expandable, game-like tree (category ->
-// subcategory -> feat rows with name/description/star rating) built from
-// the Worker's own /feat-catalog endpoint, cross-referenced against a
-// character's completed/active feats to show a completed / in-progress /
-// not-completed state per feat.
+// Feats menu — a DCUO-style browser built from the Worker's own
+// /feat-catalog endpoint, cross-referenced against a character's
+// completed/active feats: a vertical list of main categories (each
+// independently expandable/collapsible), each holding subcategories with
+// their own completed/total counts and progress bar. Selecting a
+// subcategory reveals its feat list — only one subcategory's list is ever
+// open across the WHOLE tree at a time, matching how DCUO's own feat menu
+// behaves (picking a new subcategory closes whichever one was open
+// before, anywhere in the tree). A feat is sorted unfinished-first,
+// completed-below within its list; a subcategory turns green only once
+// every mapped feat inside it is completed, and a main category turns
+// green only once every subcategory inside IT is fully completed — so
+// green always means "everything this represents is done," never a
+// partial state.
 //
 // This is a deliberate, narrower exception to the "never ship the
 // recovered dataset in bulk" rule featChip's comment above describes: the
-// catalog only ever contains the ~131 feat_ids Bloguide's own public
-// category pages could be cross-matched against (see the FEAT_CATEGORIES
-// comment in the Worker source), never the full 1,127-entry recovered
-// table, and never anything not already independently published on
-// Bloguide. Showing "not completed" state necessarily means the visitor
-// can see a category's full feat list before/without having looked up a
-// character that has those feats — a tradeoff made knowingly for this
-// bounded subset, not the rest of the recovered data.
+// catalog only ever contains the feat_ids that have been cross-matched by
+// name against Bloguide's public category pages and the DC Universe
+// Online Fandom wiki's per-episode/per-event feat tables (see the
+// FEAT_CATEGORIES comment in the Worker source) — 702 of the 1,127
+// recovered feat_ids as of this build, never the full recovered table,
+// and never anything not already independently published elsewhere.
+// Showing "not completed" state necessarily means the visitor can see a
+// category's full feat list before/without having looked up a character
+// that has those feats — a tradeoff made knowingly for this bounded
+// subset, not the rest of the recovered data.
+//
+// Everything else this character has completed or is actively working on
+// falls into the final "Unmapped Feats" category — feat_ids the catalog
+// has no category for, so they can't be slotted into the tree above
+// (some still have a recovered name via FEAT_NAMES even without a
+// category; those show it, everything else shows a placeholder). Unmapped
+// Feats never counts toward any other category's completion, is always
+// last, and only ever lists a feat_id this specific character's own
+// completed/active feat data actually contains — there's no attempt to
+// enumerate feat_ids nobody has been observed to have.
 // ---------------------------------------------------------------------
 
 // Fetched once and reused for the rest of the page's life — the catalog
@@ -412,23 +433,31 @@ function getFeatCatalog() {
   return featCatalogPromise;
 }
 
-// A handful of known categories get a fixed, game-like ordering; anything
-// else (there isn't anything else today, but this keeps it from silently
-// vanishing if the Worker's catalog ever grows a new one) sorts after them
-// alphabetically instead of just falling off the end.
-const FEAT_CATEGORY_ORDER = ["Collectibles", "Exploration", "Solo", "Styles", "Tokens of Merit"];
+// The real DCUO feat menu's main-category ordering, as close as this
+// recovered slice can match it; anything the catalog carries that isn't
+// in this list (there isn't anything else today) sorts after these,
+// alphabetically, instead of silently vanishing. "Unmapped Feats" is
+// never part of this — it's appended separately, always last.
+const MAIN_CATEGORY_ORDER = [
+  "Story Arcs", "Exploration", "Solo", "Styles", "Collectibles",
+  "Seasonal & Event", "Player vs. Player", "General",
+];
 
-function buildFeatCategoryTree(entries) {
+// Reverse of the Worker's point -> star-rating mapping (10=1, 25=2, 50=3,
+// 100=4), used only to show a feat's point value alongside its stars.
+const STAR_POINTS = { 1: 10, 2: 25, 3: 50, 4: 100 };
+
+function buildFeatMenuTree(entries) {
   const byCategory = new Map();
   for (const entry of entries) {
     if (!byCategory.has(entry.category)) byCategory.set(entry.category, new Map());
     const bySub = byCategory.get(entry.category);
-    const subKey = entry.subcategory || "";
+    const subKey = entry.subcategory || "General";
     if (!bySub.has(subKey)) bySub.set(subKey, []);
     bySub.get(subKey).push(entry);
   }
   const categoryNames = Array.from(byCategory.keys()).sort((a, b) => {
-    const ia = FEAT_CATEGORY_ORDER.indexOf(a), ib = FEAT_CATEGORY_ORDER.indexOf(b);
+    const ia = MAIN_CATEGORY_ORDER.indexOf(a), ib = MAIN_CATEGORY_ORDER.indexOf(b);
     if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     return a.localeCompare(b);
   });
@@ -436,70 +465,197 @@ function buildFeatCategoryTree(entries) {
     const bySub = byCategory.get(name);
     const subNames = Array.from(bySub.keys()).sort((a, b) => a.localeCompare(b));
     const subcategories = subNames.map(sub => ({
-      name: sub || null,
+      name: sub,
       feats: bySub.get(sub).slice().sort((a, b) => a.name.localeCompare(b.name)),
     }));
     return { name, subcategories };
   });
 }
 
-// One star image per point of difficulty (1-3, per Bloguide's own rating —
-// see the FEAT_CATEGORIES comment in the Worker source). Feats the Worker
-// didn't have a star rating for (most of the flat-list categories, like
-// Styles) just render no stars rather than a placeholder.
+// One star image per point of difficulty (1-4, per the Worker's FEAT_
+// CATEGORIES rating). Feats with no recovered star rating just render no
+// stars rather than a placeholder.
 function starIcons(count) {
-  const n = Math.max(0, Math.min(3, Number(count) || 0));
+  const n = Math.max(0, Math.min(4, Number(count) || 0));
   if (!n) return "";
   const stars = `<img class="td-feat-star" src="star.png" alt="" />`.repeat(n);
   return `<span class="td-feat-stars" title="${n} star feat">${stars}</span>`;
 }
 
-function featCategoryRow(entry, completedSet, activeSet) {
-  const id = String(entry.feat_id);
-  let status, statusLabel;
-  if (completedSet.has(id)) { status = "complete"; statusLabel = "Completed"; }
-  else if (activeSet.has(id)) { status = "inprogress"; statusLabel = "In Progress"; }
-  else { status = "notdone"; statusLabel = "Not Completed"; }
+function featStatus(feat_id, completedSet, activeSet) {
+  const id = String(feat_id);
+  if (completedSet.has(id)) return "complete";
+  if (activeSet.has(id)) return "inprogress";
+  return "notdone";
+}
+
+// Unfinished feats (not-completed AND in-progress alike) sort before
+// completed ones, per the spec; within each of those two groups, mapped
+// feats sort by name and unmapped ones by feat_id (unmapped entries don't
+// all have a name to sort by).
+function sortFeatsForDisplay(list, completedSet, byId) {
+  return list.slice().sort((a, b) => {
+    const ac = completedSet.has(String(a.feat_id)) ? 1 : 0;
+    const bc = completedSet.has(String(b.feat_id)) ? 1 : 0;
+    if (ac !== bc) return ac - bc;
+    return byId ? Number(a.feat_id) - Number(b.feat_id) : (a.name || "").localeCompare(b.name || "");
+  });
+}
+
+function progressBarHtml(completed, total, small) {
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return `<div class="td-feat-progress-bar${small ? " td-feat-progress-bar-sm" : ""}"><div class="td-feat-progress-fill" style="width:${pct}%"></div></div>`;
+}
+
+// Renders one feat row. `entry` is either a catalog entry (feat_id, name,
+// desc, stars) for the regular tree, or a raw completed/active feat row
+// (feat_id, feat_name?) for the Unmapped Feats list — `unmapped: true`
+// switches between the two shapes rather than needing two near-duplicate
+// functions.
+function featRowHtml(entry, completedSet, activeSet, unmapped) {
+  const status = featStatus(entry.feat_id, completedSet, activeSet);
+  const isComplete = status === "complete";
+  const statusLabel = isComplete ? "Completed" : (status === "inprogress" ? "In Progress" : "Not Completed");
+  const name = unmapped ? esc(entry.feat_name || "Unmapped Feat") : esc(entry.name);
+  const stars = !unmapped && entry.stars ? entry.stars : null;
+  const points = stars ? STAR_POINTS[stars] : null;
   return `
-    <div class="td-feat-row td-feat-row-${status}">
+    <div class="td-feat-row ${isComplete ? "td-feat-row-complete" : "td-feat-row-unfinished"}">
       <div class="td-feat-row-main">
-        <span class="td-feat-row-status" title="${statusLabel}">${esc(statusLabel)}</span>
-        <span class="td-feat-row-name">${esc(entry.name)}</span>
-        ${starIcons(entry.stars)}
+        ${isComplete ? `<span class="td-feat-check" aria-hidden="true">✓</span>` : ""}
+        <span class="td-feat-row-name">${name}</span>
+        ${stars ? starIcons(stars) : ""}
+        ${points ? `<span class="td-feat-row-points">${points} pts</span>` : ""}
+        <span class="td-feat-row-status">${statusLabel}</span>
       </div>
-      ${entry.desc ? `<div class="td-feat-row-desc">${esc(entry.desc)}</div>` : ""}
+      ${unmapped ? `<div class="td-feat-row-id">Feat ID: ${esc(entry.feat_id)}</div>` : ""}
+      ${!unmapped && entry.desc ? `<div class="td-feat-row-desc">${esc(entry.desc)}</div>` : ""}
     </div>
   `;
 }
 
-function renderFeatCategoryTree(tree, completedFeats, activeFeats) {
+function subcategoryHtml(sub, completedSet, activeSet) {
+  const total = sub.feats.length;
+  const completed = sub.feats.filter(f => completedSet.has(String(f.feat_id))).length;
+  const isComplete = total > 0 && completed === total;
+  const rows = sortFeatsForDisplay(sub.feats, completedSet, false)
+    .map(f => featRowHtml(f, completedSet, activeSet, false)).join("");
+  return `
+    <div class="td-feat-subcat${isComplete ? " is-complete" : ""}">
+      <button type="button" class="td-feat-subcat-header" aria-expanded="false">
+        <span class="td-feat-expand-icon" aria-hidden="true">▸</span>
+        <span class="td-feat-subcat-name">${esc(sub.name)}</span>
+        <span class="td-feat-subcat-progress">${completed} / ${total} Feats Completed</span>
+        ${progressBarHtml(completed, total, true)}
+      </button>
+      <div class="td-feat-list" hidden>${rows}</div>
+    </div>
+  `;
+}
+
+function mainCategoryHtml(cat, completedSet, activeSet) {
+  const allFeats = cat.subcategories.flatMap(s => s.feats);
+  const total = allFeats.length;
+  const completed = allFeats.filter(f => completedSet.has(String(f.feat_id))).length;
+  const isComplete = total > 0 && completed === total;
+  const subsHtml = cat.subcategories.map(sub => subcategoryHtml(sub, completedSet, activeSet)).join("");
+  return `
+    <div class="td-feat-maincat${isComplete ? " is-complete" : ""}">
+      <button type="button" class="td-feat-maincat-header" aria-expanded="false">
+        <span class="td-feat-expand-icon" aria-hidden="true">▸</span>
+        <span class="td-feat-maincat-name">${esc(cat.name)}</span>
+        <span class="td-feat-maincat-progress">${completed} / ${total} Feats Completed</span>
+        ${progressBarHtml(completed, total, false)}
+      </button>
+      <div class="td-feat-subcats" hidden>${subsHtml}</div>
+    </div>
+  `;
+}
+
+// Always the final category. Unlike the regular tree, there's no
+// subcategory step here — expanding the category directly reveals the
+// (potentially very large) flat, scrollable feat list, with the category
+// header itself living outside the scrollable area so it stays visible
+// the whole time the visitor scrolls through it. Every entry here comes
+// from this character's own completed/active feat rows (never an
+// enumerated "unseen" id), so status is always definitively Completed or
+// In Progress — never an unverifiable guess.
+function unmappedFeatsHtml(unmappedFeats, completedSet, activeSet) {
+  const total = unmappedFeats.length;
+  const completed = unmappedFeats.filter(f => completedSet.has(String(f.feat_id))).length;
+  const isComplete = total > 0 && completed === total;
+  const rows = sortFeatsForDisplay(unmappedFeats, completedSet, true)
+    .map(f => featRowHtml(f, completedSet, activeSet, true)).join("");
+  return `
+    <div class="td-feat-maincat td-feat-unmapped${isComplete ? " is-complete" : ""}">
+      <button type="button" class="td-feat-maincat-header" aria-expanded="false">
+        <span class="td-feat-expand-icon" aria-hidden="true">▸</span>
+        <span class="td-feat-maincat-name">Unmapped Feats</span>
+        <span class="td-feat-maincat-progress">${completed} / ${total} Feats Completed</span>
+        ${progressBarHtml(completed, total, false)}
+      </button>
+      <div class="td-feat-subcats" hidden>
+        <p class="td-feat-unmapped-note">These feats were detected in DCUO's data, but their official names and categories have not yet been identified.</p>
+        <div class="td-feat-list td-feat-unmapped-scroll">${total ? rows : `<p class="td-roster-note">No unmapped feats detected for this character.</p>`}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFeatMenu(tree, completedFeats, activeFeats, catalogFeatIds) {
   const completedSet = new Set(completedFeats.map(f => String(f.feat_id)));
   const activeSet = new Set(activeFeats.map(f => String(f.feat_id)));
-  return tree.map(cat => {
-    const generalSub = cat.subcategories.find(s => !s.name);
-    const namedSubs = cat.subcategories.filter(s => s.name);
-    const allFeats = cat.subcategories.flatMap(s => s.feats);
-    const completedCount = allFeats.filter(f => completedSet.has(String(f.feat_id))).length;
-    const generalHtml = generalSub
-      ? `<div class="td-feat-rows">${generalSub.feats.map(f => featCategoryRow(f, completedSet, activeSet)).join("")}</div>`
-      : "";
-    const namedHtml = namedSubs.map(sub => `
-      <details class="td-feat-subcategory">
-        <summary><span>${esc(sub.name)}</span><span class="td-feat-subcategory-count">${sub.feats.length}</span></summary>
-        <div class="td-feat-rows">${sub.feats.map(f => featCategoryRow(f, completedSet, activeSet)).join("")}</div>
-      </details>
-    `).join("");
-    return `
-      <details class="td-feat-category">
-        <summary>
-          <span class="td-feat-category-name">${esc(cat.name)}</span>
-          <span class="td-feat-category-count">${completedCount}/${allFeats.length} completed</span>
-        </summary>
-        ${generalHtml}
-        ${namedHtml}
-      </details>
-    `;
-  }).join("");
+  const mainCatsHtml = tree.map(cat => mainCategoryHtml(cat, completedSet, activeSet)).join("");
+
+  // Unmapped Feats = every feat_id this character's own completed/active
+  // rows contain that the catalog above has no category for — never a
+  // guess at ids nobody has been observed to have.
+  const catalogIds = new Set(catalogFeatIds.map(String));
+  const unmappedSeen = new Set();
+  const unmappedFeats = [];
+  for (const f of [...completedFeats, ...activeFeats]) {
+    const id = String(f.feat_id);
+    if (catalogIds.has(id) || unmappedSeen.has(id)) continue;
+    unmappedSeen.add(id);
+    unmappedFeats.push(f);
+  }
+  const unmappedHtml = unmappedFeatsHtml(unmappedFeats, completedSet, activeSet);
+
+  return `<div class="td-feat-menu">${mainCatsHtml}${unmappedHtml}</div>`;
+}
+
+// Delegated click handling for the whole menu, wired once per container
+// (guarded so re-rendering the same character, e.g. via applyView, never
+// double-attaches). Expanding/collapsing a main category is independent
+// per category, but only one subcategory's feat list is ever open across
+// the ENTIRE tree at once — selecting a new one closes whichever was open
+// before, anywhere — matching DCUO's own feat menu.
+function wireFeatMenuEvents(container) {
+  if (container._featMenuWired) return;
+  container._featMenuWired = true;
+  container.addEventListener("click", (e) => {
+    const mainHeader = e.target.closest(".td-feat-maincat-header");
+    if (mainHeader) {
+      const panel = mainHeader.nextElementSibling;
+      const wasExpanded = mainHeader.getAttribute("aria-expanded") === "true";
+      mainHeader.setAttribute("aria-expanded", String(!wasExpanded));
+      panel.hidden = wasExpanded;
+      return;
+    }
+    const subHeader = e.target.closest(".td-feat-subcat-header");
+    if (subHeader) {
+      const list = subHeader.nextElementSibling;
+      const wasExpanded = subHeader.getAttribute("aria-expanded") === "true";
+      container.querySelectorAll(".td-feat-subcat-header[aria-expanded='true']").forEach(h => {
+        if (h !== subHeader) {
+          h.setAttribute("aria-expanded", "false");
+          h.nextElementSibling.hidden = true;
+        }
+      });
+      subHeader.setAttribute("aria-expanded", String(!wasExpanded));
+      list.hidden = wasExpanded;
+    }
+  });
 }
 
 // Loads (or reuses the cached) catalog and patches it into the
@@ -520,8 +676,9 @@ function loadFeatCategoryTreeInto(characterId, completedFeats, activeFeats) {
       container.innerHTML = `<p class="td-roster-note">Feat categories aren't available right now.</p>`;
       return;
     }
-    const tree = buildFeatCategoryTree(entries);
-    container.innerHTML = renderFeatCategoryTree(tree, completedFeats, activeFeats);
+    const tree = buildFeatMenuTree(entries);
+    container.innerHTML = renderFeatMenu(tree, completedFeats, activeFeats, entries.map(e => e.feat_id));
+    wireFeatMenuEvents(container);
   });
 }
 
@@ -1458,9 +1615,9 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
       <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
     </div>
 
-    <p class="td-section-label" style="margin-top:24px;">Browse by Category</p>
+    <p class="td-section-label" style="margin-top:24px;">Feats</p>
     <div class="notice" style="margin-bottom:12px;">
-      <span>This category browser is a work in progress — completed/in-progress status here may not be 100% accurate yet.</span>
+      <span>Feats below with a real name and category have been cross-referenced against Daybreak's own feat data — everything else this character has completed or is working on falls into Unmapped Feats at the bottom until it's identified.</span>
     </div>
     <div id="featCategoryTree" class="td-feat-categories">
       <p class="td-roster-note">Loading feat categories…</p>

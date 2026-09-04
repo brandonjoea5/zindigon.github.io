@@ -717,12 +717,13 @@ body.toondata::before {
 }
 .td-limitations li { margin-bottom: 6px; }
 
-/* Feat category browser — an expandable, in-game-style tree (category ->
-   subcategory -> feat rows), built from the Worker's /feat-catalog
-   endpoint. Categories and subcategories are plain <details>/<summary>
-   elements (same pattern as the gear/extra-slots sections above) so
-   expand/collapse works with no extra JS wiring; only the feat-row status
-   colors and the ▸ chevron rotation are custom here. */
+/* Feats menu — a DCUO-style browser (main category -> subcategory -> feat
+   list) built from the Worker's /feat-catalog endpoint. Main categories
+   and subcategories are plain buttons + hidden panels (not <details>)
+   because the completion/selection rules here are more than simple
+   independent expand-collapse: only one subcategory's feat list is ever
+   open across the WHOLE tree at once (see wireFeatMenuEvents in app.js),
+   which <details> has no native way to express across separate elements. */
 .td-feat-categories {
   margin-top: 12px;
   display: flex;
@@ -740,97 +741,154 @@ body.toondata::before {
   min-height: 160px;
 }
 
-.td-feat-category {
+.td-feat-menu { display: flex; flex-direction: column; gap: 10px; }
+/* .td-feat-subcats and .td-feat-list both set their own `display` below
+   (flex, for their internal layout), which — at equal specificity —
+   otherwise wins the cascade over the browser's default `[hidden] {
+   display: none }` UA rule and silently defeats `element.hidden`. Restate
+   it explicitly for every element this menu toggles via .hidden in
+   app.js, so "hidden" always actually hides regardless of author rule
+   ordering. */
+.td-feat-subcats[hidden], .td-feat-list[hidden] { display: none; }
+
+.td-feat-maincat {
   border: 1px solid var(--line);
   border-radius: var(--r, 10px);
   background: rgba(255,255,255,0.02);
   overflow: hidden;
 }
-.td-feat-category > summary {
+/* Green means "everything this category represents is complete" — never
+   a partial state — so it's reserved for the main category itself, not
+   inherited by anything still inside an incomplete subcategory. */
+.td-feat-maincat.is-complete {
+  border-color: rgba(76,175,125,0.5);
+  background: rgba(76,175,125,0.06);
+}
+
+.td-feat-maincat-header {
+  all: unset;
   cursor: pointer;
-  list-style: none;
+  width: 100%;
+  box-sizing: border-box;
   padding: 13px 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
   font-family: var(--serif);
   font-size: 16px;
   color: var(--fg);
 }
-.td-feat-category > summary::-webkit-details-marker { display: none; }
-.td-feat-category > summary::before {
-  content: "▸";
+.td-feat-expand-icon {
   display: inline-block;
-  margin-right: 10px;
   color: var(--accent);
   transition: transform 0.15s;
   font-family: var(--sans);
   font-size: 13px;
+  flex-shrink: 0;
 }
-.td-feat-category[open] > summary::before { transform: rotate(90deg); }
-.td-feat-category-name { flex: 1; }
-.td-feat-category-count {
+.td-feat-maincat-header[aria-expanded="true"] .td-feat-expand-icon { transform: rotate(90deg); }
+.td-feat-maincat-name { flex: 1 1 auto; min-width: 120px; }
+.td-feat-maincat.is-complete .td-feat-maincat-name { color: #8fe0b8; }
+.td-feat-maincat-progress {
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--fg-mute);
   white-space: nowrap;
 }
-.td-feat-category > .td-feat-rows { padding: 0 16px 14px; }
-
-.td-feat-subcategory {
-  margin: 0 16px 10px;
-  border-top: 1px solid var(--line);
-  padding-top: 10px;
+.td-feat-progress-bar {
+  flex-basis: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
 }
-.td-feat-subcategory:last-child { margin-bottom: 4px; }
-.td-feat-subcategory > summary {
+.td-feat-progress-bar-sm { height: 4px; }
+.td-feat-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+.td-feat-maincat.is-complete .td-feat-progress-fill,
+.td-feat-subcat.is-complete .td-feat-progress-fill {
+  background: #4caf7d;
+}
+
+.td-feat-subcats { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+.td-feat-subcat {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.td-feat-subcat.is-complete { border-top-color: rgba(76,175,125,0.35); }
+
+.td-feat-subcat-header {
+  all: unset;
   cursor: pointer;
-  list-style: none;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
   color: var(--fg-soft);
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 }
-.td-feat-subcategory > summary::-webkit-details-marker { display: none; }
-.td-feat-subcategory > summary::before {
-  content: "▸";
-  display: inline-block;
-  margin-right: 8px;
-  color: var(--accent);
-  transition: transform 0.15s;
-  font-size: 11px;
-}
-.td-feat-subcategory[open] > summary::before { transform: rotate(90deg); }
-.td-feat-subcategory-count {
+.td-feat-subcat-header .td-feat-expand-icon { font-size: 11px; }
+.td-feat-subcat.is-complete .td-feat-subcat-name { color: #8fe0b8; }
+.td-feat-subcat-name { flex: 1 1 auto; min-width: 100px; }
+.td-feat-subcat-progress {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--fg-faint);
+  white-space: nowrap;
 }
-.td-feat-subcategory > .td-feat-rows { margin-top: 10px; }
 
-.td-feat-rows { display: flex; flex-direction: column; gap: 8px; }
+.td-feat-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-/* One row per feat — name + stars on the first line, description (when
-   the recovered data has one) underneath. The colored left border and the
-   status pill are the completed / in-progress / not-completed signal the
-   character's own completed/active feat lists don't otherwise carry once
-   feats are grouped by category instead of shown as a flat chip list. */
+/* Unmapped Feats has no subcategory step — its list sits directly under
+   the main category header, which stays outside this scroll container so
+   it's always visible while the (potentially very long) list scrolls. */
+.td-feat-unmapped-note {
+  font-size: 12px;
+  color: var(--fg-mute);
+  line-height: 1.5;
+  margin: 0 0 10px;
+  font-style: italic;
+}
+.td-feat-unmapped-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* One row per feat — name + stars/points + status on the first line,
+   description (when the recovered data has one) or the raw feat_id (for
+   Unmapped Feats) underneath. Only two visual states, per spec: unfinished
+   (the site's existing dark/black feat styling) and completed (green,
+   with a checkmark) — "in progress" still gets its own status label, just
+   not its own color, so it stays legible without a third visual tier. */
 .td-feat-row {
   border-left: 3px solid var(--line);
   background: rgba(255,255,255,0.015);
   border-radius: 0 6px 6px 0;
   padding: 8px 12px;
 }
-.td-feat-row-complete { border-left-color: #4caf7d; }
-.td-feat-row-inprogress { border-left-color: #d9a441; }
-.td-feat-row-notdone { border-left-color: var(--line); opacity: 0.7; }
+.td-feat-row-unfinished { border-left-color: var(--line); }
+.td-feat-row-complete {
+  border-left-color: #4caf7d;
+  background: rgba(76,175,125,0.06);
+}
 
 .td-feat-row-main {
   display: flex;
@@ -838,11 +896,23 @@ body.toondata::before {
   flex-wrap: wrap;
   gap: 8px;
 }
+.td-feat-check {
+  color: #4caf7d;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+}
 .td-feat-row-name {
   font-family: var(--sans);
   font-size: 13px;
   color: var(--fg);
   font-weight: 500;
+}
+.td-feat-row-complete .td-feat-row-name { color: #8fe0b8; }
+.td-feat-row-points {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--fg-faint);
 }
 .td-feat-row-desc {
   margin-top: 4px;
@@ -850,7 +920,14 @@ body.toondata::before {
   color: var(--fg-mute);
   line-height: 1.5;
 }
+.td-feat-row-id {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-faint);
+}
 .td-feat-row-status {
+  margin-left: auto;
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.06em;
@@ -859,25 +936,26 @@ body.toondata::before {
   border-radius: 999px;
   border: 1px solid var(--line);
   color: var(--fg-faint);
+  white-space: nowrap;
 }
 .td-feat-row-complete .td-feat-row-status {
   color: #8fe0b8;
   border-color: rgba(76,175,125,0.45);
   background: rgba(76,175,125,0.10);
 }
-.td-feat-row-inprogress .td-feat-row-status {
-  color: #f0c778;
-  border-color: rgba(217,164,65,0.45);
-  background: rgba(217,164,65,0.10);
-}
-.td-feat-row-notdone .td-feat-row-status {
-  color: var(--fg-faint);
-  border-color: var(--line);
-  background: transparent;
-}
 
 .td-feat-stars { display: inline-flex; align-items: center; gap: 2px; }
 .td-feat-star { width: 13px; height: 13px; display: block; }
+
+/* Small screens: the header rows already wrap (flex-wrap above), this
+   just tightens padding/font-size so the progress bar's own wrapped line
+   and the touch targets stay comfortable rather than cramped. */
+@media (max-width: 560px) {
+  .td-feat-maincat-header { padding: 11px 12px; font-size: 15px; }
+  .td-feat-subcats { padding: 0 12px 12px; }
+  .td-feat-maincat-progress, .td-feat-subcat-progress { font-size: 10px; }
+  .td-feat-row-status { margin-left: 0; }
+}
 
 /* Combat Rating calculator — a standalone tool (no search involved), so it
    sits in the same spot the other three modes' forms occupy, matching
