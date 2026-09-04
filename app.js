@@ -1,18 +1,50 @@
 // Zindigon ToonData | Census API client
 // Docs: https://census.daybreakgames.com/
 
-// swap for the approved service ID once Daybreak confirms it
-const SERVICE_ID = "s:example";
-const CENSUS_BASE = "https://census.daybreakgames.com";
-const NAMESPACE = "dcuo:v1";
+// All Census requests go through a Cloudflare Worker proxy instead of
+// hitting Census directly. The Worker holds the real Census Service ID as
+// a hidden server-side secret (never shipped to the browser — nobody can
+// view-source this page and lift it), caches responses at Cloudflare's
+// edge so repeat lookups across all visitors are instant, and detects
+// Census's disguised rate-limit response before it can reach this code.
+// Swapping in the approved Service ID (once Daybreak confirms it) is done
+// entirely on the Worker side — nothing here needs to change for that.
+const WORKER_BASE = "https://toondata-census.brandonjoea3.workers.dev";
 const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for feat collections
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
 const MAX_RETRIES = 3;
+const ROSTER_LIMIT = 500;      // safety cap on how many members a single league roster fetch returns
+// How many character_ids get resolved to names per batched request. This
+// used to be 40, which sounds reasonable but is silently wrong: verified
+// directly against the live Worker that a character_id=<comma-list> query
+// with more than 6 ids doesn't get filtered at all under our current
+// (casual-use) service ID — Census just ignores the requested ids and
+// hands back the SAME fixed set of ~40 unrelated characters every time,
+// with a normal 200 and a populated character_list, no error field. That's
+// exactly why league rosters were showing "Character #<id>" for nearly
+// every member: byId got filled with 40 random strangers, so real member
+// lookups never matched. 6 is the confirmed-safe batch size (7 already
+// triggers the bad fallback); loadLeagueRoster also validates every
+// returned id is one it actually asked for, and throws the whole batch
+// away rather than trusting it, in case this threshold moves in the
+// future (e.g. if Census's casual-use behavior changes again).
+const CHAR_BATCH_SIZE = 6;
+const VIEW_CACHE_TTL_MS = 5 * 60 * 1000; // how long a character/roster view is reused on Back before refetching
 
 // Census doesn't provide a name lookup for these IDs, so this is a small
 // hand-maintained table of the ones that are known. Anything not listed
 // here just falls back to showing the raw ID. Add to these as more get
 // confirmed.
+//
+// This full set (plus WEAPON_NAMES, MOVEMENT_MODE_NAMES, and the rest of
+// WORLD_NAMES below) was cross-verified against the DCUO Bloguide Census
+// app's own production lookup tables (read directly out of their live
+// Angular app scope) and then confirmed against a real character's raw
+// Census response pulled through our own Worker — not just taken on
+// their word. That cross-check also caught a real bug: "6902" is Atomic's
+// power_type_id, not a power_source_id value at all (power_source_id
+// turns out to hold the equipped *weapon* type, not a power name — see
+// WEAPON_NAMES below).
 const POWER_TYPE_NAMES = {
   "1992462": "Rage",
   "2784": "Earth",
@@ -20,20 +52,427 @@ const POWER_TYPE_NAMES = {
   "1810455": "Quantum",
   "74779": "Nature",
   "3050978": "Water",
+  "2324": "Ice",
+  "2666": "Fire",
+  "2667": "Light",
+  "6902": "Atomic",
+  "7019": "Mental",
+  "175798": "Gadgets",
+  "197247": "Sorcery",
+  "1932154": "Celestial",
+  "2636096": "Munitions",
+};
+// power_source_id actually holds the character's equipped *weapon* type
+// (Bow, Dual Pistol, Shield, etc.) — not a power name. Confirmed against a
+// real character's raw Census response: BatmanI23's power_source_id
+// ("1479215") is Shield, matching what the site itself shows for that
+// character.
+const WEAPON_NAMES = {
+  "2336": "Martial Arts",
+  "3312": "Two-Handed",
+  "3314": "Bow",
+  "3315": "Dual Pistol",
+  "3316": "Dual Wield",
+  "4498": "One-Handed",
+  "4521": "Staff",
+  "9111": "Rifle",
+  "17740": "Brawling",
+  "503870": "Hand Blast",
+  "1479215": "Shield",
 };
 const MOVEMENT_MODE_NAMES = {
   "3317": "Super Speed",
   // 3313 covers both Flight and Skimming — Census exposes the same ID for
   // both, so there's no way to tell them apart from this field alone.
   "3313": "Flight / Skimming",
+  "3527": "Acrobatics",
 };
+const WORLD_NAMES = {
+  "0": "---",
+  "1": "US PC/PS",
+  "2": "US PC/PS",
+  "3": "US PC/PS",
+  "4": "EU PC/PS",
+  "5001": "US Xbox",
+  "5002": "EU Xbox",
+};
+// personality_id — the character's chosen personality/voice type.
+const PERSONALITY_NAMES = {
+  "389435": "Serious",
+  "457291": "Primal",
+  "457292": "Comical",
+  "457293": "Flirty",
+  "457294": "Powerful",
+  "872983": "Flirty",
+  "2664729": "Serious",
+};
+// Confirmed by cross-checking gender_id against character names strongly
+// associated with one gender (Batman/Superman-themed vs. Wonder
+// Woman/Supergirl-themed) — same method used for alignment_id.
+const GENDER_NAMES = {
+  "0": "Male",
+  "1": "Female",
+};
+// alignment_id isn't documented by Daybreak, but it only ever takes two
+// values and cross-checking name patterns (Batman/Superman-themed names
+// vs. Joker/Harley Quinn-themed names) confirms which is which.
+const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
+// origin_id only ever takes three values — confirmed by cross-checking
+// against each origin's iconic mentor on both alignments (Tech: Batman /
+// Joker, Magic: Wonder Woman / Circe, Meta: Superman / Lex Luthor).
+const ORIGIN_NAMES = {
+  "21784": "Tech",
+  "21785": "Magic",
+  "21783": "Meta",
+};
+// equipment_slot_id -> real slot name, so the paperdoll and gear table can
+// show "Head" instead of "Slot 0". Sourced from the community DCUO
+// Bloguide's own equipment-import code (the same reference used to verify
+// the Combat Rating calculator above), which maps Census's
+// equipment_slot_id this way when pulling a character's gear in. Slots not
+// listed here fall back to a raw "Slot N" label via slotLabel() below.
+// Notably absent: 2 and 8, which lines up with what this site's own data
+// already showed — no character checked so far has ever had an item in
+// either slot, so they're most likely unused/reserved IDs rather than
+// slots this table is just missing. 14 and 16 are also absent here even
+// though real characters do carry items there; that source simply doesn't
+// name them (they're not part of Combat Rating, so it has no reason to),
+// not evidence that they're unused like 2 and 8 are.
+const ITEM_SLOT_NAMES = {
+  "0": "Head",
+  "1": "Neck",
+  "3": "Shoulders",
+  "4": "Back",
+  "5": "Hands",
+  "6": "Waist",
+  "7": "Feet",
+  "9": "Face",
+  "10": "Chest",
+  "11": "Legs",
+  "12": "Ring 1",
+  "13": "Ring 2",
+  "15": "Utility Belt",
+  "17": "Weapon",
+  "18": "Utility Belt Slot 1",
+  "19": "Utility Belt Slot 2",
+  "20": "Utility Belt Slot 3",
+  "21": "Utility Belt Slot 4",
+};
+function slotLabel(slotId) {
+  return ITEM_SLOT_NAMES[slotId] || "Additional Equipped Slot";
+}
+
+// Builds the hover tooltip for an equipped item: name, elite/style, renown
+// or episode, flavor text, and each socketed mod's name/tier/effect/
+// cooldown, one per line — used by both the single-character paperdoll and
+// the compare view's. Shared at module scope rather than defined inline in
+// renderCharacter, since buildPaperdollHtml (the compare view) needs it
+// too. Deliberately just a hover tooltip rather than an always-visible
+// card per slot: the chip itself only ever shows the slot name, so a full
+// loadout of identified gear doesn't crowd the page with a dozen-plus item
+// names and mod descriptions permanently on screen (same "raw id chip,
+// real info on hover" tradeoff the feat chips already use).
+function gearTooltip(it) {
+  if (!it) return "";
+  if (!it.item_name) return `Item ID ${it.item_id}`;
+  const lines = [it.item_name + (it.item_elite ? " (Elite)" : "")];
+  if (it.item_style) lines.push(`Style: ${it.item_style}`);
+  if (it.item_renown) lines.push(it.item_renown);
+  if (it.item_episode) lines.push(`Episode: ${it.item_episode}`);
+  if (it.item_desc) lines.push(it.item_desc);
+  (it.item_mods || []).forEach(m => {
+    lines.push(`Mod: ${m.name}${m.tier ? ` (${m.tier})` : ""}`);
+    if (m.effect) lines.push(m.effect);
+    if (m.cooldown) lines.push(`Cooldown ${m.cooldown}`);
+    if (m.requires) lines.push(m.requires);
+  });
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------
+// Equipped Gear: selectable paperdoll + detail panel (single-character
+// view only — Compare keeps its own simpler hover-tooltip paperdoll via
+// buildPaperdollHtml/gearTooltip above, which this doesn't touch).
+//
+// The paperdoll shows only the 14 slots that make up a normal loadout
+// (body gear, both rings, trinket, weapon); anything equipped outside
+// that set (extra trinket/artifact-style slots, or any future slot id)
+// surfaces in the collapsed "Additional Equipment" section instead,
+// using the exact same selectable-button/detail-panel mechanism rather
+// than a second, separate display.
+// ---------------------------------------------------------------------
+
+// Simple stroke glyphs matching the site's existing icon language (see
+// powerIcon/moveIcon below) — each represents the SLOT TYPE only, never
+// the character's actual equipped item.
+// Custom 64x64 line-icon set (replaces the original placeholder glyphs) —
+// pure stroke paths, no fill/color baked in, so .td-slot-icon's CSS still
+// drives color (identified/selected tint, etc.) exactly as before; only
+// the path data and viewBox size changed.
+const SLOT_ICON_PATHS = {
+  head:      `<path d="M18 29c0-11 6-18 14-18s14 7 14 18v18H18V29Z"/><path d="M18 31h28M24 31v8m16-8v8M27 47v5h10v-5"/>`,
+  face:      `<path d="M15 25c5-5 11-7 17-7s12 2 17 7l-4 16c-4 5-8 8-13 10-5-2-9-5-13-10l-4-16Z"/><path d="M21 30c3-2 6-2 9 0-2 4-6 5-9 0Zm13 0c3-2 6-2 9 0-3 5-7 4-9 0ZM29 41h6"/>`,
+  neck:      `<path d="M15 17c2 17 8 28 17 33 9-5 15-16 17-33"/><path d="M27 45l5-8 5 8-5 7-5-7ZM19 21c4 5 8 8 13 9 5-1 9-4 13-9"/>`,
+  shoulders: `<path d="M8 42c1-12 7-19 18-21l6 8 6-8c11 2 17 9 18 21M9 42h18V26m28 16H37V26M15 34h12m22 0H37"/>`,
+  back:      `<path d="M23 13h18l5 10-4 30-10-7-10 7-4-30 5-10ZM23 13l9 10 9-10M32 23v23"/>`,
+  chest:     `<path d="M21 12c3 4 7 6 11 6s8-2 11-6l10 8-7 10-3-3v25H21V27l-3 3-7-10 10-8ZM24 24l8 5 8-5M32 29v18"/>`,
+  hands:     `<path d="M20 49c-5-4-7-8-7-13V20c0-2 4-2 4 0v10-14c0-3 5-3 5 0v13-15c0-3 5-3 5 0v15-12c0-3 5-3 5 0v17l4-5c3-3 7 0 5 4l-8 15c-3 5-9 6-13 1ZM18 51h16"/>`,
+  waist:     `<path d="M9 23h46v18H9V23ZM24 19h16v26H24V19ZM29 27h6v10h-6zM9 29h15m16 0h15"/>`,
+  legs:      `<path d="M19 11h26l-2 19-5 23H28l-2-22-5 22H11l6-23 2-19ZM26 31l6-13 6 13M19 19h26"/>`,
+  feet:      `<path d="M15 12h16v28c0 5-4 10-10 11H8v-9l7-5V12ZM33 12h16v25l7 5v9H43c-6-1-10-6-10-11V12ZM8 45h23m2 0h23"/>`,
+  ring:      `<circle cx="32" cy="38" r="14"/><path d="m23 22 4-9h10l4 9-9 7-9-7Zm4-9 5 16 5-16M23 22h18"/>`,
+  trinket:   `<path d="M24 12h16l3 9 9 5-4 17-16 10-16-10-4-17 9-5 3-9Zm8 10 4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1 4-8Z"/>`,
+  weapon:    `<path d="m45 9 10 1-1 10-27 27-10-10L45 9Zm-7 7 10 10M12 42l10 10M18 36l10 10M11 53l5-5"/>`,
+  utility:   `<path d="M7 22h50v20H7V22ZM25 18h14v28H25V18ZM29 27h6v10h-6zM11 28h9v8h-9zm33 0h9v8h-9z"/>`,
+};
+function slotIconSvg(key) {
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${SLOT_ICON_PATHS[key] || SLOT_ICON_PATHS.utility}</svg>`;
+}
+
+// Every slot position on the decorative border frame (gear-frame.png) —
+// left column top-to-bottom, right column top-to-bottom, the 2x2 Utility
+// Belt cluster it opens into at the bottom-left, and the Artifact cluster
+// at the bottom-right. x/y are the center of each frame opening as a
+// percentage of the 1024x1536 artwork, read directly off the image so
+// each button lands inside its own window regardless of render size.
+// Real slots carry a numeric `id` matching the equipment_slot_id Census
+// actually returns (see ITEM_SLOT_NAMES); `untracked` entries (Consumable/
+// Soder, the 5 Artifacts) have no known Census field at all — DCUO tracks
+// Artifacts through a separate progression system, not equipped gear — so
+// they get an honest "not tracked" state instead of a fabricated one.
+const GEAR_FRAME_SLOTS = [
+  // Left column
+  { id: 17, icon: "weapon",    x: 15.04, y: 10.61 }, // Weapon
+  { id: 0,  icon: "head",      x: 15.04, y: 19.21 }, // Head
+  { id: 9,  icon: "face",      x: 15.04, y: 27.80 }, // Face
+  { id: 4,  icon: "back",      x: 15.04, y: 36.39 }, // Back
+  { id: 10, icon: "chest",     x: 15.04, y: 44.92 }, // Chest
+  { id: 11, icon: "legs",      x: 15.04, y: 53.45 }, // Legs
+  { id: 12, icon: "ring",      x: 15.04, y: 61.98 }, // Ring 1
+  { id: 15, icon: "utility",   x: 15.53, y: 71.16 }, // Utility Belt (container)
+  // Right column
+  { id: 1,  icon: "neck",      x: 84.57, y: 10.61 }, // Neck
+  { id: 3,  icon: "shoulders", x: 84.57, y: 19.27 }, // Shoulders
+  { id: 5,  icon: "hands",     x: 84.57, y: 27.80 }, // Hands
+  { id: 6,  icon: "waist",     x: 84.57, y: 36.39 }, // Waist
+  { id: 7,  icon: "feet",      x: 84.57, y: 44.92 }, // Feet
+  { id: 13, icon: "ring",      x: 84.57, y: 53.45 }, // Ring 2
+  { id: "untracked-consumable", icon: "utility", x: 86.33, y: 61.98, untracked: true, label: "Consumable/Soder" },
+  // Utility Belt sub-slots — the 4 items equipped inside it (ids 18-21,
+  // labeled "Utility Belt Slot 1-4" in ITEM_SLOT_NAMES).
+  { id: 18, icon: "trinket", x: 15.43, y: 80.08 }, // upper-left
+  { id: 19, icon: "trinket", x: 27.83, y: 80.01 }, // upper-right
+  { id: 20, icon: "trinket", x: 15.43, y: 88.67 }, // lower-left
+  { id: 21, icon: "trinket", x: 27.93, y: 88.67 }, // lower-right
+  // Artifacts — not equipped gear in DCUO, so always shown as untracked.
+  { id: "untracked-artifact-1", icon: "trinket", x: 51.07, y: 88.74, untracked: true, label: "Artifact 1" },
+  { id: "untracked-artifact-2", icon: "trinket", x: 67.48, y: 88.74, untracked: true, label: "Artifact 2" },
+  { id: "untracked-artifact-3", icon: "trinket", x: 84.18, y: 88.93, untracked: true, label: "Artifact 3" },
+  { id: "untracked-artifact-4", icon: "trinket", x: 84.67, y: 80.92, untracked: true, label: "Artifact 4" },
+  { id: "untracked-artifact-5", icon: "trinket", x: 84.86, y: 71.16, untracked: true, label: "Artifact 5" },
+];
+// The real, Census-backed slot ids among the above (14 primary + the 4
+// Utility Belt sub-slots) — used to keep "Additional Equipment" scoped to
+// genuinely unexpected slot ids only, and to compute the honest
+// identified/unidentified/empty counts.
+const REAL_GEAR_SLOT_IDS = GEAR_FRAME_SLOTS.filter(s => !s.untracked).map(s => s.id);
+
+// "empty" (no item), "unidentified" (item present, no recovered name) or
+// "identified" (item present with a recovered name) — the only three
+// states a slot control or its detail panel ever needs to distinguish.
+function gearSlotState(it) {
+  if (!it) return "empty";
+  return it.item_name ? "identified" : "unidentified";
+}
+
+// `opts.style` positions the button on the border frame (percentage
+// left/top, see GEAR_FRAME_SLOTS); `opts.compact` drops the always-visible
+// text name (there's no room for it inside a frame opening) — the name is
+// still exposed via aria-label/title, and shown prominently in the detail
+// panel once the slot is selected.
+function slotButtonHtml(slotId, iconKey, it, isSelected, opts = {}) {
+  const { style = "", compact = false } = opts;
+  const label = slotLabel(String(slotId));
+  const state = gearSlotState(it);
+  const ariaLabel = state === "empty" ? `${label} slot, empty` : `View equipped ${label} item`;
+  const titleAttr = state === "empty" ? "Empty" : (state === "identified" ? it.item_name : "Unidentified item");
+  const stateHtml = state === "empty"
+    ? `<span class="td-slot-state-text">Empty</span>`
+    : `<span class="td-slot-state-dot" aria-hidden="true"></span>`;
+  const nameHtml = compact ? "" : `<span class="td-slot-name">${esc(label)}</span>`;
+  return `
+    <button type="button" class="td-slot-btn is-${state}${isSelected ? " is-selected" : ""}${compact ? " td-slot-btn-compact" : ""}" data-slot-id="${esc(slotId)}"
+      ${style ? `style="${esc(style)}"` : ""}
+      aria-pressed="${isSelected ? "true" : "false"}" aria-label="${esc(ariaLabel)}" title="${esc(titleAttr)}">
+      <span class="td-slot-icon">${slotIconSvg(iconKey)}</span>
+      ${nameHtml}
+      ${stateHtml}
+    </button>
+  `;
+}
+
+// Consumable/Soder and the 5 Artifact positions on the frame — DCUO has
+// no public Census field for these (Artifacts in particular are tracked
+// by a separate progression system, not equipped gear), so rather than
+// guess at a slot id or silently show them as "Empty" (which would falsely
+// claim a confirmed no-item-equipped state), they get their own honest
+// "not tracked" state.
+function untrackedSlotButtonHtml(entry) {
+  const style = `left:${entry.x}%;top:${entry.y}%`;
+  return `
+    <button type="button" class="td-slot-btn td-slot-btn-compact is-untracked" style="${esc(style)}"
+      data-untracked="true" data-label="${esc(entry.label)}" aria-pressed="false"
+      aria-label="${esc(entry.label)} — not currently tracked" title="${esc(entry.label)} — not currently tracked by ToonData">
+      <span class="td-slot-icon">${slotIconSvg(entry.icon)}</span>
+    </button>
+  `;
+}
+function untrackedDetailHtml(label) {
+  return `
+    <div class="td-gear-detail-slot">${esc(label)}</div>
+    <p class="td-gear-detail-title td-gear-detail-title-untracked">Not Tracked Yet</p>
+    <p class="td-gear-detail-note">ToonData doesn't currently have a way to read this slot's data from Daybreak's Census API.</p>
+  `;
+}
+
+// Extra equipped slots outside the 18 real, Census-backed ids the frame
+// already has a dedicated position for — anything else Census hands back
+// (a future slot id this site hasn't mapped onto the frame yet) — same
+// button, same detail panel, just listed in a collapsed strip below the
+// frame instead of on it, so an unexpected id can't crowd or unbalance it.
+function additionalGearHtml(extraSlotIds, bySlot) {
+  if (!extraSlotIds.length) return "";
+  return `
+    <details class="td-additional-gear">
+      <summary class="td-section-label">Additional Equipment (${extraSlotIds.length})</summary>
+      <div class="td-additional-gear-grid">
+        ${extraSlotIds.map(id => slotButtonHtml(id, "utility", bySlot[id], false)).join("")}
+      </div>
+    </details>
+  `;
+}
+
+function gearTechnicalDetailsHtml(it) {
+  const augs = [it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1");
+  return `
+    <details class="td-gear-technical">
+      <summary>Show Technical Details</summary>
+      <div class="td-gear-technical-body">
+        <div class="td-gear-detail-field"><div class="k">Item ID</div><div class="v">${esc(it.item_id)}</div></div>
+        <div class="td-gear-detail-field"><div class="k">Bound</div><div class="v">${it.is_bound === "true" ? "Yes" : "No"}</div></div>
+        ${augs.length ? `<div class="td-gear-detail-field"><div class="k">Augments</div><div class="v">${esc(augs.join(", "))}</div></div>` : ""}
+      </div>
+    </details>
+  `;
+}
+
+// The right-hand panel's content for whichever slot is currently
+// selected — empty/unidentified/identified are the only three shapes it
+// ever needs to render, each showing only fields that are actually
+// present rather than an empty label or an invented value.
+function gearDetailHtml(slotId, it) {
+  const label = slotLabel(String(slotId));
+  if (!it) {
+    return `
+      <div class="td-gear-detail-slot">${esc(label)}</div>
+      <p class="td-gear-detail-title">Empty Slot</p>
+      <p class="td-gear-detail-note">No item is currently equipped in this slot.</p>
+    `;
+  }
+  if (!it.item_name) {
+    return `
+      <div class="td-gear-detail-slot">${esc(label)}</div>
+      <p class="td-gear-detail-title td-gear-detail-title-unidentified">Unidentified Item</p>
+      <p class="td-gear-detail-note">This equipment has not yet been added to Zindigon's item database.</p>
+      ${gearTechnicalDetailsHtml(it)}
+    `;
+  }
+  const mods = it.item_mods || [];
+  const modsHtml = mods.length ? `
+    <div class="td-gear-mods">
+      <p class="td-gear-mods-label">Socketed Mod${mods.length > 1 ? "s" : ""}</p>
+      ${mods.map(m => `
+        <div class="td-gear-mod">
+          <div class="td-gear-mod-name">${esc(m.name)}${m.tier ? ` <span class="td-gear-mod-tier">${esc(m.tier)}</span>` : ""}</div>
+          ${m.effect ? `<div class="td-gear-mod-effect">${esc(m.effect)}</div>` : ""}
+          ${m.cooldown ? `<div class="td-gear-mod-meta">Cooldown ${esc(m.cooldown)}</div>` : ""}
+          ${m.requires ? `<div class="td-gear-mod-meta">${esc(m.requires)}</div>` : ""}
+        </div>
+      `).join("")}
+    </div>
+  ` : "";
+  return `
+    <div class="td-gear-detail-slot">${esc(label)}</div>
+    <div class="td-gear-detail-name">${esc(it.item_name)}${it.item_elite ? ` <span class="td-gear-elite-tag">Elite</span>` : ""}</div>
+    ${it.item_desc ? `<p class="td-gear-detail-desc">${esc(it.item_desc)}</p>` : ""}
+    ${it.item_style ? `<div class="td-gear-detail-field"><div class="k">Style</div><div class="v">${esc(it.item_style)}</div></div>` : ""}
+    ${it.item_renown ? `<div class="td-gear-detail-field"><div class="k">Requirement</div><div class="v">${esc(it.item_renown)}</div></div>` : ""}
+    ${it.item_episode ? `<div class="td-gear-detail-field"><div class="k">Episode</div><div class="v">${esc(it.item_episode)}</div></div>` : ""}
+    ${modsHtml}
+    ${gearTechnicalDetailsHtml(it)}
+  `;
+}
+
+// Shown before any slot has been selected yet — a quick honest count
+// (identified/unidentified/empty) computed from this character's actual
+// data rather than a static message with no numbers behind it. Counts
+// only ever cover REAL_GEAR_SLOT_IDS (the 18 slots with a fixed, known
+// Census-backed total) plus any genuinely-extra slot id Census reports —
+// the untracked Consumable/Artifact placeholders never factor in, since
+// there's no real "empty vs equipped" data behind them to count.
+function gearSummaryHtml(bySlot, extraSlotIds) {
+  let identified = 0, unidentified = 0, empty = 0;
+  REAL_GEAR_SLOT_IDS.forEach(id => {
+    const state = gearSlotState(bySlot[id]);
+    if (state === "identified") identified++;
+    else if (state === "unidentified") unidentified++;
+    else empty++;
+  });
+  extraSlotIds.forEach(id => {
+    if (gearSlotState(bySlot[id]) === "identified") identified++;
+    else unidentified++;
+  });
+  return `
+    <p class="td-gear-detail-title">Equipped Gear</p>
+    <p class="td-gear-detail-note">Select an equipment slot to view its item details.</p>
+    <p class="td-gear-summary-counts">${identified} identified &bull; ${unidentified} unidentified &bull; ${empty} empty</p>
+  `;
+}
+
+// Delegated click handling for the frame + Additional Equipment buttons —
+// selecting one only ever patches the detail panel and the selected
+// button's own class, never the surrounding layout, and never touches the
+// network (every field it can show is already in `items`, fetched once
+// alongside the rest of this character's data). Untracked (Consumable/
+// Artifact) buttons carry no slot id at all — they show their own honest
+// "not tracked" detail content instead of a bySlot lookup.
+function wireGearPanel(container, bySlot) {
+  container.addEventListener("click", (e) => {
+    const btn = e.target.closest(".td-slot-btn");
+    if (!btn) return;
+    container.querySelectorAll(".td-slot-btn.is-selected").forEach(b => {
+      b.classList.remove("is-selected");
+      b.setAttribute("aria-pressed", "false");
+    });
+    btn.classList.add("is-selected");
+    btn.setAttribute("aria-pressed", "true");
+    const detailPanel = container.querySelector(".td-gear-detail");
+    if (!detailPanel) return;
+    if (btn.dataset.untracked === "true") {
+      detailPanel.innerHTML = untrackedDetailHtml(btn.dataset.label);
+      return;
+    }
+    const slotId = Number(btn.dataset.slotId);
+    detailPanel.innerHTML = gearDetailHtml(slotId, bySlot[slotId]);
+  });
+}
 
 // ---------------------------------------------------------------------
 // Low-level Census fetch with retry/backoff on 429 / transient errors
 // ---------------------------------------------------------------------
 async function censusGet(collection, params) {
   const qs = new URLSearchParams(params);
-  const url = `${CENSUS_BASE}/${SERVICE_ID}/get/${NAMESPACE}/${collection}?${qs.toString()}`;
+  const url = `${WORKER_BASE}/${collection}?${qs.toString()}`;
 
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -51,6 +490,29 @@ async function censusGet(collection, params) {
 
       if (json.error === "login_required") {
         throw new AuthWallError(collection);
+      }
+      // A rate-limited Census service ID doesn't get a real HTTP 429 —
+      // Census answers with HTTP 200 and a body like {"error":"Missing
+      // Service ID.  A valid Service ID is required for continued api use.
+      // The Service ID s:example is for casual use only.  (...)"}. Before
+      // this check existed, that response fell through untouched:
+      // fetchAllPages saw no *_list key, treated it as an empty page, and
+      // quietly stopped paginating — so a rate-limited request came back
+      // looking like "this character has 0 (or fewer) feats" instead of
+      // failing. That's the confirmed root cause of the Compare feature's
+      // corrupted/nondeterministic feat counts. The Worker (WORKER_BASE)
+      // already detects and retries this pattern server-side before it
+      // ever reaches the browser, so in normal operation this check should
+      // never fire — it's kept here as a backstop in case a disguised
+      // rate-limit response ever slips through. Treating it as a
+      // RateLimitError routes it through the same retry/backoff as a real
+      // 429, and only surfaces as a visible error if every retry is
+      // exhausted — instead of silently returning bad data. This is
+      // distinct from the legitimate {"error":"No data found."} response,
+      // which doesn't match this pattern and still passes through as a
+      // normal empty result.
+      if (typeof json.error === "string" && /casual use|missing service id/i.test(json.error)) {
+        throw new RateLimitError();
       }
       if (json.errorCode) {
         throw new Error(`Census error on ${collection}: ${json.errorCode} - ${json.errorMessage || ""}`);
@@ -101,6 +563,30 @@ const matchListEl = document.getElementById("matchList");
 const resultEl = document.getElementById("result");
 const searchBtn = document.getElementById("searchBtn");
 const nameInput = document.getElementById("charName");
+const leagueSearchBtn = document.getElementById("leagueSearchBtn");
+const leagueNameInput = document.getElementById("leagueName");
+const modeCharBtn = document.getElementById("modeCharBtn");
+const modeLeagueBtn = document.getElementById("modeLeagueBtn");
+const charSearchForm = document.getElementById("charSearchForm");
+const leagueSearchForm = document.getElementById("leagueSearchForm");
+const pageTitleEl = document.getElementById("pageTitle");
+const pageLedeEl = document.getElementById("pageLede");
+const modeCompareBtn = document.getElementById("modeCompareBtn");
+const compareSearchForm = document.getElementById("compareSearchForm");
+const compareNameA = document.getElementById("compareNameA");
+const compareNameB = document.getElementById("compareNameB");
+const compareSearchABtn = document.getElementById("compareSearchABtn");
+const compareSearchBBtn = document.getElementById("compareSearchBBtn");
+const compareMatchListA = document.getElementById("compareMatchListA");
+const compareMatchListB = document.getElementById("compareMatchListB");
+const compareSelectedA = document.getElementById("compareSelectedA");
+const compareSelectedB = document.getElementById("compareSelectedB");
+const compareGoBtn = document.getElementById("compareGoBtn");
+const modeCrCalcBtn = document.getElementById("modeCrCalcBtn");
+const crCalcForm = document.getElementById("crCalcForm");
+const searchNoticesEl = document.getElementById("searchNotices");
+const modeLeaderboardBtn = document.getElementById("modeLeaderboardBtn");
+const leaderboardForm = document.getElementById("leaderboardForm");
 
 function setStatus(message, type) {
   statusEl.textContent = message;
@@ -116,6 +602,10 @@ function clearMatches() {
 function clearResult() {
   resultEl.className = "td-result";
   resultEl.innerHTML = "";
+  // Invalidates any in-flight background feat/league load from a
+  // previously-rendered character view (see loadFeatsAndLeague) so it
+  // can't repaint over whatever gets rendered next.
+  delete resultEl.dataset.activeCharacterId;
 }
 
 function esc(str) {
@@ -124,8 +614,661 @@ function esc(str) {
   }[c]));
 }
 
+// Formats a stat number with comma separators. Some characters are
+// genuinely missing fields Census would normally compute (seen directly on
+// a real low-level toon with no combat_rating at all), so this falls back
+// to an em dash instead of printing "NaN".
+function fmt(n) {
+  if (n === undefined || n === null || n === "") return "—";
+  const num = Number(n);
+  return Number.isNaN(num) ? "—" : num.toLocaleString();
+}
+
+// Renders one feat as a chip. Census stopped exposing feat names years
+// ago, so the Worker (WORKER_BASE) attaches a recovered feat_name to each
+// completed/active feat row itself, server-side, whenever it has one —
+// see enrichFeatNames in the Worker source. This falls back to a raw
+// "#<id>" chip for anything the Worker didn't attach a name to. Known
+// names get a distinct style (see .td-feat-named in toondata.css) so it's
+// obvious at a glance which feats are named vs. still just an ID; the ID
+// is always in the tooltip either way.
+//
+// Deliberately NOT a client-side lookup table: the recovered feat_id ->
+// name data lives only in the Worker, not in anything shipped to the
+// browser (this site's static assets are public in GitHub Pages), so a
+// visitor only ever sees names for the specific feats a specific
+// character has, never the whole recovered dataset in one file.
+function featChip(f) {
+  const id = esc(f.feat_id);
+  if (f.feat_name) {
+    // Category and description are smaller, separately-matched slices of
+    // the recovered data than the name itself (see FEAT_CATEGORIES in the
+    // Worker), so a named feat doesn't always have either — each falls
+    // back to being left off the tooltip rather than showing a blank.
+    const category = f.feat_category
+      ? esc(f.feat_subcategory ? `${f.feat_category} › ${f.feat_subcategory}` : f.feat_category)
+      : null;
+    let title = category ? `Feat ID ${id} · ${category}` : `Feat ID ${id}`;
+    // A literal newline in a title attribute renders as a line break in
+    // the native browser tooltip — no markup needed for it.
+    if (f.feat_desc) title += `\n${esc(f.feat_desc)}`;
+    return `<span class="td-feat-named" title="${title}">${esc(f.feat_name)}</span>`;
+  }
+  return `<span title="Name not recovered yet">#${id}</span>`;
+}
+
 // ---------------------------------------------------------------------
-// Main search flow
+// Feats menu — a DCUO-style browser built from the Worker's own
+// /feat-catalog endpoint, cross-referenced against a character's
+// completed/active feats: a vertical list of main categories (each
+// independently expandable/collapsible), each holding subcategories with
+// their own completed/total counts and progress bar. Selecting a
+// subcategory reveals its feat list — only one subcategory's list is ever
+// open across the WHOLE tree at a time, matching how DCUO's own feat menu
+// behaves (picking a new subcategory closes whichever one was open
+// before, anywhere in the tree). A feat is sorted unfinished-first,
+// completed-below within its list; a subcategory turns green only once
+// every mapped feat inside it is completed, and a main category turns
+// green only once every subcategory inside IT is fully completed — so
+// green always means "everything this represents is done," never a
+// partial state.
+//
+// This is a deliberate, narrower exception to the "never ship the
+// recovered dataset in bulk" rule featChip's comment above describes: the
+// catalog only ever contains the feat_ids that have been cross-matched by
+// name against Bloguide's public category pages and the DC Universe
+// Online Fandom wiki's per-episode/per-event feat tables (see the
+// FEAT_CATEGORIES comment in the Worker source) — 702 of the 1,127
+// recovered feat_ids as of this build, never the full recovered table,
+// and never anything not already independently published elsewhere.
+// Showing "not completed" state necessarily means the visitor can see a
+// category's full feat list before/without having looked up a character
+// that has those feats — a tradeoff made knowingly for this bounded
+// subset, not the rest of the recovered data.
+//
+// Everything else this character has completed or is actively working on
+// falls into the final "Unmapped Feats" category — feat_ids the catalog
+// has no category for, so they can't be slotted into the tree above
+// (some still have a recovered name via FEAT_NAMES even without a
+// category; those show it, everything else shows a placeholder). Unmapped
+// Feats never counts toward any other category's completion, is always
+// last, and only ever lists a feat_id this specific character's own
+// completed/active feat data actually contains — there's no attempt to
+// enumerate feat_ids nobody has been observed to have.
+// ---------------------------------------------------------------------
+
+// Fetched once and reused for the rest of the page's life — the catalog
+// itself doesn't depend on which character is on screen, so there's no
+// reason to re-fetch it per character view.
+let featCatalogPromise = null;
+function getFeatCatalog() {
+  if (!featCatalogPromise) {
+    featCatalogPromise = fetch(`${WORKER_BASE}/feat-catalog`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => (Array.isArray(data.entries) ? data.entries : []))
+      .catch(() => null); // null marks "couldn't load", distinct from an empty catalog
+  }
+  return featCatalogPromise;
+}
+
+// The real DCUO feat menu's main-category ordering, as close as this
+// recovered slice can match it; anything the catalog carries that isn't
+// in this list (there isn't anything else today) sorts after these,
+// alphabetically, instead of silently vanishing. "Unmapped Feats" is
+// never part of this — it's appended separately, always last.
+const MAIN_CATEGORY_ORDER = [
+  "Story Arcs", "Exploration", "Solo", "Styles", "Collectibles",
+  "Seasonal & Event", "Player vs. Player", "General",
+];
+
+// Reverse of the Worker's point -> star-rating mapping (10=1, 25=2, 50=3,
+// 100=4), used only to show a feat's point value alongside its stars.
+const STAR_POINTS = { 1: 10, 2: 25, 3: 50, 4: 100 };
+
+// Unmapped Feats can run into the thousands of entries for a veteran
+// character. Rendering them all at once bloats the DOM even though the
+// list scrolls, so only this many render up front; a "Load More" button
+// appends the next page on demand instead.
+const UNMAPPED_PAGE_SIZE = 50;
+
+function buildFeatMenuTree(entries) {
+  const byCategory = new Map();
+  for (const entry of entries) {
+    if (!byCategory.has(entry.category)) byCategory.set(entry.category, new Map());
+    const bySub = byCategory.get(entry.category);
+    const subKey = entry.subcategory || "General";
+    if (!bySub.has(subKey)) bySub.set(subKey, []);
+    bySub.get(subKey).push(entry);
+  }
+  const categoryNames = Array.from(byCategory.keys()).sort((a, b) => {
+    const ia = MAIN_CATEGORY_ORDER.indexOf(a), ib = MAIN_CATEGORY_ORDER.indexOf(b);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    return a.localeCompare(b);
+  });
+  return categoryNames.map(name => {
+    const bySub = byCategory.get(name);
+    const subNames = Array.from(bySub.keys()).sort((a, b) => a.localeCompare(b));
+    const subcategories = subNames.map(sub => ({
+      name: sub,
+      feats: bySub.get(sub).slice().sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+    return { name, subcategories };
+  });
+}
+
+// One star image per point of difficulty (1-4, per the Worker's FEAT_
+// CATEGORIES rating). Feats with no recovered star rating just render no
+// stars rather than a placeholder.
+function starIcons(count) {
+  const n = Math.max(0, Math.min(4, Number(count) || 0));
+  if (!n) return "";
+  const stars = `<img class="td-feat-star" src="star.png" alt="" />`.repeat(n);
+  return `<span class="td-feat-stars" title="${n} star feat">${stars}</span>`;
+}
+
+function featStatus(feat_id, completedSet, activeSet) {
+  const id = String(feat_id);
+  if (completedSet.has(id)) return "complete";
+  if (activeSet.has(id)) return "inprogress";
+  return "notdone";
+}
+
+// Unfinished feats (not-completed AND in-progress alike) sort before
+// completed ones, per the spec; within each of those two groups, mapped
+// feats sort by name and unmapped ones by feat_id (unmapped entries don't
+// all have a name to sort by).
+function sortFeatsForDisplay(list, completedSet, byId) {
+  return list.slice().sort((a, b) => {
+    const ac = completedSet.has(String(a.feat_id)) ? 1 : 0;
+    const bc = completedSet.has(String(b.feat_id)) ? 1 : 0;
+    if (ac !== bc) return ac - bc;
+    return byId ? Number(a.feat_id) - Number(b.feat_id) : (a.name || "").localeCompare(b.name || "");
+  });
+}
+
+function progressBarHtml(completed, total, small, isComplete) {
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return `<div class="td-feat-progress-bar${small ? " td-feat-progress-bar-sm" : ""}"><div class="td-feat-progress-fill${isComplete ? " is-complete" : ""}" style="width:${pct}%"></div></div>`;
+}
+
+// Renders one feat row. `entry` is either a catalog entry (feat_id, name,
+// desc, stars) for the regular tree, or a raw completed/active feat row
+// (feat_id, feat_name?) for the Unmapped Feats list — `unmapped: true`
+// switches between the two shapes rather than needing two near-duplicate
+// functions.
+function featRowHtml(entry, completedSet, activeSet, unmapped) {
+  const status = featStatus(entry.feat_id, completedSet, activeSet);
+  const isComplete = status === "complete";
+  const statusLabel = isComplete ? "Completed" : (status === "inprogress" ? "In Progress" : "Not Completed");
+  const name = unmapped ? esc(entry.feat_name || "Unmapped Feat") : esc(entry.name);
+  const stars = !unmapped && entry.stars ? entry.stars : null;
+  const points = stars ? STAR_POINTS[stars] : null;
+  return `
+    <div class="td-feat-row ${isComplete ? "td-feat-row-complete" : "td-feat-row-unfinished"}">
+      <div class="td-feat-row-main">
+        ${isComplete ? `<span class="td-feat-check" aria-hidden="true">✓</span>` : ""}
+        <span class="td-feat-row-name">${name}</span>
+        ${stars ? starIcons(stars) : ""}
+        ${points ? `<span class="td-feat-row-points">${points} pts</span>` : ""}
+        <span class="td-feat-row-status">${statusLabel}</span>
+      </div>
+      ${unmapped ? `<div class="td-feat-row-id">Feat ID: ${esc(entry.feat_id)}</div>` : ""}
+      ${!unmapped && entry.desc ? `<div class="td-feat-row-desc">${esc(entry.desc)}</div>` : ""}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------
+// Feats: two-column browser (left nav / right results), plus a mobile
+// drill-down of the same hierarchy.
+//
+// All interactive state (which main category is expanded, which
+// subcategory or Unmapped Feats is selected, how much of Unmapped Feats
+// has been paged in, the current feat-ID search text) lives in one plain
+// object stashed on the container as `container._featBrowser` — every
+// click just mutates that object and re-renders from it, never re-fetches
+// anything, so navigating already-loaded feat data is instant. Only one
+// main category is ever expanded and only one subcategory/Unmapped Feats
+// is ever selected at a time (both are single-valued fields, not sets),
+// which is what keeps "only one feat list open at once" true by
+// construction, same as the accordion this replaced.
+//
+// The mobile drill-down reuses this exact same state and HTML rather than
+// tracking a separate "view" - featBrowserView() below derives which of
+// the three drill-down screens (categories / subcats / results) is active
+// purely from expandedMain/selection, and a CSS media query uses that
+// derived value (stamped on the root as [data-view]) to show only one
+// screen at a time on narrow widths. Desktop ignores [data-view] entirely
+// and always shows both columns.
+function computeMainCatStats(cat, completedSet) {
+  const allFeats = cat.subcategories.flatMap(s => s.feats);
+  const total = allFeats.length;
+  const completed = allFeats.filter(f => completedSet.has(String(f.feat_id))).length;
+  return { total, completed, isComplete: total > 0 && completed === total };
+}
+
+function computeSubStats(sub, completedSet) {
+  const total = sub.feats.length;
+  const completed = sub.feats.filter(f => completedSet.has(String(f.feat_id))).length;
+  return { total, completed, isComplete: total > 0 && completed === total };
+}
+
+function featBrowserView(state) {
+  if (state.selection) return "results";
+  if (state.expandedMain) return "subcats";
+  return "categories";
+}
+
+function navSubRowHtml(mainName, sub, completedSet, isSelected) {
+  const { total, completed, isComplete } = computeSubStats(sub, completedSet);
+  return `
+    <button type="button" class="td-feat-nav-subcat${isComplete ? " is-complete" : ""}${isSelected ? " is-selected" : ""}"
+      data-main="${esc(mainName)}" data-sub="${esc(sub.name)}" aria-current="${isSelected ? "true" : "false"}">
+      <span class="td-feat-nav-subcat-name">${esc(sub.name)}</span>
+      <span class="td-feat-nav-subcat-count">${completed} / ${total}</span>
+    </button>
+  `;
+}
+
+function navMainCatHtml(cat, completedSet, state) {
+  const { total, completed, isComplete } = computeMainCatStats(cat, completedSet);
+  const isExpanded = state.expandedMain === cat.name;
+  const subsHtml = isExpanded
+    ? `
+      <div class="td-feat-nav-subcats">
+        <button type="button" class="td-feat-mobile-back td-feat-mobile-back-cats">‹ ${esc(cat.name)}</button>
+        ${cat.subcategories.map(sub => navSubRowHtml(
+          cat.name, sub, completedSet,
+          !!(state.selection && state.selection.type === "sub" && state.selection.main === cat.name && state.selection.sub === sub.name)
+        )).join("")}
+      </div>
+    `
+    : "";
+  return `
+    <div class="td-feat-nav-maincat${isComplete ? " is-complete" : ""}${isExpanded ? " is-expanded" : ""}">
+      <button type="button" class="td-feat-nav-maincat-header" data-main="${esc(cat.name)}" aria-expanded="${isExpanded ? "true" : "false"}">
+        <span class="td-feat-expand-icon" aria-hidden="true">▸</span>
+        <span class="td-feat-nav-maincat-name">${esc(cat.name)}</span>
+        <span class="td-feat-nav-maincat-count">${completed} / ${total}</span>
+      </button>
+      ${progressBarHtml(completed, total, false, isComplete)}
+      ${subsHtml}
+    </div>
+  `;
+}
+
+// Unmapped Feats has no subcategory step of its own — clicking it selects
+// it directly (same as picking a subcategory elsewhere), always sitting
+// last in the nav after every regular main category.
+function navUnmappedRowHtml(unmappedSorted, completedSet, state) {
+  const total = unmappedSorted.length;
+  const completed = unmappedSorted.filter(f => completedSet.has(String(f.feat_id))).length;
+  const isComplete = total > 0 && completed === total;
+  const isSelected = !!(state.selection && state.selection.type === "unmapped");
+  return `
+    <div class="td-feat-nav-maincat td-feat-nav-unmapped${isComplete ? " is-complete" : ""}${isSelected ? " is-selected" : ""}">
+      <button type="button" class="td-feat-nav-maincat-header td-feat-nav-unmapped-header" data-unmapped="1" aria-current="${isSelected ? "true" : "false"}">
+        <span class="td-feat-nav-maincat-name">Unmapped Feats</span>
+        <span class="td-feat-nav-maincat-count">${completed} / ${total}</span>
+      </button>
+      ${progressBarHtml(completed, total, false, isComplete)}
+    </div>
+  `;
+}
+
+function renderNavHtml(state) {
+  const mainCatsHtml = state.tree.map(cat => navMainCatHtml(cat, state.completedSet, state)).join("");
+  const unmappedHtml = navUnmappedRowHtml(state.unmappedSorted, state.completedSet, state);
+  return `<div class="td-feat-nav-maincats">${mainCatsHtml}${unmappedHtml}</div>`;
+}
+
+function resultsPlaceholderHtml() {
+  return `<p class="td-feat-results-placeholder">Select a category and subcategory to view its feats.</p>`;
+}
+
+function resultsSubcategoryHtml(mainName, sub, completedSet, activeSet) {
+  const { total, completed, isComplete } = computeSubStats(sub, completedSet);
+  const sorted = sortFeatsForDisplay(sub.feats, completedSet, false);
+  const unfinished = sorted.filter(f => !completedSet.has(String(f.feat_id)));
+  const done = sorted.filter(f => completedSet.has(String(f.feat_id)));
+  const unfinishedHtml = unfinished.map(f => featRowHtml(f, completedSet, activeSet, false)).join("");
+  const completedHtml = done.length
+    ? `<div class="td-feat-completed-divider"><span>Completed Feats</span></div>${done.map(f => featRowHtml(f, completedSet, activeSet, false)).join("")}`
+    : "";
+  return `
+    <button type="button" class="td-feat-mobile-back td-feat-mobile-back-sub">‹ Back</button>
+    <div class="td-feat-breadcrumb">${esc(mainName)}<span class="td-feat-breadcrumb-sep">›</span>${esc(sub.name)}</div>
+    <div class="td-feat-results-header${isComplete ? " is-complete" : ""}">
+      <span class="td-feat-results-count">${completed} / ${total} Feats Completed</span>
+      ${progressBarHtml(completed, total, false, isComplete)}
+    </div>
+    <div class="td-feat-list td-feat-results-list">${unfinishedHtml}${completedHtml}</div>
+  `;
+}
+
+function filteredUnmappedList(state) {
+  const q = (state.unmappedQuery || "").trim();
+  if (!q) return state.unmappedSorted;
+  return state.unmappedSorted.filter(f => String(f.feat_id).includes(q));
+}
+
+// Only this piece re-renders on a search keystroke or a Load More click —
+// it never touches the search input itself, so the visitor's cursor/focus
+// there is never disturbed by typing.
+function unmappedListWrapHtml(state) {
+  const filtered = filteredUnmappedList(state);
+  const rendered = Math.min(state.unmappedRendered, filtered.length);
+  const initial = filtered.slice(0, rendered);
+  const rows = initial.map(f => featRowHtml(f, state.completedSet, state.activeSet, true)).join("");
+  const remaining = filtered.length - rendered;
+  const loadMoreHtml = remaining > 0
+    ? `<button type="button" class="btn btn-secondary td-feat-load-more">Load ${Math.min(UNMAPPED_PAGE_SIZE, remaining)} More (${remaining} remaining)</button>`
+    : "";
+  const emptyHtml = filtered.length
+    ? ""
+    : `<p class="td-roster-note">${state.unmappedQuery ? "No unmapped feats match that feat ID." : "No unmapped feats detected for this character."}</p>`;
+  return `
+    <div class="td-feat-list td-feat-unmapped-scroll" data-rendered="${initial.length}">${rows || emptyHtml}</div>
+    ${loadMoreHtml}
+  `;
+}
+
+function resultsUnmappedHtml(state) {
+  const total = state.unmappedSorted.length;
+  const completed = state.unmappedSorted.filter(f => state.completedSet.has(String(f.feat_id))).length;
+  const inProgress = total - completed;
+  return `
+    <button type="button" class="td-feat-mobile-back td-feat-mobile-back-sub">‹ Back</button>
+    <div class="td-feat-breadcrumb">Unmapped Feats</div>
+    <div class="td-feat-unmapped-counts">
+      <span><strong>${completed}</strong> Completed</span>
+      <span><strong>${inProgress}</strong> In Progress</span>
+      <span><strong>${total}</strong> Total</span>
+    </div>
+    <p class="td-feat-unmapped-note">These feats were detected in DCUO's data, but their official names and categories have not yet been identified.</p>
+    <div class="td-feat-search-row">
+      <input type="text" class="td-feat-unmapped-search" placeholder="Search feat ID" value="${esc(state.unmappedQuery || "")}" inputmode="numeric" />
+    </div>
+    <div class="td-feat-unmapped-list-wrap">${unmappedListWrapHtml(state)}</div>
+  `;
+}
+
+function renderResultsHtml(state) {
+  if (!state.selection) return resultsPlaceholderHtml();
+  if (state.selection.type === "unmapped") return resultsUnmappedHtml(state);
+  const cat = state.tree.find(c => c.name === state.selection.main);
+  const sub = cat && cat.subcategories.find(s => s.name === state.selection.sub);
+  if (!sub) return resultsPlaceholderHtml();
+  return resultsSubcategoryHtml(state.selection.main, sub, state.completedSet, state.activeSet);
+}
+
+function renderFeatBrowserHtml(state) {
+  const view = featBrowserView(state);
+  return `
+    <div class="td-feat-browser" data-view="${view}">
+      <div class="td-feat-nav">${renderNavHtml(state)}</div>
+      <div class="td-feat-results">${renderResultsHtml(state)}</div>
+    </div>
+  `;
+}
+
+function buildFeatBrowserState(tree, completedFeats, activeFeats, catalogFeatIds) {
+  const completedSet = new Set(completedFeats.map(f => String(f.feat_id)));
+  const activeSet = new Set(activeFeats.map(f => String(f.feat_id)));
+
+  // Unmapped Feats = every feat_id this character's own completed/active
+  // rows contain that the catalog has no category for — never a guess at
+  // ids nobody has been observed to have.
+  const catalogIds = new Set(catalogFeatIds.map(String));
+  const unmappedSeen = new Set();
+  const unmappedFeats = [];
+  for (const f of [...completedFeats, ...activeFeats]) {
+    const id = String(f.feat_id);
+    if (catalogIds.has(id) || unmappedSeen.has(id)) continue;
+    unmappedSeen.add(id);
+    unmappedFeats.push(f);
+  }
+  const unmappedSorted = sortFeatsForDisplay(unmappedFeats, completedSet, true);
+
+  return {
+    tree, completedSet, activeSet, unmappedSorted,
+    expandedMain: null, selection: null,
+    unmappedQuery: "", unmappedRendered: UNMAPPED_PAGE_SIZE,
+  };
+}
+
+function rerenderFeatBrowser(container) {
+  container.innerHTML = renderFeatBrowserHtml(container._featBrowser);
+}
+
+// Delegated click + input handling for the whole browser, wired once per
+// container (guarded so re-rendering the same character, e.g. via
+// applyView, never double-attaches).
+function wireFeatBrowserEvents(container) {
+  if (container._featBrowserWired) return;
+  container._featBrowserWired = true;
+
+  container.addEventListener("click", (e) => {
+    const state = container._featBrowser;
+    if (!state) return;
+
+    if (e.target.closest(".td-feat-mobile-back-cats")) {
+      state.expandedMain = null;
+      rerenderFeatBrowser(container);
+      return;
+    }
+    if (e.target.closest(".td-feat-mobile-back-sub")) {
+      state.selection = null;
+      rerenderFeatBrowser(container);
+      return;
+    }
+    if (e.target.closest(".td-feat-nav-unmapped-header")) {
+      state.expandedMain = null;
+      state.selection = { type: "unmapped" };
+      state.unmappedQuery = "";
+      state.unmappedRendered = UNMAPPED_PAGE_SIZE;
+      rerenderFeatBrowser(container);
+      return;
+    }
+    const mainHeader = e.target.closest(".td-feat-nav-maincat-header");
+    if (mainHeader) {
+      const name = mainHeader.dataset.main;
+      state.expandedMain = state.expandedMain === name ? null : name;
+      state.selection = null;
+      rerenderFeatBrowser(container);
+      return;
+    }
+    const subRow = e.target.closest(".td-feat-nav-subcat");
+    if (subRow) {
+      state.selection = { type: "sub", main: subRow.dataset.main, sub: subRow.dataset.sub };
+      rerenderFeatBrowser(container);
+      return;
+    }
+    const loadMoreBtn = e.target.closest(".td-feat-load-more");
+    if (loadMoreBtn) {
+      const listEl = loadMoreBtn.previousElementSibling;
+      const filtered = filteredUnmappedList(state);
+      const rendered = Number(listEl.dataset.rendered || "0");
+      const nextBatch = filtered.slice(rendered, rendered + UNMAPPED_PAGE_SIZE);
+      listEl.insertAdjacentHTML("beforeend", nextBatch.map(f => featRowHtml(f, state.completedSet, state.activeSet, true)).join(""));
+      const newRendered = rendered + nextBatch.length;
+      listEl.dataset.rendered = String(newRendered);
+      state.unmappedRendered = newRendered;
+      const remaining = filtered.length - newRendered;
+      if (remaining > 0) {
+        loadMoreBtn.textContent = `Load ${Math.min(UNMAPPED_PAGE_SIZE, remaining)} More (${remaining} remaining)`;
+      } else {
+        loadMoreBtn.remove();
+      }
+      return;
+    }
+  });
+
+  // Delegated so it survives the search box being recreated by any other
+  // future full re-render — patches only the list/button beneath the
+  // input, so the input itself (and the visitor's cursor in it) is never
+  // touched by typing.
+  container.addEventListener("input", (e) => {
+    const state = container._featBrowser;
+    if (!state) return;
+    const searchInput = e.target.closest(".td-feat-unmapped-search");
+    if (!searchInput) return;
+    state.unmappedQuery = searchInput.value || "";
+    state.unmappedRendered = UNMAPPED_PAGE_SIZE;
+    const wrap = container.querySelector(".td-feat-unmapped-list-wrap");
+    if (wrap) wrap.innerHTML = unmappedListWrapHtml(state);
+  });
+}
+
+// Loads (or reuses the cached) catalog and patches it into the
+// #featCategoryTree placeholder renderCharacter leaves behind — rather
+// than going through a full repaint() — so this works identically whether
+// the view just finished its first feats fetch or was restored straight
+// from the view cache (applyView), without needing catalog state threaded
+// through loadFeatsAndLeague's own state object. Guards against a stale
+// write the same way the rest of the page does: if the visitor has since
+// navigated away, resultEl's activeCharacterId won't match anymore.
+function loadFeatCategoryTreeInto(characterId, completedFeats, activeFeats) {
+  const characterIdStr = String(characterId);
+  getFeatCatalog().then(entries => {
+    if (resultEl.dataset.activeCharacterId !== characterIdStr) return;
+    const container = resultEl.querySelector("#featCategoryTree");
+    if (!container) return;
+    if (!entries || !entries.length) {
+      container.innerHTML = `<p class="td-roster-note">Feat categories aren't available right now.</p>`;
+      return;
+    }
+    const tree = buildFeatMenuTree(entries);
+    container._featBrowser = buildFeatBrowserState(tree, completedFeats, activeFeats, entries.map(e => e.feat_id));
+    container.innerHTML = renderFeatBrowserHtml(container._featBrowser);
+    wireFeatBrowserEvents(container);
+  });
+}
+
+// ---------------------------------------------------------------------
+// Mode toggle (Character search / League search / Compare)
+// ---------------------------------------------------------------------
+const MODES = {
+  character: {
+    btn: () => modeCharBtn, form: () => charSearchForm,
+    title: "Character Lookup",
+    lede: "Look up your DC Universe Online character's stats, gear, and feats.",
+  },
+  league: {
+    btn: () => modeLeagueBtn, form: () => leagueSearchForm,
+    title: "League Lookup",
+    lede: "Look up a DC Universe Online league's roster and members.",
+  },
+  compare: {
+    btn: () => modeCompareBtn, form: () => compareSearchForm,
+    title: "Compare Characters",
+    lede: "Search two characters to compare their stats, gear, and feats side by side.",
+  },
+  crcalc: {
+    btn: () => modeCrCalcBtn, form: () => crCalcForm,
+    title: "Combat Rating Calculator",
+    lede: "Estimate your Combat Rating from your equipped item levels, or plan what to upgrade next.",
+    // Doesn't call Census at all, so the "we'll never ask for your
+    // password" / "data comes from Census" notices (which are about
+    // searching) don't apply here.
+    hideNotices: true,
+  },
+  leaderboard: {
+    btn: () => modeLeaderboardBtn, form: () => leaderboardForm,
+    title: "Skill Points Leaderboard",
+    lede: "The highest Skill Points among characters that have been looked up here. Census doesn't expose a way to rank every character in the game, so this can only ever reflect who's actually been searched — not a true server-wide #1.",
+    // No search box on this tab either.
+    hideNotices: true,
+  },
+};
+function setMode(mode) {
+  Object.keys(MODES).forEach(key => {
+    const m = MODES[key];
+    const active = key === mode;
+    m.form().style.display = active ? "" : "none";
+    m.btn().classList.toggle("active", active);
+    m.btn().setAttribute("aria-selected", String(active));
+  });
+  pageTitleEl.textContent = MODES[mode].title;
+  pageLedeEl.textContent = MODES[mode].lede;
+  searchNoticesEl.style.display = MODES[mode].hideNotices ? "none" : "";
+}
+modeCharBtn.addEventListener("click", () => setMode("character"));
+modeLeagueBtn.addEventListener("click", () => setMode("league"));
+modeCompareBtn.addEventListener("click", () => setMode("compare"));
+modeCrCalcBtn.addEventListener("click", () => setMode("crcalc"));
+modeLeaderboardBtn.addEventListener("click", () => {
+  setMode("leaderboard");
+  loadLeaderboardData();
+});
+
+// ---------------------------------------------------------------------
+// View cache + history — lets the browser Back/Forward buttons return to
+// a character or league view without re-hitting Census, as long as that
+// view was loaded within the last few minutes (VIEW_CACHE_TTL_MS). Older
+// than that, it refetches, in case the underlying data changed since.
+//
+// Every character or roster view gets its own URL fragment
+// (#char/<id> or #league/<id>) via history.pushState, so Back is a real
+// browser navigation rather than just an in-page state change — without
+// that, there'd be nothing for Back to actually go back *to*.
+// ---------------------------------------------------------------------
+// The cache stores the underlying DATA for a view (not rendered HTML) and
+// applyView re-runs the real render function against it. Caching a raw
+// HTML string and reinjecting it via innerHTML was tried first, but that
+// produces brand-new DOM nodes with no event listeners attached — so any
+// interactive part of the view (sortable roster headers, clicking through
+// to a member's profile) went permanently dead the moment a cached view
+// was restored. Re-rendering from data keeps every listener live.
+const viewCache = new Map(); // viewKey -> { data, fetchedAt }
+
+function cacheView(key, data) {
+  viewCache.set(key, { data, fetchedAt: Date.now() });
+}
+function getFreshView(key) {
+  const entry = viewCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.fetchedAt > VIEW_CACHE_TTL_MS) return null;
+  return entry.data;
+}
+function applyView(data) {
+  clearStatus();
+  clearMatches();
+  if (data.type === "character") {
+    renderCharacter(data.character, data.equippedItems, data.completedFeats, data.activeFeats, data.league);
+  } else if (data.type === "league") {
+    renderRoster(data.guildId, data.guildName, data.members, data.byId, data.sortState);
+  } else if (data.type === "compare") {
+    renderComparison(data.dataA, data.dataB);
+  }
+}
+function pushView(hash) {
+  if (location.hash !== hash) {
+    history.pushState({ tdView: true }, "", hash);
+  }
+}
+
+window.addEventListener("popstate", () => {
+  handleHash(location.hash, { skipPush: true });
+});
+
+function handleHash(hash, opts) {
+  const charMatch = hash.match(/^#char\/(\d+)$/);
+  const leagueMatch = hash.match(/^#league\/([^/?#]+)$/);
+  const compareMatch = hash.match(/^#compare\/(\d+)\/(\d+)$/);
+  if (charMatch) {
+    loadCharacterById(charMatch[1], opts);
+  } else if (leagueMatch) {
+    loadLeagueRoster(leagueMatch[1], null, opts);
+  } else if (compareMatch) {
+    loadComparison(compareMatch[1], compareMatch[2], opts);
+  }
+  // Anything else (empty hash, or Back past the first result) — nothing
+  // to load, just leave whatever's already on screen.
+}
+
+// ---------------------------------------------------------------------
+// Character search flow
 // ---------------------------------------------------------------------
 async function runSearch(name, worldId) {
   clearStatus();
@@ -162,34 +1305,7 @@ async function runSearch(name, worldId) {
       return;
     }
 
-    const character = matches[0];
-    const characterId = character.character_id;
-
-    setStatus("Fetching gear...");
-    const itemsJson = await censusGet("characters_item", { character_id: characterId, "c:limit": 500 });
-    const equippedItems = (itemsJson.characters_item_list || [])
-      .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
-
-    setStatus("Fetching feats...");
-    const completedFeats = await fetchAllPages("characters_completed_feat", { character_id: characterId });
-    const activeFeats = await fetchAllPages("characters_active_feat", { character_id: characterId });
-
-    setStatus("Fetching league...");
-    let league = null;
-    try {
-      const rosterJson = await censusGet("guild_roster", { character_id: characterId });
-      const membership = (rosterJson.guild_roster_list || [])[0];
-      if (membership) {
-        const guildJson = await censusGet("guild", { guild_id: membership.guild_id });
-        const guildInfo = (guildJson.guild_list || [])[0];
-        league = { guild_id: membership.guild_id, rank: membership.rank, name: guildInfo ? guildInfo.name : null };
-      }
-    } catch (e) {
-      league = null;
-    }
-
-    clearStatus();
-    renderCharacter(character, equippedItems, completedFeats, activeFeats, league);
+    await showCharacter(matches[0]);
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
@@ -198,36 +1314,742 @@ async function runSearch(name, worldId) {
   }
 }
 
-function renderCharacter(c, items, completedFeats, activeFeats, league) {
-  const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${esc(value)}</div></div>`;
+// Renders a character we already have the full Census object for (from a
+// name search). Pushes its own #char/<id> history entry and caches the
+// rendered result so Back/Forward can reuse it — see the view cache block
+// above. opts.skipPush is set when this is being restored by popstate,
+// since the URL already reflects this view in that case.
+async function showCharacter(character, opts) {
+  opts = opts || {};
+  const characterId = character.character_id;
+  const cacheKey = `char:${characterId}`;
+  if (!opts.skipPush) pushView(`#char/${characterId}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearMatches();
+  setStatus("Fetching gear...");
+  try {
+    const itemsJson = await censusGet("characters_item", { character_id: characterId, "c:limit": 500 });
+    const equippedItems = (itemsJson.characters_item_list || [])
+      .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
+
+    // Identity, stats, and gear are the fast part — one request, already in
+    // hand. Feats and league are the slow part: a character with a lot of
+    // feats can mean several sequential paginated requests, and visitors
+    // shouldn't have to stare at a blank page while those finish. So the
+    // page renders right now with what's already loaded, and feats/league
+    // stream in afterward, updating this same view in place once ready —
+    // see loadFeatsAndLeague below.
+    clearStatus();
+    loadFeatsAndLeague(character, equippedItems, characterId, cacheKey);
+
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+// Caches each league's (guild's) current display name by guild_id, so
+// every member of the same league — across separate character loads, the
+// league roster page, and Compare — shows the exact same current name
+// from one shared lookup, rather than each spot resolving (and
+// potentially disagreeing about) it independently. A league's in-game
+// name can change at any time and neither the character record nor the
+// guild_roster membership row carries it — the guild_id -> guild record
+// lookup below is the only source of truth for it, ever. Only ever
+// populated with a confirmed answer (a real name, or confirmed-absent
+// null); a transient lookup failure is never cached, so the next attempt
+// gets a fresh try instead of being stuck on a stale miss for the rest of
+// the session.
+const leagueNameCache = new Map();
+
+async function fetchLeagueName(guildId) {
+  if (leagueNameCache.has(guildId)) return leagueNameCache.get(guildId);
+  try {
+    const guildJson = await censusGet("guild", { guild_id: guildId });
+    const guildInfo = (guildJson.guild_list || [])[0];
+    const name = guildInfo ? guildInfo.name : null;
+    leagueNameCache.set(guildId, name);
+    return name;
+  } catch (e) {
+    return null; // not cached - see comment above
+  }
+}
+
+// Looks up a character's league membership by character_id. Returns null
+// when the character isn't in a league, or when even the membership
+// lookup itself fails (there's no guild_id to fall back on in that case,
+// so there's nothing further to try) — a missing league tag isn't worth
+// surfacing as an error the way a missing feat list is (feats silently
+// reading as empty was the confirmed cause of the Compare feature's
+// earlier data-corruption bug; a league tag silently reading "None"
+// carries none of that risk). If membership resolves but the current
+// league NAME can't be (a transient failure in the separate guild_id ->
+// name lookup above), this still returns the guild_id/rank it does have —
+// renderCharacter falls back to a "League #<id>" label rather than
+// wrongly claiming "None" for a character who IS in a league.
+async function fetchLeagueInfo(characterId) {
+  try {
+    const rosterJson = await censusGet("guild_roster", { character_id: characterId });
+    const membership = (rosterJson.guild_roster_list || [])[0];
+    if (!membership) return null;
+    const name = await fetchLeagueName(membership.guild_id);
+    return { guild_id: membership.guild_id, rank: membership.rank, name };
+  } catch (e) {
+    return null;
+  }
+}
+
+// Fetches feats and league in the background after showCharacter has
+// already rendered identity/stats/gear, and repaints just that view once
+// each piece is ready — independently, so a slow or failed feats load
+// doesn't hold up a league tag that resolved fine, or vice versa. Kept as
+// its own function (rather than inlined in showCharacter) so the Retry
+// button on a failed feats load — wired up in renderCharacter — can call
+// straight back into it.
+function loadFeatsAndLeague(character, equippedItems, characterId, cacheKey) {
+  const characterIdStr = String(characterId);
+  // completedFeats stays null until that fetch resolves; league stays
+  // undefined until its fetch resolves (null is itself a valid resolved
+  // "no league" answer, so it has to be distinguishable from "not fetched
+  // yet" — undefined is that marker).
+  const state = { completedFeats: null, activeFeats: null, featsError: false, league: undefined };
+
+  // Claims resultEl for this characterId right away, before the first
+  // repaint() call below — otherwise that very first call would find
+  // resultEl still marked with whatever the previous view left behind (or
+  // nothing, right after clearResult()) and immediately think itself stale.
+  // renderCharacter re-sets this on every call anyway; this just covers the
+  // gap before it's run for the first time.
+  resultEl.dataset.activeCharacterId = characterIdStr;
+
+  // If the visitor has navigated to a different view since this load
+  // started (a new search, Back/Forward, a different character), resultEl
+  // no longer belongs to this characterId — clearResult() (called by every
+  // navigation path) deletes this dataset value, and renderCharacter resets
+  // it to whichever character it just rendered. Either way, a mismatch here
+  // means this load is stale and shouldn't touch the DOM anymore.
+  function isStale() { return resultEl.dataset.activeCharacterId !== characterIdStr; }
+
+  function repaint() {
+    if (isStale()) return;
+    const featsLoading = state.completedFeats === null && !state.featsError;
+    const leagueLoading = state.league === undefined;
+    renderCharacter(
+      character, equippedItems,
+      state.completedFeats || [], state.activeFeats || [],
+      state.league || null,
+      {
+        featsLoading, featsError: state.featsError, leagueLoading,
+        onRetryFeats: () => {
+          state.featsError = false;
+          state.completedFeats = null;
+          state.activeFeats = null;
+          repaint();
+          loadFeats();
+        },
+      }
+    );
+    if (!featsLoading && !state.featsError && !leagueLoading) {
+      cacheView(cacheKey, {
+        type: "character", character, equippedItems,
+        completedFeats: state.completedFeats, activeFeats: state.activeFeats, league: state.league,
+      });
+    }
+  }
+
+  function loadFeats() {
+    Promise.all([
+      fetchAllPages("characters_completed_feat", { character_id: characterId }),
+      fetchAllPages("characters_active_feat", { character_id: characterId }),
+    ]).then(([completed, active]) => {
+      state.completedFeats = completed;
+      state.activeFeats = active;
+      state.featsError = false;
+      repaint();
+    }).catch(() => {
+      state.featsError = true;
+      repaint();
+    });
+  }
+
+  function loadLeague() {
+    fetchLeagueInfo(characterId).then(league => {
+      state.league = league;
+      repaint();
+    });
+  }
+
+  repaint(); // paints the loading skeleton immediately
+  loadFeats();
+  loadLeague();
+}
+
+// Renders a character we only have the character_id for (a league roster
+// row). Looks the character up by ID first, then hands off to
+// showCharacter for the rest — same caching/history behavior either way.
+async function loadCharacterById(characterId, opts) {
+  opts = opts || {};
+  const cacheKey = `char:${characterId}`;
+  if (!opts.skipPush) pushView(`#char/${characterId}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Loading character...");
+  try {
+    const charJson = await censusGet("character", { character_id: characterId });
+    const character = (charJson.character_list || [])[0];
+    if (!character) {
+      setStatus("That character couldn't be loaded — they may have transferred, been renamed, or been deleted.", "error");
+      return;
+    }
+    await showCharacter(character, { skipPush: true });
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+// Fetches everything renderCharacter/renderComparison need for one
+// character_id — the character record itself plus gear/feats/league —
+// as a single bundle. Used by the comparison flow, which needs two of
+// these at once. Kept separate from showCharacter (which assumes the
+// caller already has the character record from a name search) so that
+// existing, already-verified flow isn't touched.
+async function fetchCharacterFullData(characterId) {
+  const charJson = await censusGet("character", { character_id: characterId });
+  const character = (charJson.character_list || [])[0];
+  if (!character) return null;
+
+  const itemsJson = await censusGet("characters_item", { character_id: characterId, "c:limit": 500 });
+  const equippedItems = (itemsJson.characters_item_list || [])
+    .sort((a, b) => Number(a.equipment_slot_id) - Number(b.equipment_slot_id));
+
+  // Completed/active feats and league are independent requests, so they run
+  // concurrently rather than one after another — same reasoning as the
+  // background load in loadFeatsAndLeague above, just awaited here instead
+  // of streamed in, since the compare flow renders both characters at once
+  // rather than progressively.
+  const [completedFeats, activeFeats, league] = await Promise.all([
+    fetchAllPages("characters_completed_feat", { character_id: characterId }),
+    fetchAllPages("characters_active_feat", { character_id: characterId }),
+    fetchLeagueInfo(characterId),
+  ]);
+
+  return { character, equippedItems, completedFeats, activeFeats, league };
+}
+
+// ---------------------------------------------------------------------
+// League search flow
+// ---------------------------------------------------------------------
+async function runLeagueSearch(name) {
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Looking up league...");
+  leagueSearchBtn.disabled = true;
+
+  try {
+    const guildJson = await censusGet("guild", { name: `^${name}`, "c:limit": 20 });
+    const matches = guildJson.guild_list || [];
+
+    if (matches.length === 0) {
+      setStatus(`No league named "${name}" was found.`, "error");
+      return;
+    }
+
+    if (matches.length > 1) {
+      setStatus(`More than one league matches "${name}". Pick the right one:`, "warn");
+      matchListEl.innerHTML = matches.map(m => `
+        <div class="td-match-item" data-guild-id="${esc(m.guild_id)}" data-guild-name="${esc(m.name)}">
+          <span>${esc(m.name)}</span>
+          <span>${esc(WORLD_NAMES[m.world_id] || `World #${m.world_id}`)}</span>
+        </div>
+      `).join("");
+      [...matchListEl.children].forEach(el => {
+        el.addEventListener("click", () => {
+          loadLeagueRoster(el.dataset.guildId, el.dataset.guildName);
+        });
+      });
+      return;
+    }
+
+    await loadLeagueRoster(matches[0].guild_id, matches[0].name);
+
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    leagueSearchBtn.disabled = false;
+  }
+}
+
+// Loads a full league roster by guild_id and renders it as a clickable
+// member table. Pushes its own #league/<id> history entry and caches the
+// rendered result, same pattern as showCharacter above — so clicking into
+// a member's profile and hitting Back returns here instantly if it's
+// still within the cache window, instead of re-fetching the whole roster.
+async function loadLeagueRoster(guildId, knownName, opts) {
+  opts = opts || {};
+  const cacheKey = `league:${guildId}`;
+  if (!opts.skipPush) pushView(`#league/${guildId}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearStatus();
+  clearMatches();
+  clearResult();
+  setStatus("Loading roster...");
+  try {
+    const rosterJson = await censusGet("guild_roster", { guild_id: guildId, "c:limit": ROSTER_LIMIT });
+    const members = rosterJson.guild_roster_list || [];
+
+    if (members.length === 0) {
+      setStatus("That league has no members, or couldn't be loaded.", "error");
+      return;
+    }
+
+    // Goes through the same shared leagueNameCache as fetchLeagueInfo, so
+    // a member of this league whose character page was already viewed
+    // (or vice versa) doesn't trigger a second lookup and can't disagree
+    // with this page about the league's current name.
+    let guildName = knownName;
+    if (!guildName) {
+      guildName = (await fetchLeagueName(guildId)) || "League";
+    } else if (!leagueNameCache.has(guildId)) {
+      // Came in already resolved (a league search result) — seed the
+      // shared cache with it too, so a character page for one of this
+      // league's members viewed next reuses this exact name.
+      leagueNameCache.set(guildId, knownName);
+    }
+
+    setStatus(`Loading ${members.length} member${members.length === 1 ? "" : "s"}...`);
+    // Resolve character_id -> name/level/CR in batches. A batch failing
+    // (rate limit, etc.) shouldn't take down the whole roster — those
+    // members just fall back to showing their raw ID below.
+    //
+    // Also guards against Census's other, sneakier failure mode here (see
+    // the CHAR_BATCH_SIZE comment above): a multi-id character_id query
+    // that Census can't/won't actually filter doesn't error, it just
+    // returns some unrelated fixed set of characters with a normal 200. A
+    // batch like that would otherwise silently poison byId with the wrong
+    // names for a bunch of unrelated character_ids. So every returned
+    // entry has to be one of the ids this specific batch actually asked
+    // for — if even one isn't, the whole batch is untrustworthy and gets
+    // thrown away rather than partially trusted, since there's no way to
+    // tell which of its entries (if any) are real.
+    const byId = {};
+    for (let i = 0; i < members.length; i += CHAR_BATCH_SIZE) {
+      const batch = members.slice(i, i + CHAR_BATCH_SIZE);
+      const requestedIds = new Set(batch.map(m => m.character_id));
+      const idsParam = batch.map(m => m.character_id).join(",");
+      try {
+        const charJson = await censusGet("character", { character_id: idsParam, "c:limit": CHAR_BATCH_SIZE });
+        const returned = charJson.character_list || [];
+        const trustworthy = returned.length > 0 && returned.every(c => requestedIds.has(c.character_id));
+        if (trustworthy) {
+          returned.forEach(c => { byId[c.character_id] = c; });
+        }
+        // else: leave this batch unresolved rather than trust data that
+        // doesn't match what was asked for — those members fall back to
+        // showing their raw ID below.
+      } catch (e) {
+        // leave this batch unresolved rather than aborting the roster
+      }
+    }
+
+    clearStatus();
+    renderRoster(guildId, guildName, members, byId);
+
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+// ---------------------------------------------------------------------
+// Compare flow — resolve two character names to two character_ids (each
+// side independently, since a name can be ambiguous on either side), then
+// load both full profiles and render them side by side.
+// ---------------------------------------------------------------------
+const compareSelection = { A: null, B: null }; // { id, name } per side, once resolved
+
+function compareSideRefs(side) {
+  return side === "A"
+    ? { input: compareNameA, btn: compareSearchABtn, matchList: compareMatchListA, selectedEl: compareSelectedA }
+    : { input: compareNameB, btn: compareSearchBBtn, matchList: compareMatchListB, selectedEl: compareSelectedB };
+}
+
+function setCompareSelection(side, id, name) {
+  compareSelection[side] = id ? { id, name } : null;
+  const { matchList, selectedEl, input } = compareSideRefs(side);
+  matchList.innerHTML = "";
+  if (id) {
+    selectedEl.style.display = "";
+    selectedEl.innerHTML = `Selected: <strong>${esc(name)}</strong> <button type="button">Change</button>`;
+    selectedEl.querySelector("button").addEventListener("click", () => {
+      setCompareSelection(side, null, null);
+      input.value = "";
+      input.focus();
+    });
+  } else {
+    selectedEl.style.display = "none";
+    selectedEl.innerHTML = "";
+  }
+  compareGoBtn.disabled = !(compareSelection.A && compareSelection.B);
+}
+
+async function runCompareSideSearch(side) {
+  const { input, btn, matchList } = compareSideRefs(side);
+  const name = input.value.trim();
+  if (!name) {
+    setStatus(`Enter a name for the ${side === "A" ? "first" : "second"} character.`, "error");
+    return;
+  }
+  clearStatus();
+  matchList.innerHTML = "";
+  btn.disabled = true;
+  try {
+    const charJson = await censusGet("character", { name });
+    const matches = charJson.character_list || [];
+
+    if (matches.length === 0) {
+      setStatus(`No character named "${name}" was found.`, "error");
+      return;
+    }
+    if (matches.length > 1) {
+      setStatus(`More than one character is named "${name}". Pick the right one:`, "warn");
+      matchList.innerHTML = matches.map(m => `
+        <div class="td-match-item" data-character-id="${esc(m.character_id)}" data-character-name="${esc(m.name)}">
+          <span>${esc(m.name)}, Level ${esc(m.level)}</span>
+          <span>Combat Rating ${esc(m.combat_rating)}</span>
+        </div>
+      `).join("");
+      [...matchList.children].forEach(el => {
+        el.addEventListener("click", () => {
+          clearStatus();
+          setCompareSelection(side, el.dataset.characterId, el.dataset.characterName);
+        });
+      });
+      return;
+    }
+
+    clearStatus();
+    setCompareSelection(side, matches[0].character_id, matches[0].name);
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+compareSearchABtn.addEventListener("click", () => runCompareSideSearch("A"));
+compareSearchBBtn.addEventListener("click", () => runCompareSideSearch("B"));
+compareNameA.addEventListener("keydown", (e) => { if (e.key === "Enter") runCompareSideSearch("A"); });
+compareNameB.addEventListener("keydown", (e) => { if (e.key === "Enter") runCompareSideSearch("B"); });
+compareGoBtn.addEventListener("click", () => {
+  if (!compareSelection.A || !compareSelection.B) return;
+  loadComparison(compareSelection.A.id, compareSelection.B.id);
+});
+
+// Loads two full character profiles, one after the other, and renders them
+// side by side. Pushes #compare/<idA>/<idB> and caches the same way
+// character and league views do, so Back returns here instantly within the
+// cache window.
+async function loadComparison(idA, idB, opts) {
+  opts = opts || {};
+  const cacheKey = `compare:${idA}:${idB}`;
+  if (!opts.skipPush) pushView(`#compare/${idA}/${idB}`);
+
+  const cached = getFreshView(cacheKey);
+  if (cached) {
+    applyView(cached);
+    return;
+  }
+
+  clearStatus();
+  clearMatches();
+  clearResult();
+  // Fetched one at a time, not in parallel. The shared "s:example" Census
+  // key has a tight, undocumented rate limit, and comparing doubles the
+  // number of requests in flight at once (character + gear + two feat
+  // collections + league, times two people). Running both characters
+  // concurrently was making that limit far more likely to be hit — which,
+  // before the censusGet fix above, silently corrupted the results instead
+  // of failing loudly. Sequential fetches keep peak load the same as a
+  // single character lookup.
+  setStatus("Loading first character...");
+  try {
+    const dataA = await fetchCharacterFullData(idA);
+    setStatus("Loading second character...");
+    const dataB = await fetchCharacterFullData(idB);
+
+    if (!dataA || !dataB) {
+      setStatus("One of those characters couldn't be loaded — they may have transferred, been renamed, or been deleted.", "error");
+      return;
+    }
+
+    clearStatus();
+    renderComparison(dataA, dataB);
+    cacheView(cacheKey, { type: "compare", idA, idB, dataA, dataB });
+  } catch (err) {
+    setStatus(err.message || "Something went wrong. Please try again.", "error");
+  }
+}
+
+// Roster columns that can be sorted client-side (no re-fetch needed — the
+// full member list and their resolved character records are already in
+// hand). "name" sorts alphabetically; "cr" and "sp" sort numerically, with
+// unresolved members (no matching character record) treated as lowest so
+// they sink to the bottom instead of interrupting the ranking.
+const ROSTER_SORT_KEYS = { name: true, cr: true, sp: true };
+
+function renderRoster(guildId, guildName, members, byId, resumeSort) {
+  // Invalidates any in-flight background feat/league load from a
+  // previously-rendered character view (see loadFeatsAndLeague) so it
+  // can't repaint over this roster.
+  delete resultEl.dataset.activeCharacterId;
+  // dir: 1 = ascending, -1 = descending. resumeSort carries the sort the
+  // user had chosen when this same roster was last rendered (Back, or
+  // searching the same league again within the cache window), so it isn't
+  // silently reset to fetch order.
+  const sortState = resumeSort ? { ...resumeSort } : { key: null, dir: 1 };
+  // Roster members picked for a head-to-head compare, capped at 2. Resets
+  // whenever this roster is freshly loaded (a new search, or navigating
+  // back into it after the sort/back-button fixes above) — carrying a
+  // selection across an unrelated view isn't worth the added complexity.
+  const selected = new Set();
+
+  function sortValue(key, m) {
+    const c = byId[m.character_id];
+    if (key === "name") return (c ? c.name : `Character #${m.character_id}`).toLowerCase();
+    if (key === "cr") return c && c.combat_rating !== undefined && c.combat_rating !== null ? Number(c.combat_rating) : -1;
+    if (key === "sp") return c && c.skill_points !== undefined && c.skill_points !== null ? Number(c.skill_points) : -1;
+    return 0;
+  }
+
+  function sortedMembers() {
+    if (!sortState.key) return members;
+    return [...members].sort((a, b) => {
+      const va = sortValue(sortState.key, a);
+      const vb = sortValue(sortState.key, b);
+      if (va < vb) return -1 * sortState.dir;
+      if (va > vb) return 1 * sortState.dir;
+      return 0;
+    });
+  }
+
+  function buildRowsHtml(list) {
+    return list.map(m => {
+      const c = byId[m.character_id];
+      const name = c ? esc(c.name) : `Character #${esc(m.character_id)}`;
+      const level = c ? fmt(c.level) : "—";
+      const cr = c ? fmt(c.combat_rating) : "—";
+      const sp = c ? fmt(c.skill_points) : "—";
+      const checked = selected.has(m.character_id) ? "checked" : "";
+      return `<tr class="td-roster-row" data-character-id="${esc(m.character_id)}" tabindex="0">
+        <td class="td-roster-select-td"><input type="checkbox" class="td-roster-checkbox" data-character-id="${esc(m.character_id)}" data-character-name="${name}" ${checked} /></td>
+        <td>${name}</td>
+        <td>${level}</td>
+        <td>${cr}</td>
+        <td>${sp}</td>
+        <td>${esc(m.rank)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function attachRowHandlers() {
+    resultEl.querySelectorAll(".td-roster-row").forEach(row => {
+      const go = (e) => {
+        // Clicking the checkbox should select it, not navigate away.
+        if (e.target && e.target.closest(".td-roster-checkbox")) return;
+        loadCharacterById(row.dataset.characterId);
+      };
+      row.addEventListener("click", go);
+      row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
+    });
+    resultEl.querySelectorAll(".td-roster-checkbox").forEach(cb => {
+      cb.addEventListener("click", (e) => e.stopPropagation());
+      cb.addEventListener("change", () => {
+        const id = cb.dataset.characterId;
+        if (cb.checked) {
+          if (selected.size >= 2) { cb.checked = false; return; }
+          selected.add(id);
+        } else {
+          selected.delete(id);
+        }
+        updateCheckboxAvailability();
+        updateCompareButtonState();
+      });
+    });
+  }
+
+  // Once 2 members are picked, grey out the remaining checkboxes rather
+  // than silently ignoring further clicks — makes the 2-person cap obvious
+  // instead of the roster just appearing to stop responding.
+  function updateCheckboxAvailability() {
+    const atLimit = selected.size >= 2;
+    resultEl.querySelectorAll(".td-roster-checkbox").forEach(cb => {
+      if (!cb.checked) cb.disabled = atLimit;
+    });
+  }
+
+  function updateCompareButtonState() {
+    const btn = resultEl.querySelector("#rosterCompareBtn");
+    if (!btn) return;
+    btn.disabled = selected.size !== 2;
+    btn.textContent = selected.size === 2 ? "Compare Selected" : `Compare Selected (${selected.size}/2)`;
+  }
+
+  function attachCompareButton() {
+    const btn = resultEl.querySelector("#rosterCompareBtn");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const ids = [...selected];
+      if (ids.length !== 2) return;
+      loadComparison(ids[0], ids[1]);
+    });
+  }
+
+  function updateHeaderIndicators() {
+    resultEl.querySelectorAll(".td-roster-table th[data-sort-key]").forEach(th => {
+      th.classList.remove("sorted-asc", "sorted-desc");
+      if (th.dataset.sortKey === sortState.key) {
+        th.classList.add(sortState.dir === 1 ? "sorted-asc" : "sorted-desc");
+      }
+    });
+  }
+
+  // Caches the data behind this exact roster view, including whatever sort
+  // is currently active, so a later Back or repeat search re-renders (with
+  // listeners intact — see the view cache block above) in the same order
+  // instead of resetting to fetch order.
+  function cacheCurrent() {
+    cacheView(`league:${guildId}`, { type: "league", guildId, guildName, members, byId, sortState: { ...sortState } });
+  }
+
+  function renderTbody() {
+    const tbody = resultEl.querySelector(".td-roster-table tbody");
+    tbody.innerHTML = buildRowsHtml(sortedMembers());
+    attachRowHandlers();
+    updateHeaderIndicators();
+    updateCheckboxAvailability();
+    updateCompareButtonState();
+    cacheCurrent();
+  }
+
+  resultEl.innerHTML = `
+    <div class="td-roster">
+      <p class="td-section-label">League — ${esc(guildName)} (${members.length} member${members.length === 1 ? "" : "s"})</p>
+      <table class="td-roster-table">
+        <thead><tr>
+          <th class="td-roster-select-th">Compare</th>
+          <th class="sortable" data-sort-key="name">Name</th>
+          <th>Level</th>
+          <th class="sortable" data-sort-key="cr">Combat Rating</th>
+          <th class="sortable" data-sort-key="sp">Skill Points</th>
+          <th>Rank</th>
+        </tr></thead>
+        <tbody>${buildRowsHtml(sortedMembers())}</tbody>
+      </table>
+      <p class="td-roster-note">Click a member to see their full profile. Click Name, Combat Rating, or Skill Points to sort — click again to reverse. Check exactly 2 members and click Compare Selected to see them side by side. Rank is shown as the game's raw rank number — Census doesn't provide rank names like Leader or Officer. A roster reflects Census data at the moment it loaded; search again to refresh it.</p>
+      <div class="td-roster-actions">
+        <button type="button" id="rosterCompareBtn" class="btn btn-secondary" disabled>Compare Selected (0/2)</button>
+      </div>
+    </div>
+  `;
+  resultEl.className = "td-result show";
+  attachRowHandlers();
+  updateHeaderIndicators();
+  updateCheckboxAvailability();
+  updateCompareButtonState();
+  attachCompareButton();
+  cacheCurrent();
+
+  resultEl.querySelectorAll(".td-roster-table th[data-sort-key]").forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.sortKey;
+      if (!ROSTER_SORT_KEYS[key]) return;
+      if (sortState.key === key) {
+        sortState.dir *= -1;
+      } else {
+        sortState.key = key;
+        // Name defaults to A-Z; the numeric columns default to highest
+        // first, since that's the order people usually want to rank a
+        // roster by combat rating or skill points.
+        sortState.dir = key === "name" ? 1 : -1;
+      }
+      renderTbody();
+    });
+  });
+}
+
+// ---------------------------------------------------------------------
+// Character render
+// ---------------------------------------------------------------------
+function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
+  opts = opts || {};
+  const featsLoading = !!opts.featsLoading;
+  const featsError = !!opts.featsError;
+  const leagueLoading = !!opts.leagueLoading;
+  // Marks this as the character currently on screen, so a background
+  // feat/league load in flight for a DIFFERENT character (or for a view the
+  // visitor has since navigated away from) knows not to repaint over
+  // whatever just got rendered — see loadFeatsAndLeague.
+  resultEl.dataset.activeCharacterId = String(c.character_id);
+
+  // esc() alone turns a genuinely missing field into the literal text
+  // "undefined" (String(undefined) === "undefined") — this is what was
+  // showing up under Title for characters Census doesn't return a
+  // title_id for. Falls back to "None" instead, same as every other
+  // field that uses this helper.
+  const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${value === undefined || value === null || value === "" ? "None" : esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
-  const fmt = (n) => Number(n).toLocaleString();
-  const pct = (cur, max) => {
-    const m = Number(max);
-    if (!m) return 0;
-    return Math.max(0, Math.min(100, (Number(cur) / m) * 100));
-  };
 
-  const itemRows = items.map(it => `
-    <tr>
-      <td>${esc(it.equipment_slot_id)}</td>
-      <td>${esc(it.item_id)}</td>
-      <td>${it.is_bound === "true" ? "Yes" : "No"}</td>
-      <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "None"}</td>
-    </tr>
-  `).join("");
+  // Equipped gear: a selectable border frame (the 18 real, Census-backed
+  // slots, plus 6 honest "not tracked" placeholders for Consumable/Soder
+  // and the 5 Artifacts) plus a collapsed "Additional Equipment" strip for
+  // anything Census reports outside that set (any future/unmapped slot
+  // id). See the gear* helpers and GEAR_FRAME_SLOTS above — this is the
+  // only prep renderCharacter itself needs: a slotId -> item lookup and
+  // the sorted list of "extra" ids, both handed to the HTML builders and
+  // to wireGearPanel below.
+  const bySlot = {};
+  items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
+  const extraSlotIds = Object.keys(bySlot)
+    .map(Number)
+    .filter(n => !REAL_GEAR_SLOT_IDS.includes(n))
+    .sort((a, b) => a - b);
+  const frameSlotsHtml = GEAR_FRAME_SLOTS.map(entry => entry.untracked
+    ? untrackedSlotButtonHtml(entry)
+    : slotButtonHtml(entry.id, entry.icon, bySlot[entry.id], false, { style: `left:${entry.x}%;top:${entry.y}%`, compact: true })
+  ).join("");
 
-  const featIdSpans = (list) => list.map(f => `<span>#${esc(f.feat_id)}</span>`).join("");
+  const featIdSpans = (list) => list.map(featChip).join("");
 
-  // alignment_id isn't documented by Daybreak, but it only ever takes two
-  // values and cross-checking name patterns (Batman/Superman-themed names
-  // vs. Joker/Harley Quinn-themed names) confirms which is which.
-  const ALIGNMENT_NAMES = { "2330": "Hero", "2331": "Villain" };
   const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
 
-  const leagueName = league && league.name ? esc(league.name) : "None";
-  const healthPct = pct(c.current_health, c.max_health);
-  const powerPct = pct(c.current_power, c.max_power);
+  // "None" only ever means "not in a league" (fetchLeagueInfo found no
+  // membership, or the membership lookup itself failed outright) — a
+  // character who IS in a league but whose current league name couldn't
+  // be resolved (a transient failure in that separate lookup) shows the
+  // honest "League #<id>" fallback instead, never a guessed/stale name.
+  const leagueName = leagueLoading ? "Loading…" : (league ? (league.name ? esc(league.name) : `League #${esc(league.guild_id)}`) : "None");
+  const leagueLink = !leagueLoading && league && league.guild_id
+    ? `<a href="#league/${esc(league.guild_id)}" class="td-league-link" data-guild-id="${esc(league.guild_id)}" data-guild-name="${leagueName}">${leagueName}</a>`
+    : leagueName;
 
   // Simple stroke icons matching the site's brand-mark style. Power source
   // still has no known name lookup, so it's shown as a raw ID further down.
@@ -235,6 +2057,47 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
   const moveIcon = `<svg viewBox="0 0 16 16"><path d="M2 11 L7 6 M5 13 L10 8 M8 15 L13 10"/></svg>`;
   const powerTypeLabel = POWER_TYPE_NAMES[c.power_type_id] || `#${c.power_type_id}`;
   const movementLabel = MOVEMENT_MODE_NAMES[c.movement_mode_id] || `#${c.movement_mode_id}`;
+  const worldLabel = WORLD_NAMES[c.world_id] || `#${c.world_id}`;
+
+  // Feats are the slowest thing this page loads (a well-feated character
+  // can mean several sequential paginated requests), so this section has
+  // three states instead of just one: a loading skeleton shown the instant
+  // the rest of the page renders, an error state with a Retry button if the
+  // background fetch fails, and the real counts/lists once it succeeds. See
+  // loadFeatsAndLeague, which drives which of these gets passed in via opts.
+  const featsSectionHtml = featsLoading ? `
+    <div class="td-feat-summary">
+      <div class="kv-single"><div class="k">Completed</div><div class="v td-loading">···</div></div>
+      <div class="kv-single"><div class="k">In Progress</div><div class="v td-loading">···</div></div>
+    </div>
+    <p class="td-roster-note">Loading feat data — characters with a lot of feats can take a few seconds.</p>
+  ` : featsError ? `
+    <div class="notice">
+      <span>Feat data couldn't be loaded. <button type="button" id="retryFeatsBtn" class="btn btn-secondary" style="margin-left:8px;">Retry</button></span>
+    </div>
+  ` : `
+    <div class="td-feat-summary">
+      <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}${c.max_feats ? ` <span class="td-feat-of-total">/ ${fmt(c.max_feats)}</span>` : ""}</div></div>
+      <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
+    </div>
+
+    <p class="td-section-label" style="margin-top:24px;">Feats</p>
+    <div class="notice" style="margin-bottom:12px;">
+      <span>Feats below with a real name and category have been cross-referenced against Daybreak's own feat data — everything else this character has completed or is working on falls into Unmapped Feats at the bottom until it's identified.</span>
+    </div>
+    <div id="featCategoryTree" class="td-feat-categories">
+      <p class="td-roster-note">Loading feat categories…</p>
+    </div>
+
+    <details style="margin-top:22px;">
+      <summary>Show all completed feat IDs (${completedFeats.length})</summary>
+      <div class="td-feat-ids">${featIdSpans(completedFeats)}</div>
+    </details>
+    <details style="margin-top:10px;">
+      <summary>Show all in-progress feat IDs (${activeFeats.length})</summary>
+      <div class="td-feat-ids">${featIdSpans(activeFeats)}</div>
+    </details>
+  `;
 
   resultEl.innerHTML = `
     <div class="td-identity">
@@ -242,8 +2105,8 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
         <div class="td-name">${esc(c.name)}</div>
         <div class="td-identity-tags">
           ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
-          <span class="td-tag">League <strong>${leagueName}</strong></span>
-          <span class="td-tag">Server <strong>#${esc(c.world_id)}</strong></span>
+          <span class="td-tag">League <strong${leagueLoading ? ' class="td-loading"' : ""}>${leagueLink}</strong></span>
+          <span class="td-tag" title="World ID ${esc(c.world_id)}">Server <strong>${esc(worldLabel)}</strong></span>
         </div>
       </div>
       <div class="td-identity-icons">
@@ -255,56 +2118,55 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
     <div class="td-columns">
       <div>
         <p class="td-section-label">Gear</p>
-        <table class="td-gear-table">
-          <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
-          <tbody>${itemRows}</tbody>
-        </table>
+        <div class="td-gear-area" id="gearArea">
+          <div class="td-paperdoll-wrap">
+            <div class="td-gear-frame">
+              <img class="td-gear-frame-border" src="gear-frame.png" alt="" />
+              <img class="td-gear-frame-silhouette" src="paperdoll-silhouette.png" alt="" />
+              ${frameSlotsHtml}
+            </div>
+            ${additionalGearHtml(extraSlotIds, bySlot)}
+          </div>
+          <div class="td-gear-detail">${gearSummaryHtml(bySlot, extraSlotIds)}</div>
+        </div>
+        <p class="td-roster-note" style="margin-top:14px;">Select any gear slot for its full item details — stat numbers and item level aren't shown because Census doesn't return them and they scale per character even on the identical item.</p>
       </div>
 
       <div>
         <div class="td-hero-stats">
           <div class="td-hero-stat">
-            <div class="v">${esc(c.combat_rating)}</div>
+            <div class="v">${fmt(c.combat_rating)}</div>
             <div class="k">Combat Rating</div>
           </div>
           <div class="td-hero-stat">
-            <div class="v">${esc(c.skill_points)}</div>
+            <div class="v">${fmt(c.skill_points)}</div>
             <div class="k">Skill Points</div>
           </div>
         </div>
 
         <div class="td-secondary-stats">
-          <div><div class="k">Level</div><div class="v td-level">${esc(c.level)}</div></div>
-          <div><div class="k">PvP Combat Rating</div><div class="v td-pvp">${esc(c.pvp_combat_rating)}</div></div>
-        </div>
-
-        <div class="td-bars">
-          <div class="td-bar-row">
-            <div class="k"><span>Health</span><span class="v">${fmt(c.current_health)} / ${fmt(c.max_health)}</span></div>
-            <div class="td-bar-track"><div class="td-bar-fill" style="width:${healthPct}%"></div></div>
-          </div>
-          <div class="td-bar-row">
-            <div class="k"><span>Power</span><span class="v">${fmt(c.current_power)} / ${fmt(c.max_power)}</span></div>
-            <div class="td-bar-track"><div class="td-bar-fill power" style="width:${powerPct}%"></div></div>
-          </div>
+          <div><div class="k">Level</div><div class="v td-level">${fmt(c.level)}</div></div>
+          <div><div class="k">PvP Combat Rating</div><div class="v td-pvp">${fmt(c.pvp_combat_rating)}</div></div>
         </div>
 
         <div class="td-rows">
-          ${row("Might", c.might)}
-          ${row("Precision", c.precision)}
-          ${row("Restoration", c.restoration)}
-          ${row("Vitalization", c.vitalization)}
-          ${row("Dominance", c.dominance)}
-          ${row("Defense", c.defense)}
-          ${row("Toughness", c.toughness)}
+          ${row("Health", fmt(c.max_health))}
+          ${row("Power", fmt(c.max_power))}
+          ${row("Might", fmt(c.might))}
+          ${row("Precision", fmt(c.precision))}
+          ${row("Restoration", fmt(c.restoration))}
+          ${row("Vitalization", fmt(c.vitalization))}
+          ${row("Dominance", fmt(c.dominance))}
+          ${row("Defense", fmt(c.defense))}
+          ${row("Toughness", fmt(c.toughness))}
         </div>
 
         <div class="td-kv">
-          ${kv("Power Source", c.power_source_id)}
-          ${kv("Gender", c.gender_id)}
-          ${kv("Origin", c.origin_id)}
+          ${kv("Weapon", WEAPON_NAMES[c.power_source_id] || c.power_source_id)}
+          ${kv("Gender", GENDER_NAMES[c.gender_id] || c.gender_id)}
+          ${kv("Origin", ORIGIN_NAMES[c.origin_id] || c.origin_id)}
           ${kv("Title", c.title_id)}
-          ${kv("Personality", c.personality_id)}
+          ${kv("Personality", PERSONALITY_NAMES[c.personality_id] || c.personality_id)}
           ${kv("Region", c.region_id)}
         </div>
       </div>
@@ -312,31 +2174,469 @@ function renderCharacter(c, items, completedFeats, activeFeats, league) {
 
     <div class="card" style="margin-top:32px;">
       <p class="td-section-label">Feats</p>
-      <div class="td-feat-summary">
-        <div class="kv-single"><div class="k">Completed</div><div class="v">${completedFeats.length}</div></div>
-        <div class="kv-single"><div class="k">In Progress</div><div class="v">${activeFeats.length}</div></div>
-      </div>
-      <details>
-        <summary>Show completed feat IDs (${completedFeats.length})</summary>
-        <div class="td-feat-ids">${featIdSpans(completedFeats)}</div>
-      </details>
-      <details style="margin-top:10px;">
-        <summary>Show in-progress feat IDs (${activeFeats.length})</summary>
-        <div class="td-feat-ids">${featIdSpans(activeFeats)}</div>
-      </details>
+      ${featsSectionHtml}
     </div>
 
     <div class="card" style="margin-top:20px;">
       <p class="td-section-label">About this data</p>
       <ul class="td-limitations">
-        <li>Feat IDs are shown raw. The Census API doesn't provide feat names.</li>
+        <li>Feat names come from an archived, recovered list, not Census (it stopped providing feat names years ago) — coverage is partial and frozen at mid-2015, so newer feats show as a raw ID (#…) instead of a name.</li>
+        <li>The category browser only covers feats that could be matched to a public category listing — a smaller slice than the named feats above, so plenty of real feats (especially Races) still only show up in the raw ID lists below it.</li>
+        <li>The "X / Y" total next to Completed comes straight from Census's own per-character max_feats value, which already appears to account for alignment and other eligibility — not something calculated on this site.</li>
         <li>In-progress feats show only that they've been started, not how close they are to completion.</li>
         <li>Completed feats don't have a completion date attached.</li>
       </ul>
     </div>
   `;
   resultEl.className = "td-result show";
+
+  const leagueLinkEl = resultEl.querySelector(".td-league-link");
+  if (leagueLinkEl) {
+    leagueLinkEl.addEventListener("click", (e) => {
+      e.preventDefault();
+      loadLeagueRoster(leagueLinkEl.dataset.guildId, leagueLinkEl.dataset.guildName);
+    });
+  }
+
+  const retryFeatsBtn = resultEl.querySelector("#retryFeatsBtn");
+  if (retryFeatsBtn && opts.onRetryFeats) {
+    retryFeatsBtn.addEventListener("click", opts.onRetryFeats);
+  }
+
+  // resultEl.innerHTML above is a brand-new #gearArea element every call
+  // (renderCharacter always rebuilds the whole view), so this never needs
+  // a "wired already" guard the way the feats browser's patched-in-place
+  // container does.
+  const gearAreaEl = resultEl.querySelector("#gearArea");
+  if (gearAreaEl) wireGearPanel(gearAreaEl, bySlot);
+
+  // Only once real feat data is on screen (not the loading skeleton or the
+  // error state) is there a #featCategoryTree placeholder to patch — and
+  // only then do completedFeats/activeFeats reflect this character rather
+  // than stale/empty defaults. Fires on every renderCharacter call
+  // (fresh load, retry, or a view-cache restore via applyView), which is
+  // fine: getFeatCatalog() only actually fetches once per page.
+  if (!featsLoading && !featsError) {
+    loadFeatCategoryTreeInto(c.character_id, completedFeats, activeFeats);
+  }
 }
+
+// ---------------------------------------------------------------------
+// Comparison render — two characters, side by side: identity, stats, gear,
+// and a two-way feat diff (completed feats one has that the other doesn't).
+// ---------------------------------------------------------------------
+
+// Builds the same paperdoll markup renderCharacter uses, factored out so
+// the comparison view can render one per side without duplicating the
+// slot-layout logic twice inline. renderCharacter keeps its own inline
+// copy rather than being refactored to call this, so that already-verified
+// code path stays untouched.
+function buildPaperdollHtml(items) {
+  const bySlot = {};
+  items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
+  // Kept in sync with the KNOWN_SLOTS list in renderCharacter above —
+  // slot 15 belongs in the paperdoll grid, not the "extra slots" bucket.
+  const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const slotChip = (slotId) => {
+    const it = bySlot[slotId];
+    // Chip always shows just the slot name (Head, Neck, etc.) — the actual
+    // item name/style/mods, when known, only show up on hover, so a full
+    // loadout of identified gear doesn't crowd the page with fourteen-plus
+    // item names stacked around the silhouette.
+    return `<div class="td-slot-chip">
+      <span class="n">${esc(slotLabel(String(slotId)))}</span>
+      <span class="v${it ? "" : " empty"}" title="${esc(gearTooltip(it))}">${it ? esc(it.item_id) : "Empty"}</span>
+    </div>`;
+  };
+  const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
+  const rightSlots = [8, 9, 10, 11, 12, 13, 14, 15].map(slotChip).join("");
+  const extraSlotIds = Object.keys(bySlot).map(Number).filter(n => !KNOWN_SLOTS.includes(n)).sort((a, b) => a - b);
+  const extraSlotsHtml = extraSlotIds.map(slotChip).join("");
+
+  return `
+    <div class="td-paperdoll">
+      <div class="td-paperdoll-slots">${leftSlots}</div>
+      <div class="td-paperdoll-figure"><img src="paperdoll-silhouette.png" alt="" width="640" height="960" /></div>
+      <div class="td-paperdoll-slots">${rightSlots}</div>
+    </div>
+    ${extraSlotIds.length ? `
+    <details class="td-extra-slots">
+      <summary class="td-section-label">More equipped slots (${extraSlotIds.length})</summary>
+      <div class="td-extra-slots-grid">${extraSlotsHtml}</div>
+    </details>
+    ` : ""}
+  `;
+}
+
+function buildItemRowsHtml(items) {
+  return items.map(it => `
+    <tr>
+      <td>${esc(slotLabel(it.equipment_slot_id))} <span class="td-slot-id">(${esc(it.equipment_slot_id)})</span></td>
+      <td>${esc(it.item_id)}</td>
+      <td>${it.is_bound === "true" ? "Yes" : "No"}</td>
+      <td>${[it.aug_item_id_1, it.aug_item_id_2, it.aug_item_id_3].filter(v => v && v !== "-1").join(", ") || "None"}</td>
+    </tr>
+  `).join("");
+}
+
+function renderComparison(dataA, dataB) {
+  // Invalidates any in-flight background feat/league load from a
+  // previously-rendered character view (see loadFeatsAndLeague) so it
+  // can't repaint over this comparison.
+  delete resultEl.dataset.activeCharacterId;
+  const { character: a, equippedItems: itemsA, completedFeats: completedA, league: leagueA } = dataA;
+  const { character: b, equippedItems: itemsB, completedFeats: completedB, league: leagueB } = dataB;
+
+  const nameA = esc(a.name);
+  const nameB = esc(b.name);
+
+  const identitySide = (c, league) => {
+    const roleLabel = ALIGNMENT_NAMES[c.alignment_id] || null;
+    const leagueLabel = league ? (league.name ? esc(league.name) : `League #${esc(league.guild_id)}`) : "None";
+    const worldLabel = esc(WORLD_NAMES[c.world_id] || `#${c.world_id}`);
+    return `
+      <div>
+        <div class="td-compare-side-label">${esc(c.name)}</div>
+        <div class="td-identity-tags">
+          ${roleLabel ? `<span class="td-tag td-role-tag">${esc(roleLabel)}</span>` : ""}
+          <span class="td-tag">League <strong>${leagueLabel}</strong></span>
+          <span class="td-tag">Server <strong>${worldLabel}</strong></span>
+        </div>
+      </div>
+    `;
+  };
+
+  // Stat rows shown side by side, with the higher value (when the two
+  // differ and both are real numbers) highlighted so the comparison is
+  // readable at a glance rather than requiring the reader to do the math.
+  const STAT_ROWS = [
+    ["Combat Rating", "combat_rating"],
+    ["Skill Points", "skill_points"],
+    ["Level", "level"],
+    ["PvP Combat Rating", "pvp_combat_rating"],
+    ["Health", "max_health"],
+    ["Power", "max_power"],
+    ["Might", "might"],
+    ["Precision", "precision"],
+    ["Restoration", "restoration"],
+    ["Vitalization", "vitalization"],
+    ["Dominance", "dominance"],
+    ["Defense", "defense"],
+    ["Toughness", "toughness"],
+  ];
+  const statRowsHtml = STAT_ROWS.map(([label, field]) => {
+    const rawA = Number(a[field]);
+    const rawB = Number(b[field]);
+    const bothNumeric = !Number.isNaN(rawA) && !Number.isNaN(rawB) && a[field] !== undefined && b[field] !== undefined;
+    const aHigher = bothNumeric && rawA > rawB;
+    const bHigher = bothNumeric && rawB > rawA;
+    return `<tr>
+      <td>${esc(label)}</td>
+      <td class="${aHigher ? "td-stat-better" : ""}">${fmt(a[field])}</td>
+      <td class="${bHigher ? "td-stat-better" : ""}">${fmt(b[field])}</td>
+    </tr>`;
+  }).join("");
+
+  // Two-way feat diff: completed feats unique to each side. Shared feats
+  // and feats neither has completed aren't shown — the point is to
+  // surface the difference, not repeat the full list twice.
+  const idsA = new Set(completedA.map(f => f.feat_id));
+  const idsB = new Set(completedB.map(f => f.feat_id));
+  const onlyA = completedA.filter(f => !idsB.has(f.feat_id));
+  const onlyB = completedB.filter(f => !idsA.has(f.feat_id));
+  const featIdSpans = (list) => list.length
+    ? list.map(featChip).join("")
+    : `<span class="td-roster-note" style="margin:0;">None</span>`;
+
+  // Defense-in-depth: even with the censusGet rate-limit fix, don't let the
+  // page confidently show "no feat differences" when the two characters'
+  // Skill Point totals prove that can't be right. Two distinct characters
+  // whose completed-feat sets are byte-for-byte identical, but whose SP
+  // differs, means the feat data behind this particular comparison is
+  // incomplete — surface that instead of implying they're feat-identical.
+  const spA = Number(a.skill_points);
+  const spB = Number(b.skill_points);
+  const spDiffers = !Number.isNaN(spA) && !Number.isNaN(spB) && spA !== spB;
+  const noFeatDiff = onlyA.length === 0 && onlyB.length === 0;
+  const featDataSuspect = noFeatDiff && spDiffers;
+
+  resultEl.innerHTML = `
+    <div class="td-compare">
+      <div class="td-compare-columns td-compare-identity-row">
+        ${identitySide(a, leagueA)}
+        ${identitySide(b, leagueB)}
+      </div>
+
+      <div class="card">
+        <p class="td-section-label">Stats</p>
+        <table class="td-compare-stats-table">
+          <thead><tr><th></th><th>${nameA}</th><th>${nameB}</th></tr></thead>
+          <tbody>${statRowsHtml}</tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <p class="td-section-label">Gear</p>
+        <div class="td-compare-columns">
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">${nameA}</p>
+            ${buildPaperdollHtml(itemsA)}
+            <details class="td-gear-details">
+              <summary class="td-section-label">All equipped items (${itemsA.length})</summary>
+              <table class="td-gear-table">
+                <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
+                <tbody>${buildItemRowsHtml(itemsA)}</tbody>
+              </table>
+            </details>
+          </div>
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">${nameB}</p>
+            ${buildPaperdollHtml(itemsB)}
+            <details class="td-gear-details">
+              <summary class="td-section-label">All equipped items (${itemsB.length})</summary>
+              <table class="td-gear-table">
+                <thead><tr><th>Slot</th><th>Item ID</th><th>Bound</th><th>Mods</th></tr></thead>
+                <tbody>${buildItemRowsHtml(itemsB)}</tbody>
+              </table>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <p class="td-section-label">Feats — completed by one, not the other</p>
+        ${featDataSuspect ? `
+        <div class="notice" style="margin-bottom:14px;">
+          <span>No differences were returned by Census, although the characters' Skill Point totals differ. Feat data may be incomplete — try running the comparison again.</span>
+        </div>
+        ` : ""}
+        <div class="td-compare-columns">
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">Only ${nameA} (${onlyA.length})</p>
+            <div class="td-feat-ids">${featIdSpans(onlyA)}</div>
+          </div>
+          <div>
+            <p class="td-compare-side-label" style="font-size:15px;">Only ${nameB} (${onlyB.length})</p>
+            <div class="td-feat-ids">${featIdSpans(onlyB)}</div>
+          </div>
+        </div>
+        <p class="td-roster-note" style="margin-top:16px;">Shared completed feats, and feats neither has completed, aren't listed here — this only shows the difference. Feat names come from an archived, recovered list and are only available for feats that existed by mid-2015; newer feats show as a raw ID.</p>
+      </div>
+    </div>
+  `;
+  resultEl.className = "td-result show";
+}
+
+// ---------------------------------------------------------------------
+// Combat Rating calculator — a standalone tool, no Census calls involved.
+//
+// In DCUO, Combat Rating is the weighted average item level of your 14
+// equipped gear slots — but "weighted" is doing a lot of work there: some
+// slots (weapon, chest, legs) count for noticeably more than others (a
+// ring or trinket). Census doesn't expose the weights or the formula
+// itself anywhere, so these are cross-checked against the community
+// reference calculator at
+// https://dcuobloguide.com/tools/combat-rating-calculator/ — read directly
+// out of that page's own calculator script (each slot's <input> carries
+// its weight as a data-weight attribute, e.g. data-weight="0.12" for the
+// weapon slot), not guessed from what's displayed on the page.
+//
+// The 14 weights below sum to 1.15, not 1 — that's not a bug. Combat
+// Rating is defined as 115% of the weighted item level, and that 115% is
+// already baked into the per-slot weights rather than applied as a
+// separate multiplier afterward. So the formula is simply:
+//   CR = sum(itemLevel_i * weight_i) across all 14 slots
+// with no additional step.
+const CR_SLOTS = [
+  { key: "head", label: "Head", weight: 0.11 },
+  { key: "face", label: "Face", weight: 0.06 },
+  { key: "neck", label: "Neck", weight: 0.06 },
+  { key: "shoulders", label: "Shoulders", weight: 0.09 },
+  { key: "chest", label: "Chest", weight: 0.12 },
+  { key: "back", label: "Back (Cape)", weight: 0.08 },
+  { key: "hands", label: "Hands", weight: 0.07 },
+  { key: "waist", label: "Waist (Belt)", weight: 0.07 },
+  { key: "legs", label: "Legs", weight: 0.12 },
+  { key: "feet", label: "Feet (Boots)", weight: 0.07 },
+  { key: "ring1", label: "Ring 1", weight: 0.06 },
+  { key: "ring2", label: "Ring 2", weight: 0.06 },
+  { key: "trinket", label: "Trinket", weight: 0.06 },
+  { key: "weapon", label: "Weapon", weight: 0.12 },
+];
+
+function buildCrCalcHtml() {
+  const slotsHtml = CR_SLOTS.map(s => `
+    <div class="td-cr-slot">
+      <label for="cr-${s.key}">
+        <span class="td-cr-slot-name">${esc(s.label)}</span>
+        <span class="td-cr-slot-weight">${Math.round(s.weight * 100)}%</span>
+      </label>
+      <input type="number" inputmode="numeric" min="0" step="1" id="cr-${s.key}" class="input td-cr-input" placeholder="0" />
+    </div>
+  `).join("");
+
+  crCalcForm.innerHTML = `
+    <div class="td-cr-fillall">
+      <label for="cr-fillall">Set every slot to</label>
+      <input type="number" inputmode="numeric" min="0" step="1" id="cr-fillall" class="input" placeholder="e.g. 400" />
+    </div>
+    <p class="td-roster-note" style="margin-top:8px;">Type an item level above and every slot below fills in with it as you type — then adjust any slots that are different before reading your total.</p>
+
+    <div class="td-cr-grid">${slotsHtml}</div>
+
+    <div class="td-hero-stats" style="grid-template-columns:1fr; margin-top:24px;">
+      <div class="td-hero-stat">
+        <div class="v" id="cr-total">0.00</div>
+        <div class="k">Estimated Combat Rating</div>
+      </div>
+    </div>
+
+    <p class="td-roster-note" style="margin-top:14px;">
+      Some slots count toward Combat Rating more than others — weapon, chest, and legs carry the most weight, rings and trinket the least — which is why maxing out one slot won't move your CR as much as a lower item level spread evenly across all 14. This is an estimate for planning upgrades; your character's actual Combat Rating (visible from the Character tab) is the source of truth.
+    </p>
+  `;
+}
+
+function initCrCalc() {
+  buildCrCalcHtml();
+
+  function recompute() {
+    let total = 0;
+    let anyInvalid = false;
+    CR_SLOTS.forEach(s => {
+      const raw = document.getElementById(`cr-${s.key}`).value.trim();
+      if (raw === "") return; // an empty slot contributes 0, same as the reference calculator
+      const n = Number(raw);
+      if (Number.isNaN(n)) { anyInvalid = true; return; }
+      total += n * s.weight;
+    });
+    document.getElementById("cr-total").textContent = anyInvalid ? "—" : total.toFixed(2);
+  }
+
+  CR_SLOTS.forEach(s => {
+    document.getElementById(`cr-${s.key}`).addEventListener("input", recompute);
+  });
+
+  // Live-fills every slot as you type, rather than waiting for a separate
+  // "Apply" click — matches the reference calculator's behavior, and is
+  // the fast path for the common case where most of a character's gear is
+  // the same item level.
+  document.getElementById("cr-fillall").addEventListener("input", (e) => {
+    const val = e.target.value;
+    CR_SLOTS.forEach(s => { document.getElementById(`cr-${s.key}`).value = val; });
+    recompute();
+  });
+}
+initCrCalc();
+
+// ---------------------------------------------------------------------
+// Skill Points leaderboard + "still cached" recently-looked-up list
+//
+// Both come from the Worker's own /leaderboard and /recent endpoints
+// (not real Census collections — see the Worker source). The leaderboard
+// can only ever reflect characters that have actually been searched here,
+// since Census has no "rank everyone" endpoint — that's spelled out in
+// the tab's lede above rather than left implicit.
+//
+// The recently-looked-up list intentionally does NOT show "last N people
+// searched" — it shows only whichever of those are still an actual cache
+// hit right now, verified live by the Worker at request time. Clicking
+// one is guaranteed to load instantly; a lookup that's since fallen out
+// of cache just quietly isn't in the list anymore rather than sitting
+// there as a link that turns out to reload from scratch anyway.
+// ---------------------------------------------------------------------
+function buildLeaderboardSkeleton() {
+  leaderboardForm.innerHTML = `
+    <div class="td-lb-layout">
+      <div class="card td-lb-main">
+        <p class="td-section-label">Skill Points Leaderboard</p>
+        <div id="lbTableWrap"><div class="td-loading" style="height:240px;"></div></div>
+      </div>
+      <aside class="td-lb-recent">
+        <p class="td-lb-recent-title">Still cached — instant load</p>
+        <div id="lbRecentWrap"><span class="td-lb-recent-empty">Loading…</span></div>
+      </aside>
+    </div>
+  `;
+}
+
+function attachLoadOnClick(wrap, selector) {
+  wrap.querySelectorAll(selector).forEach(el => {
+    const go = () => loadCharacterById(el.dataset.characterId);
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  });
+}
+
+function renderLeaderboardTable(entries, wrap) {
+  if (entries.length === 0) {
+    wrap.innerHTML = `<p class="td-roster-note">Nobody's been looked up yet — search a character to be the first one on the board.</p>`;
+    return;
+  }
+  const rows = entries.map((e, i) => `
+    <tr class="td-roster-row" data-character-id="${esc(e.character_id)}" tabindex="0">
+      <td>${i + 1}</td>
+      <td>${esc(e.name)}</td>
+      <td>${esc(WORLD_NAMES[e.world_id] || `World #${e.world_id}`)}</td>
+      <td>${fmt(e.skill_points)}</td>
+    </tr>
+  `).join("");
+  wrap.innerHTML = `
+    <table class="td-roster-table">
+      <thead><tr><th>#</th><th>Character</th><th>Server</th><th>Skill Points</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  attachLoadOnClick(wrap, ".td-roster-row");
+}
+
+function renderRecentList(entries, wrap) {
+  if (entries.length === 0) {
+    wrap.innerHTML = `<span class="td-lb-recent-empty">Nothing cached right now.</span>`;
+    return;
+  }
+  wrap.innerHTML = entries.map(e => `
+    <div class="td-lb-recent-item" data-character-id="${esc(e.character_id)}" tabindex="0">
+      <span class="td-lb-recent-name">${esc(e.name)}</span>
+      <span class="td-lb-recent-sp">${fmt(e.skill_points)} SP</span>
+    </div>
+  `).join("");
+  attachLoadOnClick(wrap, ".td-lb-recent-item");
+}
+
+// Bumped on every call so a slow, superseded fetch (e.g. the tab got
+// clicked twice in a row) can't win a race and repaint over a newer one.
+let lbLoadToken = 0;
+async function loadLeaderboardData() {
+  const token = ++lbLoadToken;
+  const tableWrap = document.getElementById("lbTableWrap");
+  const recentWrap = document.getElementById("lbRecentWrap");
+  tableWrap.innerHTML = `<div class="td-loading" style="height:240px;"></div>`;
+  recentWrap.innerHTML = `<span class="td-lb-recent-empty">Loading…</span>`;
+
+  const [lbResult, recentResult] = await Promise.allSettled([
+    fetch(`${WORKER_BASE}/leaderboard?stat=skill_points&limit=25`).then(r => r.json()),
+    fetch(`${WORKER_BASE}/recent?limit=8`).then(r => r.json()),
+  ]);
+  if (token !== lbLoadToken) return; // a newer load has since taken over
+
+  if (lbResult.status === "fulfilled" && Array.isArray(lbResult.value.entries)) {
+    renderLeaderboardTable(lbResult.value.entries, tableWrap);
+  } else {
+    tableWrap.innerHTML = `<p class="td-roster-note">Couldn't load the leaderboard right now. Please try again in a minute.</p>`;
+  }
+
+  if (recentResult.status === "fulfilled" && Array.isArray(recentResult.value.entries)) {
+    renderRecentList(recentResult.value.entries, recentWrap);
+  } else {
+    recentWrap.innerHTML = `<span class="td-lb-recent-empty">Unavailable right now.</span>`;
+  }
+}
+
+function initLeaderboard() {
+  buildLeaderboardSkeleton();
+}
+initLeaderboard();
 
 // ---------------------------------------------------------------------
 // Wire up UI
@@ -349,5 +2649,21 @@ searchBtn.addEventListener("click", () => {
   }
   runSearch(name);
 });
-
 nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") searchBtn.click(); });
+
+leagueSearchBtn.addEventListener("click", () => {
+  const name = leagueNameInput.value.trim();
+  if (!name) {
+    setStatus("Enter a league name first.", "error");
+    return;
+  }
+  runLeagueSearch(name);
+});
+leagueNameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") leagueSearchBtn.click(); });
+
+// Deep-link support: if the page loads directly on a #char/... or
+// #league/... URL (a bookmark, a shared link, or a refresh), load that
+// view instead of leaving the page on the empty search screen.
+if (location.hash) {
+  handleHash(location.hash, { skipPush: true });
+}
