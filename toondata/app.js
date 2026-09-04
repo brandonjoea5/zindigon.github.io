@@ -1342,6 +1342,51 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
     </tr>
   `).join("");
 
+  // Identified-gear cards — the recovered ITEM_CATALOG on the Worker only
+  // covers a still-growing set of item_ids (see enrichItemNames), so this
+  // only ever renders the slots that came back with an item_name attached.
+  // Fixed display order matches how a player actually inspects a loadout
+  // (weapon first, then head-to-toe, rings, then the utility belt) rather
+  // than raw equipment_slot_id order. Everything else — unidentified items,
+  // the four utility mod slots, consumables, and anything above slot 21 —
+  // still shows up untouched in the raw "All equipped items" table below,
+  // nothing is ever hidden just because it isn't named yet.
+  const GEAR_DISPLAY_ORDER = [17, 0, 9, 1, 3, 4, 10, 5, 6, 11, 7, 12, 13, 15];
+  const bySlotForCards = {};
+  items.forEach(it => { bySlotForCards[String(it.equipment_slot_id)] = it; });
+  const identifiedGear = GEAR_DISPLAY_ORDER
+    .map(slotId => bySlotForCards[String(slotId)])
+    .filter(it => it && it.item_name);
+
+  const gearCard = (it) => {
+    const mods = it.item_mods || [];
+    return `
+    <div class="td-gear-card">
+      <div class="td-gear-card-head">
+        <span class="td-gear-slot">${esc(slotLabel(it.equipment_slot_id))}</span>
+        ${it.item_elite ? `<span class="td-gear-elite">Elite</span>` : ""}
+      </div>
+      <div class="td-gear-name">${esc(it.item_name)}</div>
+      ${it.item_style ? `<div class="td-gear-line"><span class="k">Style</span><span class="v">${esc(it.item_style)}</span></div>` : ""}
+      ${it.item_renown ? `<div class="td-gear-line"><span class="k">Requires</span><span class="v">${esc(it.item_renown)}</span></div>` : ""}
+      ${it.item_episode ? `<div class="td-gear-line"><span class="k">Episode</span><span class="v">${esc(it.item_episode)}</span></div>` : ""}
+      ${it.item_desc ? `<p class="td-gear-desc">${esc(it.item_desc)}</p>` : ""}
+      ${mods.map(m => `
+        <div class="td-gear-mod">
+          <div class="td-gear-mod-name">${esc(m.name)}${m.tier ? ` <span class="td-gear-mod-tier">${esc(m.tier)}</span>` : ""}</div>
+          ${m.effect ? `<div class="td-gear-mod-effect">${esc(m.effect)}</div>` : ""}
+          ${m.cooldown ? `<div class="td-gear-mod-meta">Cooldown ${esc(m.cooldown)}</div>` : ""}
+          ${m.requires ? `<div class="td-gear-mod-meta">${esc(m.requires)}</div>` : ""}
+        </div>
+      `).join("")}
+      <div class="td-gear-footer">
+        <span>${it.is_bound === "true" ? "Bound to character" : "Not bound"}</span>
+        <span class="td-gear-id" title="Census item_id">#${esc(it.item_id)}</span>
+      </div>
+    </div>`;
+  };
+  const identifiedGearHtml = identifiedGear.map(gearCard).join("");
+
   // Paperdoll — slot 0-7 flank the left, 8-15 flank the right, fixed at
   // that size so the two columns stay a predictable height next to the
   // silhouette instead of stretching it. Each chip's label now comes from
@@ -1374,9 +1419,10 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
   const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
+    const display = it ? (it.item_name ? it.item_name : it.item_id) : "Empty";
     return `<div class="td-slot-chip">
       <span class="n">${esc(slotLabel(String(slotId)))}</span>
-      <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
+      <span class="v${it ? "" : " empty"}" title="${it ? esc(it.item_name || `Item ID ${it.item_id}`) : ""}">${esc(display)}</span>
     </div>`;
   };
   const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
@@ -1471,6 +1517,14 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
           </div>
           <div class="td-paperdoll-slots">${rightSlots}</div>
         </div>
+
+        ${identifiedGear.length ? `
+        <p class="td-section-label" style="margin-top:22px;">Gear Details</p>
+        <div class="notice" style="margin-bottom:12px;">
+          <span>Names and socketed mods below come from gear the site owner has personally inspected in-game and matched by item ID — still a growing list, so any slot not shown here just isn't identified yet. Stat numbers and item level aren't shown because Census doesn't return them and they scale per character even on the identical item.</span>
+        </div>
+        <div class="td-gear-cards">${identifiedGearHtml}</div>
+        ` : ""}
 
         ${extraSlotIds.length ? `
         <details class="td-extra-slots">
@@ -1588,9 +1642,10 @@ function buildPaperdollHtml(items) {
   const KNOWN_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const slotChip = (slotId) => {
     const it = bySlot[slotId];
+    const display = it ? (it.item_name ? it.item_name : it.item_id) : "Empty";
     return `<div class="td-slot-chip">
       <span class="n">${esc(slotLabel(String(slotId)))}</span>
-      <span class="v${it ? "" : " empty"}">${it ? esc(it.item_id) : "Empty"}</span>
+      <span class="v${it ? "" : " empty"}" title="${it ? esc(it.item_name || `Item ID ${it.item_id}`) : ""}">${esc(display)}</span>
     </div>`;
   };
   const leftSlots = [0, 1, 2, 3, 4, 5, 6, 7].map(slotChip).join("");
