@@ -10,10 +10,31 @@
    Safari (they can fail to paint at all, especially combined with this
    site's overflow-x:hidden body), while a fixed pseudo-element renders
    consistently everywhere and gives the same "stays put" effect. */
+/* Sticky-footer layout, scoped to this page rather than touching the
+   shared site.css: html/body there only set height:100%, nothing pins the
+   footer to the bottom of the viewport or stops it moving as content
+   above it changes height. On a static page that's invisible, but
+   toondata's #result area fills in over several stages after first paint
+   (character render, then a feats-loading skeleton, then the real feat
+   counts, then the category tree fetched separately afterward) — every
+   stage change pushed the footer down by however much taller the new
+   content was. Cloudflare's Core Web Vitals report caught this directly:
+   the site-footer element scored the maximum possible CLS (1.0) on six
+   separate toondata sessions. Making body a column flex container with
+   main allowed to grow doesn't stop #result from changing height, but it
+   does mean the footer only ever sits right after whatever main's real
+   height is at any given moment — it can't be shorter than the viewport,
+   so short pages don't get a footer floating mid-screen either. */
 body.toondata {
   background: var(--bg);
   position: relative;
   z-index: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body.toondata > main {
+  flex: 1 0 auto;
 }
 body.toondata::before {
   content: "";
@@ -518,109 +539,6 @@ body.toondata::before {
 .td-gear-table tr:last-child td { border-bottom: none; }
 .td-slot-id { color: var(--fg-faint); }
 
-/* Identified-gear cards — one per equipped slot the recovered ITEM_CATALOG
-   (Worker-side) actually has a name for. Deliberately plain/dense rather
-   than trying to look like the in-game inspect panel: no stat numbers or
-   item level here, since Census never returns those and they scale per
-   character even on the identical item (see the notice above this grid). */
-.td-gear-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-.td-gear-card {
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--bg-elev);
-  padding: 12px 14px;
-}
-.td-gear-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.td-gear-slot {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg-mute);
-}
-.td-gear-elite {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--accent);
-  border: 1px solid var(--accent-line);
-  background: var(--accent-soft);
-  border-radius: var(--r-sm);
-  padding: 1px 6px;
-}
-.td-gear-name {
-  font-size: 14px;
-  color: var(--fg);
-  font-weight: 500;
-  margin-bottom: 6px;
-  line-height: 1.3;
-}
-.td-gear-line {
-  display: flex;
-  gap: 6px;
-  font-size: 12px;
-  margin-bottom: 3px;
-}
-.td-gear-line .k { color: var(--fg-faint); }
-.td-gear-line .v { color: var(--fg-soft); }
-.td-gear-desc {
-  font-size: 12px;
-  color: var(--fg-mute);
-  font-style: italic;
-  margin: 6px 0;
-  line-height: 1.4;
-}
-.td-gear-mod {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--line);
-}
-.td-gear-mod-name {
-  font-size: 12px;
-  color: var(--fg-soft);
-  font-weight: 500;
-}
-.td-gear-mod-tier {
-  font-family: var(--mono);
-  font-size: 9px;
-  text-transform: uppercase;
-  color: var(--fg-faint);
-}
-.td-gear-mod-effect {
-  font-size: 12px;
-  color: var(--fg-mute);
-  line-height: 1.4;
-  margin-top: 2px;
-}
-.td-gear-mod-meta {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--fg-faint);
-  margin-top: 2px;
-}
-.td-gear-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
-  font-size: 11px;
-  color: var(--fg-faint);
-}
-.td-gear-id { font-family: var(--mono); }
 
 /* League roster — same table language as the gear table, but rows are
    clickable through to that member's own character view. */
@@ -805,7 +723,22 @@ body.toondata::before {
    elements (same pattern as the gear/extra-slots sections above) so
    expand/collapse works with no extra JS wiring; only the feat-row status
    colors and the ▸ chevron rotation are custom here. */
-.td-feat-categories { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.td-feat-categories {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Cloudflare's Core Web Vitals report flagged the site-footer with a
+     maximum (1.0) CLS score on several toondata sessions. Root cause: this
+     placeholder ("Loading feat categories…") is a single short line, then
+     getFeatCatalog()/loadFeatCategoryTreeInto() replace it with the full
+     tree — often several hundred pixels taller — well after the rest of
+     the page has already painted, so everything below it (including the
+     footer) visibly jumps down. A fixed min-height on the placeholder
+     state closes most of that gap without needing to know the real tree's
+     height in advance; it's a no-op once real content exceeds it. */
+  min-height: 160px;
+}
 
 .td-feat-category {
   border: 1px solid var(--line);
