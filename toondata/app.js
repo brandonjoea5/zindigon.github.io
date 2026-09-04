@@ -205,24 +205,28 @@ function gearTooltip(it) {
 // Simple stroke glyphs matching the site's existing icon language (see
 // powerIcon/moveIcon below) — each represents the SLOT TYPE only, never
 // the character's actual equipped item.
+// Custom 64x64 line-icon set (replaces the original placeholder glyphs) —
+// pure stroke paths, no fill/color baked in, so .td-slot-icon's CSS still
+// drives color (identified/selected tint, etc.) exactly as before; only
+// the path data and viewBox size changed.
 const SLOT_ICON_PATHS = {
-  head:      `<path d="M2 13 A6 6 0 0 1 14 13" /><path d="M2 13 L14 13" />`,
-  face:      `<path d="M2.5 6 Q8 2.5 13.5 6 L12.5 10 Q8 12.5 3.5 10 Z" /><circle cx="6" cy="7" r="0.7" /><circle cx="10" cy="7" r="0.7" />`,
-  neck:      `<path d="M2 3 L8 10 L14 3" /><circle cx="8" cy="12.5" r="1.4" />`,
-  shoulders: `<path d="M1.5 11 Q1.5 5 6.5 5 L6.5 9" /><path d="M14.5 11 Q14.5 5 9.5 5 L9.5 9" />`,
-  back:      `<path d="M5 2 L11 2 L14 14 L2 14 Z" />`,
-  chest:     `<path d="M4 2 L12 2 L12 9 L8 14 L4 9 Z" />`,
-  hands:     `<path d="M5.5 14 L5.5 5 Q5.5 2 8 2 Q10.5 2 10.5 5 L10.5 14" /><path d="M5.5 9 L2.5 9 L2.5 12" />`,
-  waist:     `<path d="M2 8 L6 8 M10 8 L14 8" /><rect x="6" y="5.5" width="4" height="5" rx="1" />`,
-  legs:      `<path d="M5 2 L11 2 L11 14 L8.3 14 L8 8 L5.5 14 L4.7 14 Z" />`,
-  feet:      `<path d="M4 2 L4 9 Q4 12.5 8 12.5 L13 12.5 L13 10.5 L8 9.5 L6 9.5 L6 2 Z" />`,
-  ring:      `<circle cx="8" cy="9.5" r="3.7" /><path d="M6.2 5.5 L8 2 L9.8 5.5" />`,
-  trinket:   `<path d="M8 2 L13.5 8 L8 14 L2.5 8 Z" />`,
-  weapon:    `<path d="M3 13 L11 5 M9 3 L13 7 M2 14 L4 12" />`,
-  utility:   `<rect x="3.5" y="4" width="9" height="8" rx="1.5" /><path d="M3.5 7.5 L12.5 7.5" />`,
+  head:      `<path d="M18 29c0-11 6-18 14-18s14 7 14 18v18H18V29Z"/><path d="M18 31h28M24 31v8m16-8v8M27 47v5h10v-5"/>`,
+  face:      `<path d="M15 25c5-5 11-7 17-7s12 2 17 7l-4 16c-4 5-8 8-13 10-5-2-9-5-13-10l-4-16Z"/><path d="M21 30c3-2 6-2 9 0-2 4-6 5-9 0Zm13 0c3-2 6-2 9 0-3 5-7 4-9 0ZM29 41h6"/>`,
+  neck:      `<path d="M15 17c2 17 8 28 17 33 9-5 15-16 17-33"/><path d="M27 45l5-8 5 8-5 7-5-7ZM19 21c4 5 8 8 13 9 5-1 9-4 13-9"/>`,
+  shoulders: `<path d="M8 42c1-12 7-19 18-21l6 8 6-8c11 2 17 9 18 21M9 42h18V26m28 16H37V26M15 34h12m22 0H37"/>`,
+  back:      `<path d="M23 13h18l5 10-4 30-10-7-10 7-4-30 5-10ZM23 13l9 10 9-10M32 23v23"/>`,
+  chest:     `<path d="M21 12c3 4 7 6 11 6s8-2 11-6l10 8-7 10-3-3v25H21V27l-3 3-7-10 10-8ZM24 24l8 5 8-5M32 29v18"/>`,
+  hands:     `<path d="M20 49c-5-4-7-8-7-13V20c0-2 4-2 4 0v10-14c0-3 5-3 5 0v13-15c0-3 5-3 5 0v15-12c0-3 5-3 5 0v17l4-5c3-3 7 0 5 4l-8 15c-3 5-9 6-13 1ZM18 51h16"/>`,
+  waist:     `<path d="M9 23h46v18H9V23ZM24 19h16v26H24V19ZM29 27h6v10h-6zM9 29h15m16 0h15"/>`,
+  legs:      `<path d="M19 11h26l-2 19-5 23H28l-2-22-5 22H11l6-23 2-19ZM26 31l6-13 6 13M19 19h26"/>`,
+  feet:      `<path d="M15 12h16v28c0 5-4 10-10 11H8v-9l7-5V12ZM33 12h16v25l7 5v9H43c-6-1-10-6-10-11V12ZM8 45h23m2 0h23"/>`,
+  ring:      `<circle cx="32" cy="38" r="14"/><path d="m23 22 4-9h10l4 9-9 7-9-7Zm4-9 5 16 5-16M23 22h18"/>`,
+  trinket:   `<path d="M24 12h16l3 9 9 5-4 17-16 10-16-10-4-17 9-5 3-9Zm8 10 4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1 4-8Z"/>`,
+  weapon:    `<path d="m45 9 10 1-1 10-27 27-10-10L45 9Zm-7 7 10 10M12 42l10 10M18 36l10 10M11 53l5-5"/>`,
+  utility:   `<path d="M7 22h50v20H7V22ZM25 18h14v28H25V18ZM29 27h6v10h-6zM11 28h9v8h-9zm33 0h9v8h-9z"/>`,
 };
 function slotIconSvg(key) {
-  return `<svg viewBox="0 0 16 16" aria-hidden="true">${SLOT_ICON_PATHS[key] || SLOT_ICON_PATHS.utility}</svg>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${SLOT_ICON_PATHS[key] || SLOT_ICON_PATHS.utility}</svg>`;
 }
 
 // The 14 slots that make up a normal loadout, split evenly left/right of

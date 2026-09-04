@@ -668,7 +668,11 @@ body.toondata::before {
 
 .td-slot-icon { color: var(--fg-mute); }
 .td-slot-icon svg { width: 18px; height: 18px; display: block; }
-.td-slot-icon svg * { stroke: currentColor; stroke-width: 1.3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+/* Icon paths are drawn in a 64-unit viewBox (see SLOT_ICON_PATHS in app.js)
+   — stroke-width scaled up from the old 16-unit glyph set's 1.3 to keep
+   the same visual weight at this render size (~2.2 was the icon set's own
+   authored stroke-width in that same 64-unit space). */
+.td-slot-icon svg * { stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
 .td-slot-name {
   font-family: var(--mono);
