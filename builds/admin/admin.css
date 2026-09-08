@@ -223,6 +223,20 @@ body.builds-admin > main { flex: 1 0 auto; }
 }
 .ba-form-section .form { max-width: none; gap: 16px; }
 
+.ba-tray-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 4px 0 8px;
+}
+.ba-tray-label:not(:first-child) {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
 .ba-loadout-slot {
   display: grid;
   grid-template-columns: 32px 1fr 1fr;
@@ -397,4 +411,3 @@ body.builds-admin > main { flex: 1 0 auto; }
 .ba-toast.show { display: block; }
 .ba-toast.error { border-color: rgba(220,80,80,0.4); color: #ff8a8a; }
 .ba-toast.ok { border-color: var(--accent-line); color: var(--accent); }
-
