@@ -403,13 +403,18 @@ async function renderBuildForm(buildId) {
 
       <div class="ba-form-section">
         <h3>Loadout</h3>
-        <p class="hint">All six ability tray slots, in order.</p>
-        ${[1, 2, 3, 4, 5, 6].map((n) => `
+        <p class="hint">Both ability trays, six slots each, in order.</p>
+        ${[1, 2].map((tray) => `
+          <div class="ba-tray-label">Tray ${tray}</div>
+          ${[1, 2, 3, 4, 5, 6].map((n) => {
+            const slotNumber = tray === 1 ? n : n + 6;
+            return `
           <div class="ba-loadout-slot">
             <span class="num">${n}.</span>
-            <input class="input" data-loadout-name="${n}" placeholder="Ability name" value="${esc(slotAt(n)?.ability_name || "")}" />
-            <input class="input" data-loadout-notes="${n}" placeholder="Notes (optional)" value="${esc(slotAt(n)?.notes || "")}" />
-          </div>
+            <input class="input" data-loadout-name="${slotNumber}" placeholder="Ability name" value="${esc(slotAt(slotNumber)?.ability_name || "")}" />
+            <input class="input" data-loadout-notes="${slotNumber}" placeholder="Notes (optional)" value="${esc(slotAt(slotNumber)?.notes || "")}" />
+          </div>`;
+          }).join("")}
         `).join("")}
       </div>
 
@@ -619,11 +624,11 @@ function collectBuildPayload() {
     updated_at: new Date().toISOString(),
   };
 
-  const loadout = [1, 2, 3, 4, 5, 6].map((n) => ({
+  const loadout = Array.from({ length: 12 }, (_, i) => i + 1).map((n) => ({
     slot_number: n,
     ability_name: document.querySelector(`[data-loadout-name="${n}"]`).value.trim(),
     notes: document.querySelector(`[data-loadout-notes="${n}"]`).value.trim() || null,
-  })).filter((s) => s.ability_name); // skip genuinely empty slots
+  })).filter((s) => s.ability_name); // skip genuinely empty slots (12 = 2 trays × 6)
 
   const artifacts = [...document.querySelectorAll("#artifactRows .ba-repeat-row")].map((row) => ({
     artifact_id: row.querySelector('[data-f="artifact_id"]').value,
