@@ -582,65 +582,45 @@ body.toondata::before {
   .td-paperdoll-wrap, .td-gear-detail { flex-basis: auto; width: 100%; }
 }
 
-/* The silhouette + its two flanking slot-button columns. Deliberately its
-   OWN class names (td-gear-paperdoll*, not td-paperdoll*) even though the
-   layout idea echoes Compare's older paperdoll — sharing Compare's actual
+/* The decorative border frame (gear-frame.png) with the character
+   silhouette centered in its open top, and every slot button absolutely
+   positioned at the exact percentage coordinates its own artwork opening
+   sits at (see GEAR_FRAME_SLOTS in app.js — those percentages were read
+   directly off the source image). Deliberately its own class names
+   (td-gear-frame*, not td-paperdoll*) — sharing Compare's actual
    .td-paperdoll/.td-paperdoll-slots/.td-paperdoll-figure classes would
    silently couple this redesign to Compare's simpler chip-based paperdoll
    (a change to one could reflow the other), which the "don't touch
-   Compare" scope for this task rules out. */
-.td-gear-paperdoll {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: stretch;
-  gap: 8px;
-}
-.td-gear-paperdoll-figure {
+   Compare" scope for this task rules out.
+   A fixed aspect-ratio keeps every button's percentage position landing
+   inside its own frame opening at any render width — this is the reason
+   the whole thing can be one responsive layout instead of needing its own
+   extra breakpoints the way the old flanking-columns paperdoll did. */
+.td-gear-frame {
   position: relative;
-  border-radius: var(--r);
-  overflow: hidden;
-  /* The silhouette PNG is mostly transparent, so it needs something behind
-     it to actually read as a shape against the page's near-black surface —
-     a soft mint radial glow (matching the hero-stat cards) plus a faint
-     accent border. */
-  background:
-    radial-gradient(75% 75% at 50% 38%, var(--accent-soft) 0%, transparent 72%),
-    var(--bg-elev);
-  border: 1px solid var(--accent-line);
-  min-height: 380px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  aspect-ratio: 1024 / 1536;
 }
-.td-gear-paperdoll-figure img {
+.td-gear-frame-border {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
+  /* Purely decorative chrome — the interactive buttons sit on top of it. */
+  pointer-events: none;
 }
-.td-gear-paperdoll-slots {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-/* Below ~640px there isn't room to flank the figure with two columns of
-   slot buttons, so the figure moves to the top (shorter, so it doesn't eat
-   the screen) and the two slot columns sit side by side underneath it —
-   each button still spans its own column's full width, so within a
-   column they simply stack vertically. The figure stays visible, it just
-   changes position. Independent of the 700px paperdoll/detail-panel
-   breakpoint above, and of Compare's own (unrelated) 600px reflow. */
-@media (max-width: 640px) {
-  .td-gear-paperdoll {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "figure figure"
-      "left   right";
-    gap: 12px;
-  }
-  .td-gear-paperdoll-figure { grid-area: figure; min-height: 220px; }
-  .td-gear-paperdoll-slots:nth-child(1) { grid-area: left; }
-  .td-gear-paperdoll-slots:nth-child(3) { grid-area: right; }
+.td-gear-frame-silhouette {
+  position: absolute;
+  left: 21%;
+  top: 2%;
+  width: 58%;
+  height: 74%;
+  object-fit: contain;
+  object-position: center top;
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 /* Slot buttons — compact, game-like equipment-slot controls. Icon on
@@ -718,6 +698,68 @@ body.toondata::before {
   box-shadow: 0 0 0 1px var(--accent-line);
 }
 .td-slot-btn.is-selected .td-slot-icon { color: var(--accent); }
+
+/* Compact variant — used only for the buttons sitting directly on the
+   border frame's own artwork openings (see .td-gear-frame above), where
+   there's no room for a background/border/visible name without visually
+   fighting the frame's own drawn octagon. The frame's artwork supplies the
+   "slot" visual; these buttons are just the interactive icon+state layer
+   floating inside each opening, absolutely positioned by inline
+   left/top % (set from GEAR_FRAME_SLOTS in app.js). */
+.td-slot-btn-compact {
+  position: absolute;
+  width: 9%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  justify-content: center;
+}
+.td-slot-btn-compact:hover { border-color: transparent; filter: brightness(1.35); }
+.td-slot-btn-compact.is-selected {
+  border: none;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 0 5px var(--accent));
+}
+.td-slot-btn-compact .td-slot-icon svg { width: 100%; height: 100%; }
+.td-slot-btn-compact .td-slot-icon { width: 62%; height: 62%; }
+/* No room for the "Empty" text label at this size — the state still
+   reads through the faded icon (below) and is still exposed to screen
+   readers via aria-label regardless of what's visually shown. */
+.td-slot-btn-compact .td-slot-state-text { display: none; }
+.td-slot-btn-compact .td-slot-state-dot {
+  position: absolute;
+  right: 2%;
+  bottom: 2%;
+  width: 22%;
+  height: 22%;
+  border-width: 1.5px;
+}
+.td-slot-btn-compact.is-empty { opacity: 1; }
+.td-slot-btn-compact.is-empty .td-slot-icon { opacity: 0.4; }
+
+/* Untracked (Consumable/Soder, Artifacts) — visually distinct from a real
+   empty/unidentified slot so it never reads as "confirmed no item here":
+   a faded icon inside an always-visible dashed ring, no state dot at all,
+   since there's no real identified/unidentified/empty data behind it. */
+.td-slot-btn.is-untracked { cursor: help; }
+.td-slot-btn.is-untracked .td-slot-icon { opacity: 0.4; }
+.td-slot-btn.is-untracked::after {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  border: 1.5px dashed var(--fg-faint);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.td-slot-btn.is-untracked.is-selected {
+  filter: drop-shadow(0 0 4px var(--fg-mute));
+}
+.td-gear-detail-title-untracked { color: var(--fg-mute); }
 
 /* Additional Equipment — same slot-button language, wrapped into a
    collapsed strip so extra trinket/artifact-style slots (or any future

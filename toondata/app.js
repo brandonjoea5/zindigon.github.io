@@ -151,12 +151,12 @@ const ITEM_SLOT_NAMES = {
   "11": "Legs",
   "12": "Ring 1",
   "13": "Ring 2",
-  "15": "Trinket",
+  "15": "Utility Belt",
   "17": "Weapon",
-  "18": "Trinket 1",
-  "19": "Trinket 2",
-  "20": "Trinket 3",
-  "21": "Trinket 4",
+  "18": "Utility Belt Slot 1",
+  "19": "Utility Belt Slot 2",
+  "20": "Utility Belt Slot 3",
+  "21": "Utility Belt Slot 4",
 };
 function slotLabel(slotId) {
   return ITEM_SLOT_NAMES[slotId] || "Additional Equipped Slot";
@@ -229,22 +229,53 @@ function slotIconSvg(key) {
   return `<svg viewBox="0 0 64 64" aria-hidden="true">${SLOT_ICON_PATHS[key] || SLOT_ICON_PATHS.utility}</svg>`;
 }
 
-// The 14 slots that make up a normal loadout, split evenly left/right of
-// the silhouette — same slot ids ITEM_SLOT_NAMES already names, just
-// grouped anatomically (head/face/neck/shoulders/back/chest/hands down
-// one side, waist/legs/feet/rings/trinket/weapon down the other) instead
-// of the old fixed 0-7/8-15 numeric split.
-const PAPERDOLL_SLOTS_LEFT = [
-  { id: 0, icon: "head" }, { id: 9, icon: "face" }, { id: 1, icon: "neck" },
-  { id: 3, icon: "shoulders" }, { id: 4, icon: "back" }, { id: 10, icon: "chest" },
-  { id: 5, icon: "hands" },
+// Every slot position on the decorative border frame (gear-frame.png) —
+// left column top-to-bottom, right column top-to-bottom, the 2x2 Utility
+// Belt cluster it opens into at the bottom-left, and the Artifact cluster
+// at the bottom-right. x/y are the center of each frame opening as a
+// percentage of the 1024x1536 artwork, read directly off the image so
+// each button lands inside its own window regardless of render size.
+// Real slots carry a numeric `id` matching the equipment_slot_id Census
+// actually returns (see ITEM_SLOT_NAMES); `untracked` entries (Consumable/
+// Soder, the 5 Artifacts) have no known Census field at all — DCUO tracks
+// Artifacts through a separate progression system, not equipped gear — so
+// they get an honest "not tracked" state instead of a fabricated one.
+const GEAR_FRAME_SLOTS = [
+  // Left column
+  { id: 17, icon: "weapon",    x: 15.04, y: 10.61 }, // Weapon
+  { id: 0,  icon: "head",      x: 15.04, y: 19.21 }, // Head
+  { id: 9,  icon: "face",      x: 15.04, y: 27.80 }, // Face
+  { id: 4,  icon: "back",      x: 15.04, y: 36.39 }, // Back
+  { id: 10, icon: "chest",     x: 15.04, y: 44.92 }, // Chest
+  { id: 11, icon: "legs",      x: 15.04, y: 53.45 }, // Legs
+  { id: 12, icon: "ring",      x: 15.04, y: 61.98 }, // Ring 1
+  { id: 15, icon: "utility",   x: 15.53, y: 71.16 }, // Utility Belt (container)
+  // Right column
+  { id: 1,  icon: "neck",      x: 84.57, y: 10.61 }, // Neck
+  { id: 3,  icon: "shoulders", x: 84.57, y: 19.27 }, // Shoulders
+  { id: 5,  icon: "hands",     x: 84.57, y: 27.80 }, // Hands
+  { id: 6,  icon: "waist",     x: 84.57, y: 36.39 }, // Waist
+  { id: 7,  icon: "feet",      x: 84.57, y: 44.92 }, // Feet
+  { id: 13, icon: "ring",      x: 84.57, y: 53.45 }, // Ring 2
+  { id: "untracked-consumable", icon: "utility", x: 86.33, y: 61.98, untracked: true, label: "Consumable/Soder" },
+  // Utility Belt sub-slots — the 4 items equipped inside it (ids 18-21,
+  // labeled "Utility Belt Slot 1-4" in ITEM_SLOT_NAMES).
+  { id: 18, icon: "trinket", x: 15.43, y: 80.08 }, // upper-left
+  { id: 19, icon: "trinket", x: 27.83, y: 80.01 }, // upper-right
+  { id: 20, icon: "trinket", x: 15.43, y: 88.67 }, // lower-left
+  { id: 21, icon: "trinket", x: 27.93, y: 88.67 }, // lower-right
+  // Artifacts — not equipped gear in DCUO, so always shown as untracked.
+  { id: "untracked-artifact-1", icon: "trinket", x: 51.07, y: 88.74, untracked: true, label: "Artifact 1" },
+  { id: "untracked-artifact-2", icon: "trinket", x: 67.48, y: 88.74, untracked: true, label: "Artifact 2" },
+  { id: "untracked-artifact-3", icon: "trinket", x: 84.18, y: 88.93, untracked: true, label: "Artifact 3" },
+  { id: "untracked-artifact-4", icon: "trinket", x: 84.67, y: 80.92, untracked: true, label: "Artifact 4" },
+  { id: "untracked-artifact-5", icon: "trinket", x: 84.86, y: 71.16, untracked: true, label: "Artifact 5" },
 ];
-const PAPERDOLL_SLOTS_RIGHT = [
-  { id: 6, icon: "waist" }, { id: 11, icon: "legs" }, { id: 7, icon: "feet" },
-  { id: 12, icon: "ring" }, { id: 13, icon: "ring" }, { id: 15, icon: "trinket" },
-  { id: 17, icon: "weapon" },
-];
-const PAPERDOLL_SLOT_IDS = [...PAPERDOLL_SLOTS_LEFT, ...PAPERDOLL_SLOTS_RIGHT].map(s => s.id);
+// The real, Census-backed slot ids among the above (14 primary + the 4
+// Utility Belt sub-slots) — used to keep "Additional Equipment" scoped to
+// genuinely unexpected slot ids only, and to compute the honest
+// identified/unidentified/empty counts.
+const REAL_GEAR_SLOT_IDS = GEAR_FRAME_SLOTS.filter(s => !s.untracked).map(s => s.id);
 
 // "empty" (no item), "unidentified" (item present, no recovered name) or
 // "identified" (item present with a recovered name) — the only three
@@ -254,7 +285,13 @@ function gearSlotState(it) {
   return it.item_name ? "identified" : "unidentified";
 }
 
-function slotButtonHtml(slotId, iconKey, it, isSelected) {
+// `opts.style` positions the button on the border frame (percentage
+// left/top, see GEAR_FRAME_SLOTS); `opts.compact` drops the always-visible
+// text name (there's no room for it inside a frame opening) — the name is
+// still exposed via aria-label/title, and shown prominently in the detail
+// panel once the slot is selected.
+function slotButtonHtml(slotId, iconKey, it, isSelected, opts = {}) {
+  const { style = "", compact = false } = opts;
   const label = slotLabel(String(slotId));
   const state = gearSlotState(it);
   const ariaLabel = state === "empty" ? `${label} slot, empty` : `View equipped ${label} item`;
@@ -262,21 +299,47 @@ function slotButtonHtml(slotId, iconKey, it, isSelected) {
   const stateHtml = state === "empty"
     ? `<span class="td-slot-state-text">Empty</span>`
     : `<span class="td-slot-state-dot" aria-hidden="true"></span>`;
+  const nameHtml = compact ? "" : `<span class="td-slot-name">${esc(label)}</span>`;
   return `
-    <button type="button" class="td-slot-btn is-${state}${isSelected ? " is-selected" : ""}" data-slot-id="${esc(slotId)}"
+    <button type="button" class="td-slot-btn is-${state}${isSelected ? " is-selected" : ""}${compact ? " td-slot-btn-compact" : ""}" data-slot-id="${esc(slotId)}"
+      ${style ? `style="${esc(style)}"` : ""}
       aria-pressed="${isSelected ? "true" : "false"}" aria-label="${esc(ariaLabel)}" title="${esc(titleAttr)}">
       <span class="td-slot-icon">${slotIconSvg(iconKey)}</span>
-      <span class="td-slot-name">${esc(label)}</span>
+      ${nameHtml}
       ${stateHtml}
     </button>
   `;
 }
 
-// Extra equipped slots outside the primary 14 (trinket 1-4, and anything
-// else Census hands back at an id this site doesn't put on the
-// silhouette) — same button, same detail panel, just listed in a
-// collapsed strip below the paperdoll instead of flanking it, so a
-// character with a lot of them can't stretch/unbalance the silhouette.
+// Consumable/Soder and the 5 Artifact positions on the frame — DCUO has
+// no public Census field for these (Artifacts in particular are tracked
+// by a separate progression system, not equipped gear), so rather than
+// guess at a slot id or silently show them as "Empty" (which would falsely
+// claim a confirmed no-item-equipped state), they get their own honest
+// "not tracked" state.
+function untrackedSlotButtonHtml(entry) {
+  const style = `left:${entry.x}%;top:${entry.y}%`;
+  return `
+    <button type="button" class="td-slot-btn td-slot-btn-compact is-untracked" style="${esc(style)}"
+      data-untracked="true" data-label="${esc(entry.label)}" aria-pressed="false"
+      aria-label="${esc(entry.label)} — not currently tracked" title="${esc(entry.label)} — not currently tracked by ToonData">
+      <span class="td-slot-icon">${slotIconSvg(entry.icon)}</span>
+    </button>
+  `;
+}
+function untrackedDetailHtml(label) {
+  return `
+    <div class="td-gear-detail-slot">${esc(label)}</div>
+    <p class="td-gear-detail-title td-gear-detail-title-untracked">Not Tracked Yet</p>
+    <p class="td-gear-detail-note">ToonData doesn't currently have a way to read this slot's data from Daybreak's Census API.</p>
+  `;
+}
+
+// Extra equipped slots outside the 18 real, Census-backed ids the frame
+// already has a dedicated position for — anything else Census hands back
+// (a future slot id this site hasn't mapped onto the frame yet) — same
+// button, same detail panel, just listed in a collapsed strip below the
+// frame instead of on it, so an unexpected id can't crowd or unbalance it.
 function additionalGearHtml(extraSlotIds, bySlot) {
   if (!extraSlotIds.length) return "";
   return `
@@ -352,14 +415,14 @@ function gearDetailHtml(slotId, it) {
 
 // Shown before any slot has been selected yet — a quick honest count
 // (identified/unidentified/empty) computed from this character's actual
-// data rather than a static message with no numbers behind it. "Empty"
-// only ever counts the 14 primary paperdoll slots (the only ones with a
-// fixed, known total) — an "additional" slot only exists in this count
-// once Census actually reports an item there, since there's no fixed
-// universe of possible additional slot ids to mark as empty.
+// data rather than a static message with no numbers behind it. Counts
+// only ever cover REAL_GEAR_SLOT_IDS (the 18 slots with a fixed, known
+// Census-backed total) plus any genuinely-extra slot id Census reports —
+// the untracked Consumable/Artifact placeholders never factor in, since
+// there's no real "empty vs equipped" data behind them to count.
 function gearSummaryHtml(bySlot, extraSlotIds) {
   let identified = 0, unidentified = 0, empty = 0;
-  PAPERDOLL_SLOT_IDS.forEach(id => {
+  REAL_GEAR_SLOT_IDS.forEach(id => {
     const state = gearSlotState(bySlot[id]);
     if (state === "identified") identified++;
     else if (state === "unidentified") unidentified++;
@@ -376,11 +439,13 @@ function gearSummaryHtml(bySlot, extraSlotIds) {
   `;
 }
 
-// Delegated click handling for the paperdoll + Additional Equipment
-// buttons — selecting one only ever patches the detail panel and the
-// selected button's own class, never the surrounding layout, and never
-// touches the network (every field it can show is already in `items`,
-// fetched once alongside the rest of this character's data).
+// Delegated click handling for the frame + Additional Equipment buttons —
+// selecting one only ever patches the detail panel and the selected
+// button's own class, never the surrounding layout, and never touches the
+// network (every field it can show is already in `items`, fetched once
+// alongside the rest of this character's data). Untracked (Consumable/
+// Artifact) buttons carry no slot id at all — they show their own honest
+// "not tracked" detail content instead of a bySlot lookup.
 function wireGearPanel(container, bySlot) {
   container.addEventListener("click", (e) => {
     const btn = e.target.closest(".td-slot-btn");
@@ -391,9 +456,14 @@ function wireGearPanel(container, bySlot) {
     });
     btn.classList.add("is-selected");
     btn.setAttribute("aria-pressed", "true");
-    const slotId = Number(btn.dataset.slotId);
     const detailPanel = container.querySelector(".td-gear-detail");
-    if (detailPanel) detailPanel.innerHTML = gearDetailHtml(slotId, bySlot[slotId]);
+    if (!detailPanel) return;
+    if (btn.dataset.untracked === "true") {
+      detailPanel.innerHTML = untrackedDetailHtml(btn.dataset.label);
+      return;
+    }
+    const slotId = Number(btn.dataset.slotId);
+    detailPanel.innerHTML = gearDetailHtml(slotId, bySlot[slotId]);
   });
 }
 
@@ -1948,21 +2018,24 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
   const kv = (label, value) => `<div><div class="k">${esc(label)}</div><div class="v">${value === undefined || value === null || value === "" ? "None" : esc(value)}</div></div>`;
   const row = (label, value) => `<div class="td-row"><span class="k">${esc(label)}</span><span class="v">${esc(value)}</span></div>`;
 
-  // Equipped gear: a selectable paperdoll (the 14 primary slots) plus a
-  // collapsed "Additional Equipment" strip for anything Census reports
-  // outside that set (extra trinket-style slots, or any future slot id).
-  // See the gear* helpers and PAPERDOLL_SLOTS_LEFT/RIGHT above — this is
-  // the only prep renderCharacter itself needs: a slotId -> item lookup
-  // and the sorted list of "extra" ids, both handed to the HTML builders
-  // and to wireGearPanel below.
+  // Equipped gear: a selectable border frame (the 18 real, Census-backed
+  // slots, plus 6 honest "not tracked" placeholders for Consumable/Soder
+  // and the 5 Artifacts) plus a collapsed "Additional Equipment" strip for
+  // anything Census reports outside that set (any future/unmapped slot
+  // id). See the gear* helpers and GEAR_FRAME_SLOTS above — this is the
+  // only prep renderCharacter itself needs: a slotId -> item lookup and
+  // the sorted list of "extra" ids, both handed to the HTML builders and
+  // to wireGearPanel below.
   const bySlot = {};
   items.forEach(it => { bySlot[it.equipment_slot_id] = it; });
   const extraSlotIds = Object.keys(bySlot)
     .map(Number)
-    .filter(n => !PAPERDOLL_SLOT_IDS.includes(n))
+    .filter(n => !REAL_GEAR_SLOT_IDS.includes(n))
     .sort((a, b) => a - b);
-  const leftSlots = PAPERDOLL_SLOTS_LEFT.map(s => slotButtonHtml(s.id, s.icon, bySlot[s.id], false)).join("");
-  const rightSlots = PAPERDOLL_SLOTS_RIGHT.map(s => slotButtonHtml(s.id, s.icon, bySlot[s.id], false)).join("");
+  const frameSlotsHtml = GEAR_FRAME_SLOTS.map(entry => entry.untracked
+    ? untrackedSlotButtonHtml(entry)
+    : slotButtonHtml(entry.id, entry.icon, bySlot[entry.id], false, { style: `left:${entry.x}%;top:${entry.y}%`, compact: true })
+  ).join("");
 
   const featIdSpans = (list) => list.map(featChip).join("");
 
@@ -2047,12 +2120,10 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
         <p class="td-section-label">Gear</p>
         <div class="td-gear-area" id="gearArea">
           <div class="td-paperdoll-wrap">
-            <div class="td-gear-paperdoll">
-              <div class="td-gear-paperdoll-slots">${leftSlots}</div>
-              <div class="td-gear-paperdoll-figure">
-                <img src="paperdoll-silhouette.png" alt="" width="640" height="960" />
-              </div>
-              <div class="td-gear-paperdoll-slots">${rightSlots}</div>
+            <div class="td-gear-frame">
+              <img class="td-gear-frame-border" src="gear-frame.png" alt="" />
+              <img class="td-gear-frame-silhouette" src="paperdoll-silhouette.png" alt="" />
+              ${frameSlotsHtml}
             </div>
             ${additionalGearHtml(extraSlotIds, bySlot)}
           </div>
