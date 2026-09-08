@@ -1,0 +1,132 @@
+/* Zindigon Builds — Public browse page.
+   Built on top of /assets/site.css (shared design system) — reuses
+   --bg/--bg-elev/--line/--fg/--accent/--serif/--sans/--mono/--r, the same
+   way admin.css and toondata.css do. Everything below is additive: the
+   build-card grid, filter bar, and empty state for the public listing. */
+
+body.builds-public {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body.builds-public > main { flex: 1 0 auto; }
+
+/* ───────── Hero / intro ───────── */
+.bp-hero-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-mute);
+}
+.bp-hero-meta span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+/* ───────── Filter bar ───────── */
+.bp-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 28px 0 22px;
+}
+.bp-filters select {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  color: var(--fg-soft);
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.bp-filters .spacer { flex: 1; }
+.bp-filter-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-mute);
+}
+
+/* ───────── Build grid ───────── */
+.bp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+.bp-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-elev);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bp-card .bp-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 19px;
+  color: var(--fg);
+  margin: 0;
+}
+.bp-card .bp-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.bp-card .bp-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  color: var(--fg-mute);
+}
+.bp-card .bp-tag.role { border-color: var(--accent-line); color: var(--accent); }
+.bp-card .bp-desc {
+  font-size: 13px;
+  color: var(--fg-soft);
+  line-height: 1.6;
+  margin: 0;
+  flex: 1;
+}
+.bp-card .bp-updated {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-faint);
+}
+
+/* ───────── Empty / loading states ───────── */
+.bp-empty, .bp-loading {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--fg-mute);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+}
+.bp-empty .bp-empty-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--fg-soft);
+  margin: 0 0 8px;
+}
+.bp-empty p, .bp-loading p {
+  font-size: 13px;
+  margin: 0;
+  max-width: 46ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+.bp-loading {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
