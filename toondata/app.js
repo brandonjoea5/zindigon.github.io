@@ -2121,7 +2121,7 @@ function renderCharacter(c, items, completedFeats, activeFeats, league, opts) {
         <div class="td-gear-area" id="gearArea">
           <div class="td-paperdoll-wrap">
             <div class="td-gear-frame">
-              <img class="td-gear-frame-border" src="gear-frame.png" alt="" />
+              <img class="td-gear-frame-border" src="gear-frame.png?v=1" alt="" />
               <img class="td-gear-frame-silhouette" src="paperdoll-silhouette.png" alt="" />
               ${frameSlotsHtml}
             </div>
