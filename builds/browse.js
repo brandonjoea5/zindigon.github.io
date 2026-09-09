@@ -84,7 +84,7 @@ function render() {
     const contentType = refName(ref.contentTypes, b.content_type_id);
     const updated = b.updated_at ? new Date(b.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "";
     return `
-    <div class="bp-card">
+    <a class="bp-card" href="detail.html?slug=${encodeURIComponent(b.slug)}">
       <h3 class="bp-name">${esc(b.name)}</h3>
       <div class="bp-tags">
         ${role ? `<span class="bp-tag role">${esc(role)}</span>` : ""}
@@ -94,9 +94,8 @@ function render() {
       </div>
       ${b.short_description ? `<p class="bp-desc">${esc(b.short_description)}</p>` : ""}
       ${updated ? `<span class="bp-updated">Updated ${esc(updated)}</span>` : ""}
-    </div>`;
+    </a>`;
   }).join("");
 }
 
 boot();
-
