@@ -510,7 +510,7 @@ function addArtifactRow(existing) {
     <div class="field"><label>Slot</label>
       <select class="select" data-f="slot_position">
         <option value="">Alt/Bench</option>
-        ${[1, 2, 3].map((n) => `<option value="${n}" ${existing?.slot_position === n ? "selected" : ""}>${n}</option>`).join("")}
+        ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}" ${existing?.slot_position === n ? "selected" : ""}>${n}</option>`).join("")}
       </select></div>
     <div class="field"><label>Importance</label>
       <select class="select" data-f="importance">${importanceOptions(existing?.importance)}</select></div>
@@ -544,7 +544,7 @@ function addRequirementRow(existing) {
     <div class="field"><label>Importance</label>
       <select class="select" data-f="importance">${importanceOptions(existing?.importance || "recommended")}</select></div>
     <div class="field"><label>Min Rank</label>
-      <input class="input" type="number" step="20" data-f="min_rank" value="${existing?.min_rank ?? ""}" placeholder="—" /></div>
+      <input class="input" type="number" min="1" max="200" step="1" data-f="min_rank" value="${existing?.min_rank ?? ""}" placeholder="—" /></div>
     <div class="field"><label>Notes</label>
       <input class="input" data-f="notes" value="${esc(existing?.notes || "")}" /></div>
     <button type="button" class="ba-repeat-remove" title="Remove">×</button>
