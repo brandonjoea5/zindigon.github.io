@@ -526,7 +526,7 @@ function addArtifactRow(existing) {
 
 const REQUIREMENT_TYPE_LABELS = {
   artifact: "Artifact", movement: "Movement", iconic_ability: "Iconic Ability",
-  power_array: "Power Array", power_array_ability: "Power Array Ability", other: "Other",
+  power_array: "Power Array", power_array_ability: "Power Array Ability", ally: "Ally", other: "Other",
 };
 
 function addRequirementRow(existing) {
@@ -552,7 +552,7 @@ function addRequirementRow(existing) {
   div.querySelector(".ba-repeat-remove").addEventListener("click", () => div.remove());
   const typeSel = div.querySelector('[data-f="requirement_type"]');
   const currentRefId = existing?.artifact_id || existing?.movement_mode_id || existing?.iconic_ability_id
-    || existing?.power_array_id || existing?.power_array_ability_id || null;
+    || existing?.power_array_id || existing?.power_array_ability_id || existing?.ally_id || null;
   populateRequirementRefField(div, type, currentRefId, existing?.other_label);
   typeSel.addEventListener("change", () => populateRequirementRefField(div, typeSel.value));
   container.appendChild(div);
@@ -570,6 +570,7 @@ function populateRequirementRefField(rowEl, type, selectedId, otherText) {
     iconic_ability: ref.iconicAbilities,
     power_array: ref.powerArrays,
     power_array_ability: ref.powerArrayAbilities.map((a) => ({ id: a.id, name: `${a.ability_name} (rank ${a.required_rank}+)` })),
+    ally: ref.allies,
   }[type] || [];
   fieldWrap.innerHTML = `<label>Value</label><select class="select" data-f="ref_value">${options.map((o) => `<option value="${o.id}" ${o.id === selectedId ? "selected" : ""}>${esc(o.name)}</option>`).join("") || `<option value="">Nothing configured yet</option>`}</select>`;
 }
@@ -648,7 +649,7 @@ function collectBuildPayload() {
       min_rank: row.querySelector('[data-f="min_rank"]').value ? Number(row.querySelector('[data-f="min_rank"]').value) : null,
       notes: row.querySelector('[data-f="notes"]').value.trim() || null,
       artifact_id: null, movement_mode_id: null, iconic_ability_id: null,
-      power_array_id: null, power_array_ability_id: null, other_label: null,
+      power_array_id: null, power_array_ability_id: null, ally_id: null, other_label: null,
     };
     if (type === "other") base.other_label = refValue.trim();
     else if (type === "artifact") base.artifact_id = refValue || null;
@@ -656,8 +657,9 @@ function collectBuildPayload() {
     else if (type === "iconic_ability") base.iconic_ability_id = refValue || null;
     else if (type === "power_array") base.power_array_id = refValue || null;
     else if (type === "power_array_ability") base.power_array_ability_id = refValue || null;
+    else if (type === "ally") base.ally_id = refValue || null;
     return base;
-  }).filter((r) => r.other_label || r.artifact_id || r.movement_mode_id || r.iconic_ability_id || r.power_array_id || r.power_array_ability_id);
+  }).filter((r) => r.other_label || r.artifact_id || r.movement_mode_id || r.iconic_ability_id || r.power_array_id || r.power_array_ability_id || r.ally_id);
 
   const alternatives = [...document.querySelectorAll("#alternativeRows .ba-repeat-row")].map((row) => ({
     situation: row.querySelector('[data-f="situation"]').value.trim() || null,
@@ -729,6 +731,7 @@ const SIMPLE_REF_TABLES = {
   movement_modes: { table: "movement_modes", label: "Movement Modes", key: "movementModes" },
   iconic_abilities: { table: "iconic_abilities", label: "Iconic Abilities", key: "iconicAbilities" },
   artifacts: { table: "artifacts", label: "Artifacts", key: "artifacts" },
+  allies: { table: "allies", label: "Allies", key: "allies" },
 };
 
 function renderReferenceTab() {
