@@ -30,7 +30,13 @@ function toast(message, type) {
 async function boot() {
   renderGateLoading();
   await BuildsAuth.init();
-  BuildsAuth.onChange(() => route());
+  let wasSignedIn = BuildsAuth.isSignedIn();
+  BuildsAuth.onChange(() => {
+    const isSignedIn = BuildsAuth.isSignedIn();
+    if (isSignedIn === wasSignedIn) return; // ignore token refreshes; only react to real sign-in/out
+    wasSignedIn = isSignedIn;
+    route();
+  });
   await route();
 }
 
