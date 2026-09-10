@@ -394,8 +394,12 @@ async function renderBuildForm(buildId) {
                 ${["draft", "published", "archived"].map((s) => `<option value="${s}" ${(build?.status || "draft") === s ? "selected" : ""}>${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}
               </select></div>
           </div>
-          <div class="field"><label for="bfRecommendedFor">Recommended For (comma-separated)</label>
+          <div class="ba-grid-2">
+            <div class="field"><label for="bfRecommendedFor">Recommended For (comma-separated)</label>
             <input class="input" id="bfRecommendedFor" placeholder="Raids, Elite, Bosses" value="${esc((build?.recommended_for || []).join(", "))}" /></div>
+            <div class="field"><label for="bfSubmittedBy">Submitted By</label>
+              <input class="input" id="bfSubmittedBy" placeholder="Anonymous" value="${esc(build?.submitted_by || "")}" /></div>
+          </div>
           <div class="field"><label for="bfShortDesc">Short Description</label>
             <textarea class="textarea" id="bfShortDesc" style="min-height:70px;">${esc(build?.short_description || "")}</textarea></div>
         </div>
@@ -616,6 +620,7 @@ function collectBuildPayload() {
     status: val("bfStatus"),
     short_description: val("bfShortDesc").trim() || null,
     recommended_for: recommendedFor,
+            submitted_by: val("bfSubmittedBy").trim() || null,
     why_it_works: val("bfWhyWorks").trim() || null,
     rotation: val("bfRotation").trim() || null,
     strengths: val("bfStrengths").trim() || null,
