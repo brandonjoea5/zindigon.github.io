@@ -183,7 +183,8 @@ function render(build, ref, children) {
         ${updated ? `<span>Updated ${esc(updated)}</span>` : ""}
         ${tested ? `<span>Last tested ${esc(tested)}</span>` : ""}
       </div>
-      ${(build.recommended_for || []).length ? `
+            <p class="bd-submitted-by">Submitted by ${esc(build.submitted_by || "Anonymous")}</p>
+${(build.recommended_for || []).length ? `
         <div class="bd-recommended">
           <span class="bd-recommended-label">Recommended for:</span>
           ${build.recommended_for.map((r) => `<span class="bp-tag">${esc(r)}</span>`).join("")}
