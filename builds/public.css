@@ -12,6 +12,19 @@ body.builds-public {
 }
 body.builds-public > main { flex: 1 0 auto; }
 
+/* ───────── Callout banner ───────── */
+.bp-callout {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-elev);
+  padding: 12px 18px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--fg-soft);
+}
+.bp-callout p { margin: 0; }
+.bp-callout a { color: var(--accent); }
+
 /* ───────── Hero / intro ───────── */
 .bp-hero-meta {
   display: flex;
@@ -146,6 +159,12 @@ body.builds-public > main { flex: 1 0 auto; }
   line-height: 1.6;
   max-width: 68ch;
   margin: 14px 0 0;
+}
+.bd-submitted-by {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-mute);
+  margin: 10px 0 0;
 }
 .bd-recommended {
   display: flex;
