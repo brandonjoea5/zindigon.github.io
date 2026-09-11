@@ -961,3 +961,115 @@ function renderPowerArraysRef() {
 }
 
 boot();
+// =======================================================================
+// COMMENTS TAB — moderation for build_comments across every build.
+// Newly-posted comments that tripped the public blocked-word filter land
+// here as 'hidden'; admins can show/hide/delete any comment regardless
+// of how it got its current status.
+//
+// Wired in by patching renderDashboard() below (rather than editing it
+// in place) so this whole feature is a pure addition to the file.
+// =======================================================================
+let commentsCache = [];
+let commentUsernames = {};
+
+async function loadComments() {
+  const { data, error } = await sb
+    .from("build_comments")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) { toast("Failed to load comments: " + error.message, "error"); commentsCache = []; return; }
+  commentsCache = data || [];
+
+  const userIds = [...new Set(commentsCache.map((c) => c.user_id))];
+  commentUsernames = {};
+  if (userIds.length) {
+    const { data: players } = await sb.from("players").select("id, username").in("id", userIds);
+    (players || []).forEach((p) => { commentUsernames[p.id] = p.username; });
+  }
+}
+
+function renderCommentsTab() {
+  const body = document.getElementById("tabBody");
+  const rows = commentsCache;
+  body.innerHTML = `
+    <div class="ba-list-head">
+      <span class="mono muted">${rows.length} comment${rows.length === 1 ? "" : "s"}</span>
+    </div>
+    ${rows.length === 0 ? `<div class="ba-empty">No comments yet.</div>` : `
+    <div class="ba-table-wrap">
+      <table class="ba-table">
+        <thead><tr>
+          <th>Build</th><th>Author</th><th>Comment</th><th>Status</th><th>Posted</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${rows.map((c) => `
+            <tr data-id="${esc(c.id)}">
+              <td>${esc(refName(buildsCache, c.build_id) || "—")}</td>
+              <td>${esc(commentUsernames[c.user_id] || "—")}</td>
+              <td style="max-width:360px; white-space:pre-wrap;">${esc(c.body)}</td>
+              <td><span class="ba-status ${esc(c.status)}">${esc(c.status)}</span></td>
+              <td class="muted">${c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}</td>
+              <td>
+                <div class="ba-row-actions">
+                  ${c.status !== "visible" ? `<button data-act="show">Show</button>` : `<button data-act="hide">Hide</button>`}
+                  <button data-act="delete" class="danger">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+    `}
+  `;
+
+  body.querySelectorAll("tr[data-id]").forEach((row) => {
+    const id = row.dataset.id;
+    row.querySelectorAll("button[data-act]").forEach((btn) => {
+      btn.addEventListener("click", () => handleCommentAction(btn.dataset.act, id));
+    });
+  });
+}
+
+async function handleCommentAction(action, id) {
+  const comment = commentsCache.find((c) => c.id === id);
+  if (!comment) return;
+
+  if (action === "hide" || action === "show") {
+    const status = action === "hide" ? "hidden" : "visible";
+    const { error } = await sb.from("build_comments").update({ status }).eq("id", id);
+    if (error) return toast("Failed: " + error.message, "error");
+    toast(`Comment ${status === "hidden" ? "hidden" : "shown"}.`, "ok");
+  } else if (action === "delete") {
+    if (!confirm("Delete this comment permanently? This cannot be undone.")) return;
+    const { error } = await sb.from("build_comments").delete().eq("id", id);
+    if (error) return toast("Failed: " + error.message, "error");
+    toast("Comment deleted.", "ok");
+  }
+
+  await loadComments();
+  renderCommentsTab();
+}
+
+// Patch renderDashboard so the Comments tab button and its dispatch are
+// wired in without touching the original function body above.
+const _baseRenderDashboard = renderDashboard;
+renderDashboard = function () {
+  _baseRenderDashboard();
+
+  const tabsWrap = document.querySelector(".ba-tabs");
+  if (tabsWrap && !tabsWrap.querySelector('[data-tab="comments"]')) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ba-tab" + (currentTab === "comments" ? " active" : "");
+    btn.dataset.tab = "comments";
+    btn.textContent = "Comments";
+    btn.addEventListener("click", () => { currentTab = "comments"; renderDashboard(); });
+    tabsWrap.appendChild(btn);
+  }
+
+  if (currentTab === "comments") {
+    loadComments().then(() => renderCommentsTab());
+  }
+};
