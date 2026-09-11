@@ -299,6 +299,7 @@ body.builds-public > main { flex: 1 0 auto; }
   width: 200px;
 }
 
+.bp-modal-overlay[hidden] { display: none; }
 .bp-modal-overlay {
   position: fixed;
   inset: 0;
