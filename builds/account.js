@@ -154,7 +154,15 @@ async function initAccountBar() {
   injectAccountModal();
   await BuildsAuth.init();
   renderAccountBar();
-  BuildsAuth.onChange(() => renderAccountBar());
+    BuildsAuth.onChange(() => renderAccountBar());
+
+  const calloutBtn = document.getElementById("calloutSignUp");
+  if (calloutBtn) {
+    calloutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openAccountModal("signup");
+    });
+  }
 }
 
 initAccountBar();
