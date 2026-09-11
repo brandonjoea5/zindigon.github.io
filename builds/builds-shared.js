@@ -200,3 +200,57 @@ async function castVote(buildId, value) {
   if (error) throw error;
   return value;
 }
+// ---------------------------------------------------------------------
+// Comments — build_comments (id, build_id, user_id, body, status,
+// created_at). status is 'visible' | 'hidden' | 'deleted'. Anyone can
+// read visible comments; posting requires being signed in. New comments
+// are inserted as 'visible' unless they match the basic blocked-word
+// filter below, in which case they're inserted as 'hidden' so an admin
+// can review them (admins can also hide/show/delete manually). There's
+// no username column on the row — resolved via a join against players
+// by user_id when rendering.
+// ---------------------------------------------------------------------
+const BLOCKED_WORDS = [
+  // Deliberately short — a basic, easily-extended safeguard, not a full
+  // moderation system. Admins can still hide/delete anything manually
+  // regardless of whether it tripped this list.
+  "fuck", "shit", "bitch", "asshole", "bastard", "cunt", "nigger", "nigga",
+  "faggot", "retard", "whore", "slut",
+];
+
+function containsBlockedWord(text) {
+  const lower = String(text || "").toLowerCase();
+  return BLOCKED_WORDS.some((w) => new RegExp(`\\b${w}\\b`, "i").test(lower));
+}
+
+async function fetchComments(buildId) {
+  const { data, error } = await sb
+    .from("build_comments")
+    .select("id, build_id, user_id, body, status, created_at")
+    .eq("build_id", buildId)
+    .eq("status", "visible")
+    .order("created_at", { ascending: true });
+  if (error) { console.warn("comments load failed", error); return []; }
+  const rows = data || [];
+  const userIds = [...new Set(rows.map((r) => r.user_id))];
+  let usernames = {};
+  if (userIds.length) {
+    const { data: players } = await sb.from("players").select("id, username").in("id", userIds);
+    (players || []).forEach((p) => { usernames[p.id] = p.username; });
+  }
+  return rows.map((r) => ({ ...r, username: usernames[r.user_id] || "Deleted User" }));
+}
+
+async function postComment(buildId, body) {
+  if (!BuildsAuth.isSignedIn()) throw new Error("Not signed in.");
+  const trimmed = String(body || "").trim();
+  if (!trimmed) throw new Error("Comment can't be empty.");
+  const status = containsBlockedWord(trimmed) ? "hidden" : "visible";
+  const { data, error } = await sb
+    .from("build_comments")
+    .insert({ build_id: buildId, user_id: BuildsAuth.session.user.id, body: trimmed, status })
+    .select()
+    .single();
+  if (error) throw error;
+  return { ...data, flagged: status === "hidden" };
+}
