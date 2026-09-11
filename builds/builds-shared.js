@@ -92,7 +92,7 @@ const BuildsAuth = {
     if (!this.session) throw new Error("Not signed in.");
     const { data, error } = await sb
       .from("players")
-      .insert({ id: this.session.user.id, username, role: "member" })
+      .insert({ id: this.session.user.id, username, role: "user" })
       .select("id, username, role, selected_title, created_at")
       .single();
     if (error) throw error;
