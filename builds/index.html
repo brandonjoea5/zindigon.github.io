@@ -51,7 +51,7 @@
 </header>
 
 <main>
-        <section class="hero" style="padding-top:24px;">
+    <section class="hero" style="padding-top:24px;">
     <div id="accountBar" class="bp-account-bar"></div>
     <div class="bp-callout">
     <p>Have a build worth sharing? <a href="#" id="calloutSignUp">Create a free account to submit one</a> — every submission is reviewed before it goes live.</p>
@@ -66,6 +66,10 @@
     <div class="bp-filters">
       <select id="bpRoleFilter" aria-label="Filter by role"><option value="">All roles</option></select>
       <select id="bpTypeFilter" aria-label="Filter by build type"><option value="">All build types</option></select>
+      <select id="bpSortFilter" aria-label="Sort builds">
+        <option value="newest">Newest</option>
+        <option value="upvoted">Most Upvoted</option>
+      </select>
       <div class="spacer"></div>
     </div>
 
@@ -107,9 +111,8 @@
 
 <script src="https://zindigon.com/assets/site.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="builds-shared.js?v=2"></script>
+<script src="builds-shared.js?v=3"></script>
 <script src="account.js?v=1"></script>
-<script src="browse.js?v=3"></script>
+<script src="browse.js?v=4"></script>
 </body>
 </html>
-
