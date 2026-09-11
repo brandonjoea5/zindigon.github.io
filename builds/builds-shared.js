@@ -151,3 +151,52 @@ function rolesForPower(ref, powerId) {
   const ids = new Set(ref.powerRoles.filter((pr) => pr.power_id === powerId).map((pr) => pr.role_id));
   return ref.roles.filter((r) => ids.has(r.id));
 }
+// ---------------------------------------------------------------------
+// Voting — build_votes (build_id, user_id, vote, created_at, updated_at).
+// vote is 1 (up) or -1 (down); one row per user per build. Counts are
+// computed client-side from the raw rows (small scale), so anon/auth
+// just needs SELECT on build_votes; casting a vote needs the caller to
+// be signed in and own the row (user_id = auth.uid()).
+// ---------------------------------------------------------------------
+async function fetchVoteTotals(buildIds) {
+  const totals = {};
+  (buildIds || []).forEach((id) => { totals[id] = { up: 0, down: 0, score: 0 }; });
+  if (!buildIds || !buildIds.length) return totals;
+  const { data, error } = await sb.from("build_votes").select("build_id, vote").in("build_id", buildIds);
+  if (error) { console.warn("vote totals load failed", error); return totals; }
+  (data || []).forEach((row) => {
+    const t = totals[row.build_id];
+    if (!t) return;
+    if (row.vote > 0) t.up += 1; else if (row.vote < 0) t.down += 1;
+    t.score = t.up - t.down;
+  });
+  return totals;
+}
+
+async function fetchMyVote(buildId) {
+  if (!BuildsAuth.isSignedIn()) return 0;
+  const { data, error } = await sb
+    .from("build_votes")
+    .select("vote")
+    .eq("build_id", buildId)
+    .eq("user_id", BuildsAuth.session.user.id)
+    .maybeSingle();
+  if (error) { console.warn("my vote load failed", error); return 0; }
+  return data ? data.vote : 0;
+}
+
+async function castVote(buildId, value) {
+  if (!BuildsAuth.isSignedIn()) throw new Error("Not signed in.");
+  const userId = BuildsAuth.session.user.id;
+  const current = await fetchMyVote(buildId);
+  if (current === value) {
+    const { error } = await sb.from("build_votes").delete().eq("build_id", buildId).eq("user_id", userId);
+    if (error) throw error;
+    return 0;
+  }
+  const { error } = await sb
+    .from("build_votes")
+    .upsert({ build_id: buildId, user_id: userId, vote: value, updated_at: new Date().toISOString() }, { onConflict: "build_id,user_id" });
+  if (error) throw error;
+  return value;
+}
