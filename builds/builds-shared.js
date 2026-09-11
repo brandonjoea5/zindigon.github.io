@@ -78,6 +78,28 @@ const BuildsAuth = {
     this.player = null;
   },
 
+  async signUp(email, password) {
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) throw error;
+    this.session = data.session || null;
+    if (this.session) await this._loadPlayer();
+    return { session: this.session, needsEmailConfirmation: !this.session };
+  },
+
+  hasProfile() { return !!this.player; },
+
+  async createProfile(username) {
+    if (!this.session) throw new Error("Not signed in.");
+    const { data, error } = await sb
+      .from("players")
+      .insert({ id: this.session.user.id, username, role: "member" })
+      .select("id, username, role, selected_title, created_at")
+      .single();
+    if (error) throw error;
+    this.player = data;
+    return data;
+  },
+
   onChange(cb) {
     sb.auth.onAuthStateChange(async (_event, session) => {
       this.session = session;
