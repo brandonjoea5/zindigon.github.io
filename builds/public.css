@@ -275,3 +275,85 @@ body.builds-public > main { flex: 1 0 auto; }
   margin: 0;
   max-width: 72ch;
 }
+/* ───────── Account bar + modal ───────── */
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+
+.bp-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.bp-account-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-soft);
+}
+.bp-account-inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.bp-account-inline-form .input {
+  width: 200px;
+}
+
+.bp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+.bp-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+.bp-modal h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0 0 18px;
+}
+.bp-modal form {
+  display: grid;
+  gap: 14px;
+}
+.bp-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--fg-mute);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.bp-modal-close:hover { color: var(--fg); }
+.bp-account-error {
+  font-size: 12px;
+  color: #f87171;
+  margin: 0;
+}
+.bp-account-info {
+  font-size: 12px;
+  color: var(--accent);
+  margin: 0;
+}
+.bp-account-switch {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--fg-mute);
+  text-align: center;
+}
+.bp-account-switch a { color: var(--accent); }
