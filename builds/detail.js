@@ -3,7 +3,10 @@
 // loadout/artifacts/requirements/alternatives and reference data via the
 // shared Supabase client from builds-shared.js, and renders a read-only
 // detail view plus voting (thumbs up/down — build_votes SELECT is public,
-// casting a vote requires being signed in). No writes to builds itself.
+// casting a vote requires being signed in) and comments (visible comments
+// are public; posting requires being signed in). No writes to builds itself.
+
+let currentBuildId = null;
 
 const REQUIREMENT_TYPE_LABELS = {
   artifact: "Artifact", movement: "Movement", iconic_ability: "Iconic Ability",
@@ -61,6 +64,7 @@ async function boot() {
     ]);
 
     document.title = `${build.name} | Zindigon Builds`;
+    currentBuildId = build.id;
     render(build, ref, {
       loadout: loadout.data || [],
       artifacts: artifacts.data || [],
@@ -68,14 +72,23 @@ async function boot() {
       alternatives: alternatives.data || [],
     });
 
-    const [totals, myVote] = await Promise.all([
+    const [totals, myVote, comments] = await Promise.all([
       fetchVoteTotals([build.id]).then((t) => t[build.id] || { up: 0, down: 0, score: 0 }),
       fetchMyVote(build.id),
+      fetchComments(build.id),
     ]);
     renderVotes(build.id, totals, myVote);
+    renderComments(build.id, comments);
   } catch (err) {
     root.innerHTML = notFoundMarkup(err.message || "Something went wrong talking to the database. Try refreshing.");
   }
+}
+
+// Called by account.js after a sign-in/sign-up/sign-out completes, so the
+// comment form (which depends on auth state) updates without a refresh.
+function onAccountChange() {
+  if (!currentBuildId) return;
+  fetchComments(currentBuildId).then((comments) => renderComments(currentBuildId, comments));
 }
 
 function notFoundMarkup(message) {
@@ -114,6 +127,80 @@ async function handleVote(buildId, value) {
     renderVotes(buildId, totals, myVote);
   } catch (err) {
     if (hint) hint.textContent = err.message || "Couldn't save your vote.";
+  }
+}
+
+function renderComments(buildId, comments) {
+  const el = document.getElementById("bdComments");
+  if (!el) return;
+
+  const list = comments.length
+    ? `<div class="bd-comments-list">${comments.map((c) => `
+        <div class="bd-comment">
+          <div class="bd-comment-meta">
+            <span class="bd-comment-author">${esc(c.username)}</span>
+            <span>${new Date(c.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
+          </div>
+          <p class="bd-comment-body">${esc(c.body)}</p>
+        </div>`).join("")}</div>`
+    : `<p class="bd-comment-empty">No comments yet — be the first to share your thoughts.</p>`;
+
+  let formOrPrompt;
+  if (!BuildsAuth.isSignedIn()) {
+    formOrPrompt = `
+      <div class="bd-comment-form">
+        <button class="btn btn-secondary" id="bdCommentSignInBtn" type="button">Sign in to comment</button>
+      </div>`;
+  } else if (!BuildsAuth.hasProfile()) {
+    formOrPrompt = `<p class="bd-comment-empty">Finish setting up your account to comment.</p>`;
+  } else {
+    formOrPrompt = `
+      <form class="bd-comment-form" id="bdCommentForm">
+        <textarea id="bdCommentBody" placeholder="Share your thoughts on this build..." required></textarea>
+        <div style="margin-top:8px; display:flex; align-items:center; gap:12px;">
+          <button class="btn btn-primary" type="submit">Post Comment</button>
+          <span class="bd-comment-hint" id="bdCommentHint"></span>
+        </div>
+      </form>`;
+  }
+
+  el.innerHTML = list + formOrPrompt;
+
+  const form = document.getElementById("bdCommentForm");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleCommentSubmit(buildId);
+    });
+  }
+  const signInBtn = document.getElementById("bdCommentSignInBtn");
+  if (signInBtn) {
+    signInBtn.addEventListener("click", () => {
+      if (typeof openAccountModal === "function") openAccountModal("signin");
+    });
+  }
+}
+
+async function handleCommentSubmit(buildId) {
+  const textarea = document.getElementById("bdCommentBody");
+  const hint = document.getElementById("bdCommentHint");
+  const submitBtn = textarea.closest("form").querySelector('button[type="submit"]');
+  const body = textarea.value;
+  if (hint) hint.textContent = "";
+  submitBtn.disabled = true;
+  try {
+    const result = await postComment(buildId, body);
+    if (result.flagged) {
+      textarea.value = "";
+      if (hint) hint.textContent = "Your comment was submitted and is awaiting review.";
+      submitBtn.disabled = false;
+    } else {
+      const comments = await fetchComments(buildId);
+      renderComments(buildId, comments);
+    }
+  } catch (err) {
+    if (hint) hint.textContent = err.message || "Couldn't post your comment.";
+    submitBtn.disabled = false;
   }
 }
 
@@ -268,6 +355,11 @@ ${(build.recommended_for || []).length ? `
           <p>${esc(text).replace(/\n/g, "<br>")}</p>
         </div>`).join("")}
     </section>` : ""}
+
+    <section class="bd-section">
+      <h2>Comments</h2>
+      <div id="bdComments"><p class="bd-comment-empty">Loading comments…</p></div>
+    </section>
   `;
 }
 
