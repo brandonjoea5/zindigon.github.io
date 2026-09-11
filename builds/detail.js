@@ -2,8 +2,8 @@
 // Reads ?slug=... from the URL, loads that one published build plus its
 // loadout/artifacts/requirements/alternatives and reference data via the
 // shared Supabase client from builds-shared.js, and renders a read-only
-// detail view. No auth, no writes — public.builds RLS already allows
-// anon SELECT of status = 'published' rows (and their child rows).
+// detail view plus voting (thumbs up/down — build_votes SELECT is public,
+// casting a vote requires being signed in). No writes to builds itself.
 
 const REQUIREMENT_TYPE_LABELS = {
   artifact: "Artifact", movement: "Movement", iconic_ability: "Iconic Ability",
@@ -67,6 +67,12 @@ async function boot() {
       requirements: requirements.data || [],
       alternatives: alternatives.data || [],
     });
+
+    const [totals, myVote] = await Promise.all([
+      fetchVoteTotals([build.id]).then((t) => t[build.id] || { up: 0, down: 0, score: 0 }),
+      fetchMyVote(build.id),
+    ]);
+    renderVotes(build.id, totals, myVote);
   } catch (err) {
     root.innerHTML = notFoundMarkup(err.message || "Something went wrong talking to the database. Try refreshing.");
   }
@@ -78,6 +84,37 @@ function notFoundMarkup(message) {
     <p>${esc(message)}</p>
     <p style="margin-top:16px;"><a class="link-arrow" href="index.html">← Back to all builds</a></p>
   </div>`;
+}
+
+function renderVotes(buildId, totals, myVote) {
+  const el = document.getElementById("bdVotes");
+  if (!el) return;
+  el.innerHTML = `
+    <button class="bd-vote-btn${myVote === 1 ? " active" : ""}" id="bdVoteUp" type="button" aria-label="Upvote this build">▲ <span id="bdVoteUpCount">${totals.up}</span></button>
+    <button class="bd-vote-btn${myVote === -1 ? " active" : ""}" id="bdVoteDown" type="button" aria-label="Downvote this build">▼ <span id="bdVoteDownCount">${totals.down}</span></button>
+    <span class="bd-vote-hint" id="bdVoteHint"></span>
+  `;
+  document.getElementById("bdVoteUp").addEventListener("click", () => handleVote(buildId, 1));
+  document.getElementById("bdVoteDown").addEventListener("click", () => handleVote(buildId, -1));
+}
+
+async function handleVote(buildId, value) {
+  const hint = document.getElementById("bdVoteHint");
+  if (!BuildsAuth.isSignedIn()) {
+    if (hint) hint.textContent = "Sign in to vote.";
+    if (typeof openAccountModal === "function") openAccountModal("signin");
+    return;
+  }
+  try {
+    await castVote(buildId, value);
+    const [totals, myVote] = await Promise.all([
+      fetchVoteTotals([buildId]).then((t) => t[buildId] || { up: 0, down: 0, score: 0 }),
+      fetchMyVote(buildId),
+    ]);
+    renderVotes(buildId, totals, myVote);
+  } catch (err) {
+    if (hint) hint.textContent = err.message || "Couldn't save your vote.";
+  }
 }
 
 function render(build, ref, children) {
@@ -183,7 +220,8 @@ function render(build, ref, children) {
         ${updated ? `<span>Updated ${esc(updated)}</span>` : ""}
         ${tested ? `<span>Last tested ${esc(tested)}</span>` : ""}
       </div>
-            <p class="bd-submitted-by">Submitted by ${esc(build.submitted_by || "Anonymous")}</p>
+      <div class="bd-votes" id="bdVotes"></div>
+      <p class="bd-submitted-by">Submitted by ${esc(build.submitted_by || "Anonymous")}</p>
 ${(build.recommended_for || []).length ? `
         <div class="bd-recommended">
           <span class="bd-recommended-label">Recommended for:</span>
@@ -234,4 +272,3 @@ ${(build.recommended_for || []).length ? `
 }
 
 boot();
-
