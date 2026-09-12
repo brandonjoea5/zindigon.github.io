@@ -277,6 +277,9 @@ body.builds-public > main { flex: 1 0 auto; }
 }
 /* ───────── Account bar + modal ───────── */
 .btn-sm { padding: 7px 12px; font-size: 12px; }
+.bp-account-bar {
+  margin-bottom: 20px;
+}
 
 .bp-account {
   display: flex;
