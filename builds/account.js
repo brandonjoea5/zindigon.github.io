@@ -29,7 +29,7 @@ function renderAccountBar() {
     el.innerHTML = `
       <div class="bp-account">
         <form id="acctProfileForm" class="bp-account-inline-form">
-          <input class="input" id="acctProfileUsername" placeholder="Choose a username" required />
+          <input class="input" id="acctProfileUsername" placeholder="Choose a display name" required />
           <button class="btn btn-primary btn-sm" type="submit">Finish setting up account</button>
         </form>
       </div>`;
@@ -42,7 +42,7 @@ function renderAccountBar() {
         renderAccountBar();
         if (typeof onAccountChange === "function") onAccountChange();
       } catch (err) {
-        alert("Could not save username: " + err.message);
+        alert("Could not save display name: " + err.message);
       }
     });
     return;
@@ -61,7 +61,6 @@ function openAccountModal(mode) {
   acctMode = mode;
   document.getElementById("acctModalOverlay").hidden = false;
   document.getElementById("acctModalTitle").textContent = mode === "signup" ? "Sign Up" : "Sign In";
-  document.getElementById("acctUsernameField").hidden = mode !== "signup";
   document.getElementById("acctSubmitBtn").textContent = mode === "signup" ? "Sign Up" : "Sign In";
   document.getElementById("acctSwitchToSignUp").hidden = mode === "signup";
   document.getElementById("acctSwitchToSignIn").hidden = mode !== "signup";
@@ -82,10 +81,6 @@ function injectAccountModal() {
         <button class="bp-modal-close" id="acctModalClose" type="button" aria-label="Close">&times;</button>
         <h3 id="acctModalTitle">Sign In</h3>
         <form id="acctForm">
-          <div class="field" id="acctUsernameField" hidden>
-            <label for="acctUsername">Username</label>
-            <input class="input" id="acctUsername" />
-          </div>
           <div class="field">
             <label for="acctEmail">Email</label>
             <input class="input" type="email" id="acctEmail" required />
@@ -122,19 +117,12 @@ function injectAccountModal() {
     infoEl.hidden = true;
     try {
       if (acctMode === "signup") {
-        const username = document.getElementById("acctUsername").value.trim();
-        if (!username) {
-          errEl.textContent = "Please choose a username.";
-          errEl.hidden = false;
-          return;
-        }
         const { needsEmailConfirmation } = await BuildsAuth.signUp(email, password);
         if (needsEmailConfirmation) {
           infoEl.textContent = "Check your email to confirm your account, then sign in.";
           infoEl.hidden = false;
           return;
         }
-        await BuildsAuth.createProfile(username);
       } else {
         await BuildsAuth.signInWithPassword(email, password);
       }
