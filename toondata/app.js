@@ -2433,13 +2433,9 @@ function renderComparison(dataA, dataB) {
 // In DCUO, Combat Rating is the weighted average item level of your 14
 // equipped gear slots — but "weighted" is doing a lot of work there: some
 // slots (weapon, chest, legs) count for noticeably more than others (a
-// ring or trinket). Census doesn't expose the weights or the formula
-// itself anywhere, so these are cross-checked against the community
-// reference calculator at
-// https://dcuobloguide.com/tools/combat-rating-calculator/ — read directly
-// out of that page's own calculator script (each slot's <input> carries
-// its weight as a data-weight attribute, e.g. data-weight="0.12" for the
-// weapon slot), not guessed from what's displayed on the page.
+// ring or trinket). These per-slot weights are the detailed (unrounded)
+// values, set from an in-game-verified reading rather than the rounded
+// whole-percent weights a community reference calculator displays.
 //
 // The 14 weights below sum to 1.15, not 1 — that's not a bug. Combat
 // Rating is defined as 115% of the weighted item level, and that 115% is
@@ -2448,20 +2444,20 @@ function renderComparison(dataA, dataB) {
 //   CR = sum(itemLevel_i * weight_i) across all 14 slots
 // with no additional step.
 const CR_SLOTS = [
-  { key: "head", label: "Head", weight: 0.11 },
-  { key: "face", label: "Face", weight: 0.06 },
-  { key: "neck", label: "Neck", weight: 0.06 },
-  { key: "shoulders", label: "Shoulders", weight: 0.09 },
-  { key: "chest", label: "Chest", weight: 0.12 },
-  { key: "back", label: "Back (Cape)", weight: 0.08 },
-  { key: "hands", label: "Hands", weight: 0.07 },
-  { key: "waist", label: "Waist (Belt)", weight: 0.07 },
-  { key: "legs", label: "Legs", weight: 0.12 },
-  { key: "feet", label: "Feet (Boots)", weight: 0.07 },
-  { key: "ring1", label: "Ring 1", weight: 0.06 },
-  { key: "ring2", label: "Ring 2", weight: 0.06 },
-  { key: "trinket", label: "Trinket", weight: 0.06 },
-  { key: "weapon", label: "Weapon", weight: 0.12 },
+  { key: "head", label: "Head", weight: 0.1265 },
+  { key: "face", label: "Face", weight: 0.0345 },
+  { key: "neck", label: "Neck", weight: 0.0575 },
+  { key: "shoulders", label: "Shoulders", weight: 0.115 },
+  { key: "chest", label: "Chest", weight: 0.138 },
+  { key: "back", label: "Back (Cape)", weight: 0.092 },
+  { key: "hands", label: "Hands", weight: 0.069 },
+  { key: "waist", label: "Waist (Belt)", weight: 0.0805 },
+  { key: "legs", label: "Legs", weight: 0.138 },
+  { key: "feet", label: "Feet (Boots)", weight: 0.069 },
+  { key: "ring1", label: "Ring 1", weight: 0.046 },
+  { key: "ring2", label: "Ring 2", weight: 0.046 },
+  { key: "trinket", label: "Trinket", weight: 0.023 },
+  { key: "weapon", label: "Weapon", weight: 0.115 },
 ];
 
 function buildCrCalcHtml() {
