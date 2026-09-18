@@ -593,13 +593,37 @@ class RateLimitError extends Error {
 class AuthWallError extends Error {
   constructor(collection) { super(`That information requires the player to be logged in and isn't available here.`); }
 }
+// Thrown when a single Census request (via the Worker) doesn't respond
+// within REQUEST_TIMEOUT_MS, or when a paginated fetch blows through
+// FETCH_ALL_PAGES_DEADLINE_MS. Deliberately its own type (not just a
+// generic Error) so it retries the same way RateLimitError does, but with
+// wording that's honest about what actually happened instead of implying
+// the visitor did something wrong.
+class TimeoutError extends Error {
+  constructor() { super("Census (DCUO's servers) is responding very slowly right now. Please try again in a moment."); }
+}
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Reassures the visitor a lookup is still in progress instead of leaving
+// the status line looking frozen for however long the retry/timeout chain
+// above takes. Callers schedule this right after their initial "Looking
+// up..." status and MUST clear the returned timer (clearTimeout) in a
+// finally block once the lookup settles, so it never fires after the fact.
+function scheduleSlowNotice() {
+  return setTimeout(() => {
+    setStatus("Still working — Census is responding slowly right now...", "warn");
+  }, SLOW_NOTICE_MS);
+}
 
 async function fetchAllPages(collection, baseParams) {
   const all = [];
   const listKey = `${collection}_list`;
+  const startedAt = Date.now();
   for (let page = 0; page < MAX_PAGES; page++) {
+    if (Date.now() - startedAt > FETCH_ALL_PAGES_DEADLINE_MS) {
+      throw new TimeoutError();
+    }
     const json = await censusGet(collection, {
       ...baseParams,
       "c:limit": PAGE_SIZE,
