@@ -1,0 +1,24 @@
+name = "zindigon-league-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# Phase 1 — Zindigon League match-history API.
+# Deployed on the Workers Free plan; the fetch/caching design in src/index.js
+# is written to stay under Free-tier limits (10ms CPU / 50 subrequests per
+# invocation) by keeping match browsing cheap and only ever fetching a
+# timeline lazily, one match at a time, for a specific review — never in the
+# same request that lists/paginates match history.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "zindigon-league"
+database_id = "93fc8faf-9cf1-4631-afb9-219eefb503fc"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "e6c26398ed6f4989b4ab3f57e32310cf"
+
+# Secrets (set via the Cloudflare dashboard, never committed here):
+#   RIOT_API_KEY   — the Riot dev/production key. Expires every 24h in dev;
+#                    replacing it is a dashboard-only action, no redeploy.
+#   ALLOW_ORIGIN   — https://zindigon.com (CORS allow-list)
