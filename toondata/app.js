@@ -1644,6 +1644,7 @@ async function runLeagueSearch(name) {
   clearResult();
   setStatus("Looking up league...");
   leagueSearchBtn.disabled = true;
+  const slowNoticeTimer = scheduleSlowNotice();
 
   try {
     const guildJson = await censusGet("guild", { name: `^${name}`, "c:limit": 20 });
@@ -1675,6 +1676,7 @@ async function runLeagueSearch(name) {
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
   } finally {
+    clearTimeout(slowNoticeTimer);
     leagueSearchBtn.disabled = false;
   }
 }
@@ -1699,6 +1701,7 @@ async function loadLeagueRoster(guildId, knownName, opts) {
   clearMatches();
   clearResult();
   setStatus("Loading roster...");
+  const slowNoticeTimer = scheduleSlowNotice();
   try {
     const rosterJson = await censusGet("guild_roster", { guild_id: guildId, "c:limit": ROSTER_LIMIT });
     const members = rosterJson.guild_roster_list || [];
@@ -1738,7 +1741,18 @@ async function loadLeagueRoster(guildId, knownName, opts) {
     // thrown away rather than partially trusted, since there's no way to
     // tell which of its entries (if any) are real.
     const byId = {};
+    const batchStartedAt = Date.now();
     for (let i = 0; i < members.length; i += CHAR_BATCH_SIZE) {
+      // A large league (up to ROSTER_LIMIT members) can mean dozens of
+      // sequential batches; under rate limiting each one can now take up
+      // to REQUEST_TIMEOUT_MS x MAX_RETRIES before its own try/catch below
+      // gives up on it. Without a budget here, that compounds across every
+      // remaining batch. Stopping past the deadline is safe precisely
+      // because it lands in the SAME already-designed fallback as any other
+      // unresolved batch (raw ID display below) — unlike fetchAllPages,
+      // there's no risk of a partial result looking like a complete-but-
+      // wrong count here.
+      if (Date.now() - batchStartedAt > FETCH_ALL_PAGES_DEADLINE_MS) break;
       const batch = members.slice(i, i + CHAR_BATCH_SIZE);
       const requestedIds = new Set(batch.map(m => m.character_id));
       const idsParam = batch.map(m => m.character_id).join(",");
@@ -1762,6 +1776,8 @@ async function loadLeagueRoster(guildId, knownName, opts) {
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    clearTimeout(slowNoticeTimer);
   }
 }
 
