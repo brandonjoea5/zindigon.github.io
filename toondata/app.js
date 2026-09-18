@@ -1893,9 +1893,15 @@ async function loadComparison(idA, idB, opts) {
   // of failing loudly. Sequential fetches keep peak load the same as a
   // single character lookup.
   setStatus("Loading first character...");
+  // Re-scheduled after each status change below rather than set once —
+  // otherwise a slow first character could make the notice fire after
+  // "Loading second character..." is already showing and stomp on it.
+  let slowNoticeTimer = scheduleSlowNotice();
   try {
     const dataA = await fetchCharacterFullData(idA);
+    clearTimeout(slowNoticeTimer);
     setStatus("Loading second character...");
+    slowNoticeTimer = scheduleSlowNotice();
     const dataB = await fetchCharacterFullData(idB);
 
     if (!dataA || !dataB) {
@@ -1908,6 +1914,8 @@ async function loadComparison(idA, idB, opts) {
     cacheView(cacheKey, { type: "compare", idA, idB, dataA, dataB });
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    clearTimeout(slowNoticeTimer);
   }
 }
 
