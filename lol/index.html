@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zindigon League | Free Match History and Rank Lookup</title>
+<meta name="description" content="Free League of Legends match history lookup. Search any Summoner for ranked stats and a filterable, sortable match history — no sign-in required." />
+<link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
+<link rel="stylesheet" href="style.css?v=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+</head>
+<body class="lol-page">
+
+<header class="site-header">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="https://zindigon.com/">
+      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="https://zindigon.com/">Home</a>
+      <a href="https://zindigon.com/projects.html">Projects</a>
+      <a href="https://zindigon.com/work.html">Work</a>
+      <a href="https://zindigon.com/contact.html">Contact</a>
+      <a href="index.html" aria-current="page">League</a>
+      <a href="https://zindigon.com/toondata/" title="ToonData — DC Universe Online lookup tool">ToonData</a>
+      <a href="https://zindigon.com/builds/" title="Builds — a DC Universe Online build database">Builds</a>
+    </div>
+    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+  </nav>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="https://zindigon.com/">Home</a>
+    <a href="https://zindigon.com/projects.html">Projects</a>
+    <a href="https://zindigon.com/work.html">Work</a>
+    <a href="https://zindigon.com/contact.html">Contact</a>
+    <a href="index.html">League</a>
+    <a href="https://zindigon.com/toondata/">ToonData — DCUO lookup tool</a>
+    <a href="https://zindigon.com/builds/">Builds — DCUO build database</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding-top:24px;">
+    <div id="accountBar" class="lp-account-bar"></div>
+
+    <span class="eyebrow"><span class="dot"></span>League of Legends</span>
+    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Zindigon League</h1>
+    <p class="lede">Look up any Summoner's rank and match history — free, no sign-in required. Sign in to save profiles you check often.</p>
+
+    <form id="searchForm" class="lp-search-form">
+      <select id="platformSelect" aria-label="Region">
+        <option value="na1">NA</option>
+        <option value="euw1">EUW</option>
+        <option value="eun1">EUNE</option>
+        <option value="kr">KR</option>
+        <option value="jp1">JP</option>
+        <option value="br1">BR</option>
+        <option value="la1">LAN</option>
+        <option value="la2">LAS</option>
+        <option value="oc1">OCE</option>
+        <option value="ru">RU</option>
+        <option value="tr1">TR</option>
+        <option value="ph2">PH</option>
+        <option value="sg2">SG</option>
+        <option value="th2">TH</option>
+        <option value="tw2">TW</option>
+        <option value="vn2">VN</option>
+      </select>
+      <input id="riotName" class="input lp-name-input" type="text" placeholder="Riot ID (e.g. Faker)" autocomplete="off" />
+      <input id="riotTag" class="input lp-tag-input" type="text" placeholder="Tag (e.g. KR1)" autocomplete="off" />
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+
+    <div class="lp-notices">
+      <div class="notice" style="margin-top:16px;">
+        <span>Search using public Riot IDs only. Zindigon League will never ask for your Riot account password.</span>
+      </div>
+      <div class="notice" style="margin-top:10px;">
+        <span>Match and rank data comes from Riot Games' public API and may be delayed or incomplete. Zindigon League can't correct information Riot maintains.</span>
+      </div>
+    </div>
+
+    <div id="status" class="status-line"></div>
+
+    <div id="savedProfilesSection" class="lp-saved-profiles" hidden>
+      <h3>Your Saved Profiles</h3>
+      <div id="savedList" class="lp-saved-list"></div>
+    </div>
+
+    <div id="result" class="lp-result">
+      <div id="identity" class="lp-identity"></div>
+      <div id="rankGrid" class="lp-rank-grid"></div>
+
+      <div id="filters" class="lp-filters">
+        <input id="filterChampion" type="text" placeholder="Champion" />
+        <select id="filterRole">
+          <option value="">All Roles</option>
+          <option value="TOP">Top</option>
+          <option value="JUNGLE">Jungle</option>
+          <option value="MIDDLE">Mid</option>
+          <option value="BOTTOM">Bottom</option>
+          <option value="UTILITY">Support</option>
+        </select>
+        <select id="filterQueue">
+          <option value="">All Queues</option>
+          <option value="420">Ranked Solo/Duo</option>
+          <option value="440">Ranked Flex</option>
+          <option value="450">ARAM</option>
+          <option value="400">Normal Draft</option>
+          <option value="430">Normal Blind</option>
+          <option value="490">Quickplay</option>
+        </select>
+        <select id="filterWin">
+          <option value="">Win or Loss</option>
+          <option value="true">Wins Only</option>
+          <option value="false">Losses Only</option>
+        </select>
+        <input id="filterMinKills" type="number" min="0" placeholder="Min Kills" />
+        <input id="filterMinCs" type="number" min="0" placeholder="Min CS" />
+        <span class="spacer"></span>
+        <select id="filterSort">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="most_kills">Most kills</option>
+          <option value="most_deaths">Most deaths</option>
+          <option value="most_assists">Most assists</option>
+          <option value="highest_kda">Highest KDA</option>
+          <option value="most_cs">Most CS</option>
+          <option value="highest_cs_per_min">Highest CS/min</option>
+          <option value="most_damage">Most damage</option>
+          <option value="most_gold">Most gold</option>
+          <option value="highest_vision">Highest vision score</option>
+          <option value="fastest_win">Shortest games</option>
+          <option value="longest_match">Longest games</option>
+        </select>
+        <span id="matchCount" class="lp-filter-count"></span>
+      </div>
+
+      <div id="tableWrap" class="lp-table-wrap">
+        <table class="lp-table">
+          <thead>
+            <tr>
+              <th>Result</th><th>Date</th><th>Queue</th><th>Champion</th><th>Role</th>
+              <th>K / D / A</th><th>KDA</th><th>CS</th><th>Damage</th><th>Gold</th><th>Vision</th><th>Length</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <button id="loadMoreBtn" class="btn btn-secondary lp-load-more" type="button" hidden>Load More</button>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
+        Zindigon League isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
+      </p>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
+        Match and rank data is provided through the Riot Games API. Riot Games does not guarantee the availability, accuracy, or continued operation of the API or its data.
+      </p>
+    </div>
+    <div class="footer-col"><h4>League</h4><ul>
+      <li><a href="index.html">Match Lookup</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Legal</h4><ul>
+      <li><a href="https://zindigon.com/terms.html">Terms of Use</a></li>
+      <li><a href="https://zindigon.com/privacy.html">Privacy Policy</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Reach</h4><ul>
+      <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li>
+    </ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span>2026 Zindigon</span>
+    <span>Not affiliated with or endorsed by Riot Games, Inc.</span>
+  </div>
+</footer>
+
+<script src="https://zindigon.com/assets/site.js"></script>
+<script src="auth-shared.js?v=1"></script>
+<script src="account.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
