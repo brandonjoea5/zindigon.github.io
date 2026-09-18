@@ -149,6 +149,37 @@ body.builds-public > main { flex: 1 0 auto; }
   font-size: 12px;
   letter-spacing: 0.04em;
 }
+/* #buildDetail specifically (build grid uses the skeleton grid below
+   instead): reserves rough space for the real build layout (title, meta,
+   gear, write-up) that detail.js replaces this loading box with, so that
+   swap doesn't shove the footer down the way it was — this page showed up
+   in the same CLS report as the build grid. A floor, not a cap; an
+   unusually long build write-up can still grow past it. */
+#buildDetail .bp-loading { min-height: 900px; box-sizing: border-box; }
+
+/* ───────── Loading skeleton (build grid) ─────────
+   Static placeholder cards shown in index.html before browse.js has real
+   data. Deliberately reuses .bp-card's own box model (padding/gap/border)
+   rather than a separate shape, so the skeleton grid's height is close to
+   the real grid's — that's what actually prevents the footer-jump CLS
+   Cloudflare's report flagged, not just something to fill the wait. */
+.bp-skeleton-card { pointer-events: none; }
+.bp-skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--line);
+  animation: bp-skeleton-pulse 1.4s ease-in-out infinite;
+}
+.bp-skeleton-title { height: 19px; width: 60%; margin-bottom: 4px; }
+.bp-skeleton-tags { height: 20px; width: 45%; }
+.bp-skeleton-meta { height: 11px; width: 35%; margin-top: auto; }
+@keyframes bp-skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-skeleton-line { animation: none; opacity: 0.6; }
+}
 
 /* ───────── Build detail page ───────── */
 .bd-header { margin-bottom: 8px; }

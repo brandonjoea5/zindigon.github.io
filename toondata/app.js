@@ -12,7 +12,38 @@
 const WORKER_BASE = "https://toondata-census.brandonjoea3.workers.dev";
 const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for feat collections
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
-const MAX_RETRIES = 3;
+// Was 3. Real-user monitoring (Cloudflare Web Vitals) caught #searchBtn
+// hitting a 55s INP and the paperdoll's LCP hitting 85s on the same
+// visits — both traced to this retry loop compounding across a rate-limited
+// "s:example" key with no ceiling on how long a single lookup could run.
+// There's no code fix for the underlying rate limit itself (that needs
+// Daybreak to approve a real Service ID), so this file now optimizes for
+// bounding the worst case instead: fewer retries, a hard per-request
+// timeout (REQUEST_TIMEOUT_MS below), and an overall deadline on paginated
+// fetches (FETCH_ALL_PAGES_DEADLINE_MS) so a lookup fails fast and honestly
+// instead of hanging for a minute or more.
+const MAX_RETRIES = 2;
+// Ceiling on a single HTTP round-trip to the Worker, via AbortController
+// (see censusGet). Without this, a slow/rate-limited response had no
+// upper bound at all and could hang indefinitely — that's the confirmed
+// cause of the 55s/85s outliers above. 8s is generous for a healthy
+// response (P75 today is ~1.1s per the Web Analytics report) while still
+// cutting off a stuck request well before it becomes a multi-minute wait.
+const REQUEST_TIMEOUT_MS = 8000;
+// Total budget for one fetchAllPages() call (e.g. a character's completed
+// feats across multiple pages). Bounds the compounding case directly:
+// without it, MAX_RETRIES x REQUEST_TIMEOUT_MS x MAX_PAGES could still add
+// up to several minutes for a heavily-feated character under rate
+// limiting. Past this deadline we fail the whole lookup honestly (a clear
+// "try again" message) rather than silently returning a partial feat list
+// that would under-count and look like a data bug — see the RateLimitError
+// comment below on why silent-wrong-data is the one thing this file
+// deliberately never does.
+const FETCH_ALL_PAGES_DEADLINE_MS = 20000;
+// How long a lookup can run before we reassure the visitor it's still
+// working, instead of leaving "Looking up character..." sitting there
+// with no sign of life for up to REQUEST_TIMEOUT_MS x MAX_RETRIES seconds.
+const SLOW_NOTICE_MS = 4000;
 const ROSTER_LIMIT = 500;      // safety cap on how many members a single league roster fetch returns
 // How many character_ids get resolved to names per batched request. This
 // used to be 40, which sounds reasonable but is silently wrong: verified
@@ -476,8 +507,15 @@ async function censusGet(collection, params) {
 
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // AbortController-based timeout on the fetch itself. Before this, a
+    // slow or hung response from a rate-limited Census key had literally
+    // no ceiling — the browser would just keep waiting. This is the direct
+    // fix for the 55s/85s Core Web Vitals outliers: now every attempt is
+    // capped at REQUEST_TIMEOUT_MS, win or lose.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const res = await fetch(url);
+            const res = await fetch(url, { signal: controller.signal });
 
       if (res.status === 429) {
         throw new RateLimitError();
@@ -520,11 +558,30 @@ async function censusGet(collection, params) {
 
       return json;
     } catch (err) {
-      if (err instanceof AuthWallError) throw err;
-      lastErr = err;
-      if (err instanceof RateLimitError && attempt === MAX_RETRIES - 1) throw err;
-      const waitMs = 1200 * Math.pow(2, attempt);
+            // A native fetch abort (our own timeout firing) surfaces as a plain
+      // DOMException named "AbortError" — normalize it to TimeoutError so
+      // every caller gets the same friendly message/behavior a RateLimitError
+      // would, rather than a generic "Something went wrong."
+      const normalized = err.name === "AbortError" ? new TimeoutError() : err;
+      if (normalized instanceof AuthWallError) throw normalized;
+      lastErr = normalized;
+      // Same early-bail-on-last-attempt treatment RateLimitError already
+      // had — TimeoutError just joins it. Every other error type keeps its
+      // original behavior: retried across all MAX_RETRIES attempts, then
+      // thrown via `throw lastErr` once the loop is exhausted.
+      const isLastAttempt = attempt === MAX_RETRIES - 1;
+      if ((normalized instanceof RateLimitError || normalized instanceof TimeoutError) && isLastAttempt) {
+        throw normalized;
+      }
+      // Was 1200ms base. Shorter now that REQUEST_TIMEOUT_MS already caps
+      // each attempt — the old base was tuned for instant-fail responses
+      // (like a real 429), not for attempts that may have just spent up to
+      // REQUEST_TIMEOUT_MS timing out. Keeping backoff short here is what
+      // keeps FETCH_ALL_PAGES_DEADLINE_MS meaningful across multiple pages.
+      const waitMs = 700 * Math.pow(2, attempt);
       await sleep(waitMs);
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
   throw lastErr;
@@ -536,13 +593,37 @@ class RateLimitError extends Error {
 class AuthWallError extends Error {
   constructor(collection) { super(`That information requires the player to be logged in and isn't available here.`); }
 }
+// Thrown when a single Census request (via the Worker) doesn't respond
+// within REQUEST_TIMEOUT_MS, or when a paginated fetch blows through
+// FETCH_ALL_PAGES_DEADLINE_MS. Deliberately its own type (not just a
+// generic Error) so it retries the same way RateLimitError does, but with
+// wording that's honest about what actually happened instead of implying
+// the visitor did something wrong.
+class TimeoutError extends Error {
+  constructor() { super("Census (DCUO's servers) is responding very slowly right now. Please try again in a moment."); }
+}
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Reassures the visitor a lookup is still in progress instead of leaving
+// the status line looking frozen for however long the retry/timeout chain
+// above takes. Callers schedule this right after their initial "Looking
+// up..." status and MUST clear the returned timer (clearTimeout) in a
+// finally block once the lookup settles, so it never fires after the fact.
+function scheduleSlowNotice() {
+  return setTimeout(() => {
+    setStatus("Still working — Census is responding slowly right now...", "warn");
+  }, SLOW_NOTICE_MS);
+}
 
 async function fetchAllPages(collection, baseParams) {
   const all = [];
   const listKey = `${collection}_list`;
+  const startedAt = Date.now();
   for (let page = 0; page < MAX_PAGES; page++) {
+    if (Date.now() - startedAt > FETCH_ALL_PAGES_DEADLINE_MS) {
+      throw new TimeoutError();
+    }
     const json = await censusGet(collection, {
       ...baseParams,
       "c:limit": PAGE_SIZE,
@@ -1276,6 +1357,7 @@ async function runSearch(name, worldId) {
   clearResult();
   setStatus("Looking up character...");
   searchBtn.disabled = true;
+  const slowNoticeTimer = scheduleSlowNotice();
 
   try {
     const charParams = { name };
@@ -1310,6 +1392,7 @@ async function runSearch(name, worldId) {
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
   } finally {
+    clearTimeout(slowNoticeTimer);
     searchBtn.disabled = false;
   }
 }
@@ -1507,6 +1590,7 @@ async function loadCharacterById(characterId, opts) {
   clearMatches();
   clearResult();
   setStatus("Loading character...");
+  const slowNoticeTimer = scheduleSlowNotice();
   try {
     const charJson = await censusGet("character", { character_id: characterId });
     const character = (charJson.character_list || [])[0];
@@ -1517,6 +1601,8 @@ async function loadCharacterById(characterId, opts) {
     await showCharacter(character, { skipPush: true });
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    clearTimeout(slowNoticeTimer);
   }
 }
 
@@ -1558,6 +1644,7 @@ async function runLeagueSearch(name) {
   clearResult();
   setStatus("Looking up league...");
   leagueSearchBtn.disabled = true;
+  const slowNoticeTimer = scheduleSlowNotice();
 
   try {
     const guildJson = await censusGet("guild", { name: `^${name}`, "c:limit": 20 });
@@ -1589,6 +1676,7 @@ async function runLeagueSearch(name) {
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
   } finally {
+    clearTimeout(slowNoticeTimer);
     leagueSearchBtn.disabled = false;
   }
 }
@@ -1613,6 +1701,7 @@ async function loadLeagueRoster(guildId, knownName, opts) {
   clearMatches();
   clearResult();
   setStatus("Loading roster...");
+  const slowNoticeTimer = scheduleSlowNotice();
   try {
     const rosterJson = await censusGet("guild_roster", { guild_id: guildId, "c:limit": ROSTER_LIMIT });
     const members = rosterJson.guild_roster_list || [];
@@ -1652,7 +1741,18 @@ async function loadLeagueRoster(guildId, knownName, opts) {
     // thrown away rather than partially trusted, since there's no way to
     // tell which of its entries (if any) are real.
     const byId = {};
+    const batchStartedAt = Date.now();
     for (let i = 0; i < members.length; i += CHAR_BATCH_SIZE) {
+      // A large league (up to ROSTER_LIMIT members) can mean dozens of
+      // sequential batches; under rate limiting each one can now take up
+      // to REQUEST_TIMEOUT_MS x MAX_RETRIES before its own try/catch below
+      // gives up on it. Without a budget here, that compounds across every
+      // remaining batch. Stopping past the deadline is safe precisely
+      // because it lands in the SAME already-designed fallback as any other
+      // unresolved batch (raw ID display below) — unlike fetchAllPages,
+      // there's no risk of a partial result looking like a complete-but-
+      // wrong count here.
+      if (Date.now() - batchStartedAt > FETCH_ALL_PAGES_DEADLINE_MS) break;
       const batch = members.slice(i, i + CHAR_BATCH_SIZE);
       const requestedIds = new Set(batch.map(m => m.character_id));
       const idsParam = batch.map(m => m.character_id).join(",");
@@ -1676,6 +1776,8 @@ async function loadLeagueRoster(guildId, knownName, opts) {
 
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    clearTimeout(slowNoticeTimer);
   }
 }
 
@@ -1791,9 +1893,15 @@ async function loadComparison(idA, idB, opts) {
   // of failing loudly. Sequential fetches keep peak load the same as a
   // single character lookup.
   setStatus("Loading first character...");
+  // Re-scheduled after each status change below rather than set once —
+  // otherwise a slow first character could make the notice fire after
+  // "Loading second character..." is already showing and stomp on it.
+  let slowNoticeTimer = scheduleSlowNotice();
   try {
     const dataA = await fetchCharacterFullData(idA);
+    clearTimeout(slowNoticeTimer);
     setStatus("Loading second character...");
+    slowNoticeTimer = scheduleSlowNotice();
     const dataB = await fetchCharacterFullData(idB);
 
     if (!dataA || !dataB) {
@@ -1806,6 +1914,8 @@ async function loadComparison(idA, idB, opts) {
     cacheView(cacheKey, { type: "compare", idA, idB, dataA, dataB });
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    clearTimeout(slowNoticeTimer);
   }
 }
 
