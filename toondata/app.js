@@ -12,7 +12,38 @@
 const WORKER_BASE = "https://toondata-census.brandonjoea3.workers.dev";
 const PAGE_SIZE = 500;   // Census times out on much larger c:limit values for feat collections
 const MAX_PAGES = 20;    // safety cap: 20 * 500 = 10,000 rows
-const MAX_RETRIES = 3;
+// Was 3. Real-user monitoring (Cloudflare Web Vitals) caught #searchBtn
+// hitting a 55s INP and the paperdoll's LCP hitting 85s on the same
+// visits — both traced to this retry loop compounding across a rate-limited
+// "s:example" key with no ceiling on how long a single lookup could run.
+// There's no code fix for the underlying rate limit itself (that needs
+// Daybreak to approve a real Service ID), so this file now optimizes for
+// bounding the worst case instead: fewer retries, a hard per-request
+// timeout (REQUEST_TIMEOUT_MS below), and an overall deadline on paginated
+// fetches (FETCH_ALL_PAGES_DEADLINE_MS) so a lookup fails fast and honestly
+// instead of hanging for a minute or more.
+const MAX_RETRIES = 2;
+// Ceiling on a single HTTP round-trip to the Worker, via AbortController
+// (see censusGet). Without this, a slow/rate-limited response had no
+// upper bound at all and could hang indefinitely — that's the confirmed
+// cause of the 55s/85s outliers above. 8s is generous for a healthy
+// response (P75 today is ~1.1s per the Web Analytics report) while still
+// cutting off a stuck request well before it becomes a multi-minute wait.
+const REQUEST_TIMEOUT_MS = 8000;
+// Total budget for one fetchAllPages() call (e.g. a character's completed
+// feats across multiple pages). Bounds the compounding case directly:
+// without it, MAX_RETRIES x REQUEST_TIMEOUT_MS x MAX_PAGES could still add
+// up to several minutes for a heavily-feated character under rate
+// limiting. Past this deadline we fail the whole lookup honestly (a clear
+// "try again" message) rather than silently returning a partial feat list
+// that would under-count and look like a data bug — see the RateLimitError
+// comment below on why silent-wrong-data is the one thing this file
+// deliberately never does.
+const FETCH_ALL_PAGES_DEADLINE_MS = 20000;
+// How long a lookup can run before we reassure the visitor it's still
+// working, instead of leaving "Looking up character..." sitting there
+// with no sign of life for up to REQUEST_TIMEOUT_MS x MAX_RETRIES seconds.
+const SLOW_NOTICE_MS = 4000;
 const ROSTER_LIMIT = 500;      // safety cap on how many members a single league roster fetch returns
 // How many character_ids get resolved to names per batched request. This
 // used to be 40, which sounds reasonable but is silently wrong: verified
@@ -476,8 +507,15 @@ async function censusGet(collection, params) {
 
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // AbortController-based timeout on the fetch itself. Before this, a
+    // slow or hung response from a rate-limited Census key had literally
+    // no ceiling — the browser would just keep waiting. This is the direct
+    // fix for the 55s/85s Core Web Vitals outliers: now every attempt is
+    // capped at REQUEST_TIMEOUT_MS, win or lose.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const res = await fetch(url);
+            const res = await fetch(url, { signal: controller.signal });
 
       if (res.status === 429) {
         throw new RateLimitError();
@@ -520,11 +558,30 @@ async function censusGet(collection, params) {
 
       return json;
     } catch (err) {
-      if (err instanceof AuthWallError) throw err;
-      lastErr = err;
-      if (err instanceof RateLimitError && attempt === MAX_RETRIES - 1) throw err;
-      const waitMs = 1200 * Math.pow(2, attempt);
+            // A native fetch abort (our own timeout firing) surfaces as a plain
+      // DOMException named "AbortError" — normalize it to TimeoutError so
+      // every caller gets the same friendly message/behavior a RateLimitError
+      // would, rather than a generic "Something went wrong."
+      const normalized = err.name === "AbortError" ? new TimeoutError() : err;
+      if (normalized instanceof AuthWallError) throw normalized;
+      lastErr = normalized;
+      // Same early-bail-on-last-attempt treatment RateLimitError already
+      // had — TimeoutError just joins it. Every other error type keeps its
+      // original behavior: retried across all MAX_RETRIES attempts, then
+      // thrown via `throw lastErr` once the loop is exhausted.
+      const isLastAttempt = attempt === MAX_RETRIES - 1;
+      if ((normalized instanceof RateLimitError || normalized instanceof TimeoutError) && isLastAttempt) {
+        throw normalized;
+      }
+      // Was 1200ms base. Shorter now that REQUEST_TIMEOUT_MS already caps
+      // each attempt — the old base was tuned for instant-fail responses
+      // (like a real 429), not for attempts that may have just spent up to
+      // REQUEST_TIMEOUT_MS timing out. Keeping backoff short here is what
+      // keeps FETCH_ALL_PAGES_DEADLINE_MS meaningful across multiple pages.
+      const waitMs = 700 * Math.pow(2, attempt);
       await sleep(waitMs);
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
   throw lastErr;
