@@ -1,0 +1,313 @@
+/* Zindigon League — /lol/ page styles.
+   Built on top of /assets/site.css (shared design system) — reuses
+   --bg/--bg-elev/--line/--fg/--accent/--serif/--sans/--mono/--r, the same
+   way builds/public.css and toondata/toondata.css do. */
+
+body.lol-page {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body.lol-page > main { flex: 1 0 auto; }
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ───────── Account bar + modal (adapted from builds/public.css's
+   .bp-account*/.bp-modal* block — same structure, "lp-" prefix) ───────── */
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+.lp-account-bar { margin-bottom: 20px; }
+
+.lp-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lp-account-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-soft);
+}
+.lp-account-inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.lp-account-inline-form .input { width: 200px; }
+
+.lp-modal-overlay[hidden] { display: none; }
+.lp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+.lp-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+.lp-modal h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0 0 18px;
+}
+.lp-modal form { display: grid; gap: 14px; }
+.lp-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--fg-mute);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lp-modal-close:hover { color: var(--fg); }
+.lp-account-error { font-size: 12px; color: #f87171; margin: 0; }
+.lp-account-info { font-size: 12px; color: var(--accent); margin: 0; }
+.lp-account-switch {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--fg-mute);
+  text-align: center;
+}
+.lp-account-switch a { color: var(--accent); }
+
+/* ───────── Search form ───────── */
+.lp-search-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  align-items: center;
+}
+.lp-search-form select { flex: 0 0 auto; min-width: 90px; }
+.lp-search-form .lp-name-input { flex: 2 1 220px; }
+.lp-search-form .lp-tag-input { flex: 1 1 110px; }
+.lp-search-form select,
+.lp-search-form .input {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  color: var(--fg-soft);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  font-family: var(--sans);
+  font-size: 14px;
+}
+
+/* Status line (search feedback) — same language as toondata's #status */
+.status-line {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--fg-soft);
+  display: none;
+}
+.status-line.show { display: block; }
+.status-line.error { border-color: rgba(220,80,80,0.4); color: #ff8a8a; }
+.status-line.warn  { border-color: var(--accent-line); color: var(--fg); }
+
+.lp-result { margin-top: 32px; display: none; }
+.lp-result.show { display: block; }
+
+/* ───────── Identity + rank card ───────── */
+.lp-identity {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+.lp-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.1;
+}
+.lp-name .tag { color: var(--fg-mute); font-size: 20px; }
+.lp-identity-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.lp-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 26px;
+}
+.lp-rank-card {
+  position: relative;
+  padding: 16px 18px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r);
+  background:
+    radial-gradient(120% 140% at 50% 0%, var(--accent-soft) 0%, transparent 65%),
+    var(--bg-elev);
+}
+.lp-rank-card .queue {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.lp-rank-card .tier {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--fg);
+  margin-top: 6px;
+}
+.lp-rank-card .lp {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-soft);
+  margin-top: 4px;
+}
+.lp-rank-card .wl {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-mute);
+  margin-top: 6px;
+}
+.lp-rank-empty {
+  color: var(--fg-mute);
+  font-size: 13px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin-bottom: 26px;
+}
+
+/* ───────── Filter bar ───────── */
+.lp-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 8px 0 20px;
+}
+.lp-filters select,
+.lp-filters input {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  color: var(--fg-soft);
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.lp-filters input[type="number"] { width: 90px; }
+.lp-filters input[type="text"] { width: 130px; }
+.lp-filters .spacer { flex: 1; }
+.lp-filter-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-mute);
+}
+
+/* ───────── Match table ───────── */
+.lp-table-wrap { overflow-x: auto; }
+.lp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.lp-table th, .lp-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.lp-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  font-weight: 500;
+}
+.lp-table td { color: var(--fg-soft); }
+.lp-table tr.win td:first-child { border-left: 3px solid #4caf7d; }
+.lp-table tr.loss td:first-child { border-left: 3px solid #e5697a; }
+.lp-table td.result-win { color: #8fe0b8; font-weight: 600; }
+.lp-table td.result-loss { color: #f2a3ad; font-weight: 600; }
+.lp-table td.champ { color: var(--fg); font-weight: 500; }
+.lp-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+.lp-load-more { display: block; width: 100%; margin-top: 16px; }
+
+.lp-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--fg-mute);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-lg);
+  margin-top: 16px;
+}
+
+/* ───────── Saved profiles ───────── */
+.lp-saved-profiles {
+  margin: 24px 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-elev);
+}
+.lp-saved-profiles h3 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 0 0 12px;
+}
+.lp-saved-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.lp-saved-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 8px 6px 12px;
+  cursor: pointer;
+}
+.lp-saved-chip:hover { border-color: var(--accent-line); }
+.lp-saved-chip button {
+  background: none;
+  border: none;
+  color: var(--fg-faint);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+}
+.lp-saved-chip button:hover { color: #f87171; }
+.lp-saved-empty { color: var(--fg-faint); font-size: 12px; }
+
+/* ───────── Disclaimers ───────── */
+.lp-notices .notice { margin-top: 10px; }
