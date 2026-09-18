@@ -1357,6 +1357,7 @@ async function runSearch(name, worldId) {
   clearResult();
   setStatus("Looking up character...");
   searchBtn.disabled = true;
+  const slowNoticeTimer = scheduleSlowNotice();
 
   try {
     const charParams = { name };
@@ -1391,6 +1392,7 @@ async function runSearch(name, worldId) {
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
   } finally {
+    clearTimeout(slowNoticeTimer);
     searchBtn.disabled = false;
   }
 }
@@ -1588,6 +1590,7 @@ async function loadCharacterById(characterId, opts) {
   clearMatches();
   clearResult();
   setStatus("Loading character...");
+  const slowNoticeTimer = scheduleSlowNotice();
   try {
     const charJson = await censusGet("character", { character_id: characterId });
     const character = (charJson.character_list || [])[0];
@@ -1598,6 +1601,8 @@ async function loadCharacterById(characterId, opts) {
     await showCharacter(character, { skipPush: true });
   } catch (err) {
     setStatus(err.message || "Something went wrong. Please try again.", "error");
+  } finally {
+    clearTimeout(slowNoticeTimer);
   }
 }
 
