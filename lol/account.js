@@ -13,6 +13,8 @@ function renderAccountBar() {
     el.innerHTML = `
       <div class="lp-account">
         <span class="lp-account-name">Hi, ${esc(LeagueAuth.player.username)}</span>
+        <span id="lpPlanBadge" class="lp-plan-badge" hidden></span>
+        <a id="lpBillingLink" class="lp-billing-link" href="pricing.html">Plans</a>
         <button id="acctSignOutBtn" class="btn btn-ghost btn-sm" type="button">Sign Out</button>
       </div>`;
     document.getElementById("acctSignOutBtn").addEventListener("click", async () => {
@@ -20,6 +22,7 @@ function renderAccountBar() {
       renderAccountBar();
       if (typeof onAccountChange === "function") onAccountChange();
     });
+    refreshPlanBadge();
     return;
   }
 
@@ -132,6 +135,41 @@ function injectAccountModal() {
       errEl.hidden = false;
     }
   });
+}
+
+// ---------------------------------------------------------------------
+// Plan badge + billing link — reads GET /billing/status (see
+// billing-shared.js / workers/zindigon-league-api/src/index.js). Fails
+// quietly (blank badge) rather than blocking the account bar if billing
+// isn't reachable/configured yet, or if billing-shared.js isn't loaded
+// on a page that doesn't need it.
+// ---------------------------------------------------------------------
+async function refreshPlanBadge() {
+  const badge = document.getElementById("lpPlanBadge");
+  const link = document.getElementById("lpBillingLink");
+  if (!badge || !link) return;
+  if (typeof fetchBillingStatus !== "function") return;
+
+  try {
+    const status = await fetchBillingStatus();
+    badge.textContent = status.planDisplayName || "Free";
+    badge.hidden = false;
+    if (status.plan && status.plan !== "free") {
+      link.textContent = "Manage billing";
+      link.href = "#";
+      link.onclick = (e) => {
+        e.preventDefault();
+        openBillingPortal().catch((err) => alert(err.message || "Could not open billing portal."));
+      };
+    } else {
+      link.textContent = "Upgrade";
+      link.href = "pricing.html";
+      link.onclick = null;
+    }
+  } catch (err) {
+    badge.hidden = true;
+    console.warn("Could not load billing status", err);
+  }
 }
 
 async function initAccountBar() {
