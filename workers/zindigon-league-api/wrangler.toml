@@ -22,3 +22,22 @@ id = "e6c26398ed6f4989b4ab3f57e32310cf"
 #   RIOT_API_KEY   — the Riot dev/production key. Expires every 24h in dev;
 #                    replacing it is a dashboard-only action, no redeploy.
 #   ALLOW_ORIGIN   — https://zindigon.com (CORS allow-list)
+#
+# Phase 2 (Plus/Premier billing + AI review) secrets — also dashboard-only,
+# never committed. The Supabase project URL and anon key are NOT secrets
+# (see src/index.js) and are hard-coded there like every other Zindigon
+# frontend already does.
+#   SUPABASE_SERVICE_ROLE_KEY — bypasses RLS; used only server-side here
+#                               for privileged reads/writes and the
+#                               consume_ai_allowance RPC.
+#   STRIPE_SECRET_KEY         — test-mode key while building/verifying.
+#   STRIPE_WEBHOOK_SECRET     — from the registered webhook endpoint
+#                               (whsec_...); used to verify Stripe-Signature.
+#   OPENAI_API_KEY            — OpenAI API key.
+#
+# Optional vars (not secret — plain [vars] below, or dashboard "Variables"
+# as text, is fine):
+#   AI_MODEL                  — overrides DEFAULT_AI_MODEL in src/index.js.
+#   STRIPE_SUCCESS_URL / STRIPE_CANCEL_URL / STRIPE_PORTAL_RETURN_URL —
+#                               override the built-in zindigon.com/lol/
+#                               defaults if the return pages move.
