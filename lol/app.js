@@ -61,7 +61,14 @@ const tableBodyEl = document.getElementById("tableBody");
 const loadMoreBtn = document.getElementById("loadMoreBtn");
 const savedProfilesSection = document.getElementById("savedProfilesSection");
 const savedListEl = document.getElementById("savedList");
-const saveProfileBtn = document.getElementById("saveProfileBtn");
+// Not a real element in index.html — this is just a plain object used as a
+// mutable ref-holder for the "+ Save Profile" button that renderIdentity()
+// creates fresh on every search (see .el below). It was previously read via
+// document.getElementById("saveProfileBtn"), which always returned null
+// since no such element exists, throwing "Cannot set properties of null"
+// out of renderIdentity() and silently aborting every search before the
+// results table ever rendered.
+const saveProfileBtn = {};
 
 // Current search context — what's on screen right now, so filters/sort/
 // pagination can re-query without re-resolving the account each time.
