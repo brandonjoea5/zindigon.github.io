@@ -868,6 +868,32 @@ async function upsertUserSubscription(env, userId, fields) {
   });
 }
 
+// Stripe's account API version pinned in the dashboard for this project
+// (2025-11-17.clover, confirmed via Workbench > Webhooks > destination
+// details) moved `current_period_start`/`current_period_end` off the
+// Subscription object and onto each item in `subscription.items.data[]`
+// (Stripe's "flexible billing mode" change). The old top-level
+// `subscription.current_period_start`/`current_period_end` fields are
+// `undefined` under this API version, so `undefined * 1000` -> `NaN` ->
+// `new Date(NaN).toISOString()` threw `RangeError: Invalid time value` —
+// confirmed live via Cloudflare's Observability logs, where every
+// checkout.session.completed webhook was failing with exactly this error
+// at this call site, which is why a completed Stripe checkout never made
+// it into `user_subscriptions` and the site kept showing "Free". Reading
+// from the first subscription item first (falling back to the old
+// top-level fields for safety, in case Stripe ever reverts or a different
+// API version is pinned later) fixes this for both current and older
+// accounts.
+function subscriptionPeriod(subscription) {
+  const item = subscription.items?.data?.[0];
+  const start = item?.current_period_start ?? subscription.current_period_start;
+  const end = item?.current_period_end ?? subscription.current_period_end;
+  return {
+    start: Number.isFinite(start) ? new Date(start * 1000).toISOString() : null,
+    end: Number.isFinite(end) ? new Date(end * 1000).toISOString() : null,
+  };
+}
+
 async function handleCheckoutSessionCompleted(env, session) {
   const userId = await findUserIdByStripeCustomer(env, session.customer);
   if (!userId) {
@@ -879,13 +905,14 @@ async function handleCheckoutSessionCompleted(env, session) {
   const subscription = await getStripeSubscription(env, session.subscription);
   const priceId = subscription.items?.data?.[0]?.price?.id;
   const planSlug = (await planSlugForStripePrice(env, priceId)) || 'free';
+  const period = subscriptionPeriod(subscription);
 
   await upsertUserSubscription(env, userId, {
     plan_slug: planSlug,
     stripe_subscription_id: subscription.id,
     status: subscription.status,
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    current_period_start: period.start,
+    current_period_end: period.end,
     cancel_at_period_end: !!subscription.cancel_at_period_end,
     canceled_at: null,
     payment_failed_at: null,
@@ -899,13 +926,14 @@ async function handleSubscriptionUpdated(env, subscription) {
   if (!userId) return;
   const priceId = subscription.items?.data?.[0]?.price?.id;
   const planSlug = (await planSlugForStripePrice(env, priceId)) || 'free';
+  const period = subscriptionPeriod(subscription);
 
   await upsertUserSubscription(env, userId, {
     plan_slug: planSlug,
     stripe_subscription_id: subscription.id,
     status: subscription.status,
-    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    current_period_start: period.start,
+    current_period_end: period.end,
     cancel_at_period_end: !!subscription.cancel_at_period_end,
   });
 }
