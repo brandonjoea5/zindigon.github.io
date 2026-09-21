@@ -260,6 +260,7 @@ function renderMatchRows(items, reset) {
         <td>${esc(m.gold)}</td>
         <td>${esc(m.vision_score)}</td>
         <td>${fmtDuration(m.duration_sec)}</td>
+        <td><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">AI Review</button></td>
       </tr>`;
   }).join("");
   if (reset) {
@@ -267,6 +268,117 @@ function renderMatchRows(items, reset) {
   } else {
     tableBodyEl.insertAdjacentHTML("beforeend", rowsHtml);
   }
+}
+
+// ---------------------------------------------------------------------
+// AI match review (Plus/Premier feature — requires sign-in and an
+// available allowance; see lol/billing-shared.js and
+// workers/zindigon-league-api/src/index.js's POST /ai/review + /ai/followup).
+// Free-plan users can still click the button; the Worker's own allowance
+// check is what actually gates access (nothing is hidden client-side).
+// ---------------------------------------------------------------------
+tableBodyEl.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-ai-review-btn]");
+  if (!btn || !current) return;
+
+  if (!window.LeagueAuth || !LeagueAuth.isSignedIn()) {
+    alert("Sign in to get an AI review of this match.");
+    return;
+  }
+
+  const matchId = btn.dataset.matchId;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Reviewing…";
+  try {
+    const result = await requestAiReview({ matchId, platform: current.platform, puuid: current.puuid });
+    showAiReviewPanel(matchId, result.review);
+  } catch (err) {
+    if (err.code === "allowance_exceeded") {
+      showAiReviewError(`${esc(err.message)} <a href="pricing.html">See Plus/Premier plans</a>.`);
+    } else if (err.code === "unauthorized") {
+      alert("Please sign in again to get an AI review.");
+    } else {
+      alert(err.message || "Could not generate a review right now.");
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+
+function showAiReviewError(html) {
+  const panel = document.getElementById("aiReviewPanel");
+  if (!panel) return;
+  panel.hidden = false;
+  panel.innerHTML = `<div class="lp-ai-review-error">${html}</div>`;
+}
+
+function showAiReviewPanel(matchId, reviewText) {
+  const panel = document.getElementById("aiReviewPanel");
+  if (!panel) return;
+  panel.hidden = false;
+  panel.innerHTML = `
+    <div class="lp-ai-review-header">
+      <h3>AI Match Review</h3>
+      <button type="button" class="lp-ai-review-close" aria-label="Close">&times;</button>
+    </div>
+    <p class="lp-ai-review-body">${esc(reviewText).replace(/\n/g, "<br>")}</p>
+    <form class="lp-ai-followup-form" data-match-id="${esc(matchId)}">
+      <input type="text" class="input" placeholder="Ask a follow-up question…" required />
+      <button type="submit" class="btn btn-secondary btn-sm">Ask</button>
+    </form>
+    <div class="lp-ai-followup-answer"></div>`;
+
+  panel.querySelector(".lp-ai-review-close").addEventListener("click", () => { panel.hidden = true; });
+  panel.querySelector(".lp-ai-followup-form").addEventListener("submit", async (evt) => {
+    evt.preventDefault();
+    const form = evt.target;
+    const input = form.querySelector("input");
+    const question = input.value.trim();
+    if (!question) return;
+    const answerEl = panel.querySelector(".lp-ai-followup-answer");
+    const submitBtn = form.querySelector("button[type=submit]");
+    submitBtn.disabled = true;
+    answerEl.textContent = "Thinking…";
+    try {
+      const result = await requestAiFollowup({ matchId: form.dataset.matchId, question });
+      answerEl.textContent = result.answer;
+      input.value = "";
+    } catch (err) {
+      answerEl.textContent = err.message || "Could not answer that right now.";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// ---------------------------------------------------------------------
+// Checkout return handling (from Stripe, via pricing.html -> Checkout ->
+// back here). This NEVER grants access itself — the server-side webhook
+// (already verified by the time Stripe redirects back) is the only thing
+// that does that. This just shows feedback and re-reads the real status.
+// ---------------------------------------------------------------------
+function handleCheckoutReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get("checkout");
+  if (checkout === "success") {
+    setStatus("Finishing up your subscription… this can take a few seconds.", "warn");
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      try { if (typeof refreshPlanBadge === "function") await refreshPlanBadge(); } catch { /* keep polling */ }
+      if (attempts >= 5) { clearInterval(poll); clearStatus(); }
+    }, 2000);
+  } else if (checkout === "cancel") {
+    setStatus("Checkout canceled — no changes were made.", "warn");
+  } else {
+    return;
+  }
+  params.delete("checkout");
+  params.delete("session_id");
+  const clean = window.location.pathname + (params.toString() ? `?${params}` : "");
+  window.history.replaceState({}, "", clean);
 }
 
 // ---------------------------------------------------------------------
@@ -342,4 +454,5 @@ function onAccountChange() {
 
 document.addEventListener("DOMContentLoaded", () => {
   refreshSavedProfiles();
+  handleCheckoutReturn();
 });
