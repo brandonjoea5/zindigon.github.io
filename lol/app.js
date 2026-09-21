@@ -281,7 +281,7 @@ tableBodyEl.addEventListener("click", async (e) => {
   const btn = e.target.closest("[data-ai-review-btn]");
   if (!btn || !current) return;
 
-  if (!window.LeagueAuth || !LeagueAuth.isSignedIn()) {
+  if (typeof LeagueAuth === "undefined" || !LeagueAuth.isSignedIn()) {
     alert("Sign in to get an AI review of this match.");
     return;
   }
@@ -385,7 +385,7 @@ function handleCheckoutReturn() {
 // Saved profiles (requires sign-in — see lol/auth-shared.js)
 // ---------------------------------------------------------------------
 async function refreshSavedProfiles() {
-  if (!window.LeagueAuth || !LeagueAuth.isSignedIn()) {
+  if (typeof LeagueAuth === "undefined" || !LeagueAuth.isSignedIn()) {
     savedProfilesSection.hidden = true;
     return;
   }
@@ -425,7 +425,7 @@ async function refreshSavedProfiles() {
 function updateSaveButton() {
   const inner = saveProfileBtn.el;
   if (!inner) return;
-  const signedIn = window.LeagueAuth && LeagueAuth.isSignedIn() && LeagueAuth.hasProfile();
+  const signedIn = typeof LeagueAuth !== "undefined" && LeagueAuth.isSignedIn() && LeagueAuth.hasProfile();
   inner.hidden = !signedIn;
 }
 
