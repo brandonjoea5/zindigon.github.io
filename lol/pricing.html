@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zindigon League | Plus and Premier Plans</title>
+<meta name="description" content="Zindigon League Plus and Premier plans — AI-powered match reviews and coaching on top of the always-free match history and rank lookup." />
+<link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
+<link rel="stylesheet" href="style.css?v=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+</head>
+<body class="lol-page">
+
+<header class="site-header">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="https://zindigon.com/">
+      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+      <span class="brand-name">Zindigon<em>studio</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="https://zindigon.com/">Home</a>
+      <a href="https://zindigon.com/projects.html">Projects</a>
+      <a href="https://zindigon.com/work.html">Work</a>
+      <a href="https://zindigon.com/contact.html">Contact</a>
+      <a href="index.html">League</a>
+      <a href="pricing.html" aria-current="page">Plans</a>
+      <a href="https://zindigon.com/toondata/" title="ToonData — DC Universe Online lookup tool">ToonData</a>
+      <a href="https://zindigon.com/builds/" title="Builds — a DC Universe Online build database">Builds</a>
+    </div>
+    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
+  </nav>
+  <div class="mobile-nav" id="mobileNav">
+    <a href="https://zindigon.com/">Home</a>
+    <a href="https://zindigon.com/projects.html">Projects</a>
+    <a href="https://zindigon.com/work.html">Work</a>
+    <a href="https://zindigon.com/contact.html">Contact</a>
+    <a href="index.html">League</a>
+    <a href="pricing.html">Plans — Plus &amp; Premier</a>
+    <a href="https://zindigon.com/toondata/">ToonData — DCUO lookup tool</a>
+    <a href="https://zindigon.com/builds/">Builds — DCUO build database</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="padding-top:24px;">
+    <div id="accountBar" class="lp-account-bar"></div>
+
+    <span class="eyebrow"><span class="dot"></span>League of Legends</span>
+    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Plus &amp; Premier</h1>
+    <p class="lede">Match history and rank lookup stay free, always. Plus and Premier add AI-powered match reviews and coaching on top.</p>
+
+    <div id="pricingStatus" class="status-line"></div>
+    <div id="pricingGrid" class="lp-pricing-grid"></div>
+
+    <div class="lp-notices">
+      <div class="notice" style="margin-top:16px;">
+        <span>Manage or cancel an existing subscription any time from the billing portal link next to your name once signed in.</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="brand" style="margin-bottom:14px;">
+        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
+        <span class="brand-name">Zindigon<em>studio</em></span>
+      </div>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
+        Zindigon League isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
+      </p>
+      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
+        AI match reviews are generated from stats Zindigon League already computes from public Riot match data — never from your account credentials, which Zindigon League never asks for.
+      </p>
+    </div>
+    <div class="footer-col"><h4>League</h4><ul>
+      <li><a href="index.html">Match Lookup</a></li>
+      <li><a href="pricing.html">Plus &amp; Premier</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Legal</h4><ul>
+      <li><a href="https://zindigon.com/terms.html">Terms of Use</a></li>
+      <li><a href="https://zindigon.com/privacy.html">Privacy Policy</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Reach</h4><ul>
+      <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li>
+    </ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span>2026 Zindigon</span>
+    <span>Not affiliated with or endorsed by Riot Games, Inc.</span>
+  </div>
+</footer>
+
+<script src="https://zindigon.com/assets/site.js"></script>
+<script src="auth-shared.js?v=1"></script>
+<script src="billing-shared.js?v=1"></script>
+<script src="account.js?v=1"></script>
+<script src="pricing.js?v=1"></script>
+</body>
+</html>
+
