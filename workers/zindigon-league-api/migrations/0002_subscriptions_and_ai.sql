@@ -52,17 +52,21 @@ create policy "subscription_plans_select_active"
   on public.subscription_plans for select
   using (active);
 
--- Seed rows — safe to re-run. Stripe price IDs get filled in with an
--- `update` once the Products/Prices exist in Stripe; prices/allowances
--- below are starting values the user can adjust freely (they're config,
--- not schema).
+-- Seed rows — safe to re-run (on conflict re-syncs stripe_price_id, so a
+-- switch from test-mode to live-mode price IDs just needs this insert
+-- re-run with updated values). The two stripe_price_id values below are
+-- real Stripe TEST-mode price IDs for "Zindigon League Plus" ($9.99/mo)
+-- and "Zindigon League Premier" ($19.99/mo), created directly in the
+-- Stripe dashboard; swap them for live-mode price IDs before going live.
+-- Prices/allowances below are starting values the user can adjust freely
+-- (they're config, not schema).
 insert into public.subscription_plans
-  (slug, display_name, price_cents, monthly_review_allowance, monthly_followup_allowance, saved_profile_limit, sort_order)
+  (slug, display_name, price_cents, stripe_price_id, monthly_review_allowance, monthly_followup_allowance, saved_profile_limit, sort_order)
 values
-  ('free', 'Free', 0, 0, 0, 3, 0),
-  ('plus', 'Plus', 999, 15, 30, 10, 1),
-  ('premier', 'Premier', 1999, 50, 100, 25, 2)
-on conflict (slug) do nothing;
+  ('free', 'Free', 0, null, 0, 0, 3, 0),
+  ('plus', 'Plus', 999, 'price_1UI8PWPF8SrXiC52QEGvEYpv', 15, 30, 10, 1),
+  ('premier', 'Premier', 1999, 'price_1UI8QFPF8SrXiC5274gH6JPW', 50, 100, 25, 2)
+on conflict (slug) do update set stripe_price_id = excluded.stripe_price_id;
 
 -- ---------------------------------------------------------------------
 -- user_subscriptions — separate table, default-deny writes (see notes
@@ -314,4 +318,3 @@ revoke all on function public.consume_ai_allowance(uuid, text, text) from public
 revoke all on function public.consume_ai_allowance(uuid, text, text) from anon;
 revoke all on function public.consume_ai_allowance(uuid, text, text) from authenticated;
 grant execute on function public.consume_ai_allowance(uuid, text, text) to service_role;
-
