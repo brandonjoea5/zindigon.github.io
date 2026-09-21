@@ -57,7 +57,7 @@ function renderPlans(plans) {
 
   pricingGridEl.querySelectorAll("[data-choose-plan]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      if (!window.LeagueAuth || !LeagueAuth.isSignedIn()) {
+      if (typeof LeagueAuth === "undefined" || !LeagueAuth.isSignedIn()) {
         alert("Sign in first, then choose a plan.");
         if (typeof openAccountModal === "function") openAccountModal("signin");
         return;
@@ -77,4 +77,3 @@ function renderPlans(plans) {
 }
 
 document.addEventListener("DOMContentLoaded", loadPlans);
-
