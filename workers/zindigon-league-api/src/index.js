@@ -626,7 +626,7 @@ async function openaiChat(env, messages, maxTokens) {
       Authorization: `Bearer ${env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ model, messages, temperature: 0.6, max_completion_tokens: maxTokens }),
+    body: JSON.stringify({ model, messages, max_completion_tokens: maxTokens }),
   });
   const latencyMs = Date.now() - start;
   const data = await resp.json().catch(() => null);
