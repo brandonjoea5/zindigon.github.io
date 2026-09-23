@@ -1,9 +1,9 @@
-// Zindigon League | AI Insights — branching chat intake for the AI review
-// feature. Replaces the old single-click "AI Review" flow: instead of
-// firing straight at OpenAI with one fixed prompt, this asks a couple of
-// quick, free (no-API-call) questions first — is this your match, and
-// what you actually want out of it — then generates a review tailored to
-// that answer. See workers/zindigon-league-api/src/index.js's
+// Zindigon League | Analysis Bot, the branching chat intake for Zindibot's
+// League match reviews. Replaces the old single-click "AI Review" flow:
+// instead of firing straight at OpenAI with one fixed prompt, this asks a
+// couple of quick, free (no-API-call) questions first, is this your
+// match, and what you actually want out of it, then generates a review
+// tailored to that answer. See workers/zindigon-league-api/src/index.js's
 // REVIEW_SYSTEM_PROMPTS for the prompt each choice maps to; every terminal
 // choice below (everything except the two branching questions themselves)
 // calls /ai/review for real and spends one of the plan's monthly review
@@ -28,7 +28,7 @@ const AiInsights = (() => {
     p.hidden = false;
     p.innerHTML = `
       <div class="lp-ai-review-header">
-        <h3>AI Insights</h3>
+        <h3>Analysis Bot</h3>
         <button type="button" class="lp-ai-review-close" aria-label="Close">&times;</button>
       </div>
       <div class="lp-insights-chat" id="insightsChat"></div>
@@ -95,18 +95,21 @@ const AiInsights = (() => {
   }
 
   function askWho() {
-    addMessage("assistant", "Is this your match, or someone else's?");
+    addMessage(
+      "assistant",
+      "Hey, I'm Zindibot. I can give you a recap of this game or dig into something specific. Are you looking up yourself or another player?",
+    );
     renderChoices(
       [
-        { label: "This is my match", value: "self" },
-        { label: "Someone else's match", value: "other" },
+        { label: "Myself", value: "self" },
+        { label: "Another player", value: "other" },
       ],
       (choice) => (choice.value === "self" ? askSelfIntent() : askOtherIntent()),
     );
   }
 
   function askSelfIntent() {
-    addMessage("assistant", "What would you like out of this review?");
+    addMessage("assistant", "What do you want out of this one?");
     renderChoices(
       [
         { label: "Help me improve", value: "self_improve" },
@@ -130,7 +133,7 @@ const AiInsights = (() => {
 
   function handlePick(choice) {
     if (choice.freeform) {
-      renderFreeform("Ask about this game…", (question) => runReview(choice.value, question));
+      renderFreeform("Ask about this game...", (question) => runReview(choice.value, question));
     } else {
       runReview(choice.value, "");
     }
@@ -139,13 +142,17 @@ const AiInsights = (() => {
   async function runReview(mode, question) {
     state.mode = mode;
     state.reviewQuestion = question;
-    const loading = addMessage("assistant loading", "Thinking this one through…");
+    const loading = addMessage("assistant loading", "I'm thinking...");
     try {
       const result = await requestAiReview({
         matchId: state.matchId, platform: state.platform, puuid: state.puuid, mode, question,
       });
       loading.remove();
       addMessage("assistant", esc(result.review).replace(/\n/g, "<br>"));
+      addMessage(
+        "assistant",
+        "This alone is proof you want to improve. Want to keep going? What else do you want to know?",
+      );
       renderFollowupBox();
     } catch (err) {
       loading.remove();
@@ -158,7 +165,7 @@ const AiInsights = (() => {
   function renderFollowupBox() {
     setControls(`
       <form class="lp-insights-freeform">
-        <input type="text" class="input" placeholder="Ask a follow-up question…" required />
+        <input type="text" class="input" placeholder="Ask a follow-up question..." required />
         <button type="submit" class="btn btn-secondary btn-sm">Ask</button>
       </form>`);
     const form = controlsEl().querySelector("form");
@@ -169,7 +176,7 @@ const AiInsights = (() => {
       if (!question) return;
       input.value = "";
       addMessage("user", esc(question));
-      const loading = addMessage("assistant loading", "Thinking…");
+      const loading = addMessage("assistant loading", "I'm thinking...");
       try {
         const result = await requestAiFollowup({
           matchId: state.matchId, question, reviewMode: state.mode, reviewQuestion: state.reviewQuestion,
@@ -191,7 +198,7 @@ const AiInsights = (() => {
     if (err.code === "unauthorized") {
       return "Please sign in again to continue.";
     }
-    return esc(err.message || "Something went wrong on that request — please try again.");
+    return esc(err.message || "Something's not working right, please try again.");
   }
 
   return { open, close };
