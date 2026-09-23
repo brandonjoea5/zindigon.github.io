@@ -267,7 +267,7 @@ function renderMatchRows(items, reset) {
         <td>${esc(m.gold)}</td>
         <td>${esc(m.vision_score)}</td>
         <td>${fmtDuration(m.duration_sec)}</td>
-        <td><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">AI Review</button></td>
+        <td><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">AI Insights</button></td>
       </tr>`;
   }).join("");
   if (reset) {
@@ -278,87 +278,25 @@ function renderMatchRows(items, reset) {
 }
 
 // ---------------------------------------------------------------------
-// AI match review (Plus/Premier feature — requires sign-in and an
-// available allowance; see lol/billing-shared.js and
-// workers/zindigon-league-api/src/index.js's POST /ai/review + /ai/followup).
-// Free-plan users can still click the button; the Worker's own allowance
-// check is what actually gates access (nothing is hidden client-side).
+// AI Insights (Plus/Premier feature — requires sign-in and an available
+// allowance; see lol/ai-insights.js for the branching chat intake and
+// workers/zindigon-league-api/src/index.js's POST /ai/review + /ai/followup
+// for the modes it can call). Free-plan users can still click the button;
+// the Worker's own allowance check is what actually gates access (nothing
+// is hidden client-side).
 // ---------------------------------------------------------------------
-tableBodyEl.addEventListener("click", async (e) => {
+tableBodyEl.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-ai-review-btn]");
   if (!btn || !current) return;
 
   if (typeof LeagueAuth === "undefined" || !LeagueAuth.isSignedIn()) {
-    alert("Sign in to get an AI review of this match.");
+    alert("Sign in to get AI insights on this match.");
     return;
   }
 
   const matchId = btn.dataset.matchId;
-  const originalText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Reviewing…";
-  try {
-    const result = await requestAiReview({ matchId, platform: current.platform, puuid: current.puuid });
-    showAiReviewPanel(matchId, result.review);
-  } catch (err) {
-    if (err.code === "allowance_exceeded") {
-      showAiReviewError(`${esc(err.message)} <a href="pricing.html">See Plus/Premier plans</a>.`);
-    } else if (err.code === "unauthorized") {
-      alert("Please sign in again to get an AI review.");
-    } else {
-      alert(err.message || "Could not generate a review right now.");
-    }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+  AiInsights.open({ matchId, platform: current.platform, puuid: current.puuid });
 });
-
-function showAiReviewError(html) {
-  const panel = document.getElementById("aiReviewPanel");
-  if (!panel) return;
-  panel.hidden = false;
-  panel.innerHTML = `<div class="lp-ai-review-error">${html}</div>`;
-}
-
-function showAiReviewPanel(matchId, reviewText) {
-  const panel = document.getElementById("aiReviewPanel");
-  if (!panel) return;
-  panel.hidden = false;
-  panel.innerHTML = `
-    <div class="lp-ai-review-header">
-      <h3>AI Match Review</h3>
-      <button type="button" class="lp-ai-review-close" aria-label="Close">&times;</button>
-    </div>
-    <p class="lp-ai-review-body">${esc(reviewText).replace(/\n/g, "<br>")}</p>
-    <form class="lp-ai-followup-form" data-match-id="${esc(matchId)}">
-      <input type="text" class="input" placeholder="Ask a follow-up question…" required />
-      <button type="submit" class="btn btn-secondary btn-sm">Ask</button>
-    </form>
-    <div class="lp-ai-followup-answer"></div>`;
-
-  panel.querySelector(".lp-ai-review-close").addEventListener("click", () => { panel.hidden = true; });
-  panel.querySelector(".lp-ai-followup-form").addEventListener("submit", async (evt) => {
-    evt.preventDefault();
-    const form = evt.target;
-    const input = form.querySelector("input");
-    const question = input.value.trim();
-    if (!question) return;
-    const answerEl = panel.querySelector(".lp-ai-followup-answer");
-    const submitBtn = form.querySelector("button[type=submit]");
-    submitBtn.disabled = true;
-    answerEl.textContent = "Thinking…";
-    try {
-      const result = await requestAiFollowup({ matchId: form.dataset.matchId, question });
-      answerEl.textContent = result.answer;
-      input.value = "";
-    } catch (err) {
-      answerEl.textContent = err.message || "Could not answer that right now.";
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
-}
 
 // ---------------------------------------------------------------------
 // Checkout return handling (from Stripe, via pricing.html -> Checkout ->
