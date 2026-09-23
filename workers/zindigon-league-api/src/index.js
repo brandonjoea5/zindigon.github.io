@@ -689,17 +689,59 @@ async function buildCompactMatchObject(env, platform, region, matchId, puuid) {
   };
 }
 
-const MATCH_REVIEW_SYSTEM_PROMPT =
+// Five tailored intents, chosen by the frontend's branching chat intake
+// (see lol/ai-insights.js) before this endpoint is ever called — the
+// intake questions themselves ("is this you?", "what do you want?") are
+// scripted UI, not OpenAI calls, so only the terminal choice below costs
+// anything. Unrecognized/missing mode falls back to the original single
+// review prompt this endpoint shipped with.
+const REVIEW_MODES = new Set([
+  'self_strengths_weaknesses',
+  'self_improve',
+  'self_custom',
+  'other_overview',
+  'other_custom',
+]);
+const CUSTOM_REVIEW_MODES = new Set(['self_custom', 'other_custom']);
+
+const REVIEW_SYSTEM_PROMPTS = {
+  self_strengths_weaknesses:
   'You are a League of Legends coach reviewing one game for a player. You will be given a compact JSON object of ' +
   "already-computed stats for the player and (when available) their direct opposing laner — never raw game data. " +
   'Do not invent or recalculate any numbers; only reference the values you are given. Explain what the stats ' +
   "suggest about the player's performance in this game, call out one or two concrete strengths and one or two " +
-  'concrete areas to improve, and keep the whole review under 200 words in a direct, encouraging coaching tone.';
+  'concrete areas to improve, and keep the whole review under 200 words in a direct, encouraging coaching tone.',
+  self_improve:
+    'You are a League of Legends coach helping a player improve. You will be given a compact JSON object of ' +
+    "already-computed stats for the player and (when available) their direct opposing laner — never raw game data. " +
+    'Do not invent or recalculate any numbers; only reference the values you are given. Focus on the two or three ' +
+    "highest-impact things this player could have done better in this specific game, ahead of a general summary. " +
+    'Keep it under 200 words, direct and practical, in a coaching tone.',
+  self_custom:
+    "You are a League of Legends coach answering a player's specific question about one game they just played, " +
+    'using only the compact JSON stats you are given for them (and their direct opposing laner, when available) — ' +
+    'never raw game data, and never invent or recalculate numbers. Address the player as "you". Answer directly ' +
+    'and concisely, under 200 words.',
+  other_overview:
+    'You are a League of Legends analyst breaking down a completed game as a whole for someone who is not the ' +
+    'player shown in the stats. You will be given a compact JSON object of already-computed stats for one player ' +
+    'in the match and (when available) their direct opposing laner — never raw game data. Do not invent or ' +
+    'recalculate any numbers; only reference the values you are given. Describe how the game played out and what ' +
+    'stood out, without addressing either player as "you". Keep it under 200 words.',
+  other_custom:
+    'You are a League of Legends analyst answering a specific question about one completed game for someone who ' +
+    'is not the player shown in the stats, using only the compact JSON stats you are given for that player (and ' +
+    'their direct opposing laner, when available) — never raw game data, and never invent or recalculate numbers. ' +
+    'Do not address the player as "you". Answer directly and concisely, under 200 words.',
+};
 
-async function generateMatchReview(env, compactStats, playerContext) {
+async function generateMatchReview(env, compactStats, playerContext, mode, question) {
+  const systemPrompt = REVIEW_SYSTEM_PROMPTS[mode] || REVIEW_SYSTEM_PROMPTS.self_strengths_weaknesses;
+  const userPayload = { stats: compactStats, player: playerContext };
+  if (question) userPayload.question = question;
   return openaiChat(env, [
-    { role: 'system', content: MATCH_REVIEW_SYSTEM_PROMPT },
-    { role: 'user', content: JSON.stringify({ stats: compactStats, player: playerContext }) },
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: JSON.stringify(userPayload) },
   ], 400);
 }
 
@@ -1029,8 +1071,13 @@ async function handleAiReview(request, env) {
   try { body = await request.json(); } catch { body = {}; }
   const { matchId, puuid } = body || {};
   const platform = (body?.platform || '').toLowerCase();
+  const mode = REVIEW_MODES.has(body?.mode) ? body.mode : 'self_strengths_weaknesses';
+  const question = CUSTOM_REVIEW_MODES.has(mode) ? String(body?.question || '').trim() : '';
   if (!matchId || !puuid || !VALID_PLATFORMS.includes(platform)) {
     throw { status: 400, code: 'invalid_request', message: 'matchId, puuid, and a valid platform are required.' };
+  }
+  if (CUSTOM_REVIEW_MODES.has(mode) && !question) {
+    throw { status: 400, code: 'invalid_request', message: 'A question is required for this mode.' };
   }
   const region = PLATFORM_TO_REGION[platform];
 
@@ -1045,12 +1092,12 @@ async function handleAiReview(request, env) {
   await env.CACHE.put(lockKey, '1', { expirationTtl: 90 });
 
   try {
-    const gate = await sbRpc(env, 'consume_ai_allowance', { p_user_id: user.id, p_kind: 'review', p_match_id: matchId });
+    const gate = await sbRpc(env, 'consume_ai_allowance', { p_user_id: user.id, p_kind: 'review', p_match_id: matchId, p_mode: mode, p_question: question });
 
     if (gate.cached) {
       const rows = await sbServiceJson(
         env,
-        `/ai_reviews?select=content,created_at&user_id=eq.${encodeURIComponent(user.id)}&match_id=eq.${encodeURIComponent(matchId)}`,
+        `/ai_reviews?select=content,created_at&user_id=eq.${encodeURIComponent(user.id)}&match_id=eq.${encodeURIComponent(matchId)}&mode=eq.${encodeURIComponent(mode)}&question=eq.${encodeURIComponent(question)}`,
       );
       const existing = rows?.[0];
       if (existing) return json(env, { review: existing.content, cached: true, createdAt: existing.created_at });
@@ -1066,7 +1113,7 @@ async function handleAiReview(request, env) {
     let compact, result;
     try {
       compact = await buildCompactMatchObject(env, platform, region, matchId, puuid);
-      result = await generateMatchReview(env, compact, { champion: compact.player?.champion, role: compact.player?.role });
+      result = await generateMatchReview(env, compact, { champion: compact.player?.champion, role: compact.player?.role }, mode, question);
     } catch (err) {
       if (consumedFreshUnit) {
         await sbRpc(env, 'refund_ai_allowance', { p_user_id: user.id, p_kind: 'review' }).catch((refundErr) =>
@@ -1080,7 +1127,7 @@ async function handleAiReview(request, env) {
       const rows = await sbServiceJson(env, '/ai_reviews', {
         method: 'POST',
         headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ user_id: user.id, match_id: matchId, provider: 'openai', model: result.model, content: result.content }),
+        body: JSON.stringify({ user_id: user.id, match_id: matchId, provider: 'openai', model: result.model, content: result.content, mode, question }),
       });
       stored = rows?.[0]?.content ?? result.content;
     } catch (err) {
@@ -1089,7 +1136,7 @@ async function handleAiReview(request, env) {
         // version that won rather than returning two different reviews.
         const rows = await sbServiceJson(
           env,
-          `/ai_reviews?select=content&user_id=eq.${encodeURIComponent(user.id)}&match_id=eq.${encodeURIComponent(matchId)}`,
+          `/ai_reviews?select=content&user_id=eq.${encodeURIComponent(user.id)}&match_id=eq.${encodeURIComponent(matchId)}&mode=eq.${encodeURIComponent(mode)}&question=eq.${encodeURIComponent(question)}`,
         );
         stored = rows?.[0]?.content ?? result.content;
       } else {
@@ -1122,9 +1169,15 @@ async function handleAiFollowup(request, env) {
     throw { status: 400, code: 'invalid_request', message: 'matchId and question are required.' };
   }
 
+  // Which of this match's (potentially several, one per mode/question)
+  // reviews this follow-up continues — the frontend echoes back whatever
+  // it used to generate the review this chat is attached to.
+  const reviewMode = REVIEW_MODES.has(body?.reviewMode) ? body.reviewMode : 'self_strengths_weaknesses';
+  const reviewQuestion = CUSTOM_REVIEW_MODES.has(reviewMode) ? String(body?.reviewQuestion || '').trim() : '';
+
   const existingRows = await sbServiceJson(
     env,
-    `/ai_reviews?select=content&user_id=eq.${encodeURIComponent(user.id)}&match_id=eq.${encodeURIComponent(matchId)}`,
+    `/ai_reviews?select=content&user_id=eq.${encodeURIComponent(user.id)}&match_id=eq.${encodeURIComponent(matchId)}&mode=eq.${encodeURIComponent(reviewMode)}&question=eq.${encodeURIComponent(reviewQuestion)}`,
   );
   const existing = existingRows?.[0];
   if (!existing) {
