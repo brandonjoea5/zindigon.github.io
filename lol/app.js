@@ -267,7 +267,7 @@ function renderMatchRows(items, reset) {
         <td>${esc(m.gold)}</td>
         <td>${esc(m.vision_score)}</td>
         <td>${fmtDuration(m.duration_sec)}</td>
-        <td><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">AI Insights</button></td>
+        <td><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">Analysis Bot</button></td>
       </tr>`;
   }).join("");
   if (reset) {
@@ -278,19 +278,19 @@ function renderMatchRows(items, reset) {
 }
 
 // ---------------------------------------------------------------------
-// AI Insights (Plus/Premier feature — requires sign-in and an available
-// allowance; see lol/ai-insights.js for the branching chat intake and
-// workers/zindigon-league-api/src/index.js's POST /ai/review + /ai/followup
-// for the modes it can call). Free-plan users can still click the button;
-// the Worker's own allowance check is what actually gates access (nothing
-// is hidden client-side).
+// Analysis Bot, Zindibot's League match reviews (Plus/Premier feature,
+// requires sign-in and an available allowance; see lol/ai-insights.js for
+// the branching chat intake and workers/zindigon-league-api/src/index.js's
+// POST /ai/review + /ai/followup for the modes it can call). Free-plan
+// users can still click the button; the Worker's own allowance check is
+// what actually gates access (nothing is hidden client-side).
 // ---------------------------------------------------------------------
 tableBodyEl.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-ai-review-btn]");
   if (!btn || !current) return;
 
   if (typeof LeagueAuth === "undefined" || !LeagueAuth.isSignedIn()) {
-    alert("Sign in to get AI insights on this match.");
+    alert("Sign in to use Analysis Bot on this match.");
     return;
   }
 
@@ -316,7 +316,7 @@ function handleCheckoutReturn() {
       if (attempts >= 5) { clearInterval(poll); clearStatus(); }
     }, 2000);
   } else if (checkout === "cancel") {
-    setStatus("Checkout canceled — no changes were made.", "warn");
+    setStatus("Checkout canceled, no changes were made.", "warn");
   } else {
     return;
   }
@@ -337,7 +337,7 @@ async function refreshSavedProfiles() {
   savedProfilesSection.hidden = false;
   const profiles = await listSavedProfiles();
   if (!profiles.length) {
-    savedListEl.innerHTML = `<span class="lp-saved-empty">No saved profiles yet — search for a Summoner and save it below.</span>`;
+    savedListEl.innerHTML = `<span class="lp-saved-empty">No saved profiles yet, search for a Summoner and save it below.</span>`;
     return;
   }
   savedListEl.innerHTML = profiles.map((p) => `
