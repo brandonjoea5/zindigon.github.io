@@ -68,17 +68,17 @@ async function openBillingPortal() {
   window.location.href = url;
 }
 
-async function requestAiReview({ matchId, platform, puuid }) {
+async function requestAiReview({ matchId, platform, puuid, mode, question }) {
   return authedFetch("/ai/review", {
     method: "POST",
-    body: JSON.stringify({ matchId, platform, puuid }),
+    body: JSON.stringify({ matchId, platform, puuid, mode, question }),
   });
 }
 
-async function requestAiFollowup({ matchId, question }) {
+async function requestAiFollowup({ matchId, question, reviewMode, reviewQuestion }) {
   return authedFetch("/ai/followup", {
     method: "POST",
-    body: JSON.stringify({ matchId, question }),
+    body: JSON.stringify({ matchId, question, reviewMode, reviewQuestion }),
   });
 }
 
