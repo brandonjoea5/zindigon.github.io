@@ -1,0 +1,35 @@
+name: Deploy zindigon-league-api Worker
+
+# Cloudflare's dashboard no longer offers an in-browser code editor for this
+# Worker (it now points at Wrangler CLI only, confirmed 2026-09-23), and
+# nobody wants Wrangler installed locally. This runs the deploy on GitHub's
+# own runners instead — nothing to install anywhere, just a repo secret.
+#
+# One-time setup (see the PR/commit description or ask Claude):
+#   1. Cloudflare dashboard → Profile → API Tokens → Create Token →
+#      "Edit Cloudflare Workers" template.
+#   2. This repo's Settings → Secrets and variables → Actions →
+#      New repository secret → name it CLOUDFLARE_API_TOKEN → paste it in.
+# After that, every push that touches workers/zindigon-league-api/**
+# deploys automatically. Trigger it by hand from the Actions tab
+# ("Run workflow") if you ever need to redeploy without a code change.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/zindigon-league-api/**'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: workers/zindigon-league-api
+          command: deploy
