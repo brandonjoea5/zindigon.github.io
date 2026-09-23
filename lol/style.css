@@ -430,5 +430,73 @@ body.lol-page > main { flex: 1 0 auto; }
 }
 .lp-ai-review-error a { color: var(--accent); }
 
+/* ───────── AI Insights layout (match history rail + chat pane) ───────── */
+.lp-result.lp-insights-open {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 28px;
+  align-items: start;
+}
+.lp-result.lp-insights-open #identity,
+.lp-result.lp-insights-open #rankGrid,
+.lp-result.lp-insights-open #filters,
+.lp-result.lp-insights-open #tableWrap,
+.lp-result.lp-insights-open #loadMoreBtn {
+  grid-column: 1;
+}
+.lp-result.lp-insights-open #tableWrap { max-height: 74vh; overflow: auto; }
+.lp-result.lp-insights-open #aiReviewPanel {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  margin-top: 0;
+  align-self: start;
+  position: sticky;
+  top: 20px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-insights-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 14px;
+}
+.lp-insights-msg {
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  max-width: 92%;
+}
+.lp-insights-msg.assistant {
+  background: var(--bg);
+  border: 1px solid var(--accent-line);
+  color: var(--fg-soft);
+}
+.lp-insights-msg.user {
+  background: var(--accent-soft);
+  color: var(--fg);
+  align-self: flex-end;
+  border: 1px solid var(--accent-line);
+}
+.lp-insights-msg.loading { color: var(--fg-mute); font-style: italic; }
+.lp-insights-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.lp-insights-choices button { font-size: 13px; }
+.lp-insights-freeform {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.lp-insights-freeform .input { flex: 1; }
+
 /* ───────── Disclaimers ───────── */
 .lp-notices .notice { margin-top: 10px; }
