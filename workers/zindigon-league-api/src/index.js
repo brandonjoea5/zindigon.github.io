@@ -349,6 +349,7 @@ async function handleMatches(env, url) {
 
   if (pageIds.length === 0) {
     return json(env, { platform, puuid, total: allIds.length, start, count, items: [] });
+  
   }
 
   const filters = [];
@@ -371,7 +372,7 @@ async function handleMatches(env, url) {
   if (minCs) { filters.push('cs >= ?'); binds.push(parseInt(minCs, 10)); }
 
   const sql = `SELECT * FROM match_participants WHERE puuid = ? AND ${filters.join(' AND ')} ORDER BY ${SORT_COLUMNS[sort]}`;
-  const { results } = await env.DB.prepare(sql).bind(puuid, ...binds).all();
+  const { results } = await env.DB.prepare(sql).bind(...binds).all(); // fix: `binds` already starts with puuid; binding it again exceeded the placeholder count (D1 "wrong number of parameter bindings", confirmed live 2026-09-23)
 
   return json(env, {
     platform, puuid,
