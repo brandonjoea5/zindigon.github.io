@@ -626,7 +626,7 @@ async function openaiChat(env, messages, maxTokens) {
       Authorization: `Bearer ${env.OPENAI_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ model, messages, temperature: 0.6, max_tokens: maxTokens }),
+    body: JSON.stringify({ model, messages, temperature: 0.6, max_completion_tokens: maxTokens }),
   });
   const latencyMs = Date.now() - start;
   const data = await resp.json().catch(() => null);
@@ -1061,8 +1061,19 @@ async function handleAiReview(request, env) {
       throw { status: 402, code: 'allowance_exceeded', message: `You've used all your AI reviews for this billing period on the ${gate.plan || 'free'} plan.` };
     }
 
-    const compact = await buildCompactMatchObject(env, platform, region, matchId, puuid);
-    const result = await generateMatchReview(env, compact, { champion: compact.player?.champion, role: compact.player?.role });
+    const consumedFreshUnit = !gate.cached;
+
+    let compact, result;
+    try {
+      compact = await buildCompactMatchObject(env, platform, region, matchId, puuid);
+      result = await generateMatchReview(env, compact, { champion: compact.player?.champion, role: compact.player?.role });
+    } catch (err) {
+      if (consumedFreshUnit) {
+        await sbRpc(env, 'refund_ai_allowance', { p_user_id: user.id, p_kind: 'review' }).catch((refundErr) =>
+          console.error({ message: 'Failed to refund ai_allowance after review failure', error: String(refundErr) }));
+      }
+      throw err;
+    }
 
     let stored = result.content;
     try {
@@ -1125,7 +1136,14 @@ async function handleAiFollowup(request, env) {
     throw { status: 402, code: 'allowance_exceeded', message: `You've used all your follow-up questions for this billing period on the ${gate.plan || 'free'} plan.` };
   }
 
-  const result = await answerFollowupQuestion(env, existing.content, String(question).trim());
+  let result;
+  try {
+    result = await answerFollowupQuestion(env, existing.content, String(question).trim());
+  } catch (err) {
+    await sbRpc(env, 'refund_ai_allowance', { p_user_id: user.id, p_kind: 'followup' }).catch((refundErr) =>
+      console.error({ message: 'Failed to refund ai_allowance after followup failure', error: String(refundErr) }));
+    throw err;
+  }
 
   sbServiceJson(env, '/ai_usage_events', {
     method: 'POST',
