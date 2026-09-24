@@ -647,6 +647,212 @@ async function openaiChat(env, messages, maxTokens) {
   };
 }
 
+// Known lane counter-pick relationships, sourced from a maintained community
+// dataset and re-pasted here each time it's refreshed for a new patch (see
+// the Matchup Data sheet). This is verified champion-level fact -- who is a
+// publicly known lane counter for whom, this patch -- never pre-written
+// strategy text. The AI still has to work out and explain *why* a lane went
+// the way the stats show; this table only tells it whether the pairing itself
+// is a known hard or favorable matchup on patch 26.19.
+const MATCHUP_DATA_PATCH = "26.19";
+const KNOWN_COUNTERS = {
+  "Aatrox|Top": ["Irelia", "Fiora", "Gnar"],
+  "Ahri|Mid": ["Annie", "Aurelion Sol", "Qiyana"],
+  "Akali|Mid": ["Vex", "Galio", "Taliyah"],
+  "Akshan|Mid": ["Fizz", "Diana", "Vladimir"],
+  "Alistar|Support": ["Rakan", "Poppy", "Janna"],
+  "Ambessa|Top": ["Illaoi", "Malphite", "Kled"],
+  "Amumu|Jungle": ["Naafiri", "Shaco", "Diana"],
+  "Anivia|Mid": ["Xerath", "Kassadin", "Ahri"],
+  "Annie|Mid": ["Syndra", "Vex", "Zed"],
+  "Aphelios|ADC": ["Nilah", "Kog'Maw", "Twitch"],
+  "Ashe|ADC": ["Twitch", "Kog'Maw", "Tristana"],
+  "Aurelion Sol|Mid": ["Akshan", "Xerath", "Fizz"],
+  "Aurora|Mid": ["Malzahar", "Fizz", "Cassiopeia"],
+  "Azir|Mid": ["LeBlanc", "Xerath", "Veigar"],
+  "Bard|Support": ["Maokai", "Braum", "Pantheon"],
+  "Bel'Veth|Jungle": ["Amumu", "Rek'Sai", "Master Yi"],
+  "Blitzcrank|Support": ["Rakan", "Braum", "Morgana"],
+  "Brand|Support": ["Maokai", "Zyra", "Soraka"],
+  "Braum|Support": ["Vel'Koz", "Neeko", "Rakan"],
+  "Briar|Jungle": ["Evelynn", "Xin Zhao", "Trundle"],
+  "Caitlyn|ADC": ["Jinx", "Samira", "Varus"],
+  "Camille|Top": ["Jax", "Poppy", "Renekton"],
+  "Cassiopeia|Mid": ["Syndra", "Orianna", "Anivia"],
+  "Cho'Gath|Jungle": ["Elise", "Kindred", "Trundle"],
+  "Corki|ADC": ["Sivir", "Miss Fortune", "Zeri"],
+  "Darius|Top": ["Gragas", "Pantheon", "Dr. Mundo"],
+  "Diana|Mid": ["Taliyah", "Zoe", "Yone"],
+  "Dr. Mundo|Top": ["Gwen", "Fiora", "Aatrox"],
+  "Draven|ADC": ["Ashe", "Varus", "Caitlyn"],
+  "Ekko|Mid": ["Qiyana", "Yasuo", "Twisted Fate"],
+  "Elise|Jungle": ["Nocturne", "Shyvana", "Karthus"],
+  "Evelynn|Jungle": ["Rek'Sai", "Rengar", "Kindred"],
+  "Ezreal|ADC": ["Xayah", "Kalista", "Kog'Maw"],
+  "Fiddlesticks|Jungle": ["Nocturne", "Kindred", "Lee Sin"],
+  "Fiora|Top": ["Malphite", "Poppy", "Warwick"],
+  "Fizz|Mid": ["Lissandra", "Galio", "Vex"],
+  "Galio|Mid": ["Tristana", "Akshan", "Cassiopeia"],
+  "Gangplank|Top": ["Olaf", "Tryndamere", "Kled"],
+  "Garen|Top": ["Camille", "Kayle", "Darius"],
+  "Gnar|Top": ["Irelia", "Yasuo", "Malphite"],
+  "Gragas|Jungle": ["Kindred", "Lillia", "Nocturne"],
+  "Graves|Jungle": ["Nidalee", "Rammus", "Amumu"],
+  "Gwen|Top": ["Riven", "Tryndamere", "Jax"],
+  "Hecarim|Jungle": ["Kindred", "Graves", "Nocturne"],
+  "Heimerdinger|Top": ["Irelia", "Yasuo", "Syndra"],
+  "Hwei|Mid": ["Fizz", "Katarina", "Yasuo"],
+  "Illaoi|Top": ["Mordekaiser", "Gwen", "Yorick"],
+  "Irelia|Top": ["Warwick", "Sett", "Jax"],
+  "Ivern|Jungle": ["Rengar", "Kindred", "Graves"],
+  "Janna|Support": ["Blitzcrank", "Nautilus", "Sona"],
+  "Jarvan IV|Jungle": ["Poppy", "Kindred", "Graves"],
+  "Jax|Top": ["Gragas", "Malphite", "Illaoi"],
+  "Jayce|Top": ["Malphite", "Irelia", "Poppy"],
+  "Jhin|ADC": ["Twitch", "Tristana", "Sivir"],
+  "Jinx|ADC": ["Twitch", "Ziggs", "Xayah"],
+  "K'Sante|Top": ["Garen", "Fiora", "Kayle"],
+  "Kai'Sa|ADC": ["Draven", "Caitlyn", "Nilah"],
+  "Kalista|ADC": ["Ashe", "Draven", "Tristana"],
+  "Karma|Support": ["Sona", "Blitzcrank", "Pyke"],
+  "Karthus|Jungle": ["Kindred", "Shaco", "Nidalee"],
+  "Kassadin|Mid": ["Tristana", "Akshan", "Pantheon"],
+  "Katarina|Mid": ["Galio", "Vex", "Lissandra"],
+  "Kayle|Top": ["Irelia", "Jax", "Tryndamere"],
+  "Kayn|Jungle": ["Poppy", "Kindred", "Graves"],
+  "Kennen|Top": ["Nasus", "Yorick", "Irelia"],
+  "Kha'Zix|Jungle": ["Rengar", "Lee Sin", "Rek'Sai"],
+  "Kindred|Jungle": ["Kha'Zix", "Lee Sin", "Rengar"],
+  "Kled|Top": ["Fiora", "Jax", "Poppy"],
+  "Kog'Maw|ADC": ["Draven", "Tristana", "Samira"],
+  "LeBlanc|Mid": ["Galio", "Lissandra", "Malzahar"],
+  "Lee Sin|Jungle": ["Poppy", "Rek'Sai", "Udyr"],
+  "Leona|Support": ["Morgana", "Janna", "Taric"],
+  "Lillia|Jungle": ["Rengar", "Kindred", "Kha'Zix"],
+  "Lissandra|Mid": ["Anivia", "Cassiopeia", "Orianna"],
+  "Locke|Mid": ["Akshan", "Anivia", "Vex"],
+  "Lucian|ADC": ["Draven", "Caitlyn", "Nilah"],
+  "Lulu|Support": ["Alistar", "Braum", "Sona"],
+  "Lux|Support": ["Janna", "Rell", "Leona"],
+  "Malphite|Top": ["Sylas", "Gwen", "Cho'Gath"],
+  "Malzahar|Mid": ["Aurelion Sol", "Anivia", "Orianna"],
+  "Maokai|Support": ["Janna", "Milio", "Braum"],
+  "Master Yi|Jungle": ["Rammus", "Elise", "Rek'Sai"],
+  "Mel|Mid": ["Fizz", "Yasuo", "Akali"],
+  "Milio|Support": ["Blitzcrank", "Nautilus", "Pyke"],
+  "Miss Fortune|ADC": ["Tristana", "Draven", "Twitch"],
+  "Mordekaiser|Top": ["Fiora", "Olaf", "Vayne"],
+  "Morgana|Support": ["Karma", "Senna", "Zyra"],
+  "Naafiri|Jungle": ["Udyr", "Zac", "Shyvana"],
+  "Nami|Support": ["Blitzcrank", "Pyke", "Leona"],
+  "Nasus|Top": ["Illaoi", "Garen", "Olaf"],
+  "Nautilus|Support": ["Taric", "Leona", "Braum"],
+  "Neeko|Support": ["Maokai", "Morgana", "Janna"],
+  "Nidalee|Jungle": ["Nocturne", "Rengar", "Kha'Zix"],
+  "Nilah|ADC": ["Xayah", "Caitlyn", "Sivir"],
+  "Nocturne|Jungle": ["Rammus", "Udyr", "Kindred"],
+  "Nunu & Willump|Jungle": ["Kindred", "Shaco", "Trundle"],
+  "Olaf|Top": ["Kled", "Trundle", "Fiora"],
+  "Orianna|Mid": ["Xerath", "Irelia", "Veigar"],
+  "Ornn|Top": ["Fiora", "Gwen", "Illaoi"],
+  "Pantheon|Top": ["Malphite", "Shen", "Gragas"],
+  "Poppy|Support": ["Neeko", "Taric", "Maokai"],
+  "Pyke|Support": ["Soraka", "Taric", "Braum"],
+  "Qiyana|Jungle": ["Shyvana", "Rengar", "Amumu"],
+  "Quinn|Top": ["Malphite", "Irelia", "Ornn"],
+  "Rakan|Support": ["Poppy", "Janna", "Morgana"],
+  "Rammus|Jungle": ["Lillia", "Mordekaiser", "Trundle"],
+  "Rek'Sai|Jungle": ["Kindred", "Graves", "Nocturne"],
+  "Rell|Support": ["Janna", "Milio", "Poppy"],
+  "Renata Glasc|Support": ["Zyra", "Milio", "Janna"],
+  "Renekton|Top": ["Illaoi", "Poppy", "Quinn"],
+  "Rengar|Jungle": ["Skarner", "Warwick", "Rammus"],
+  "Riven|Top": ["Renekton", "Poppy", "Malphite"],
+  "Rumble|Top": ["Olaf", "Ornn", "Garen"],
+  "Ryze|Mid": ["Anivia", "Cassiopeia", "Aurelion Sol"],
+  "Samira|ADC": ["Nilah", "Xayah", "Caitlyn"],
+  "Sejuani|Jungle": ["Trundle", "Kindred", "Lillia"],
+  "Senna|Support": ["Pyke", "Blitzcrank", "Nautilus"],
+  "Seraphine|Support": ["Blitzcrank", "Pyke", "Nautilus"],
+  "Sett|Top": ["Warwick", "Vayne", "Illaoi"],
+  "Shaco|Jungle": ["Rek'Sai", "Rengar", "Graves"],
+  "Shen|Top": ["Mordekaiser", "Gwen", "Illaoi"],
+  "Shyvana|Jungle": ["Sylas", "Rek'Sai", "Evelynn"],
+  "Singed|Top": ["Kayle", "Vayne", "Gwen"],
+  "Sion|Top": ["Gwen", "Fiora", "Aatrox"],
+  "Sivir|ADC": ["Draven", "Twitch", "Vayne"],
+  "Skarner|Jungle": ["Kha'Zix", "Hecarim", "Vi"],
+  "Smolder|ADC": ["Zeri", "Yunara", "Jinx"],
+  "Sona|Support": ["Blitzcrank", "Pyke", "Nautilus"],
+  "Soraka|Support": ["Blitzcrank", "Pyke", "Nautilus"],
+  "Swain|Support": ["Milio", "Janna", "Soraka"],
+  "Sylas|Jungle": ["Kha'Zix", "Nidalee", "Talon"],
+  "Syndra|Mid": ["Fizz", "Ekko", "Katarina"],
+  "Tahm Kench|Top": ["Gwen", "Fiora", "Vayne"],
+  "Taliyah|Mid": ["Fizz", "Katarina", "Zed"],
+  "Talon|Mid": ["Vex", "Anivia", "Malphite"],
+  "Taric|Support": ["Janna", "Morgana", "Zyra"],
+  "Teemo|Top": ["Yorick", "Olaf", "Malphite"],
+  "Thresh|Support": ["Morgana", "Braum", "Rakan"],
+  "Tristana|ADC": ["Nilah", "Samira", "Draven"],
+  "Trundle|Top": ["Jax", "Fiora", "Teemo"],
+  "Tryndamere|Top": ["Malphite", "Poppy", "Jax"],
+  "Twisted Fate|Mid": ["Fizz", "Katarina", "Sylas"],
+  "Twitch|ADC": ["Kalista", "Ziggs", "Draven"],
+  "Udyr|Jungle": ["Lillia", "Kindred", "Trundle"],
+  "Urgot|Top": ["Riven", "Gragas", "Gangplank"],
+  "Varus|ADC": ["Sivir", "Tristana", "Twitch"],
+  "Vayne|ADC": ["Caitlyn", "Draven", "Ashe"],
+  "Veigar|Mid": ["Katarina", "Fizz", "Zed"],
+  "Vel'Koz|Support": ["Pyke", "Neeko", "Blitzcrank"],
+  "Vex|Mid": ["Vladimir", "Twisted Fate", "Xerath"],
+  "Viego|Jungle": ["Rammus", "Rek'Sai", "Nocturne"],
+  "Viktor|Mid": ["Aurora", "Veigar", "Aurelion Sol"],
+  "Vi|Jungle": ["Nocturne", "Kindred", "Poppy"],
+  "Vladimir|Mid": ["Aurelion Sol", "Locke", "Anivia"],
+  "Volibear|Top": ["Illaoi", "Jax", "Fiora"],
+  "Warwick|Jungle": ["Olaf", "Trundle", "Lillia"],
+  "Wukong|Jungle": ["Poppy", "Lillia", "Kindred"],
+  "Xayah|ADC": ["Caitlyn", "Twitch", "Kog'Maw"],
+  "Xerath|Mid": ["Fizz", "Katarina", "Yasuo"],
+  "Xin Zhao|Jungle": ["Rammus", "Lillia", "Kindred"],
+  "Yasuo|Mid": ["Vex", "Renekton", "Annie"],
+  "Yone|Mid": ["Vex", "Annie", "Akshan"],
+  "Yorick|Top": ["Irelia", "Jax", "Tryndamere"],
+  "Yunara|ADC": ["Twitch", "Nilah", "Jinx"],
+  "Yuumi|Support": ["Rakan", "Braum", "Leona"],
+  "Zaahen|Top": ["Pantheon", "Urgot", "Camille"],
+  "Zac|Jungle": ["Kindred", "Poppy", "Graves"],
+  "Zed|Mid": ["Lissandra", "Malphite", "Vladimir"],
+  "Zeri|ADC": ["Draven", "Caitlyn", "Twitch"],
+  "Ziggs|Mid": ["Fizz", "Katarina", "Yasuo"],
+  "Zilean|Support": ["Blitzcrank", "Pyke", "Nautilus"],
+  "Zoe|Mid": ["Yasuo", "Fizz", "Katarina"],
+  "Zyra|Support": ["Milio", "Xerath", "Vel'Koz"],
+};
+
+// Looks up whether player-vs-opponent is a known counter-pick relationship
+// this patch. Returns null when either champion/role is missing or neither
+// direction is a known pairing -- the review prompt only gets this field
+// when there is something real to hand it.
+function getMatchupContext(playerChampion, playerRole, opponentChampion) {
+  if (!playerChampion || !playerRole) return null;
+  const knownCounters = KNOWN_COUNTERS[`${playerChampion}|${playerRole}`] || [];
+  let relation = null;
+  if (opponentChampion) {
+    if (knownCounters.includes(opponentChampion)) {
+      relation = 'opponent_is_known_counter_for_player';
+    } else {
+      const opponentCounters = KNOWN_COUNTERS[`${opponentChampion}|${playerRole}`] || [];
+      if (opponentCounters.includes(playerChampion)) {
+        relation = 'player_is_known_counter_for_opponent';
+      }
+    }
+  }
+  if (!knownCounters.length && !relation) return null;
+  return { patch: MATCHUP_DATA_PATCH, knownCounters, relation };
+}
+
 // The AI never receives raw Riot match JSON or timelines — only this
 // compact, already-computed object (spec's "compact match-analysis
 // object" pattern). It explains the numbers; it never (re)calculates them.
@@ -686,6 +892,7 @@ async function buildCompactMatchObject(env, platform, region, matchId, puuid) {
     durationSec: own.duration_sec,
     player: shape(own),
     opponent: shape(opponent),
+    matchupContext: getMatchupContext(own.champion, own.role, opponent?.champion),
   };
 }
 
@@ -724,8 +931,12 @@ const ZINDIBOT_VOICE =
   'objective call was reasonable given the situation. Never invent or ' +
   'recalculate any numbers, only use the values you were actually given, ' +
   "and never invent a comparison, like an average for the player's rank, " +
-  'that was not provided to you. Do not use em dashes anywhere in your ' +
-  'response.';
+  'that was not provided to you. If the stats include a matchupContext ' +
+  'field, it is a verified, patch-specific fact about whether this pairing ' +
+  'is a publicly known lane counter, not anything about how this particular ' +
+  'game actually went. Only bring it up when it helps explain something the ' +
+  'stats already show, and always work out and state the actual game-specific ' +
+  'why yourself. Do not use em dashes anywhere in your response.';
 
 const REVIEW_SYSTEM_PROMPTS = {
   self_strengths_weaknesses:
