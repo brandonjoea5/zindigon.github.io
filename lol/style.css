@@ -9,7 +9,12 @@ body.lol-page {
   display: flex;
   flex-direction: column;
 }
-body.lol-page > main { flex: 1 0 auto; }
+/* min-width: 0 overrides the flex-item default of min-width: auto, which
+   otherwise refuses to let <main> shrink below the match table's intrinsic
+   (nowrap) content width -- without it, <main> stretches past the viewport
+   and body's overflow-x: hidden (site.css) silently clips the overflow
+   instead of the table's own #tableWrap horizontal scrollbar ever engaging. */
+body.lol-page > main { flex: 1 0 auto; min-width: 0; }
 
 .btn:disabled {
   opacity: 0.4;
