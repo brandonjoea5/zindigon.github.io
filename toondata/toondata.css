@@ -157,7 +157,26 @@ body.toondata::before {
 .td-match-item:hover { border-color: var(--accent-line); }
 
 .td-result { margin-top: 40px; display: none; }
-.td-result.show { display: block; }
+/* min-height here is the actual fix for the site-footer CLS the sticky-
+   footer flex layout above couldn't touch: this view is populated in
+   stages after .show first appears (character card, then a feats-loading
+   skeleton, then real feat counts, then the category tree — see the
+   body.toondata comment above), and each stage was growing the box from
+   whatever the previous stage's height happened to be, shoving the footer
+   down every time. Reserving space for something close to the tallest
+   stage up front means later stages fill in within that reserved room
+   instead of each one being its own layout shift. It's a floor, not a
+   cap — a character with an unusually long feat list can still grow past
+   it — so this cuts the shift down substantially rather than promising
+   zero; watch the CLS numbers next month and adjust these values with
+   real data. */
+.td-result.show { display: block; min-height: 1800px; }
+@media (max-width: 880px) {
+  /* Gear/stats stack into one column below this width (see .td-columns),
+     so the same content runs taller here than the two-column desktop
+     layout. */
+  .td-result.show { min-height: 2400px; }
+}
 
 .td-columns {
   display: grid;

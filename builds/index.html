@@ -74,7 +74,21 @@
     </div>
 
     <div class="bp-grid" id="buildGrid">
-      <div class="bp-loading">Loading builds…</div>
+      <!-- Skeleton cards reserve roughly the footprint of the real grid
+           browse.js renders in (see .bp-skeleton-card in public.css). Before
+           this, the empty "Loading builds…" box was a fraction of the real
+           grid's height, so the moment browse.js filled it in, everything
+           below (including the footer) jumped down by however tall the
+           real grid turned out to be — Cloudflare's Core Web Vitals report
+           caught this as one of the two worst CLS offenders on the site.
+           browse.js replaces this whole block via grid.innerHTML once it
+           has real data, same as it already did with the old loading text. -->
+      <div class="bp-card bp-skeleton-card" aria-hidden="true"><div class="bp-skeleton-line bp-skeleton-title"></div><div class="bp-skeleton-line bp-skeleton-tags"></div><div class="bp-skeleton-line"></div><div class="bp-skeleton-line" style="width:70%"></div><div class="bp-skeleton-line bp-skeleton-meta"></div></div>
+      <div class="bp-card bp-skeleton-card" aria-hidden="true"><div class="bp-skeleton-line bp-skeleton-title"></div><div class="bp-skeleton-line bp-skeleton-tags"></div><div class="bp-skeleton-line"></div><div class="bp-skeleton-line" style="width:70%"></div><div class="bp-skeleton-line bp-skeleton-meta"></div></div>
+      <div class="bp-card bp-skeleton-card" aria-hidden="true"><div class="bp-skeleton-line bp-skeleton-title"></div><div class="bp-skeleton-line bp-skeleton-tags"></div><div class="bp-skeleton-line"></div><div class="bp-skeleton-line" style="width:70%"></div><div class="bp-skeleton-line bp-skeleton-meta"></div></div>
+      <div class="bp-card bp-skeleton-card" aria-hidden="true"><div class="bp-skeleton-line bp-skeleton-title"></div><div class="bp-skeleton-line bp-skeleton-tags"></div><div class="bp-skeleton-line"></div><div class="bp-skeleton-line" style="width:70%"></div><div class="bp-skeleton-line bp-skeleton-meta"></div></div>
+      <div class="bp-card bp-skeleton-card" aria-hidden="true"><div class="bp-skeleton-line bp-skeleton-title"></div><div class="bp-skeleton-line bp-skeleton-tags"></div><div class="bp-skeleton-line"></div><div class="bp-skeleton-line" style="width:70%"></div><div class="bp-skeleton-line bp-skeleton-meta"></div></div>
+      <div class="bp-card bp-skeleton-card" aria-hidden="true"><div class="bp-skeleton-line bp-skeleton-title"></div><div class="bp-skeleton-line bp-skeleton-tags"></div><div class="bp-skeleton-line"></div><div class="bp-skeleton-line" style="width:70%"></div><div class="bp-skeleton-line bp-skeleton-meta"></div></div>
     </div>
   </section>
 </main>
