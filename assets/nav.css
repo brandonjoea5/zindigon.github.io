@@ -1,0 +1,329 @@
+/* Zindigon — nav.css
+   Shared header, footer, dropdowns, mobile nav, account widget and
+   sign-in modal, rendered by assets/nav.js. Built on the tokens
+   already defined in assets/site.css (--bg, --fg, --accent, --line,
+   --sans, --mono, --max, --gutter, --r-sm, --r, --r-lg). Load this
+   alongside site.css, not instead of it. */
+
+/* ───────── Header ───────── */
+.zin-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: color-mix(in oklch, var(--bg) 75%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.zin-nav {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 14px var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.zin-brand, .zin-footer .zin-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--fg);
+}
+.zin-brand-mark {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border-radius: 7px;
+  border: 1px solid var(--line-2);
+  background: linear-gradient(180deg, var(--bg-elev-2), var(--bg-elev));
+  flex: none;
+}
+.zin-brand-mark svg { width: 14px; height: 14px; display: block; }
+.zin-brand-mark svg path { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: square; stroke-linejoin: miter; }
+.zin-brand-name {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.zin-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+.zin-nav-links > a {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-soft);
+  border-radius: var(--r-sm);
+  transition: color 0.15s, background 0.15s;
+}
+.zin-nav-links > a:hover { color: var(--fg); background: rgba(255,255,255,0.04); }
+.zin-nav-links > a[aria-current="page"] { color: var(--fg); }
+.zin-nav-links > a[aria-current="page"]::after,
+.zin-drop-btn.is-active::after {
+  content: "";
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ───────── Desktop dropdowns ───────── */
+.zin-drop { position: relative; }
+.zin-drop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-soft);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.zin-drop-btn:hover, .zin-drop-btn[aria-expanded="true"] { color: var(--fg); background: rgba(255,255,255,0.04); }
+.zin-caret {
+  width: 7px; height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  opacity: 0.7;
+  transition: transform 0.15s;
+}
+.zin-drop-btn[aria-expanded="true"] .zin-caret { transform: rotate(225deg) translateY(-1px); }
+
+.zin-drop-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  padding: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.zin-drop.is-open .zin-drop-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.zin-drop-menu a {
+  display: block;
+  padding: 9px 10px;
+  font-size: 13.5px;
+  color: var(--fg-soft);
+  border-radius: var(--r-sm);
+}
+.zin-drop-menu a:hover { color: var(--fg); background: rgba(255,255,255,0.05); }
+
+/* ───────── Account widget ───────── */
+.zin-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.zin-account-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-soft);
+}
+.zin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.zin-btn:hover { background: rgba(255,255,255,0.05); }
+.zin-btn-primary {
+  background: var(--accent);
+  color: #0A0A0C;
+  border-color: transparent;
+}
+.zin-btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.zin-btn-text { border-color: transparent; padding-left: 8px; padding-right: 8px; }
+.zin-inline-form { display: flex; gap: 8px; align-items: center; }
+.zin-input {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--bg-elev);
+  color: var(--fg);
+}
+
+.zin-menu-btn {
+  display: none;
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--fg);
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ───────── Mobile nav ───────── */
+.zin-mobile-nav {
+  display: none;
+  border-top: 1px solid var(--line);
+  padding: 10px var(--gutter) 18px;
+  background: var(--bg);
+}
+.zin-mobile-nav > a {
+  display: block;
+  padding: 12px 6px;
+  color: var(--fg-soft);
+  font-size: 15px;
+  border-bottom: 1px solid var(--line);
+}
+.zin-mobile-nav > a[aria-current="page"] { color: var(--accent); }
+
+.zin-mobile-group { border-bottom: 1px solid var(--line); }
+.zin-mobile-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 6px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg-soft);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.zin-mobile-group-btn.is-active { color: var(--accent); }
+.zin-mobile-group-btn[aria-expanded="true"] .zin-caret { transform: rotate(225deg) translateY(-1px); }
+.zin-mobile-group-menu {
+  display: none;
+  padding: 0 6px 10px 18px;
+}
+.zin-mobile-group.is-open .zin-mobile-group-menu { display: block; }
+.zin-mobile-group-menu a {
+  display: block;
+  padding: 9px 0;
+  font-size: 14px;
+  color: var(--fg-mute);
+}
+
+.zin-mobile-account {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 6px 4px;
+}
+
+@media (max-width: 860px) {
+  .zin-nav-links, #zinAccountBar { display: none; }
+  .zin-menu-btn { display: inline-flex; }
+  .zin-mobile-nav[data-open="true"] { display: block; }
+}
+
+/* ───────── Footer ───────── */
+.zin-footer {
+  border-top: 1px solid var(--line);
+  padding: 48px var(--gutter) 24px;
+  margin-top: 64px;
+}
+.zin-footer-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.6fr repeat(4, 1fr);
+  gap: 32px;
+}
+.zin-footer-col h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-mute);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+.zin-footer-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.zin-footer-col a { font-size: 13.5px; color: var(--fg-soft); }
+.zin-footer-col a:hover { color: var(--fg); }
+.zin-footer-bottom {
+  max-width: var(--max);
+  margin: 32px auto 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--fg-faint);
+}
+.zin-footer-legal a { color: var(--fg-faint); margin-left: 16px; }
+.zin-footer-legal a:hover { color: var(--fg-soft); }
+
+@media (max-width: 860px) {
+  .zin-footer-inner { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .zin-footer-inner { grid-template-columns: 1fr; }
+}
+
+/* ───────── Sign-in modal ───────── */
+.zin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.zin-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+.zin-modal h3 { margin: 0 0 18px; font-size: 18px; }
+.zin-modal-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: transparent;
+  border: 0;
+  color: var(--fg-mute);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.zin-field { margin-bottom: 14px; }
+.zin-field label { display: block; font-size: 12.5px; color: var(--fg-mute); margin-bottom: 6px; }
+.zin-field .zin-input { width: 100%; }
+.zin-error { color: #E08080; font-size: 13px; margin: 0 0 12px; }
+.zin-info { color: var(--accent); font-size: 13px; margin: 0 0 12px; }
+.zin-switch { margin: 16px 0 0; font-size: 13px; color: var(--fg-mute); text-align: center; }
+.zin-switch a { color: var(--accent); }
