@@ -1,0 +1,27 @@
+name: Deploy zindigon-bloodlinezero-api Worker
+
+# Mirrors deploy-worker.yml (the League Worker's deploy pipeline). Cloudflare's
+# dashboard no longer offers an in-browser code editor for Workers (Wrangler
+# CLI only, confirmed 2026-09-23), so this runs the deploy on GitHub's own
+# runners instead. Reuses the same CLOUDFLARE_API_TOKEN repo secret already
+# set up for the League Worker — no new token needed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/zindigon-bloodlinezero-api/**'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: workers/zindigon-bloodlinezero-api
+          command: deploy
