@@ -230,6 +230,15 @@ body.bz {
   display: flex; align-items: center; justify-content: center;
   padding: var(--gutter);
 }
+/* The [hidden] attribute only carries a user-agent default of
+   display:none — any author rule for the same element (like the
+   display:flex above) overrides it regardless of the attribute's
+   presence. Without this, the modal can never actually be hidden:
+   not on load, and not when its own close button/backdrop click
+   sets .hidden = true. */
+.bz-modal-overlay[hidden] {
+  display: none;
+}
 .bz-modal {
   width: 100%; max-width: 380px;
   padding: 32px;
