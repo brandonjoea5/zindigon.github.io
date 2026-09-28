@@ -1,0 +1,37 @@
+name = "zindigon-bloodlinezero-api"
+main = "src/index.js"
+account_id = "0ffb66d52a7817cd8c117d52a9e65a8c"
+compatibility_date = "2026-09-28"
+
+# Bloodline Zero — episode reading + purchase API.
+# Deliberately isolated from zindigon-league-api: its own Worker, its own D1
+# database (zindigon-bloodlinezero), no shared bindings. This keeps the
+# paused League production system untouched while this ships.
+#
+# Deployed on the Workers Free plan (100k requests/day, shared account-wide
+# with every other Worker on this account).
+
+[[d1_databases]]
+binding = "DB"
+database_name = "zindigon-bloodlinezero"
+database_id = "7ea472e9-e27c-4fdd-bae1-20a7fcdf6f4c"
+
+# Secrets (set via the Cloudflare dashboard, never committed here):
+#   ADMIN_INGEST_SECRET       — required header (X-Admin-Secret) on
+#                               POST /admin/ingest and POST /admin/episodes.
+#                               Bootstraps/updates episode content without
+#                               ever putting chapter text in this public repo.
+#   STRIPE_SECRET_KEY         — not yet set. POST /billing/checkout returns
+#                               501 "Stripe not configured yet" until it is.
+#   STRIPE_WEBHOOK_SECRET     — from the registered webhook endpoint
+#                               (whsec_...); verifies Stripe-Signature.
+#   ALLOW_ORIGIN              — https://zindigon.com (CORS allow-list).
+#
+# The Supabase project URL and anon key are NOT secrets (see src/index.js)
+# and are hard-coded there like every other Zindigon frontend already does —
+# same project as /lol/ and /builds/, so a session started anywhere on
+# zindigon.com is recognized here too.
+#
+# Optional vars (not secret):
+#   STRIPE_SUCCESS_URL / STRIPE_CANCEL_URL — override the built-in
+#                               zindigon.com/bloodline-zero/ defaults.
