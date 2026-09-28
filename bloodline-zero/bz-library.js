@@ -20,7 +20,7 @@
     if (owned.length === 0) {
       body.innerHTML = `
         <div class="bz-signed-out">
-          <p>You haven't unlocked any episodes yet — Episode 1 is free.</p>
+          <p>You haven't unlocked any episodes yet. Episode 1 is free.</p>
           <a class="bz-btn bz-btn-primary" href="/bloodline-zero/episodes/1.html">Start Reading</a>
         </div>`;
       return;
@@ -31,7 +31,7 @@
       const label = progress >= 99 ? "Read again" : progress > 0 ? "Continue" : "Read";
       return `
         <div class="bz-ep-row is-owned">
-          <div class="bz-ep-num">${String(ep.number).padStart(2, "0")}</div>
+          <div class="bz-ep-num">Episode ${String(ep.number).padStart(2, "0")}</div>
           <div class="bz-ep-main">
             <h3><a href="/bloodline-zero/episodes/${ep.number}.html">${zxEsc(ep.title)}</a></h3>
             <div class="bz-ep-meta">${ep.reading_time_min} min read${progress > 0 ? ` · ${progress}% read` : ""}</div>
@@ -59,9 +59,9 @@
     if (!status) return;
     const el = document.getElementById("checkoutToast");
     if (status === "success") {
-      el.innerHTML = `<div class="bz-toast">Payment received — your library is updating now.</div>`;
+      el.innerHTML = `<div class="bz-toast">Payment received. Your library is updating now.</div>`;
     } else if (status === "cancelled") {
-      el.innerHTML = `<div class="bz-toast">Checkout was cancelled — nothing was charged.</div>`;
+      el.innerHTML = `<div class="bz-toast">Checkout was cancelled. Nothing was charged.</div>`;
     }
   }
 
