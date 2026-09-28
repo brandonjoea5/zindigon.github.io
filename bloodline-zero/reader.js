@@ -35,16 +35,12 @@
 
     const nextHtml = next
       ? `<a class="bz-ep-nav-link is-next" href="/bloodline-zero/episodes/${next.number}.html">
-           <span>
-             <span class="bz-ep-nav-label">Next episode</span>
-             <span class="bz-ep-nav-title">${zxEsc(next.title)}</span>
-           </span>
+           <span class="bz-ep-nav-label">Next episode</span>
+           <span class="bz-ep-nav-title">${zxEsc(next.title)}</span>
          </a>`
       : `<a class="bz-ep-nav-link is-next" href="/bloodline-zero/">
-           <span>
-             <span class="bz-ep-nav-label">That's all so far</span>
-             <span class="bz-ep-nav-title">Back to Episodes</span>
-           </span>
+           <span class="bz-ep-nav-label">That's all so far</span>
+           <span class="bz-ep-nav-title">Back to Episodes</span>
          </a>`;
 
     wrap.innerHTML = `${prevHtml}<a class="bz-ep-nav-all" href="/bloodline-zero/#directory">All Episodes</a>${nextHtml}`;
