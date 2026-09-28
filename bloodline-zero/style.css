@@ -87,15 +87,23 @@ body.bz {
   background-position: center 30%;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  filter: saturate(0.85) brightness(0.62);
+  /* Muted, not crushed — the ruined skyline/bridge/crimson sky needs to
+     actually read at the edges. Previously brightness(0.62) plus the
+     overlay below pushed it to near-black everywhere. */
+  filter: saturate(0.92) brightness(0.84) contrast(1.03);
 }
 .bz-bg::after {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 120% 70% at 50% 0%, rgba(16,17,19,0.35), rgba(16,17,19,0.86) 65%),
-    linear-gradient(180deg, rgba(16,17,19,0.55) 0%, rgba(16,17,19,0.94) 55%, var(--bg) 100%);
+    /* Scroll-depth fade: the hero breathes, then the page settles onto
+       solid ground before the reading panels begin. */
+    linear-gradient(180deg, rgba(16,17,19,0.26) 0%, rgba(16,17,19,0.5) 38%, rgba(16,17,19,0.86) 68%, var(--bg) 100%),
+    /* Horizontal vignette: a quiet, text-safe column at center — wide
+       enough to sit under the 1180px content max-width — while both
+       outer edges stay lighter so the architecture/glow can register. */
+    linear-gradient(90deg, rgba(16,17,19,0.7) 0%, rgba(16,17,19,0.36) 16%, rgba(16,17,19,0.36) 84%, rgba(16,17,19,0.7) 100%);
 }
 /* Subtle grain, static — no animation */
 .bz-grain {
@@ -363,9 +371,9 @@ body.bz {
 .bz-ep-row {
   display: grid;
   grid-template-columns: 56px 1fr auto;
-  gap: 20px;
+  gap: 22px;
   align-items: start;
-  padding: 22px 0;
+  padding: 25px 0;
   border-top: 1px solid var(--line);
 }
 .bz-ep-list .bz-ep-row:last-child { border-bottom: 1px solid var(--line); }
@@ -388,9 +396,9 @@ body.bz {
   font-family: var(--read);
   font-size: 15px;
   color: var(--fg-mute);
-  line-height: 1.55;
-  max-width: 62ch;
-  margin: 0 0 8px;
+  line-height: 1.6;
+  max-width: 60ch;
+  margin: 0 0 9px;
 }
 .bz-ep-meta {
   display: flex;
@@ -446,6 +454,9 @@ body.bz {
     top: 0; bottom: 0;
     width: 1px;
     background: linear-gradient(180deg, transparent, var(--line) 15%, var(--line) 85%, transparent);
+    /* Support the layout, don't compete with the now-visible background
+       art at the outer edges. */
+    opacity: 0.55;
   }
   .bz-rule-v.left  { left: max(28px, calc(50% - 660px)); }
   .bz-rule-v.right { right: max(28px, calc(50% - 660px)); }
