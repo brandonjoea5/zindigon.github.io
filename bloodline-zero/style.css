@@ -47,7 +47,11 @@
 * , *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body.bz {
-  background: var(--bg);
+  /* Transparent, not var(--bg): an opaque body background paints the
+     browser canvas, which always sits below elements with negative
+     z-index — that would hide .bz-bg (z-index -2) entirely. The
+     fallback color lives on .bz-bg itself instead. */
+  background: transparent;
   color: var(--fg);
   font-family: var(--sans);
   font-size: 16px;
@@ -77,6 +81,7 @@ body.bz {
   position: fixed;
   inset: 0;
   z-index: -2;
+  background-color: var(--bg);
   background-image: url("/assets/bloodlinezero-bg.jpg");
   background-size: cover;
   background-position: center 30%;
