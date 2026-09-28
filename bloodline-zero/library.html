@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>My Library | Bloodline Zero</title>
+  <meta name="description" content="Your unlocked Bloodline Zero episodes and reading progress."/>
+  <link rel="canonical" href="https://zindigon.com/bloodline-zero/library.html"/>
+  <meta name="robots" content="noindex"/>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/bloodline-zero/style.css"/>
+</head>
+<body class="bz">
+  <div class="bz-bg" aria-hidden="true"></div>
+  <div class="bz-grain" aria-hidden="true"></div>
+
+  <header class="bz-header">
+    <nav class="bz-nav" id="bzNav">
+      <a class="bz-brand" href="/bloodline-zero/">Bloodline Zero <small>Zindigon</small></a>
+      <div class="bz-nav-links" data-nav>
+        <a href="/bloodline-zero/">Bloodline Zero</a>
+        <a href="/bloodline-zero/#directory">Episodes</a>
+        <a href="/bloodline-zero/library.html" aria-current="page">My Library</a>
+      </div>
+      <div class="bz-account" id="bzAccountBar"></div>
+      <button class="bz-menu-btn" id="bzMenuBtn" type="button" aria-expanded="false" aria-controls="bzNav">Menu</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="bz-library">
+      <div class="bz-container">
+        <h1>My Library</h1>
+        <p class="bz-library-sub">Everything you've unlocked, and where you left off.</p>
+
+        <div id="checkoutToast"></div>
+        <div id="libraryBody">
+          <div class="bz-state">Loading&hellip;</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bz-footer">
+    <div class="bz-container" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; width:100%;">
+      <span>Bloodline Zero — an original series by Zindigon.</span>
+      <a href="/">zindigon.com</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/assets/auth-shared.js" defer></script>
+  <script src="/bloodline-zero/bz-api.js" defer></script>
+  <script src="/bloodline-zero/bz-account.js" defer></script>
+  <script src="/bloodline-zero/bz-nav.js" defer></script>
+  <script src="/bloodline-zero/bz-library.js" defer></script>
+</body>
+</html>
