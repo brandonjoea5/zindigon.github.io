@@ -23,7 +23,7 @@
 
   function renderNav() {
     const prev = meta.find((e) => e.number === number - 1);
-    const next = meta.find((e) => e.number === number + 1);
+    const next = meta.find((e) => e.number === number + 1 && e.number !== 14);
     const wrap = document.getElementById("epNav");
 
     const prevHtml = prev
