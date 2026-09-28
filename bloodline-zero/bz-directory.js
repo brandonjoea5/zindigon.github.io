@@ -19,6 +19,19 @@
       return;
     }
     list.innerHTML = episodes.map((ep) => {
+      if (ep.number === 14) {
+        return `
+          <div class="bz-ep-row is-coming-soon">
+            <div class="bz-ep-num">${String(ep.number).padStart(2, "0")}</div>
+            <div class="bz-ep-main">
+              <h3>${zxEsc(ep.title)}</h3>
+              <p class="bz-ep-teaser">${zxEsc(ep.teaser)}</p>
+              <div class="bz-ep-meta">Coming soon</div>
+            </div>
+            <div class="bz-ep-action"></div>
+          </div>`;
+      }
+
       const owned = !!ep.owned;
       const isFree = !!ep.is_free;
       const statusClass = isFree ? "is-free" : owned ? "is-owned" : "is-locked";
