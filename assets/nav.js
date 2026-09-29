@@ -192,9 +192,13 @@
 
   function injectSkeleton() {
     document.body.insertAdjacentHTML("afterbegin", HEADER_HTML);
-    document.body.insertAdjacentHTML("beforeend", FOOTER_HTML);
+    /* Pages that keep their own product-specific footer (legal disclaimers,
+       product sub-links) already have a .site-footer in their markup.
+       Don't stack a second, generic footer under it. */
+    if (!document.querySelector(".site-footer")) {
+      document.body.insertAdjacentHTML("beforeend", FOOTER_HTML);
+    }
     document.body.insertAdjacentHTML("beforeend", MODAL_HTML);
-    const y = document.querySelector("#zinHeader [data-year], .zin-footer [data-year]");
     document.querySelectorAll("[data-year]").forEach((el) => { el.textContent = String(new Date().getFullYear()); });
   }
 
