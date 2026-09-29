@@ -1,4 +1,4 @@
-/* Zindigon — nav.css
+/* Zindigon nav.css
    Shared header, footer, dropdowns, mobile nav, account widget and
    sign-in modal, rendered by assets/nav.js. Built on the tokens
    already defined in assets/site.css (--bg, --fg, --accent, --line,
@@ -128,7 +128,6 @@
   border-radius: var(--r-sm);
 }
 .zin-drop-menu a:hover { color: var(--fg); background: rgba(255,255,255,0.05); }
-
 /* ───────── Account widget ───────── */
 .zin-account {
   display: flex;
@@ -242,7 +241,6 @@
   .zin-menu-btn { display: inline-flex; }
   .zin-mobile-nav[data-open="true"] { display: block; }
 }
-
 /* ───────── Footer ───────── */
 .zin-footer {
   border-top: 1px solid var(--line);
@@ -300,6 +298,7 @@
   justify-content: center;
   padding: 20px;
 }
+.zin-modal-overlay[hidden] { display: none; }
 .zin-modal {
   position: relative;
   width: 100%;
