@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Contact · Zindigon</title>
+  <meta name="description" content="Get in touch with Zindigon."/>
+  <link rel="canonical" href="https://zindigon.com/contact/"/>
+  <link rel="stylesheet" href="/assets/site.css"/>
+  <link rel="stylesheet" href="/assets/nav.css"/>
+  <script src="/assets/nav.js" defer></script>
+</head>
+<body class="bg-nebula">
+
+<div id="fx" aria-hidden="true">
+  <div class="fx-grid"></div><div class="fx-glow"></div><div class="fx-grain"></div>
+</div>
+
+<main>
+  <section class="hero" data-screen-label="01 Contact Hero">
+    <span class="eyebrow"><span class="dot"></span> Replies within 48 hours</span>
+    <h1 class="display">Let's build<br/><em>something.</em></h1>
+    <p class="lede">Partnerships, voice acting, playtests, or feedback on a build. If it helps Zindigon ship better, I'm interested.</p>
+  </section>
+
+  <section data-screen-label="02 Form">
+    <div class="two-col">
+      <article>
+        <div class="section-head" style="margin-top:0;">
+          <span class="label">· Send a note</span>
+          <h2>Message</h2>
+          <span class="meta">Goes to email · no tracking</span>
+        </div>
+        <form class="form" action="mailto:contact@zindigon.com" method="post" enctype="text/plain">
+          <div class="field">
+            <label for="name">Name</label>
+            <input class="input" id="name" name="name" required placeholder="Your name"/>
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input class="input" id="email" name="email" type="email" required placeholder="you@example.com"/>
+          </div>
+          <div class="field">
+            <label for="topic">Topic</label>
+            <select class="select" id="topic" name="topic">
+              <option>Partnership</option>
+              <option>Game testing</option>
+              <option>Voice work</option>
+              <option>Tools feedback</option>
+              <option>General</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea class="textarea" id="message" name="message" required placeholder="Tell me what you're thinking..."></textarea>
+          </div>
+          <div class="row">
+            <button type="submit" class="btn btn-primary">Send <span class="arrow">→</span></button>
+            <a class="btn btn-ghost" href="mailto:contact@zindigon.com">Email directly</a>
+          </div>
+        </form>
+      </article>
+      <aside>
+        <div class="section-head" style="margin-top:0;">
+          <span class="label">· Direct</span>
+          <h2>Other ways</h2>
+          <span class="meta"></span>
+        </div>
+        <div class="card">
+          <h3 class="title" style="font-size:18px;">Email</h3>
+          <p style="margin-top:8px;"><a class="link" href="mailto:contact@zindigon.com">contact@zindigon.com</a></p>
+          <hr/>
+          <h3 class="title" style="font-size:18px;">Good reasons to reach out</h3>
+          <div class="tags">
+            <span>Collabs</span><span>Voice</span>
+            <span>Music</span><span>Animation</span><span>Playtests</span>
+          </div>
+          <hr/>
+          <p class="mono muted">Typical reply within 48 hours.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<script src="/assets/site.js" defer></script>
+</body>
+</html>
