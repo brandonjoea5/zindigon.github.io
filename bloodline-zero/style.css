@@ -1,9 +1,9 @@
-/* Bloodline Zero — dedicated visual identity.
+/* Bloodline Zero: dedicated visual identity.
    Cinematic, editorial, restrained. Loads after assets/site.css (for
    .btn/.field/.input/.zx-modal primitives reused by the account bar)
    and overrides the shared tokens with Bloodline Zero's own dark/
    crimson palette so nothing here reads as the mint "Zindigon studio"
-   look. No particles, no glassmorphism, no glow — see the design
+   look. No particles, no glassmorphism, no glow; see the design
    brief this was built from. */
 
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&display=swap');
@@ -16,7 +16,7 @@
   --line:      #383638;
   --line-2:    rgba(232,228,220,0.14);
 
-  /* Type — primary #E8E4DC, secondary #A5A29D per the design brief's
+  /* Type: primary #E8E4DC, secondary #A5A29D per the design brief's
      palette table. --fg-soft/--fg-faint are small readability steps
      off those two, not a separate invented scale. */
   --fg:       #E8E4DC;
@@ -24,7 +24,7 @@
   --fg-mute:  #A5A29D;
   --fg-faint: rgba(165,162,157,0.62);
 
-  /* Signature accent — muted crimson, used as ink/highlighter, never
+  /* Signature accent: muted crimson, used as ink/highlighter, never
      a glow or gradient. */
   --accent:      #982F37;
   --accent-hi:   #B23A43;
@@ -49,7 +49,7 @@ html, body { height: 100%; margin: 0; }
 body.bz {
   /* Transparent, not var(--bg): an opaque body background paints the
      browser canvas, which always sits below elements with negative
-     z-index — that would hide .bz-bg (z-index -2) entirely. The
+     z-index; that would hide .bz-bg (z-index -2) entirely. The
      fallback color lives on .bz-bg itself instead. */
   background: transparent;
   color: var(--fg);
@@ -72,8 +72,7 @@ body.bz {
   padding-right: var(--gutter);
 }
 
-/* ---------------------------------------------------------------
-   Fixed atmospheric background — one image, one identity across
+/* ---------------------------------------------------------------   Fixed atmospheric background: one image, one identity across
    the whole section. Fixed during scroll, never repeats, overlay
    preserves reading contrast. Section 2 of the design brief.
    --------------------------------------------------------------- */
@@ -87,7 +86,7 @@ body.bz {
   background-position: center 30%;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  /* Muted, not crushed — the ruined skyline/bridge/crimson sky needs to
+  /* Muted, not crushed: the ruined skyline/bridge/crimson sky needs to
      actually read at the edges. Previously brightness(0.62) plus the
      overlay below pushed it to near-black everywhere. */
   filter: saturate(0.92) brightness(0.84) contrast(1.03);
@@ -100,12 +99,12 @@ body.bz {
     /* Scroll-depth fade: the hero breathes, then the page settles onto
        solid ground before the reading panels begin. */
     linear-gradient(180deg, rgba(16,17,19,0.26) 0%, rgba(16,17,19,0.5) 38%, rgba(16,17,19,0.86) 68%, var(--bg) 100%),
-    /* Horizontal vignette: a quiet, text-safe column at center — wide
-       enough to sit under the 1180px content max-width — while both
+    /* Horizontal vignette: a quiet, text-safe column at center, wide
+       enough to sit under the 1180px content max-width, while both
        outer edges stay lighter so the architecture/glow can register. */
     linear-gradient(90deg, rgba(16,17,19,0.7) 0%, rgba(16,17,19,0.36) 16%, rgba(16,17,19,0.36) 84%, rgba(16,17,19,0.7) 100%);
 }
-/* Subtle grain, static — no animation */
+/* Subtle grain, static, no animation */
 .bz-grain {
   position: fixed;
   inset: 0;
@@ -120,15 +119,26 @@ body.bz {
 }
 
 /* ---------------------------------------------------------------
-   Header — minimal, text-first. Bloodline Zero / Episodes /
+   Header: minimal, text-first. Bloodline Zero / Episodes /
    Continue Reading / My Library. No blur glass, no pill nav.
+
+   Transparent by default so it reads as part of the hero image;
+   gains a translucent smoky backdrop once the page scrolls (see
+   .bz-scrolled, toggled by bz-nav.js) so it separates from the
+   background without ever becoming a solid boxed bar.
    --------------------------------------------------------------- */
 .bz-header {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: color-mix(in oklab, var(--bg) 88%, transparent);
-  border-bottom: 1px solid var(--line);
+  background: transparent;
+  border-bottom: 1px solid transparent;  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), backdrop-filter var(--dur) var(--ease);
+}
+.bz-header.bz-scrolled {
+  background: color-mix(in oklab, #000 60%, transparent);
+  border-bottom-color: var(--line);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
 }
 .bz-nav {
   max-width: var(--max);
@@ -140,8 +150,8 @@ body.bz {
 }
 .bz-brand {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   font-family: var(--serif);
   font-weight: 500;
   font-size: 18px;
@@ -149,23 +159,61 @@ body.bz {
   color: var(--fg);
   margin-right: auto;
 }
+.bz-brand-text { display: inline-flex; align-items: baseline; gap: 8px; }
 .bz-brand small {
   font-family: var(--sans);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fg-faint);
+  opacity: 0.75;
 }
-.bz-nav-links { display: flex; align-items: center; gap: 22px; }
+
+/* Small custom insignia: an abstract forked root/branch (bloodline,
+   a dowsing rod for the hidden supernatural) crossed by a short,
+   heavier bar (a redaction strike, for PIP's classified records).
+   Used sparingly: the header mark, and one faint watermark near the
+   Episodes heading. Reusable later for a locked-episode/loading mark. */
+.bz-mark {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  overflow: visible;
+}
+.bz-mark path {
+  fill: none;
+  stroke: var(--fg-soft);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+.bz-mark .bz-mark-bar {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.bz-mark-watermark {
+  position: absolute;
+  top: -10px;
+  right: 4px;
+  width: 88px;
+  height: 88px;
+  opacity: 0.055;
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  .bz-mark-watermark { display: none; }
+}
+
+.bz-nav-links { display: flex; align-items: center; gap: 24px; }
 .bz-nav-links a {
   font-size: 14px;
   color: var(--fg-mute);
-  padding-bottom: 3px;
-  border-bottom: 1px solid transparent;
+  padding-bottom: 5px;
+  border-bottom: 1.5px solid transparent;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .bz-nav-links a:hover { color: var(--fg); }
+.bz-nav-links a.bz-nav-primary { color: var(--fg-soft); font-weight: 500; }
 .bz-nav-links a[aria-current="page"] { color: var(--fg); border-color: var(--accent); }
 
 .bz-menu-btn {
@@ -183,8 +231,7 @@ body.bz {
     position: fixed;
     inset: 57px 0 0 0;
     background: var(--bg);
-    border-top: 1px solid var(--line);
-    flex-direction: column;
+    border-top: 1px solid var(--line);    flex-direction: column;
     align-items: stretch;
     gap: 0;
     padding: 8px var(--gutter) 24px;
@@ -239,7 +286,7 @@ body.bz {
   padding: var(--gutter);
 }
 /* The [hidden] attribute only carries a user-agent default of
-   display:none — any author rule for the same element (like the
+   display:none; any author rule for the same element (like the
    display:flex above) overrides it regardless of the attribute's
    presence. Without this, the modal can never actually be hidden:
    not on load, and not when its own close button/backdrop click
@@ -258,8 +305,7 @@ body.bz {
 .bz-modal h3 { font-family: var(--serif); font-weight: 500; font-size: 20px; margin: 0 0 20px; }
 .bz-modal-close {
   position: absolute; top: 14px; right: 14px;
-  background: none; border: 0; color: var(--fg-mute);
-  font-size: 20px; line-height: 1; cursor: pointer;
+  background: none; border: 0; color: var(--fg-mute);  font-size: 20px; line-height: 1; cursor: pointer;
 }
 .bz-modal-close:hover { color: var(--fg); }
 .bz-field { display: grid; gap: 6px; margin-bottom: 16px; }
@@ -282,11 +328,11 @@ body.bz {
 .bz-inline-form { display: flex; gap: 8px; }
 
 /* ---------------------------------------------------------------
-   Hero — off-center editorial composition, not centered-title-
+   Hero: off-center editorial composition, not centered-title-
    and-two-buttons.
    --------------------------------------------------------------- */
 .bz-hero {
-  padding: 96px 0 72px;
+  padding: 96px 0 56px;
   max-width: 640px;
 }
 .bz-hero .bz-container { max-width: 640px; }
@@ -319,10 +365,19 @@ body.bz {
 .bz-hero-cta .bz-btn { padding: 12px 22px; font-size: 14px; }
 
 /* ---------------------------------------------------------------
-   Series intro
+   Series intro: a short, intentional "series note" block, not an
+   orphaned paragraph floating in the gap before the directory.
    --------------------------------------------------------------- */
-.bz-intro { padding: 0 0 64px; }
+.bz-intro { padding: 0 0 40px; }
 .bz-intro .bz-container { max-width: 640px; }
+.bz-intro-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  margin-bottom: 14px;
+}
 .bz-intro p {
   font-family: var(--read);
   font-size: 18px;
@@ -335,8 +390,7 @@ body.bz {
    Continue reading banner
    --------------------------------------------------------------- */
 .bz-continue {
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--line);  border-bottom: 1px solid var(--line);
   background: color-mix(in oklab, var(--bg-elev) 65%, transparent);
   padding: 22px 0;
   margin-bottom: 56px;
@@ -356,10 +410,10 @@ body.bz {
 .bz-continue-progress > span { display: block; height: 100%; background: var(--accent); }
 
 /* ---------------------------------------------------------------
-   Episode directory — editorial rows, not glowing tiles.
+   Episode directory: editorial rows, not glowing tiles.
    --------------------------------------------------------------- */
 .bz-directory { padding-bottom: 96px; }
-.bz-section-head { margin-bottom: 28px; }
+.bz-section-head { position: relative; margin-bottom: 28px; }
 .bz-section-head h2 {
   font-family: var(--serif);
   font-weight: 500;
@@ -421,8 +475,7 @@ body.bz {
   width: 120px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden;
 }
 .bz-ep-progress-mini > span { display: block; height: 100%; background: var(--accent); }
-.bz-ep-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.bz-ep-price { font-size: 13px; color: var(--fg-mute); }
+.bz-ep-action { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }.bz-ep-price { font-size: 13px; color: var(--fg-mute); }
 .bz-ep-check {
   display: flex; align-items: center; gap: 8px;
   font-size: 12px; color: var(--fg-faint);
@@ -450,7 +503,7 @@ body.bz {
 .bz-bundle-save { color: var(--accent-hi); font-size: 13px; }
 
 /* ---------------------------------------------------------------
-   Atmospheric fog — a very slow, very low-opacity haze that drifts
+   Atmospheric fog: a very slow, very low-opacity haze that drifts
    over the fixed background. Sits above .bz-bg / .bz-grain but still
    behind every real element (z-index -1, painted after .bz-grain in
    the DOM so it layers on top of it). Pure background texture: no
@@ -476,7 +529,7 @@ body.bz {
 }
 
 /* ---------------------------------------------------------------
-   Reading progress indicator — thin, top of page.
+   Reading progress indicator: thin, top of page.
    --------------------------------------------------------------- */
 .bz-progress-rail {
   position: fixed; top: 0; left: 0; right: 0; height: 2px;
@@ -490,12 +543,11 @@ body.bz {
 }
 
 /* ---------------------------------------------------------------
-   Episode header (reader page) — no divider beneath it; whitespace
+   Episode header (reader page): no divider beneath it; whitespace
    alone separates it from the story.
    --------------------------------------------------------------- */
 .bz-ep-header {
-  padding: 48px 0 0;
-  margin-bottom: 48px;
+  padding: 48px 0 0;  margin-bottom: 48px;
 }
 .bz-ep-header .bz-container { max-width: 680px; }
 .bz-crumb {
@@ -513,8 +565,8 @@ body.bz {
 .bz-ep-header-meta { font-size: 13px; color: var(--fg-faint); }
 
 /* ---------------------------------------------------------------
-   Reading container — the whole point of the page. The story sits
-   directly on the page: no card, no border, no background panel —
+   Reading container: the whole point of the page. The story sits
+   directly on the page: no card, no border, no background panel,
    a centered column of text, like a page in a book.
    --------------------------------------------------------------- */
 .bz-reader { padding-bottom: 72px; }
@@ -541,7 +593,7 @@ body.bz {
   letter-spacing: 0.3em;
 }
 
-/* Gate card — for locked/unpurchased episodes */
+/* Gate card: for locked/unpurchased episodes */
 .bz-gate {
   background: var(--bg-elev-2);
   border: 1px solid var(--line-2);
@@ -563,7 +615,7 @@ body.bz {
 }
 
 /* ---------------------------------------------------------------
-   Episode navigation footer — plain text links separated by
+   Episode navigation footer: plain text links separated by
    whitespace, not bordered boxes. "Next episode" stays the clearest
    thing on the row (serif title, small crimson label) without
    becoming a filled red block.
@@ -581,8 +633,7 @@ body.bz {
 .bz-ep-nav-link {
   padding: 0;
   border: 0;
-  background: transparent;
-  transition: opacity var(--dur) var(--ease);
+  background: transparent;  transition: opacity var(--dur) var(--ease);
 }
 .bz-ep-nav-link:hover { opacity: 0.7; }
 .bz-ep-nav-link.is-next {
@@ -647,8 +698,7 @@ body:has(.bz-reader) .bz-bg::after {
 .bz-signed-out {
   background: var(--bg-elev-2);
   border: 1px solid var(--line-2);
-  border-radius: 4px;
-  padding: 40px;
+  border-radius: 4px;  padding: 40px;
   text-align: center;
 }
 .bz-signed-out p { color: var(--fg-soft); font-family: var(--read); font-size: 16px; margin: 0 0 20px; }
@@ -685,4 +735,5 @@ body:has(.bz-reader) .bz-bg::after {
   .bz-ep-row { grid-template-columns: 1fr; padding: 28px var(--gutter); }
   .bz-ep-action { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 4px; }
 }
+
 /* cache-bust 1790630618 */
