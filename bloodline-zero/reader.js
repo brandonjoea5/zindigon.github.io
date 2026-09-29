@@ -1,4 +1,4 @@
-// Bloodline Zero | episode reader — fetches the gated body, renders
+// Bloodline Zero | episode reader: fetches the gated body, renders
 // prose or a locked-episode gate, tracks reading progress, and wires
 // previous/next navigation. `window.BZ_EPISODE` (number) and
 // `window.BZ_EPISODES_META` (public list, no bodies) are inlined by
@@ -127,7 +127,7 @@
     try {
       await bzPostProgress(number, pct);
     } catch (err) {
-      // Non-fatal — reading still works without progress sync.
+      // Non-fatal: reading still works without progress sync.
       console.warn("progress save failed", err);
     }
   }
