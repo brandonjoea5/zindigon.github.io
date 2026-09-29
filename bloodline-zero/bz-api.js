@@ -42,7 +42,7 @@ async function bzAuthedFetch(path, options = {}) {
   });
 }
 
-// Public — no sign-in required.
+// Public, no sign-in required.
 async function bzFetchEpisodes() {
   const data = await bzFetch("/episodes");
   return data.episodes || [];
@@ -52,7 +52,7 @@ async function bzFetchPricing() {
   return bzFetch("/pricing");
 }
 
-// Gated — returns the episode with `body` when free or already owned;
+// Gated: returns the episode with `body` when free or already owned;
 // throws with .status 401 (sign in) or a body of { error: "not_purchased",
 // price_cents } via .body when locked.
 async function bzFetchEpisode(number) {
@@ -77,7 +77,7 @@ async function bzPostProgress(episodeNumber, percent) {
 }
 
 // Redirects the browser to Stripe Checkout. Access is only ever granted
-// by the server-side webhook — this redirect alone never unlocks
+// by the server-side webhook; this redirect alone never unlocks
 // anything (see checkout.html / library.html for the return legs).
 async function bzStartCheckout(episodeNumbers) {
   const { url } = await bzAuthedFetch("/billing/checkout", {
