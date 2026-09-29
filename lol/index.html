@@ -4,42 +4,19 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Zindigon League | Free Match History and Rank Lookup</title>
-<meta name="description" content="Free League of Legends match history lookup. Search any Summoner for ranked stats and a filterable, sortable match history — no sign-in required." />
+<meta name="description" content="Free League of Legends match history lookup. Search any Summoner for ranked stats and a filterable, sortable match history, no sign-in required." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
+<link rel="stylesheet" href="https://zindigon.com/assets/nav.css" />
+<script src="https://zindigon.com/assets/nav.js" defer></script>
 <link rel="stylesheet" href="style.css?v=2" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 <body class="lol-page">
 
-<header class="site-header">
-  <nav class="nav" aria-label="Primary">
-    <a class="brand" href="https://zindigon.com/">
-      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
-      <span class="brand-name">Zindigon<em>studio</em></span>
-    </a>
-    <div class="nav-links">
-      <a href="https://zindigon.com/">Home</a>
-      <a href="https://zindigon.com/projects.html">Projects</a>
-      <a href="https://zindigon.com/work.html">Work</a>
-      <a href="https://zindigon.com/contact.html">Contact</a>
-      <a href="index.html" aria-current="page">League</a>
-      <a href="pricing.html">Plans</a>
-      <a href="https://zindigon.com/toondata/" title="ToonData — DC Universe Online lookup tool">ToonData</a>
-      <a href="https://zindigon.com/builds/" title="Builds — a DC Universe Online build database">Builds</a>
-    </div>
-    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
-  </nav>
-  <div class="mobile-nav" id="mobileNav">
-    <a href="https://zindigon.com/">Home</a>
-    <a href="https://zindigon.com/projects.html">Projects</a>
-    <a href="https://zindigon.com/work.html">Work</a>
-    <a href="https://zindigon.com/contact.html">Contact</a>
-    <a href="index.html">League</a>
-    <a href="pricing.html">Plans — Plus &amp; Premier</a>
-    <a href="https://zindigon.com/toondata/">ToonData — DCUO lookup tool</a>
-    <a href="https://zindigon.com/builds/">Builds — DCUO build database</a>
-  </div>
-</header>
+<div class="td-subnav" style="max-width:var(--max); margin:0 auto; padding:14px var(--gutter) 0; display:flex; gap:18px; flex-wrap:wrap; font-size:13px;">
+  <a href="index.html" aria-current="page" style="color:var(--fg);">League</a>
+  <a href="pricing.html" style="color:var(--fg-soft);">Plans</a>
+</div>
 
 <main>
   <section class="hero" style="padding-top:24px;">
@@ -47,7 +24,7 @@
 
     <span class="eyebrow"><span class="dot"></span>League of Legends</span>
     <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Zindigon League</h1>
-    <p class="lede">Look up any Summoner's rank and match history — free, no sign-in required. Sign in to save profiles you check often.</p>
+    <p class="lede">Look up any Summoner's rank and match history, free, no sign-in required. Sign in to save profiles you check often.</p>
 
     <form id="searchForm" class="lp-search-form">
       <select id="platformSelect" aria-label="Region">
@@ -74,8 +51,7 @@
     </form>
 
     <div class="lp-notices">
-      <div class="notice" style="margin-top:16px;">
-        <span>Search using public Riot IDs only. Zindigon League will never ask for your Riot account password.</span>
+      <div class="notice" style="margin-top:16px;">        <span>Search using public Riot IDs only. Zindigon League will never ask for your Riot account password.</span>
       </div>
       <div class="notice" style="margin-top:10px;">
         <span>Match and rank data comes from Riot Games' public API and may be delayed or incomplete. Zindigon League can't correct information Riot maintains.</span>
@@ -130,8 +106,7 @@
           <option value="most_cs">Most CS</option>
           <option value="highest_cs_per_min">Highest CS/min</option>
           <option value="most_damage">Most damage</option>
-          <option value="most_gold">Most gold</option>
-          <option value="highest_vision">Highest vision score</option>
+          <option value="most_gold">Most gold</option>          <option value="highest_vision">Highest vision score</option>
           <option value="fastest_win">Shortest games</option>
           <option value="longest_match">Longest games</option>
         </select>
@@ -174,8 +149,8 @@
       <li><a href="pricing.html">Plus &amp; Premier</a></li>
     </ul></div>
     <div class="footer-col"><h4>Legal</h4><ul>
-      <li><a href="https://zindigon.com/terms.html">Terms of Use</a></li>
-      <li><a href="https://zindigon.com/privacy.html">Privacy Policy</a></li>
+      <li><a href="https://zindigon.com/terms/">Terms of Use</a></li>
+      <li><a href="https://zindigon.com/privacy/">Privacy Policy</a></li>
     </ul></div>
     <div class="footer-col"><h4>Reach</h4><ul>
       <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li>
@@ -183,8 +158,7 @@
   </div>
   <div class="footer-bottom">
     <span>2026 Zindigon</span>
-    <span>Not affiliated with or endorsed by Riot Games, Inc.</span>
-  </div>
+    <span>Not affiliated with or endorsed by Riot Games, Inc.</span>  </div>
 </footer>
 
 <script src="https://zindigon.com/assets/site.js" defer></script>
