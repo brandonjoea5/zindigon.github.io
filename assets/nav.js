@@ -1,4 +1,4 @@
-/* Zindigon — nav.js (site-wide shared header, footer, account widget)
+/* Zindigon nav.js (site-wide shared header, footer, account widget)
    Include on every page with just two tags, nothing else required:
      <link rel="stylesheet" href="/assets/nav.css"/>
      <script src="/assets/nav.js" defer></script>
