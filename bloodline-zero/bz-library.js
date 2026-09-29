@@ -1,4 +1,4 @@
-// Bloodline Zero | My Library — owned episodes + reading progress.
+// Bloodline Zero | My Library: owned episodes + reading progress.
 
 (function () {
   const centsToStr = (c) => `$${(c / 100).toFixed(2)}`;
@@ -88,7 +88,7 @@
     await load();
 
     // The Stripe webhook usually lands within a second or two of the
-    // redirect back here — one quiet re-fetch covers that gap without
+    // redirect back here; one quiet re-fetch covers that gap without
     // making the visitor manually refresh.
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
