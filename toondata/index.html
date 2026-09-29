@@ -6,41 +6,19 @@
 <title>Zindigon ToonData | Free Character and League Lookup Tool</title>
 <meta name="description" content="Free lookup tool for DC Universe Online. Search any character or league for stats, gear, Combat Rating, and feats, plus a CR calculator and skill points leaderboard." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
+<link rel="stylesheet" href="https://zindigon.com/assets/nav.css" />
+<script src="https://zindigon.com/assets/nav.js" defer></script>
 <link rel="stylesheet" href="toondata.css?v=26" />
 </head>
 <body class="toondata">
 
-<header class="site-header">
-  <nav class="nav" aria-label="Primary">
-    <a class="brand" href="https://zindigon.com/">
-      <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
-      <span class="brand-name">Zindigon<em>studio</em></span>
-    </a>
-    <div class="nav-links">
-      <a href="https://zindigon.com/">Home</a>
-      <a href="https://zindigon.com/projects.html">Projects</a>
-      <a href="https://zindigon.com/work.html">Work</a>
-      <a href="https://zindigon.com/contact.html">Contact</a>
-      <a href="index.html" aria-current="page">ToonData</a>
-      <a href="about.html">About</a>
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="https://zindigon.com/builds/" title="Builds — a DC Universe Online build database">Builds</a>
-    </div>
-    <button class="menu-btn" id="menuBtn" type="button">Menu</button>
-  </nav>
-  <div class="mobile-nav" id="mobileNav">
-    <a href="https://zindigon.com/">Home</a>
-    <a href="https://zindigon.com/projects.html">Projects</a>
-    <a href="https://zindigon.com/work.html">Work</a>
-    <a href="https://zindigon.com/contact.html">Contact</a>
-    <a href="index.html">ToonData</a>
-    <a href="about.html">About</a>
-    <a href="terms.html">Terms</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="https://zindigon.com/builds/">Builds — DCUO build database</a>
-  </div>
-</header>
+<div class="td-subnav" style="max-width:var(--max); margin:0 auto; padding:14px var(--gutter) 0; display:flex; gap:18px; flex-wrap:wrap; font-size:13px;">
+  <a href="index.html" aria-current="page" style="color:var(--fg);">ToonData</a>
+  <a href="about.html" style="color:var(--fg-soft);">About</a>
+  <a href="terms.html" style="color:var(--fg-soft);">Terms</a>
+  <a href="privacy.html" style="color:var(--fg-soft);">Privacy</a>
+  <a href="https://zindigon.com/builds/" style="color:var(--fg-soft);">Builds</a>
+</div>
 
 <main>
   <section class="hero" style="padding-top:24px;">
@@ -59,8 +37,7 @@
 
     <div class="td-lookup-form" id="charSearchForm">
       <input id="charName" class="input" type="text" placeholder="Character name" autocomplete="off" />
-      <button id="searchBtn" class="btn btn-primary">Search</button>
-    </div>
+      <button id="searchBtn" class="btn btn-primary">Search</button>    </div>
 
     <div class="td-lookup-form" id="leagueSearchForm" style="display:none;">
       <input id="leagueName" class="input" type="text" placeholder="League name" autocomplete="off" />
@@ -87,13 +64,13 @@
       <button id="compareGoBtn" class="btn btn-primary" disabled>Compare</button>
     </div>
 
-    <!-- Combat Rating calculator — a standalone tool with no Census lookups,
+    <!-- Combat Rating calculator: a standalone tool with no Census lookups,
          so it doesn't need the search-related notices below. Its contents
          are built by initCrCalc() in app.js rather than written out here,
          since the 14 slot rows are generated from the CR_SLOTS table. -->
     <div class="td-cr-calc" id="crCalcForm" style="display:none;"></div>
 
-    <!-- Skill Points leaderboard + "still cached" list — also standalone,
+    <!-- Skill Points leaderboard + "still cached" list: also standalone,
          no Census search box, contents built by JS in loadLeaderboardData(). -->
     <div class="td-leaderboard" id="leaderboardForm" style="display:none;"></div>
 
@@ -109,7 +86,6 @@
 
     <div id="status" class="status-line"></div>
     <div id="matchList" class="td-match-list"></div>
-
     <div id="result" class="td-result"></div>
   </section>
 </main>
