@@ -51,7 +51,7 @@ function bzRenderAccountBar() {
   el.innerHTML = `
     <div class="bz-account">
       <button id="bzSignInBtn" class="bz-btn bz-btn-text" type="button">Sign in</button>
-      <button id="bzSignUpBtn" class="bz-btn" type="button">Sign up</button>
+      <button id="bzSignUpBtn" class="bz-btn" type="button">Create account</button>
     </div>`;
   document.getElementById("bzSignInBtn").addEventListener("click", () => bzOpenModal("signin"));
   document.getElementById("bzSignUpBtn").addEventListener("click", () => bzOpenModal("signup"));
@@ -61,8 +61,7 @@ function bzOpenModal(mode) {
   bzAcctMode = mode;
   document.getElementById("bzModalOverlay").hidden = false;
   document.getElementById("bzModalTitle").textContent = mode === "signup" ? "Create an account" : "Sign in";
-  document.getElementById("bzSubmitBtn").textContent = mode === "signup" ? "Sign up" : "Sign in";
-  document.getElementById("bzSwitchToSignUp").hidden = mode === "signup";
+  document.getElementById("bzSubmitBtn").textContent = mode === "signup" ? "Create account" : "Sign in";  document.getElementById("bzSwitchToSignUp").hidden = mode === "signup";
   document.getElementById("bzSwitchToSignIn").hidden = mode !== "signup";
   document.getElementById("bzError").hidden = true;
   document.getElementById("bzInfo").hidden = true;
@@ -113,8 +112,7 @@ function bzInjectAccountModal() {
     const auth = window.ZindigonAuth;
     const email = document.getElementById("bzEmail").value.trim();
     const password = document.getElementById("bzPassword").value;
-    const errEl = document.getElementById("bzError");
-    const infoEl = document.getElementById("bzInfo");
+    const errEl = document.getElementById("bzError");    const infoEl = document.getElementById("bzInfo");
     errEl.hidden = true;
     infoEl.hidden = true;
     try {
