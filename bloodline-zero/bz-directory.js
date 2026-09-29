@@ -1,4 +1,4 @@
-// Bloodline Zero | landing page — episode directory, bundle picker,
+// Bloodline Zero | landing page: episode directory, bundle picker,
 // continue-reading banner.
 
 (function () {
@@ -62,7 +62,7 @@
             <h3><a href="${href}">${zxEsc(ep.title)}</a></h3>
             <p class="bz-ep-teaser">${zxEsc(ep.teaser)}</p>
             <div class="bz-ep-meta">${metaBits.join(" · ")}</div>
-            ${showProgress ? `<div class="bz-ep-progress-mini"><span style="width:${progress}%"></span></div>` : ""}
+        ${showProgress ? `<div class="bz-ep-progress-mini"><span style="width:${progress}%"></span></div>` : ""}
           </div>
           <div class="bz-ep-action">
             ${actionTop}
