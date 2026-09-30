@@ -1,55 +1,78 @@
 /* Zindigon League design system - /lol/ page styles.
-   This file is the League's own visual identity: a competitive scouting
-   report and post-match coaching desk, not the shared Zindigon black and
-   green product theme. It is loaded only on League pages, after
-   /assets/site.css and /assets/nav.css.
+   Zindigon League is its own standalone product, visually independent from
+   the rest of zindigon.com (the way Bloodline Zero is): its own header and
+   footer live directly in index.html/pricing.html, its own type system is
+   defined below, and nothing here reads the shared --bg/--fg/--accent/--line
+   tokens or expects the shared nav.css/nav.js to be present. Only the
+   Supabase-backed auth client (assets/auth-shared.js is NOT used here; see
+   lol/auth-shared.js's LeagueAuth) is still shared with the rest of the
+   site, so a session started elsewhere on zindigon.com is already visible
+   here too.
 
-   Scoping rule: every League-specific rule below defines and reads its own
-   --lp-* custom properties, never the shared --bg/--fg/--accent/--line
-   tokens. The shared header (.zin-header/.zin-footer, from nav.css) and the
-   shared, unchanged product footer (.site-footer, from site.css) use only
-   the shared tokens and never reference --lp-*, so nothing here can bleed
-   into them. Existing element IDs, classes and structure that app.js,
-   account.js, pricing.js and ai-insights.js depend on are all preserved;
-   only declarations change, plus a small set of purely additive classes at
-   the end for upcoming markup. */
+   Fixed, and worth flagging: --serif/--mono/--sans were referenced
+   throughout this file (font-family: var(--serif), etc.) but never actually
+   defined anywhere, so the intended type system had silently never applied;
+   everything fell back to inherited fonts. Defined for real below.
+
+   Existing element IDs, classes and structure that app.js, account.js,
+   pricing.js and ai-insights.js depend on are all preserved; only
+   declarations and a handful of markup-adjacent classes change.
+
+   Note on assets/site.css: index.html/pricing.html still include it, but
+   only for its low-level reset and primitives (box-sizing, .btn/.input/
+   .hero/.notice base shapes, the --max/--gutter/--r* layout tokens) - not
+   for its theme. assets/nav.css and assets/nav.js (the actual shared
+   header/footer chrome and the site's green --accent bleeding through
+   .eyebrow .dot) are dropped entirely; every color-bearing class below is
+   overridden with --lp-* tokens at higher specificity than site.css's
+   own rules, so nothing green survives. */
+
+@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
 
 /* ───────── Design tokens ───────── */
 .lol-page {
-  /* Surfaces */
-  --lp-bg: #171C26;
-  --lp-bg-2: #222A36;
-  --lp-paper: #E8E2D6;
-  --lp-paper-soft: #D8D1C2;
+  /* Surfaces: ink/charcoal, not the shared site's black-and-green theme */
+  --lp-bg: #12151C;
+  --lp-bg-2: #1B2029;
+  --lp-paper: #E7E1D2;
+  --lp-paper-soft: #DED6C4;
 
   /* Ink */
-  --lp-ink: #F2EEE6;
-  --lp-ink-soft: rgba(242, 238, 230, 0.72);
-  --lp-ink-mute: rgba(242, 238, 230, 0.50);
-  --lp-ink-faint: rgba(242, 238, 230, 0.30);
+  --lp-ink: #E7E1D2;
+  --lp-ink-soft: rgba(231, 225, 210, 0.78);
+  --lp-ink-mute: rgba(231, 225, 210, 0.52);
+  --lp-ink-faint: rgba(231, 225, 210, 0.34);
   --lp-ink-on-paper: #1C2630;
   --lp-ink-on-paper-soft: rgba(28, 38, 48, 0.70);
   --lp-ink-on-paper-mute: rgba(28, 38, 48, 0.48);
 
-  /* Accents */
-  --lp-gold: #B8914D;
-  --lp-gold-soft: rgba(184, 145, 77, 0.16);
-  --lp-gold-line: rgba(184, 145, 77, 0.40);
-  --lp-teal: #527E83;
-  --lp-teal-soft: rgba(82, 126, 131, 0.16);
-  --lp-teal-line: rgba(82, 126, 131, 0.40);
-  --lp-win: #4F9B76;
-  --lp-win-soft: rgba(79, 155, 118, 0.16);
-  --lp-win-line: rgba(79, 155, 118, 0.45);
-  --lp-loss: #B95D67;
-  --lp-loss-soft: rgba(185, 93, 103, 0.16);
-  --lp-loss-line: rgba(185, 93, 103, 0.45);
+  /* Accents: antique gold is the only accent that gets to be loud, a muted
+     slate blue is the quiet secondary, and a muted rust marks losses.
+     Zero Zindigon green anywhere in this file, including the old shared
+     --accent tie-in that used to color the hero eyebrow's dot. */
+  --lp-gold: #C6A25B;
+  --lp-gold-soft: rgba(198, 162, 91, 0.14);
+  --lp-gold-line: rgba(198, 162, 91, 0.45);
+  --lp-teal: #7C93A8;
+  --lp-teal-soft: rgba(124, 147, 168, 0.14);
+  --lp-teal-line: rgba(124, 147, 168, 0.42);
+  --lp-win: #C6A25B;
+  --lp-win-soft: rgba(198, 162, 91, 0.14);
+  --lp-win-line: rgba(198, 162, 91, 0.4);
+  --lp-loss: #A85D4E;
+  --lp-loss-soft: rgba(168, 93, 78, 0.14);
+  --lp-loss-line: rgba(168, 93, 78, 0.42);
 
   /* Dividers */
-  --lp-line: rgba(242, 238, 230, 0.12);
-  --lp-line-2: rgba(242, 238, 230, 0.20);
+  --lp-line: rgba(231, 225, 210, 0.13);
+  --lp-line-2: rgba(231, 225, 210, 0.22);
   --lp-line-on-paper: rgba(28, 38, 48, 0.14);
   --lp-line-on-paper-2: rgba(28, 38, 48, 0.22);
+
+  /* Type system: League's own stack, scoped to .lol-page only. */
+  --serif: 'Spectral', Georgia, serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body.lol-page {
@@ -60,32 +83,31 @@ body.lol-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
 }
+.lol-page ::selection { background: var(--lp-gold); color: #14171D; }
 
-/* Stationary, full-viewport tactical-map background. A fixed pseudo-element
-   (rather than background-attachment: fixed) so it stays put reliably on
-   mobile browsers too. It sits behind everything on the page, including the
-   shared header, since the header itself is a translucent blur-over-content
-   surface (see .zin-header in nav.css) rather than an opaque one. */
+/* Real tactical-map photo (league-bg.jpg), fixed to the viewport: it reads
+   near the top edge of whatever is currently in view, then falls off into
+   flat ink about three-quarters of the way down, so it stays a quiet,
+   present texture instead of a flat, unchanging wallpaper behind every
+   section, and never competes with the data-heavy sections below the
+   hero. */
 body.lol-page::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(23, 28, 38, 0.46), rgba(23, 28, 38, 0.46)),
+    linear-gradient(180deg, rgba(18, 21, 28, 0.42) 0%, rgba(18, 21, 28, 0.86) 42%, var(--lp-bg) 76%),
     url("league-bg.jpg");
   background-size: cover;
-  background-position: center center;
+  background-position: center 30%;
   background-repeat: no-repeat;
   pointer-events: none;
 }
 
-/* min-width: 0 overrides the flex-item default of min-width: auto, which
-   otherwise refuses to let <main> shrink below the match table's intrinsic
-   (nowrap) content width -- without it, <main> stretches past the viewport
-   and body's overflow-x: hidden (site.css) silently clips the overflow
-   instead of the table's own #tableWrap horizontal scrollbar ever engaging. */
 body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index: 1; }
 
 .lol-page .btn:disabled {
@@ -94,64 +116,117 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
   pointer-events: none;
 }
 
-/* ───────── League secondary nav (below the shared header) ───────── */
-.lol-page .td-subnav {
-  border-bottom: 1px solid var(--lp-line);
-  padding-bottom: 14px !important;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.lol-page .td-subnav a {
-  color: var(--lp-ink-mute) !important;
-  padding: 4px 2px;
+/* ───────── League's own header (standalone product, no shared nav) ───── */
+.lp-header {
   position: relative;
-  transition: color 0.15s;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 16px var(--gutter);
+  border-bottom: 1px solid var(--lp-line);
+  background: rgba(18, 21, 28, 0.82);
+  backdrop-filter: blur(8px);
+  flex-wrap: wrap;
 }
-.lol-page .td-subnav a:hover { color: var(--lp-ink-soft) !important; }
-.lol-page .td-subnav a[aria-current="page"] {
-  color: var(--lp-gold) !important;
+.lp-header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  color: var(--lp-ink);
+  text-decoration: none;
 }
-.lol-page .td-subnav a[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -15px;
-  height: 2px;
-  background: var(--lp-gold);
+.lp-header-brand:hover { color: var(--lp-ink); }
+.lp-header-mark { position: relative; top: 2px; flex-shrink: 0; }
+.lp-header-word {
+  font-family: var(--serif);
+  font-size: 17px;
+  letter-spacing: 0.005em;
 }
+.lp-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  font-family: var(--sans);
+  font-size: 13px;
+}
+.lp-header-nav a { color: var(--lp-ink-mute); text-decoration: none; transition: color 0.15s; }
+.lp-header-nav a:hover { color: var(--lp-ink); }
+.lp-header-nav a[aria-current="page"] { color: var(--lp-ink); opacity: 0.92; }
+.lp-header-side { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.lp-header-studio-link {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--lp-ink-faint);
+  text-decoration: none;
+}
+.lp-header-studio-link:hover { color: var(--lp-ink-mute); }
+.lp-signin-link {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--lp-ink-soft);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.lp-signin-link:hover { color: var(--lp-ink); }
+.lp-create-account-btn {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 7px 15px;
+  border: 1px solid var(--lp-gold-line);
+  border-radius: 2px;
+  color: var(--lp-gold);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+.lp-create-account-btn:hover { background: var(--lp-gold-soft); }
 
 /* ───────── Hero type (shared .eyebrow/.display/.lede, League palette) ─── */
-.lol-page .hero { padding-top: 32px; }
-.lol-page .eyebrow { color: var(--lp-teal); }
-.lol-page .eyebrow .dot {
-  /* the one deliberate small brand tie-in: the original Zindigon green,
-     left untouched, used nowhere else on this page. */
-  background: var(--accent);
+.lol-page .hero { padding-top: 56px; max-width: var(--max); }
+.lol-page .eyebrow {
+  color: var(--lp-gold);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
+.lol-page .eyebrow .dot { background: var(--lp-gold); }
 .lol-page .display {
   font-family: var(--serif);
+  font-weight: 500;
   color: var(--lp-ink);
+  line-height: 1.04;
+  max-width: 640px;
 }
 .lol-page .display em { color: var(--lp-teal); font-style: italic; }
-.lol-page .lede { color: var(--lp-ink-soft); }
+.lol-page .lede { color: var(--lp-ink-soft); max-width: 460px; font-family: var(--sans); }
 
 /* ───────── Buttons + form controls, League palette ───────── */
 .lol-page .btn-primary {
-  background: var(--lp-teal);
-  color: var(--lp-ink);
-  border-color: var(--lp-teal);
+  background: var(--lp-gold);
+  color: #181A1C;
+  border-color: var(--lp-gold);
+  font-weight: 600;
 }
 .lol-page .btn-primary:hover {
-  background: color-mix(in oklch, var(--lp-teal) 85%, white);
+  filter: brightness(1.08);
 }
 .lol-page .btn-secondary {
-  background: var(--lp-bg-2);
+  background: transparent;
   color: var(--lp-ink);
   border-color: var(--lp-line-2);
 }
 .lol-page .btn-secondary:hover {
-  background: color-mix(in oklch, var(--lp-bg-2) 85%, white);
+  background: rgba(231, 225, 210, 0.06);
   border-color: var(--lp-line-2);
 }
 .lol-page .btn-ghost {
@@ -175,24 +250,24 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 .lol-page .input:focus,
 .lol-page .textarea:focus,
 .lol-page .select:focus {
-  border-color: var(--lp-teal);
+  border-color: var(--lp-gold);
   background: color-mix(in oklch, var(--lp-bg-2) 80%, var(--lp-bg));
 }
 
-/* ───────── Account bar + modal (.lp-account*/.lp-modal*) ───────── */
+/* ───────── Account bar (now lives inside .lp-header) + modal ───────── */
 .btn-sm { padding: 7px 12px; font-size: 12px; }
-.lp-account-bar { margin-bottom: 20px; }
+.lp-account-bar { display: flex; align-items: center; }
 
 .lp-account {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 .lp-account-name {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--lp-ink-mute);
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--lp-ink-soft);
 }
 .lp-account-inline-form {
   display: flex;
@@ -224,7 +299,7 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 }
 .lp-modal h3 {
   font-family: var(--serif);
-  font-weight: 400;
+  font-weight: 500;
   font-size: 22px;
   margin: 0 0 18px;
   color: var(--lp-ink);
@@ -252,26 +327,52 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 }
 .lp-account-switch a { color: var(--lp-teal); }
 
-/* ───────── Search form ───────── */
+/* ───────── Search row (one underlined line, not a boxed form) ───────── */
 .lp-search-form {
   display: flex;
-  gap: 10px;
+  align-items: baseline;
+  gap: 14px;
   flex-wrap: wrap;
-  margin-top: 20px;
-  align-items: center;
+  margin-top: 32px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--lp-line);
+  max-width: 620px;
 }
-.lp-search-form select { flex: 0 0 auto; min-width: 90px; }
-.lp-search-form .lp-name-input { flex: 2 1 220px; }
-.lp-search-form .lp-tag-input { flex: 1 1 110px; }
-.lp-search-form select,
-.lp-search-form .input {
-  background: var(--lp-bg-2);
-  border: 1px solid var(--lp-line-2);
+.lp-search-form select#platformSelect {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: var(--lp-ink-mute);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0;
+  appearance: none;
+}
+.lp-search-form .lp-name-input {
+  flex: 2 1 220px;
+  border: none;
+  background: transparent;
+  color: var(--lp-ink);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 19px;
+  padding: 2px 0;
+  outline: none;
+}
+.lp-search-form .lp-tag-input {
+  flex: 1 1 90px;
+  border: none;
+  background: transparent;
   color: var(--lp-ink-soft);
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  font-family: var(--sans);
-  font-size: 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 2px 0;
+  outline: none;
+}
+.lp-search-form button.btn-primary {
+  padding: 9px 18px;
+  border-radius: 2px;
+  white-space: nowrap;
 }
 
 /* Status line (search feedback) */
@@ -290,181 +391,228 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 .status-line.error { border-color: var(--lp-loss-line); color: var(--lp-loss); background: var(--lp-loss-soft); }
 .status-line.warn  { border-color: var(--lp-gold-line); color: var(--lp-gold); background: var(--lp-gold-soft); }
 
-.lp-result { margin-top: 32px; display: none; }
+.lp-result { margin-top: 48px; display: none; max-width: var(--max); }
 .lp-result.show { display: block; }
 
-/* ───────── Identity (dossier letterhead) + rank cards ───────── */
+/* ───────── Profile: flowing, not a boxed dossier letterhead ───────── */
 .lp-identity {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
+  gap: 22px;
   flex-wrap: wrap;
-  gap: 16px;
-  border-bottom: 1px solid var(--lp-line);
-  padding-bottom: 20px;
-  margin-bottom: 24px;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
 }
 .lp-name {
   font-family: var(--serif);
-  font-weight: 400;
+  font-weight: 500;
   font-size: 32px;
   line-height: 1.1;
   color: var(--lp-ink);
+  margin: 0;
 }
-.lp-name .tag { color: var(--lp-ink-mute); font-size: 20px; }
-.lp-identity-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.lp-name .tag { color: var(--lp-ink-mute); font-weight: 400; font-size: 20px; }
+.lp-identity-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.lp-save-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--lp-teal);
+  cursor: pointer;
+}
+.lp-save-link:hover { color: var(--lp-ink); }
 
+/* Compact, scannable meta line: region + record + win rate, ahead of the
+   narrative sentence, so the numbers that matter are legible before you
+   have to read a sentence to find them. */
 .lp-rank-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  align-items: center;
   gap: 14px;
-  margin-bottom: 26px;
-}
-/* Dossier stat tiles: report paper, not a dark glassy card. */
-.lp-rank-card {
-  position: relative;
-  padding: 16px 18px;
-  border: 1px solid var(--lp-line-on-paper);
-  border-radius: var(--r);
-  background: var(--lp-paper);
-  box-shadow: 0 8px 20px rgba(10, 13, 18, 0.22);
-}
-.lp-rank-card .queue {
+  flex-wrap: wrap;
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--lp-ink-on-paper-mute);
+  font-size: 11.5px;
+  color: var(--lp-ink-mute);
+  margin: 16px 0 0;
 }
-.lp-rank-card .tier {
-  font-family: var(--serif);
-  font-size: 22px;
-  color: var(--lp-gold);
-  margin-top: 6px;
-}
-.lp-rank-card .lp {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  color: var(--lp-ink-on-paper-soft);
-  margin-top: 4px;
-}
-.lp-rank-card .wl {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  color: var(--lp-ink-on-paper-mute);
-  margin-top: 6px;
-}
+.lp-rank-grid .lp-rank-sep { color: var(--lp-line-2); }
+.lp-rank-grid .lp-rank-tier { color: var(--lp-gold); font-family: var(--serif); font-style: italic; font-size: 13px; }
+.lp-rank-grid .lp-rank-wl b { color: var(--lp-ink); font-weight: 500; }
 .lp-rank-empty {
   color: var(--lp-ink-mute);
-  font-size: 13px;
-  border: 1px dashed var(--lp-line-2);
-  border-radius: var(--r);
-  padding: 16px 18px;
-  margin-bottom: 26px;
+  font-size: 12.5px;
+  margin: 0;
+  font-family: var(--sans);
 }
 
-/* ───────── Filter bar ───────── */
+/* ───────── Filter bar: a quiet inline strip, not boxed controls ───────── */
 .lp-filters {
   display: flex;
-  gap: 10px;
+  gap: 18px;
   flex-wrap: wrap;
   align-items: center;
-  margin: 8px 0 20px;
+  margin: 44px 0 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--lp-line);
 }
 .lp-filters select,
 .lp-filters input {
-  background: var(--lp-bg-2);
-  border: 1px solid var(--lp-line-2);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--lp-line-2);
   color: var(--lp-ink-soft);
-  padding: 8px 12px;
-  border-radius: var(--r-sm);
+  padding: 4px 2px;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 12.5px;
 }
-.lp-filters input[type="number"] { width: 90px; }
-.lp-filters input[type="text"] { width: 130px; }
+.lp-filters select:focus,
+.lp-filters input:focus { outline: none; border-bottom-color: var(--lp-gold); }
+.lp-filters input[type="number"] { width: 78px; }
+.lp-filters input[type="text"] { width: 110px; }
 .lp-filters .spacer { flex: 1; }
 .lp-filter-count {
   font-family: var(--mono);
-  font-size: 12px;
-  color: var(--lp-ink-mute);
+  font-size: 11.5px;
+  color: var(--lp-ink-faint);
 }
 
-/* ───────── Match ledger (table) ───────── */
+/* ───────── Match records: editorial rows, not a spreadsheet table ───── */
 .lp-table-wrap {
-  overflow-x: auto;
-  background: var(--lp-paper);
-  border: 1px solid var(--lp-line-on-paper);
-  border-radius: var(--r);
-  box-shadow: 0 8px 20px rgba(10, 13, 18, 0.22);
+  overflow: visible;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
-.lp-table {
+.lp-records-heading {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 19px;
+  color: var(--lp-ink-soft);
+  margin: 0 0 6px -6px;
+}
+.lp-table { width: 100%; border-collapse: collapse; }
+.lp-record-row {
+  display: block;
   width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.lp-table th, .lp-table td {
   text-align: left;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--lp-line-on-paper);
-  white-space: nowrap;
+  text-decoration: none;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--lp-line);
+  padding: 22px 0 20px;
+  margin-right: 8%;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
-.lp-table th {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--lp-ink-on-paper-mute);
-  font-weight: 500;
+.lp-record-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lp-record-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; position: relative; top: -2px; flex-shrink: 0; }
+.lp-record-row.win .lp-record-dot { background: var(--lp-win); }
+.lp-record-row.loss .lp-record-dot { background: var(--lp-loss); }
+.lp-record-name {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--lp-ink);
+  transition: color 0.15s;
 }
-.lp-table td {
-  color: var(--lp-ink-on-paper-soft);
+.lp-record-row:hover .lp-record-name { color: #FFFFFF; }
+.lp-record-meta { font-family: var(--sans); font-size: 12.5px; color: var(--lp-ink-mute); }
+.lp-review-link {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--sans);
+  font-size: 12px;
+  color: var(--lp-ink-faint);
+  transition: color 0.15s;
+}
+.lp-record-row:hover .lp-review-link { color: var(--lp-gold); }
+.lp-record-data {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--lp-ink-mute);
+  margin-top: 9px;
   font-variant-numeric: tabular-nums;
 }
-.lp-table tbody tr:nth-child(even) { background: var(--lp-paper-soft); }
-.lp-table tr.win td:first-child { border-left: 3px solid var(--lp-win); }
-.lp-table tr.loss td:first-child { border-left: 3px solid var(--lp-loss); }
-.lp-table td.result-win { color: var(--lp-win); font-weight: 600; }
-.lp-table td.result-loss { color: var(--lp-loss); font-weight: 600; }
-.lp-table td.champ { color: var(--lp-ink-on-paper); font-weight: 600; }
-.lp-table tbody tr:hover { background: color-mix(in oklch, var(--lp-paper-soft) 70%, black); }
+.lp-record-data .sep { color: var(--lp-ink-faint); }
+.lp-record-data .win-num { color: var(--lp-win); }
+.lp-record-data .loss-num { color: var(--lp-loss); }
+.lp-record-data .champ { color: var(--lp-ink-on-paper); }
 
-/* Optional row modifiers Task 44/47 can add: a standout (gold) performance
-   or a visually neutral (teal) row, alongside the existing win/loss classes.
-   Purely additive - nothing applies these classes today. */
-.lp-table tr.standout td:first-child { border-left: 3px solid var(--lp-gold); }
-.lp-table tr.standout td.champ { color: var(--lp-gold); }
-.lp-table tr.neutral td:first-child { border-left: 3px solid var(--lp-teal); }
-
-.lp-load-more { display: block; width: 100%; margin-top: 16px; }
-
-.lp-empty {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--lp-ink-mute);
-  border: 1px dashed var(--lp-line-2);
-  border-radius: var(--r-lg);
-  margin-top: 16px;
+/* Additive, purely optional: a standout-game margin note, connected to its
+   row with a short drawn tick rather than floating in the gutter. Nothing
+   emits this markup today (there's no reliable "standout" signal from the
+   match data yet) - kept here the same way the old .lp-table tr.standout
+   rule used to sit unused, ready for when that signal exists. */
+.lp-record-with-note { display: flex; align-items: flex-start; margin-right: 8%; }
+.lp-record-with-note .lp-record-row { flex: 1; min-width: 0; margin-right: 0; border-bottom: 1px solid var(--lp-line); }
+.lp-record-note {
+  width: 128px;
+  flex-shrink: 0;
+  position: relative;
+  padding: 33px 0 0 22px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--lp-gold);
+  line-height: 1.4;
+}
+.lp-record-note::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 38px;
+  width: 14px;
+  height: 1px;
+  background: var(--lp-gold-line);
 }
 
-/* ───────── Saved profiles ───────── */
+.lp-load-more {
+  display: block;
+  width: auto;
+  margin-top: 22px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--lp-ink-mute);
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+}
+.lp-load-more:hover { color: var(--lp-ink); }
+
+.lp-empty {
+  padding: 40px 0;
+  text-align: left;
+  color: var(--lp-ink-mute);
+  border: none;
+  border-radius: 0;
+  margin-top: 16px;
+  font-family: var(--sans);
+}
+
+/* ───────── Saved profiles: a quiet inline strip, not a boxed panel ───── */
 .lp-saved-profiles {
-  margin: 24px 0;
-  padding: 16px 18px;
-  border: 1px solid var(--lp-line-2);
-  border-radius: var(--r);
-  background: var(--lp-bg-2);
+  margin: 28px 0 0;
+  padding: 0 0 20px;
+  border: none;
+  border-bottom: 1px solid var(--lp-line);
+  background: none;
 }
 .lp-saved-profiles h3 {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--lp-ink-mute);
-  margin: 0 0 12px;
+  color: var(--lp-ink-faint);
+  margin: 0 0 10px;
+  font-weight: 500;
 }
 .lp-saved-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .lp-saved-chip {
@@ -479,7 +627,7 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
   padding: 6px 8px 6px 12px;
   cursor: pointer;
 }
-.lp-saved-chip:hover { border-color: var(--lp-teal-line); }
+.lp-saved-chip:hover { border-color: var(--lp-gold-line); }
 .lp-saved-chip button {
   background: none;
   border: none;
@@ -495,7 +643,7 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 /* ───────── Plan badge + billing link (account bar) ───────── */
 .lp-plan-badge {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--lp-ink);
@@ -505,120 +653,118 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
   padding: 4px 10px;
 }
 .lp-billing-link {
-  font-family: var(--mono);
-  font-size: 12px;
+  font-family: var(--sans);
+  font-size: 12.5px;
   color: var(--lp-teal);
+  text-decoration: none;
 }
+.lp-billing-link:hover { color: var(--lp-ink); }
 
-/* ───────── Pricing page: membership levels ───────── */
+/* ───────── Pricing page: restrained, unequal columns, not three equal
+   cards. Only the layout/typography change here; plan names, prices,
+   allowances and which plan is "featured" all still come straight from
+   the Worker/Supabase-configured plan data in pricing.js, untouched. ── */
 .lp-pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px;
-  margin-top: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 56px;
+  flex-wrap: wrap;
+  margin-top: 30px;
 }
 .lp-plan-card {
-  padding: 24px 22px;
-  border: 1px solid var(--lp-line-on-paper);
-  border-radius: var(--r-lg);
-  background: var(--lp-paper);
-  box-shadow: 0 8px 20px rgba(10, 13, 18, 0.22);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
+  max-width: 230px;
 }
 .lp-plan-card.featured {
-  border-color: var(--lp-gold);
-  box-shadow: 0 10px 26px rgba(10, 13, 18, 0.3);
+  max-width: 270px;
+  padding-top: 2px;
 }
 .lp-plan-card h3 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 24px;
-  margin: 0;
-  color: var(--lp-ink-on-paper);
-}
-.lp-plan-price {
   font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  font-size: 20px;
-  color: var(--lp-ink-on-paper);
+  font-weight: 500;
+  font-size: 12.5px;
+  margin: 0;
+  color: var(--lp-ink-faint);
 }
+.lp-plan-card.featured h3 { color: var(--lp-gold); }
+.lp-plan-price {
+  font-family: var(--serif);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--lp-ink-soft);
+  margin: 2px 0 4px;
+}
+.lp-plan-card.featured .lp-plan-price { font-size: 30px; color: var(--lp-ink); }
 .lp-plan-features {
   list-style: none;
-  margin: 0;
+  margin: 0 0 8px;
   padding: 0;
   display: grid;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--lp-ink-on-paper-soft);
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--lp-ink-mute);
+  font-family: var(--sans);
 }
-.lp-plan-features li {
-  position: relative;
-  padding-left: 16px;
-}
-.lp-plan-features li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.5em;
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  background: var(--lp-gold);
-}
+.lp-plan-card.featured .lp-plan-features { font-size: 13.5px; color: var(--lp-ink-soft); }
+.lp-plan-features li { padding-left: 0; }
+.lp-plan-features li::before { content: none; }
 .lp-plan-current-note {
   font-family: var(--mono);
-  font-size: 12px;
-  color: var(--lp-ink-on-paper-mute);
+  font-size: 11.5px;
+  color: var(--lp-ink-faint);
 }
-/* Buttons read correctly against the paper card background too. */
-.lp-plan-card .btn-primary { background: var(--lp-teal); color: var(--lp-paper); border-color: var(--lp-teal); }
+.lp-plan-card .btn-primary,
 .lp-plan-card .btn-secondary {
-  background: transparent;
-  color: var(--lp-ink-on-paper);
-  border-color: var(--lp-line-on-paper-2);
+  align-self: flex-start;
+  margin-top: 6px;
 }
-.lp-plan-card .btn-secondary:hover { background: rgba(28, 38, 48, 0.06); }
 
-/* ───────── AI match review panel (report cover / match story) ───────── */
+/* ───────── AI match review (Analysis Bot): flowing report, quiet chat ─── */
 .lp-ai-review-panel {
   margin-top: 20px;
-  padding: 20px 22px;
-  border: 1px solid var(--lp-line-on-paper);
-  border-radius: var(--r-lg);
-  background: var(--lp-paper);
-  box-shadow: 0 8px 20px rgba(10, 13, 18, 0.22);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  max-width: 640px;
 }
 .lp-ai-review-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--lp-gold-line);
+  border-bottom: 1px solid var(--lp-line);
 }
 .lp-ai-review-header h3 {
   font-family: var(--serif);
-  font-weight: 400;
-  font-size: 20px;
+  font-weight: 500;
+  font-size: 19px;
   margin: 0;
-  color: var(--lp-ink-on-paper);
+  color: var(--lp-ink);
 }
 .lp-ai-review-close {
   background: transparent;
   border: none;
-  color: var(--lp-ink-on-paper-mute);
+  color: var(--lp-ink-mute);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
-.lp-ai-review-close:hover { color: var(--lp-ink-on-paper); }
+.lp-ai-review-close:hover { color: var(--lp-ink); }
 .lp-ai-review-body {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--lp-ink-on-paper-soft);
+  color: var(--lp-ink-soft);
   margin: 0 0 16px;
 }
 .lp-ai-followup-form {
@@ -628,19 +774,22 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 }
 .lp-ai-followup-form .input {
   flex: 1;
-  background: var(--lp-paper-soft);
-  border: 1px solid var(--lp-line-on-paper-2);
-  color: var(--lp-ink-on-paper);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--lp-line-2);
+  border-radius: 0;
+  color: var(--lp-ink);
 }
-.lp-ai-followup-form .input:focus { border-color: var(--lp-teal); background: var(--lp-paper); }
+.lp-ai-followup-form .input:focus { border-bottom-color: var(--lp-gold); background: none; }
 .lp-ai-followup-answer {
-  font-size: 13px;
-  color: var(--lp-ink-on-paper-soft);
-  line-height: 1.5;
+  font-size: 14px;
+  color: var(--lp-ink-soft);
+  line-height: 1.6;
+  font-family: var(--serif);
 }
 .lp-ai-review-error {
   font-size: 13px;
-  color: var(--lp-ink-on-paper-soft);
+  color: var(--lp-ink-mute);
 }
 .lp-ai-review-error a { color: var(--lp-teal); }
 
@@ -648,7 +797,7 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 .lp-result.lp-insights-open {
   display: grid;
   grid-template-columns: minmax(260px, 340px) 1fr;
-  gap: 28px;
+  gap: 40px;
   align-items: start;
 }
 .lp-result.lp-insights-open #identity,
@@ -667,6 +816,7 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
   position: sticky;
   top: 20px;
   max-height: 88vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -674,150 +824,179 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 .lp-insights-chat {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   overflow-y: auto;
   padding-right: 4px;
   margin-bottom: 14px;
 }
-/* Chat reads like typed notes on the report: paper-toned message cards
-   rather than dark messaging bubbles. */
+/* Chat reads like flowing typed notes, not dark messaging bubbles or
+   boxed chips. */
 .lp-insights-msg {
-  font-size: 14px;
-  line-height: 1.6;
-  padding: 12px 14px;
-  border-radius: var(--r);
-  max-width: 92%;
+  font-size: 14.5px;
+  line-height: 1.65;
+  padding: 0;
+  border-radius: 0;
+  max-width: 96%;
+  font-family: var(--serif);
 }
 .lp-insights-msg.assistant {
-  background: var(--lp-paper-soft);
-  border: 1px solid var(--lp-line-on-paper);
-  color: var(--lp-ink-on-paper);
+  background: none;
+  border: none;
+  color: var(--lp-ink-soft);
 }
 .lp-insights-msg.user {
-  background: var(--lp-teal-soft);
-  color: var(--lp-ink-on-paper);
+  background: none;
+  color: var(--lp-teal);
   align-self: flex-end;
-  border: 1px solid var(--lp-teal-line);
+  border: none;
+  font-style: italic;
 }
-.lp-insights-msg.loading { color: var(--lp-ink-on-paper-mute); font-style: italic; }
+.lp-insights-msg.loading { color: var(--lp-ink-faint); font-style: italic; }
 .lp-insights-choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 18px;
   margin-top: 4px;
 }
 .lp-insights-choices button {
   font-size: 13px;
+  font-family: var(--sans);
   background: transparent;
-  color: var(--lp-ink-on-paper);
-  border-color: var(--lp-line-on-paper-2);
+  color: var(--lp-teal);
+  border: none;
+  padding: 2px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--lp-teal-line);
 }
-.lp-insights-choices button:hover { background: rgba(28, 38, 48, 0.06); }
+.lp-insights-choices button:hover { color: var(--lp-ink); }
 .lp-insights-freeform {
   display: flex;
   gap: 8px;
   margin-top: 4px;
 }
-.lp-insights-freeform .input { flex: 1; }
+.lp-insights-freeform .input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--lp-line-2);
+  border-radius: 0;
+}
+.lp-insights-freeform .input:focus { border-bottom-color: var(--lp-gold); }
+.lp-insights-ask-btn {
+  font-size: 13px;
+  font-family: var(--sans);
+  background: transparent;
+  color: var(--lp-teal);
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--lp-teal-line);
+}
+.lp-insights-ask-btn:hover { color: var(--lp-ink); }
+
+/* Match snapshot: a compact meta line, not a boxed stat grid. */
+.lp-report-cover {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--lp-ink);
+  box-shadow: none;
+  margin-bottom: 18px;
+}
+.lp-report-cover .eyebrow { color: var(--lp-teal); }
+.lp-report-cover h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 21px;
+  margin: 6px 0 0;
+  color: var(--lp-ink);
+}
+.lp-glance-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--lp-ink-mute);
+}
+.lp-glance-item {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.lp-glance-item .label { color: var(--lp-ink-faint); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; }
+.lp-glance-item .value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--lp-ink-soft);
+  margin-top: 0;
+}
+.lp-glance-item.win .value { color: var(--lp-win); }
+.lp-glance-item.loss .value { color: var(--lp-loss); }
+.lp-glance-item.standout .value { color: var(--lp-gold); }
 
 /* ───────── Disclaimers ───────── */
-.lp-notices .notice { margin-top: 10px; }
-.lp-notices .notice span { color: var(--lp-ink-mute); font-size: 13px; }
+.lp-notices .notice { margin-top: 8px; }
+.lp-notices .notice span { color: var(--lp-ink-faint); font-size: 12.5px; font-style: italic; font-family: var(--serif); }
 
-/* ───────── Responsive: match ledger becomes stacked cards ─────────
-   Below 720px the table header hides and each row lays out as a small
-   card; the label in front of each value comes from a data-label
-   attribute on the <td> (Task 44 adds these to index.html - e.g.
-   <td data-label="Result">...). Until that markup lands this simply
-   behaves as a slightly denser table on narrow screens; nothing above
-   breaks either way. */
+/* ───────── Standalone footer (replaces the shared .site-footer) ──────── */
+.lp-footer {
+  max-width: var(--max);
+  margin: 96px auto 0;
+  padding: 26px var(--gutter) 12px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px solid var(--lp-line);
+}
+.lp-footer-word { font-family: var(--serif); font-size: 13px; color: var(--lp-ink-mute); }
+.lp-footer-links { display: flex; gap: 22px; font-family: var(--sans); font-size: 12.5px; color: var(--lp-ink-mute); flex-wrap: wrap; }
+.lp-footer-links a { color: inherit; text-decoration: none; }
+.lp-footer-links a:hover { color: var(--lp-ink); }
+.lp-footer-studio { font-family: var(--mono); font-size: 9.5px; color: var(--lp-ink-faint); }
+.lp-footer-disclaimer {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter) 40px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--lp-ink-faint);
+  position: relative;
+  z-index: 2;
+}
+
+/* ───────── Responsive ───────── */
 @media (max-width: 720px) {
-  .lp-table thead { display: none; }
-  .lp-table, .lp-table tbody, .lp-table tr, .lp-table td { display: block; width: 100%; }
-  .lp-table tr {
-    padding: 10px 12px 6px;
-    border-bottom: 1px solid var(--lp-line-on-paper);
-  }
-  .lp-table tr.win { border-left: 3px solid var(--lp-win); }
-  .lp-table tr.loss { border-left: 3px solid var(--lp-loss); }
-  .lp-table tr.win td:first-child,
-  .lp-table tr.loss td:first-child { border-left: 0; }
-  .lp-table td {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 4px 0;
-    border-bottom: 0;
-    white-space: normal;
-  }
-  .lp-table td[data-label]::before {
-    content: attr(data-label);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--lp-ink-on-paper-mute);
-  }
-  .lp-result.lp-insights-open {
-    grid-template-columns: 1fr;
-  }
+  .lp-header { padding: 14px var(--gutter); }
+  .lp-header-nav { order: 3; width: 100%; gap: 22px; }
+  .lp-search-form { align-items: stretch; }
+  .lp-record-row, .lp-record-with-note { margin-right: 0; }
+  .lp-record-with-note { flex-direction: column; }
+  .lp-record-note { width: auto; padding: 8px 0 0; }
+  .lp-record-note::before { display: none; }
+  .lp-result.lp-insights-open { grid-template-columns: 1fr; }
   .lp-result.lp-insights-open #aiReviewPanel {
     grid-column: 1;
     grid-row: auto;
     position: static;
     max-height: none;
-    margin-top: 20px;
+    margin-top: 24px;
   }
   .lp-result.lp-insights-open #tableWrap { max-height: none; overflow: visible; }
 }
-
-/* ───────── Extensions for upcoming report-cover / dossier markup ─────────
-   Purely additive classes for Task 44-46's new markup; nothing on the page
-   uses these yet, so adding this block changes nothing visually today. */
-.lp-report-cover {
-  padding: 18px 22px;
-  border: 1px solid var(--lp-gold-line);
-  border-radius: var(--r-lg);
-  background: var(--lp-paper);
-  color: var(--lp-ink-on-paper);
-  box-shadow: 0 8px 20px rgba(10, 13, 18, 0.22);
-  margin-bottom: 16px;
-}
-.lp-report-cover .eyebrow { color: var(--lp-teal); }
-.lp-report-cover h3 {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 22px;
-  margin: 6px 0 0;
-  color: var(--lp-ink-on-paper);
-}
-.lp-glance-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
-  margin-top: 14px;
-}
-.lp-glance-item {
-  padding: 10px 12px;
-  border: 1px solid var(--lp-line-on-paper);
-  border-radius: var(--r-sm);
-  background: var(--lp-paper-soft);
-}
-.lp-glance-item .label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--lp-ink-on-paper-mute);
-}
-.lp-glance-item .value {
-  font-family: var(--sans);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--lp-ink-on-paper);
-  margin-top: 4px;
-}
-.lp-glance-item.win .value { color: var(--lp-win); }
-.lp-glance-item.loss .value { color: var(--lp-loss); }
-.lp-glance-item.standout .value { color: var(--lp-gold); }
