@@ -49,13 +49,11 @@ function renderAccountBar() {
     return;
   }
 
-  el.innerHTML = `
-    <div class="lp-account">
-      <button id="acctSignInBtn" class="btn btn-ghost btn-sm" type="button">Sign In</button>
-      <button id="acctSignUpBtn" class="btn btn-secondary btn-sm" type="button">Sign Up</button>
-    </div>`;
-  document.getElementById("acctSignInBtn").addEventListener("click", () => openAccountModal("signin"));
-  document.getElementById("acctSignUpBtn").addEventListener("click", () => openAccountModal("signup"));
+  // Signed out: render nothing here. The shared .zin-header already shows
+  // its own site-wide Sign In / Sign Up affordance, so this bar would only
+  // duplicate it. openAccountModal/injectAccountModal stay wired up below,
+  // since pricing.js calls openAccountModal("signin") directly.
+  el.innerHTML = "";
 }
 
 function openAccountModal(mode) {
@@ -138,7 +136,7 @@ function injectAccountModal() {
 }
 
 // ---------------------------------------------------------------------
-// Plan badge + billing link — reads GET /billing/status (see
+// Plan badge + billing link: reads GET /billing/status (see
 // billing-shared.js / workers/zindigon-league-api/src/index.js). Fails
 // quietly (blank badge) rather than blocking the account bar if billing
 // isn't reachable/configured yet, or if billing-shared.js isn't loaded
