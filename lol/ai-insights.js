@@ -35,32 +35,31 @@ const AiInsights = (() => {
         <button type="button" class="lp-ai-review-close" aria-label="Close">&times;</button>
       </div>
       <div class="lp-report-cover">
-        <span class="eyebrow"><span class="dot"></span>Match Snapshot</span>
         <h3>${esc(champion || "This match")}</h3>
         <div class="lp-glance-grid">
           <div class="lp-glance-item ${esc(resultClass || "")}">
-            <div class="label">Result</div>
-            <div class="value">${esc(resultText || "-")}</div>
+            <span class="label">Result</span>
+            <span class="value">${esc(resultText || "-")}</span>
           </div>
           <div class="lp-glance-item">
-            <div class="label">Role</div>
-            <div class="value">${esc(role || "-")}</div>
+            <span class="label">Role</span>
+            <span class="value">${esc(role || "-")}</span>
           </div>
           <div class="lp-glance-item">
-            <div class="label">KDA</div>
-            <div class="value">${esc(kda || "-")}</div>
+            <span class="label">KDA</span>
+            <span class="value">${esc(kda || "-")}</span>
           </div>
           <div class="lp-glance-item">
-            <div class="label">CS/min</div>
-            <div class="value">${esc(csPerMin || "-")}</div>
+            <span class="label">CS/min</span>
+            <span class="value">${esc(csPerMin || "-")}</span>
           </div>
           <div class="lp-glance-item">
-            <div class="label">Queue</div>
-            <div class="value">${esc(queueLabel || "-")}</div>
+            <span class="label">Queue</span>
+            <span class="value">${esc(queueLabel || "-")}</span>
           </div>
           <div class="lp-glance-item">
-            <div class="label">Length</div>
-            <div class="value">${esc(durationLabel || "-")}</div>
+            <span class="label">Length</span>
+            <span class="value">${esc(durationLabel || "-")}</span>
           </div>
         </div>
       </div>
@@ -99,7 +98,6 @@ const AiInsights = (() => {
     choices.forEach((choice) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "btn btn-secondary btn-sm";
       btn.textContent = choice.label;
       btn.addEventListener("click", () => {
         setControls("");
@@ -114,7 +112,7 @@ const AiInsights = (() => {
     setControls(`
       <form class="lp-insights-freeform">
         <input type="text" class="input" placeholder="${esc(placeholder)}" required />
-        <button type="submit" class="btn btn-secondary btn-sm">Ask</button>
+        <button type="submit" class="lp-insights-ask-btn">Ask</button>
       </form>`);
     const form = controlsEl().querySelector("form");
     form.addEventListener("submit", (evt) => {
@@ -191,7 +189,7 @@ const AiInsights = (() => {
     } catch (err) {
       loading.remove();
       addMessage("assistant", errorHtml(err));
-      setControls(`<button type="button" class="btn btn-secondary btn-sm" id="insightsRetry">Start over</button>`);
+      setControls(`<button type="button" class="lp-insights-ask-btn" id="insightsRetry">Start over</button>`);
       document.getElementById("insightsRetry")?.addEventListener("click", askWho);
     }
   }
@@ -200,7 +198,7 @@ const AiInsights = (() => {
     setControls(`
       <form class="lp-insights-freeform">
         <input type="text" class="input" placeholder="Ask a follow-up question..." required />
-        <button type="submit" class="btn btn-secondary btn-sm">Ask</button>
+        <button type="submit" class="lp-insights-ask-btn">Ask</button>
       </form>`);
     const form = controlsEl().querySelector("form");
     form.addEventListener("submit", async (evt) => {
