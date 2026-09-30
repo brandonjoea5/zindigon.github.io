@@ -7,9 +7,7 @@
 <meta name="description" content="A community-documented DC Universe Online build: loadout, artifacts, requirements, and write-up." />
 <meta name="robots" content="index, follow" />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="https://zindigon.com/assets/nav.css" />
-<script src="https://zindigon.com/assets/nav.js" defer></script>
-<link rel="stylesheet" href="public.css?v=3" />
+<link rel="stylesheet" href="public.css?v=4" />
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-1PJ7GDPE20"></script>
 <script>
@@ -19,21 +17,49 @@
   gtag('config', 'G-1PJ7GDPE20');
 </script>
 </head>
-<body class="builds-public bg-nebula">
+<body class="dc-archive builds-page builds-public">
 
-<div class="td-subnav" style="max-width:var(--max); margin:0 auto; padding:14px var(--gutter) 0; display:flex; gap:18px; flex-wrap:wrap; font-size:13px;">
-  <a href="https://zindigon.com/toondata/" style="color:var(--fg-soft);">ToonData</a>
-  <a href="index.html" style="color:var(--fg-soft);">Builds</a>
-</div>
+<header class="dc-header">
+  <a href="index.html" class="dc-header-brand">
+    <svg class="dc-header-mark" width="16" height="16" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <rect x="4" y="4" width="14" height="14" stroke="#4A79B4" stroke-width="1"/>
+      <circle cx="11" cy="11" r="2" fill="#4A79B4"/>
+    </svg>
+    <span class="dc-header-word">DCUO <em>Archive</em></span>
+  </a>
+
+  <nav class="dc-header-nav" aria-label="DCUO Archive">
+    <a href="https://zindigon.com/toondata/">Character Archive</a>
+    <a href="index.html">Loadout Library</a>
+  </nav>
+
+  <div class="dc-header-side">
+    <a href="https://zindigon.com/" class="dc-header-studio-link">Zindigon Studio</a>
+  </div>
+</header>
 
 <main>
-    <section class="hero" style="padding-top:24px;">
+  <section class="hero" style="padding-top:24px;">
     <div id="accountBar" class="bp-account-bar"></div>
     <div id="buildDetail">
       <div class="bp-loading">Loading build…</div>
     </div>
   </section>
 </main>
+
+<footer class="dc-footer">
+  <span class="dc-footer-word">DCUO <em style="color:var(--dc-cobalt); font-style:italic;">Archive</em></span>
+  <div class="dc-footer-links">
+    <a href="index.html">Browse</a>
+    <a href="submit.html">Submit a Build</a>
+    <a href="https://zindigon.com/toondata/">ToonData</a>
+    <a href="mailto:contact@zindigon.com">Contact</a>
+  </div>
+  <span class="dc-footer-studio">A Zindigon Studio project</span>
+</footer>
+<p class="dc-footer-disclaimer">
+  Zindigon Builds is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners. Builds are submitted by players and reviewed before publishing, but Zindigon cannot guarantee a build's accuracy, balance, or continued effectiveness after game updates.
+</p>
 
 <script src="https://zindigon.com/assets/site.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
