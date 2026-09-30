@@ -947,8 +947,16 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
 .lp-glance-item.loss .value { color: var(--lp-loss); }
 .lp-glance-item.standout .value { color: var(--lp-gold); }
 
-/* ───────── Disclaimers ───────── */
-.lp-notices .notice { margin-top: 8px; }
+/* ───────── Disclaimers ─────────
+   site.css's own .notice ships with the shared theme's green --accent for
+   its background tint, border and arrow glyph; overridden here at higher
+   specificity so it reads gold/ink like everything else on this page. */
+.lp-notices .notice {
+  margin-top: 8px;
+  background: color-mix(in oklch, var(--lp-gold) 6%, var(--lp-bg-2));
+  border: 1px solid var(--lp-gold-line);
+}
+.lp-notices .notice::before { color: var(--lp-gold); }
 .lp-notices .notice span { color: var(--lp-ink-faint); font-size: 12.5px; font-style: italic; font-family: var(--serif); }
 
 /* ───────── Standalone footer (replaces the shared .site-footer) ──────── */
