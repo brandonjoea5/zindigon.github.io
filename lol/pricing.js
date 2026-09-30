@@ -1,6 +1,6 @@
 // Zindigon League | pricing page.
 // Renders Free/Plus/Premier from GET /billing/plans (see
-// workers/zindigon-league-api/src/index.js) — nothing about prices or
+// workers/zindigon-league-api/src/index.js): nothing about prices or
 // allowances is hard-coded here, so an admin can change them in Supabase
 // without touching this file. Depends on auth-shared.js (esc, LeagueAuth,
 // openAccountModal) and billing-shared.js (fetchBillingPlans, startCheckout)
@@ -28,7 +28,7 @@ async function loadPlans() {
     setPricingStatus("");
   } catch (err) {
     if (err.code === "billing_not_configured") {
-      setPricingStatus("Plans aren't set up yet — check back soon.", "warn");
+      setPricingStatus("Plans aren't set up yet, check back soon.", "warn");
     } else {
       setPricingStatus(err.message || "Could not load plans right now.", "error");
     }
