@@ -1,7 +1,7 @@
 // Zindigon League | shared Supabase client + auth + saved-profile helpers.
 // Same Supabase project every other Zindigon tool uses (Builds, Elemental
 // Rift), so a session started anywhere on zindigon.com is recognized here
-// too — one account, no separate League login. See builds/builds-shared.js
+// too, one account, no separate League login. See builds/builds-shared.js
 // for the original version of this pattern.
 
 const SUPABASE_URL = "https://kryfuceztfzccsidkzog.supabase.co";
@@ -17,7 +17,7 @@ function esc(str) {
 }
 
 // ---------------------------------------------------------------------
-// Auth state — identical contract to BuildsAuth (builds/builds-shared.js):
+// Auth state: identical contract to BuildsAuth (builds/builds-shared.js):
 // same `players` row, same session. Kept as its own object (rather than
 // importing that file) so /lol/ has no hard dependency on /builds/.
 // ---------------------------------------------------------------------
@@ -91,11 +91,11 @@ const LeagueAuth = {
 };
 
 // ---------------------------------------------------------------------
-// Saved Riot profiles — public.saved_riot_profiles (see
+// Saved Riot profiles: public.saved_riot_profiles (see
 // workers/zindigon-league-api/migrations/0001_saved_riot_profiles.sql).
 // Free/Plus/Premier limits (3/10/25) are enforced here in application
 // code against a plan value on `players`, once that column exists
-// (Phase 3) — until then everyone is treated as Free (limit 3) so the
+// (Phase 3); until then everyone is treated as Free (limit 3) so the
 // UI never promises more than Phase 1 can actually honor.
 // ---------------------------------------------------------------------
 const SAVED_PROFILE_LIMIT_DEFAULT = 3;
