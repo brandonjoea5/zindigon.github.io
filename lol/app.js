@@ -1,6 +1,6 @@
 // Zindigon League | search + match-history UI
 // Talks to the zindigon-league-api Cloudflare Worker (public, unauthenticated
-// endpoints — see workers/zindigon-league-api/src/index.js for the routes
+// endpoints: see workers/zindigon-league-api/src/index.js for the routes
 // and response shapes this file assumes).
 const WORKER_BASE = "https://zindigon-league-api.brandonjoea3.workers.dev";
 const PAGE_SIZE = 20;
@@ -61,7 +61,7 @@ const tableBodyEl = document.getElementById("tableBody");
 const loadMoreBtn = document.getElementById("loadMoreBtn");
 const savedProfilesSection = document.getElementById("savedProfilesSection");
 const savedListEl = document.getElementById("savedList");
-// Not a real element in index.html — this is just a plain object used as a
+// Not a real element in index.html; this is just a plain object used as a
 // mutable ref-holder for the "+ Save Profile" button that renderIdentity()
 // creates fresh on every search (see .el below). It was previously read via
 // document.getElementById("saveProfileBtn"), which always returned null
@@ -70,7 +70,7 @@ const savedListEl = document.getElementById("savedList");
 // results table ever rendered.
 const saveProfileBtn = {};
 
-// Current search context — what's on screen right now, so filters/sort/
+// Current search context: what's on screen right now, so filters/sort/
 // pagination can re-query without re-resolving the account each time.
 let current = null; // { platform, region, puuid, gameName, tagLine }
 let nextStart = 0;
@@ -89,13 +89,13 @@ function showResult(show) {
 }
 
 function fmtDate(ms) {
-  if (!ms) return "—";
+  if (!ms) return "-";
   const d = new Date(ms);
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
     d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 function fmtDuration(sec) {
-  if (!sec && sec !== 0) return "—";
+  if (!sec && sec !== 0) return "-";
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
@@ -252,22 +252,22 @@ function renderMatchRows(items, reset) {
     const resultText = m.win ? "Win" : "Loss";
     const resultCellClass = m.win ? "result-win" : "result-loss";
     const queueLabel = QUEUE_NAMES[m.queue_id] || `Queue ${m.queue_id}`;
-    const roleLabel = ROLE_LABELS[m.role] || m.role || "—";
+    const roleLabel = ROLE_LABELS[m.role] || m.role || "-";
     return `
       <tr class="${resultClass}">
-        <td class="${resultCellClass}">${resultText}</td>
-        <td>${fmtDate(m.game_start_ms)}</td>
-        <td>${esc(queueLabel)}</td>
-        <td class="champ">${esc(m.champion)}</td>
-        <td>${esc(roleLabel)}</td>
-        <td>${m.kills} / ${m.deaths} / ${m.assists}</td>
-        <td>${esc(m.kda)}</td>
-        <td>${esc(m.cs)} (${esc(m.cs_per_min ?? "—")}/m)</td>
-        <td>${esc(m.damage_to_champs)}</td>
-        <td>${esc(m.gold)}</td>
-        <td>${esc(m.vision_score)}</td>
-        <td>${fmtDuration(m.duration_sec)}</td>
-        <td><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">Analysis Bot</button></td>
+        <td class="${resultCellClass}" data-label="Result">${resultText}</td>
+        <td data-label="Date">${fmtDate(m.game_start_ms)}</td>
+        <td data-label="Queue">${esc(queueLabel)}</td>
+        <td class="champ" data-label="Champion">${esc(m.champion)}</td>
+        <td data-label="Role">${esc(roleLabel)}</td>
+        <td data-label="K/D/A">${m.kills} / ${m.deaths} / ${m.assists}</td>
+        <td data-label="KDA">${esc(m.kda)}</td>
+        <td data-label="CS">${esc(m.cs)} (${esc(m.cs_per_min ?? "-")}/m)</td>
+        <td data-label="Damage">${esc(m.damage_to_champs)}</td>
+        <td data-label="Gold">${esc(m.gold)}</td>
+        <td data-label="Vision">${esc(m.vision_score)}</td>
+        <td data-label="Length">${fmtDuration(m.duration_sec)}</td>
+        <td data-label="Review"><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">Analysis Bot</button></td>
       </tr>`;
   }).join("");
   if (reset) {
@@ -300,7 +300,7 @@ tableBodyEl.addEventListener("click", (e) => {
 
 // ---------------------------------------------------------------------
 // Checkout return handling (from Stripe, via pricing.html -> Checkout ->
-// back here). This NEVER grants access itself — the server-side webhook
+// back here). This NEVER grants access itself; the server-side webhook
 // (already verified by the time Stripe redirects back) is the only thing
 // that does that. This just shows feedback and re-reads the real status.
 // ---------------------------------------------------------------------
@@ -327,7 +327,7 @@ function handleCheckoutReturn() {
 }
 
 // ---------------------------------------------------------------------
-// Saved profiles (requires sign-in — see lol/auth-shared.js)
+// Saved profiles (requires sign-in; see lol/auth-shared.js)
 // ---------------------------------------------------------------------
 async function refreshSavedProfiles() {
   if (typeof LeagueAuth === "undefined" || !LeagueAuth.isSignedIn()) {
