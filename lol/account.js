@@ -49,11 +49,19 @@ function renderAccountBar() {
     return;
   }
 
-  // Signed out: render nothing here. The shared .zin-header already shows
-  // its own site-wide Sign In / Sign Up affordance, so this bar would only
-  // duplicate it. openAccountModal/injectAccountModal stay wired up below,
-  // since pricing.js calls openAccountModal("signin") directly.
-  el.innerHTML = "";
+  // Signed out: League is its own standalone product now, no shared
+  // Zindigon header to borrow a sign-in affordance from, so this renders
+  // its own quiet "Sign in" link plus an outlined "Create account" button,
+  // both living in the new bespoke header. openAccountModal/injectAccountModal
+  // stay wired up below, since pricing.js calls openAccountModal("signin")
+  // directly too.
+  el.innerHTML = `
+    <div class="lp-account">
+      <button id="acctSignInBtn" class="lp-signin-link" type="button">Sign in</button>
+      <button id="acctSignUpBtn" class="lp-create-account-btn" type="button">Create account</button>
+    </div>`;
+  document.getElementById("acctSignInBtn").addEventListener("click", () => openAccountModal("signin"));
+  document.getElementById("acctSignUpBtn").addEventListener("click", () => openAccountModal("signup"));
 }
 
 function openAccountModal(mode) {
