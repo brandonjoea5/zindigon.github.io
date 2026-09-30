@@ -3,78 +3,72 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Zindigon League | Plus and Premier Plans</title>
-<meta name="description" content="Zindigon League Plus and Premier plans: AI-powered match reviews and coaching on top of the always-free match history and rank lookup." />
+<title>Zindigon League | Coaching Desk Membership</title>
+<meta name="description" content="Zindigon League membership plans: AI-powered match reviews and coaching on top of the always-free match history and rank lookup." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="https://zindigon.com/assets/nav.css" />
-<script src="https://zindigon.com/assets/nav.js" defer></script>
-<link rel="stylesheet" href="style.css?v=2" />
+<link rel="stylesheet" href="style.css?v=3" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 <body class="lol-page">
 
-<div class="td-subnav" style="max-width:var(--max); margin:0 auto; padding:14px var(--gutter) 0; display:flex; gap:18px; flex-wrap:wrap; font-size:13px;">
-  <a href="index.html" style="color:var(--fg-soft);">League</a>
-  <a href="pricing.html" aria-current="page" style="color:var(--fg);">Plans</a>
-</div>
+<header class="lp-header">
+  <a href="index.html" class="lp-header-brand">
+    <svg class="lp-header-mark" width="16" height="16" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="7.5" stroke="#C6A25B" stroke-width="1"/>
+      <circle cx="11" cy="11" r="1.4" fill="#C6A25B"/>
+    </svg>
+    <span class="lp-header-word">Zindigon League</span>
+  </a>
+
+  <nav class="lp-header-nav" aria-label="League">
+    <a href="index.html">Match Lookup</a>
+    <a href="pricing.html" aria-current="page">Plans</a>
+  </nav>
+
+  <div class="lp-header-side">
+    <a href="https://zindigon.com/" class="lp-header-studio-link">Zindigon Studio</a>
+    <div id="accountBar" class="lp-account-bar"></div>
+  </div>
+</header>
 
 <main>
   <section class="hero" style="padding-top:24px;">
-    <div id="accountBar" class="lp-account-bar"></div>
-
-    <span class="eyebrow"><span class="dot"></span>League of Legends</span>
-    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Coaching Desk Membership</h1>
+    <span class="eyebrow"><span class="dot"></span>Public Riot ID Lookup</span>
+    <h1 class="display" style="font-size:clamp(34px,6vw,58px);">Coaching desk membership</h1>
     <p class="lede">Match lookup and history stay free, always. Membership adds AI-powered match reviews from the coaching desk.</p>
-    <p style="color:var(--lp-ink-mute); font-family:var(--sans); font-size:15px; line-height:1.5; max-width:56ch; margin-top:12px;">Every level keeps the same free lookup and match ledger. What changes is how much of Analysis Bot's review capacity is on the desk for you each month.</p>
+    <p style="color:var(--lp-ink-mute); font-family:var(--serif); font-style:italic; font-size:14.5px; line-height:1.6; max-width:56ch; margin-top:12px;">Every level keeps the same free lookup and match ledger. What changes is how much of Analysis Bot's review capacity is on the desk for you each month.</p>
 
     <div id="pricingStatus" class="status-line"></div>
 
-    <span class="eyebrow" style="margin:24px 0 10px;"><span class="dot"></span>Membership Levels</span>
     <div id="pricingGrid" class="lp-pricing-grid"></div>
 
     <div class="lp-notices">
-      <div class="notice" style="margin-top:16px;">
+      <div class="notice" style="margin-top:24px;">
         <span>Manage or cancel an existing subscription any time from the billing portal link next to your name once signed in.</span>
       </div>
     </div>
   </section>
 </main>
-<footer class="site-footer">
-  <div class="footer-inner">
-    <div class="footer-col">
-      <div class="brand" style="margin-bottom:14px;">
-        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
-        <span class="brand-name">Zindigon<em>studio</em></span>
-      </div>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
-        Zindigon League isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
-      </p>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
-        AI match reviews are generated from stats Zindigon League already computes from public Riot match data, never from your account credentials, which Zindigon League never asks for.
-      </p>
-    </div>
-    <div class="footer-col"><h4>League</h4><ul>
-      <li><a href="index.html">Match Lookup</a></li>
-      <li><a href="pricing.html">Plus &amp; Premier</a></li>
-    </ul></div>
-    <div class="footer-col"><h4>Legal</h4><ul>
-      <li><a href="https://zindigon.com/terms/">Terms of Use</a></li>
-      <li><a href="https://zindigon.com/privacy/">Privacy Policy</a></li>
-    </ul></div>
-    <div class="footer-col"><h4>Reach</h4><ul>
-      <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li>
-    </ul></div>
+
+<footer class="lp-footer">
+  <span class="lp-footer-word">Zindigon League</span>
+  <div class="lp-footer-links">
+    <a href="index.html">Match Lookup</a>
+    <a href="pricing.html">Plans</a>
+    <a href="https://zindigon.com/terms/">Terms</a>
+    <a href="https://zindigon.com/privacy/">Privacy</a>
+    <a href="mailto:contact@zindigon.com">Contact</a>
   </div>
-  <div class="footer-bottom">
-    <span>2026 Zindigon</span>
-    <span>Not affiliated with or endorsed by Riot Games, Inc.</span>
-  </div>
+  <span class="lp-footer-studio">A Zindigon Studio project</span>
 </footer>
+<p class="lp-footer-disclaimer">
+  Zindigon League isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. AI match reviews are generated from stats Zindigon League already computes from public Riot match data, never from your account credentials, which Zindigon League never asks for.
+</p>
 
 <script src="https://zindigon.com/assets/site.js" defer></script>
 <script src="auth-shared.js?v=1" defer></script>
 <script src="billing-shared.js?v=1" defer></script>
-<script src="account.js?v=1" defer></script>
-<script src="pricing.js?v=3" defer></script>
+<script src="account.js?v=2" defer></script>
+<script src="pricing.js?v=4" defer></script>
 </body>
 </html>
