@@ -43,7 +43,7 @@ function renderPlans(plans) {
 
   pricingGridEl.innerHTML = plans.map((p) => `
     <div class="lp-plan-card${p.slug === "plus" ? " featured" : ""}">
-      <h3>${esc(p.display_name)}</h3>
+      <h3>${esc(p.display_name)}${p.slug === "plus" ? ", most chosen" : ""}</h3>
       <div class="lp-plan-price">${fmtPlanPrice(p.price_cents)}</div>
       <ul class="lp-plan-features">
         <li>${p.monthly_review_allowance} AI match review${p.monthly_review_allowance === 1 ? "" : "s"}/mo</li>
@@ -51,7 +51,7 @@ function renderPlans(plans) {
         <li>${p.saved_profile_limit} saved profiles</li>
       </ul>
       ${p.price_cents > 0
-        ? `<button type="button" class="btn btn-primary" data-choose-plan="${esc(p.slug)}">Choose ${esc(p.display_name)}</button>`
+        ? `<button type="button" class="${p.slug === "plus" ? "btn btn-primary" : "btn btn-secondary"}" data-choose-plan="${esc(p.slug)}">Choose ${esc(p.display_name)}</button>`
         : `<span class="lp-plan-current-note">Always free</span>`}
     </div>`).join("");
 
