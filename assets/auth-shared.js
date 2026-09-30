@@ -1,7 +1,7 @@
 // Zindigon | shared Supabase client + core auth/session logic.
 // Same Supabase project as every Zindigon tool (League, Builds,
 // ToonData), so a session started anywhere on zindigon.com is
-// recognized everywhere else too — one account, no separate logins
+// recognized everywhere else too, one account, no separate logins
 // per area.
 //
 // This is the CORE auth contract only: session + player row + sign
@@ -15,7 +15,7 @@
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyeWZ1Y2V6dGZ6Y2NzaWRrem9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwODY1MjIsImV4cCI6MjA5MzY2MjUyMn0.c_pmdXWHLQYh1dwkCwhqpW7lpgIzK13UUq2ZW53XhAs";
 
   if (!global.supabase) {
-    console.error("ZindigonAuth: window.supabase is not loaded — include the Supabase JS CDN script before assets/auth-shared.js.");
+    console.error("ZindigonAuth: window.supabase is not loaded, include the Supabase JS CDN script before assets/auth-shared.js.");
     return;
   }
 
