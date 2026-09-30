@@ -74,6 +74,7 @@ const saveProfileBtn = {};
 // pagination can re-query without re-resolving the account each time.
 let current = null; // { platform, region, puuid, gameName, tagLine }
 let nextStart = 0;
+let matchesById = {}; // match_id -> the row's match object, for the Analysis Bot snapshot
 
 function setStatus(message, type) {
   if (!message) { clearStatus(); return; }
@@ -241,6 +242,7 @@ async function loadMatches(reset) {
 }
 
 function renderMatchRows(items, reset) {
+  if (reset) matchesById = {};
   if (reset && items.length === 0) {
     tableWrapEl.hidden = true;
     tableBodyEl.innerHTML = `<div class="lp-empty">No matches match the current filters.</div>`;
@@ -248,6 +250,7 @@ function renderMatchRows(items, reset) {
   }
   tableWrapEl.hidden = false;
   const rowsHtml = items.map((m) => {
+    matchesById[m.match_id] = m;
     const resultClass = m.win ? "win" : "loss";
     const resultText = m.win ? "Win" : "Loss";
     const resultCellClass = m.win ? "result-win" : "result-loss";
@@ -267,7 +270,7 @@ function renderMatchRows(items, reset) {
         <td data-label="Gold">${esc(m.gold)}</td>
         <td data-label="Vision">${esc(m.vision_score)}</td>
         <td data-label="Length">${fmtDuration(m.duration_sec)}</td>
-        <td data-label="Review"><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">Analysis Bot</button></td>
+        <td data-label="Review"><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">Review match</button></td>
       </tr>`;
   }).join("");
   if (reset) {
@@ -295,7 +298,18 @@ tableBodyEl.addEventListener("click", (e) => {
   }
 
   const matchId = btn.dataset.matchId;
-  AiInsights.open({ matchId, platform: current.platform, puuid: current.puuid });
+  const m = matchesById[matchId];
+  AiInsights.open({
+    matchId, platform: current.platform, puuid: current.puuid,
+    champion: m?.champion,
+    role: ROLE_LABELS[m?.role] || m?.role,
+    resultText: m ? (m.win ? "Win" : "Loss") : undefined,
+    resultClass: m ? (m.win ? "win" : "loss") : undefined,
+    queueLabel: m ? (QUEUE_NAMES[m.queue_id] || `Queue ${m.queue_id}`) : undefined,
+    kda: m?.kda,
+    csPerMin: m?.cs_per_min,
+    durationLabel: m ? fmtDuration(m.duration_sec) : undefined,
+  });
 });
 
 // ---------------------------------------------------------------------
