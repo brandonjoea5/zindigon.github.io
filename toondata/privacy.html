@@ -6,92 +6,86 @@
 <title>Privacy Policy | Zindigon ToonData</title>
 <meta name="description" content="Privacy Policy for Zindigon ToonData." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="https://zindigon.com/assets/nav.css" />
-<script src="https://zindigon.com/assets/nav.js" defer></script>
-<link rel="stylesheet" href="toondata.css?v=11" />
+<link rel="stylesheet" href="toondata.css?v=27" />
 </head>
-<body class="toondata">
+<body class="dc-archive toondata-page">
 
-<div class="td-subnav" style="max-width:var(--max); margin:0 auto; padding:14px var(--gutter) 0; display:flex; gap:18px; flex-wrap:wrap; font-size:13px;">
-  <a href="index.html" style="color:var(--fg-soft);">ToonData</a>
-  <a href="about.html" style="color:var(--fg-soft);">About</a>
-  <a href="terms.html" style="color:var(--fg-soft);">Terms</a>
-  <a href="privacy.html" aria-current="page" style="color:var(--fg);">Privacy</a>
-  <a href="https://zindigon.com/builds/" style="color:var(--fg-soft);">Builds</a>
-</div>
+<header class="dc-header">
+  <a href="index.html" class="dc-header-brand">
+    <svg class="dc-header-mark" width="16" height="16" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <rect x="4" y="4" width="14" height="14" stroke="#4A79B4" stroke-width="1"/>
+      <circle cx="11" cy="11" r="2" fill="#4A79B4"/>
+    </svg>
+    <span class="dc-header-word">DCUO <em>Archive</em></span>
+  </a>
+
+  <nav class="dc-header-nav" aria-label="DCUO Archive">
+    <a href="index.html">Character Archive</a>
+    <a href="https://zindigon.com/builds/">Loadout Library</a>
+    <a href="about.html">About</a>
+  </nav>
+
+  <div class="dc-header-side">
+    <a href="https://zindigon.com/" class="dc-header-studio-link">Zindigon Studio</a>
+  </div>
+</header>
 
 <main>
-  <section style="padding-top:24px; max-width:68ch;">
+  <section class="hero" style="padding-top:24px; max-width:68ch;">
     <span class="eyebrow"><span class="dot"></span>Legal</span>
-    <h1 class="display" style="font-size:clamp(32px,5vw,52px); max-width:18ch;">Privacy Policy</h1>
+    <h1 class="display" style="font-size:clamp(30px,5vw,44px); max-width:18ch;">Privacy Policy</h1>
     <p class="muted mono" style="margin-top:14px;">Last updated September 2026</p>
 
     <p class="lede" style="margin-top:24px; font-size:16px;">This policy explains what happens to your information when you use Zindigon ToonData. We've tried to write it in plain language rather than dense legal boilerplate.</p>
 
-    <h3 class="title" style="margin-top:36px; font-size:20px;">The short version</h3>
-    <p style="margin-top:10px; font-size:15px;">ToonData has no backend server and no account system. Character searches you type into the site go directly from your browser to Daybreak's Census API. ToonData does not see, log, or store your searches anywhere. As of this writing, ToonData does not use analytics or advertising. If that changes, this policy will be updated first, see "Future changes" below.</p>
+    <h3 class="title" style="margin-top:36px; font-size:19px;">The short version</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">ToonData has no backend server and no account system. Character searches you type into the site go directly from your browser to Daybreak's Census API. ToonData does not see, log, or store your searches anywhere. As of this writing, ToonData does not use analytics or advertising. If that changes, this policy will be updated first, see "Future changes" below.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Information we do not collect</h3>
-    <p style="margin-top:10px; font-size:15px;">ToonData does not ask for or store your name, email address, Daybreak account credentials, password, payment information, or any gaming-platform login. We have no way to access your Daybreak account, and we will never ask you to log in with it.</p>
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Character search data</h3>
-    <p style="margin-top:10px; font-size:15px;">When you search for a character, that request is sent directly from your browser to Daybreak's public Census API (census.daybreakgames.com). ToonData's own servers are not involved in that request and do not receive a copy of it. Daybreak's handling of that request is governed by Daybreak's own policies, not this one.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Information we do not collect</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">ToonData does not ask for or store your name, email address, Daybreak account credentials, password, payment information, or any gaming-platform login. We have no way to access your Daybreak account, and we will never ask you to log in with it.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Character search data</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">When you search for a character, that request is sent directly from your browser to Daybreak's public Census API (census.daybreakgames.com). ToonData's own servers are not involved in that request and do not receive a copy of it. Daybreak's handling of that request is governed by Daybreak's own policies, not this one.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Hosting and technical logs</h3>
-    <p style="margin-top:10px; font-size:15px;">ToonData is hosted as a static website. The hosting provider (currently GitHub Pages) may automatically collect standard technical information common to any web server, such as IP address, browser type, and request timestamps, as part of operating its infrastructure. ToonData does not control or have access to these logs beyond what the hosting provider makes available. See GitHub's own Privacy Statement for details on how they handle this data.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Hosting and technical logs</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">ToonData is hosted as a static website. The hosting provider (currently GitHub Pages) may automatically collect standard technical information common to any web server, such as IP address, browser type, and request timestamps, as part of operating its infrastructure. ToonData does not control or have access to these logs beyond what the hosting provider makes available. See GitHub's own Privacy Statement for details on how they handle this data.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Cookies and analytics</h3>
-    <p style="margin-top:10px; font-size:15px;">ToonData does not currently use cookies, analytics services such as Google Analytics, or any tool that tracks visitors across sessions. If analytics are added in the future, this section will be updated to name the specific service, what it collects, and how long that data is retained, before it goes live.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Cookies and analytics</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">ToonData does not currently use cookies, analytics services such as Google Analytics, or any tool that tracks visitors across sessions. If analytics are added in the future, this section will be updated to name the specific service, what it collects, and how long that data is retained, before it goes live.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Advertising</h3>
-    <p style="margin-top:10px; font-size:15px;">ToonData does not currently display advertising. If advertising such as Google AdSense is added in the future, it may use cookies or similar technologies to personalize ads and measure performance. Before any advertising is enabled, this policy will be updated to disclose the ad provider, the data involved, and any consent controls required for your location.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Advertising</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">ToonData does not currently display advertising. If advertising such as Google AdSense is added in the future, it may use cookies or similar technologies to personalize ads and measure performance. Before any advertising is enabled, this policy will be updated to disclose the ad provider, the data involved, and any consent controls required for your location.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Data retention</h3>
-    <p style="margin-top:10px; font-size:15px;">Because ToonData does not currently store character searches, account data, or analytics, there is no personal data of that kind being retained. Any technical logs generated by the hosting provider are retained according to that provider's own policies, not ours.</p>
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Children's privacy</h3>
-    <p style="margin-top:10px; font-size:15px;">ToonData is not directed at children and does not knowingly collect personal information from anyone. Because ToonData does not collect personal information as a general matter, this is largely academic. If you believe a child has provided personal information through this site, contact us and we'll address it.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Data retention</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">Because ToonData does not currently store character searches, account data, or analytics, there is no personal data of that kind being retained. Any technical logs generated by the hosting provider are retained according to that provider's own policies, not ours.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Children's privacy</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">ToonData is not directed at children and does not knowingly collect personal information from anyone. Because ToonData does not collect personal information as a general matter, this is largely academic. If you believe a child has provided personal information through this site, contact us and we'll address it.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Future changes</h3>
-    <p style="margin-top:10px; font-size:15px;">As ToonData adds features such as analytics, advertising, saved searches, or accounts, this policy will be updated to accurately describe what's collected, why, and how long it's kept, before those features go live. Material changes will be reflected in the "Last updated" date above.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Future changes</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">As ToonData adds features such as analytics, advertising, saved searches, or accounts, this policy will be updated to accurately describe what's collected, why, and how long it's kept, before those features go live. Material changes will be reflected in the "Last updated" date above.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Your options</h3>
-    <p style="margin-top:10px; font-size:15px;">Because ToonData doesn't currently store any personal data of its own, there's generally nothing to request deletion of. If that ever changes, this section will explain exactly how to request access to or deletion of information ToonData directly controls.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Your options</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">Because ToonData doesn't currently store any personal data of its own, there's generally nothing to request deletion of. If that ever changes, this section will explain exactly how to request access to or deletion of information ToonData directly controls.</p>
 
-    <h3 class="title" style="margin-top:32px; font-size:20px;">Contact</h3>
-    <p style="margin-top:10px; font-size:15px;">Questions about this policy can be sent to <a href="mailto:contact@zindigon.com">contact@zindigon.com</a>.</p>
+    <h3 class="title" style="margin-top:32px; font-size:19px;">Contact</h3>
+    <p style="margin-top:10px; font-size:15px; color:var(--dc-ink-soft);">Questions about this policy can be sent to <a href="mailto:contact@zindigon.com">contact@zindigon.com</a>.</p>
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="footer-inner">
-    <div class="footer-col">
-      <div class="brand" style="margin-bottom:14px;">
-        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
-        <span class="brand-name">Zindigon<em>studio</em></span>
-      </div>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
-        Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.
-      </p>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
-        Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
-      </p>
-    </div>
-    <div class="footer-col"><h4>ToonData</h4><ul>
-      <li><a href="index.html">Lookup</a></li>
-      <li><a href="about.html">About</a></li>
-    </ul></div>
-    <div class="footer-col"><h4>Legal</h4><ul>
-      <li><a href="terms.html">Terms of Use</a></li>
-      <li><a href="privacy.html">Privacy Policy</a></li>
-    </ul></div>
-    <div class="footer-col"><h4>Reach</h4><ul>
-      <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li>
-    </ul></div>
+<footer class="dc-footer">
+  <span class="dc-footer-word">DCUO <em style="color:var(--dc-cobalt); font-style:italic;">Archive</em></span>
+  <div class="dc-footer-links">
+    <a href="index.html">Lookup</a>
+    <a href="about.html">About</a>
+    <a href="https://paypal.me/Zindigon" target="_blank" rel="noopener noreferrer">Support ToonData</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html" aria-current="page">Privacy</a>
+    <a href="mailto:contact@zindigon.com">Contact</a>
   </div>
-  <div class="footer-bottom">
-    <span>2026 Zindigon</span>
-    <span>Not affiliated with Daybreak Game Company, DC Comics, or Warner Bros. Entertainment</span>
-  </div>
+  <span class="dc-footer-studio">A Zindigon Studio project</span>
 </footer>
+<p class="dc-footer-disclaimer">
+  Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners. Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
+</p>
 
 <script src="https://zindigon.com/assets/site.js"></script>
 </body>
