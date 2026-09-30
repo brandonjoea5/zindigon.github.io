@@ -159,31 +159,36 @@ function renderIdentity() {
   identityEl.innerHTML = `
     <h2 class="lp-name">${esc(current.gameName)} <span class="tag">#${esc(current.tagLine)}</span></h2>
     <div class="lp-identity-actions">
-      <button id="saveProfileBtnInner" class="btn btn-secondary btn-sm" type="button" hidden>+ Save Profile</button>
+      <button id="saveProfileBtnInner" class="lp-save-link" type="button" hidden>Save this profile</button>
     </div>`;
   const inner = document.getElementById("saveProfileBtnInner");
   inner.addEventListener("click", saveCurrentProfile);
   saveProfileBtn.el = inner;
 }
 
+// Scannable before the narrative: region, every ranked queue's tier, and a
+// combined win/loss record, all on one compact mono line ahead of anything
+// else in the result panel.
 function renderRank(entries) {
+  const regionLabel = (PLATFORMS.find(([value]) => value === current.platform) || [null, current.platform])[1];
   if (!entries.length) {
-    rankGridEl.innerHTML = `<div class="lp-rank-empty">No ranked stats yet for this Summoner in Solo/Duo or Flex.</div>`;
+    rankGridEl.innerHTML = `<span>${esc(regionLabel)}</span><span class="lp-rank-sep">/</span><div class="lp-rank-empty">No ranked stats yet for this Summoner in Solo/Duo or Flex.</div>`;
     return;
   }
-  rankGridEl.innerHTML = entries.map((e) => {
+  const totalWins = entries.reduce((sum, e) => sum + (e.wins || 0), 0);
+  const totalLosses = entries.reduce((sum, e) => sum + (e.losses || 0), 0);
+  const totalGames = totalWins + totalLosses;
+  const wr = totalGames ? Math.round((totalWins / totalGames) * 100) : 0;
+  const tiers = entries.map((e) => {
     const label = RANKED_QUEUE_NAMES[e.queueType] || e.queueType;
-    const wins = e.wins || 0, losses = e.losses || 0;
-    const total = wins + losses;
-    const wr = total ? Math.round((wins / total) * 100) : 0;
-    return `
-      <div class="lp-rank-card">
-        <div class="queue">${esc(label)}</div>
-        <div class="tier">${esc(e.tier)} ${esc(e.rank)}</div>
-        <div class="lp">${esc(e.leaguePoints)} LP</div>
-        <div class="wl">${wins}W ${losses}L &middot; ${wr}% win rate</div>
-      </div>`;
-  }).join("");
+    return `<span class="lp-rank-tier">${esc(label)}: ${esc(e.tier)} ${esc(e.rank)}, ${esc(e.leaguePoints)} LP</span>`;
+  }).join(`<span class="lp-rank-sep">/</span>`);
+  rankGridEl.innerHTML = `
+    <span>${esc(regionLabel)}</span>
+    <span class="lp-rank-sep">/</span>
+    ${tiers}
+    <span class="lp-rank-sep">/</span>
+    <span class="lp-rank-wl"><b>${totalWins}W</b> &middot; <b>${totalLosses}L</b> &middot; ${wr}% win rate</span>`;
 }
 
 // ---------------------------------------------------------------------
@@ -252,26 +257,18 @@ function renderMatchRows(items, reset) {
   const rowsHtml = items.map((m) => {
     matchesById[m.match_id] = m;
     const resultClass = m.win ? "win" : "loss";
-    const resultText = m.win ? "Win" : "Loss";
-    const resultCellClass = m.win ? "result-win" : "result-loss";
     const queueLabel = QUEUE_NAMES[m.queue_id] || `Queue ${m.queue_id}`;
     const roleLabel = ROLE_LABELS[m.role] || m.role || "-";
     return `
-      <tr class="${resultClass}">
-        <td class="${resultCellClass}" data-label="Result">${resultText}</td>
-        <td data-label="Date">${fmtDate(m.game_start_ms)}</td>
-        <td data-label="Queue">${esc(queueLabel)}</td>
-        <td class="champ" data-label="Champion">${esc(m.champion)}</td>
-        <td data-label="Role">${esc(roleLabel)}</td>
-        <td data-label="K/D/A">${m.kills} / ${m.deaths} / ${m.assists}</td>
-        <td data-label="KDA">${esc(m.kda)}</td>
-        <td data-label="CS">${esc(m.cs)} (${esc(m.cs_per_min ?? "-")}/m)</td>
-        <td data-label="Damage">${esc(m.damage_to_champs)}</td>
-        <td data-label="Gold">${esc(m.gold)}</td>
-        <td data-label="Vision">${esc(m.vision_score)}</td>
-        <td data-label="Length">${fmtDuration(m.duration_sec)}</td>
-        <td data-label="Review"><button type="button" class="btn btn-secondary btn-sm" data-ai-review-btn data-match-id="${esc(m.match_id)}">Review match</button></td>
-      </tr>`;
+      <button type="button" class="lp-record-row ${resultClass}" data-ai-review-btn data-match-id="${esc(m.match_id)}">
+        <div class="lp-record-top">
+          <span class="lp-record-dot"></span>
+          <span class="lp-record-name">${esc(m.champion)}</span>
+          <span class="lp-record-meta">${esc(roleLabel)}, ${esc(queueLabel)}</span>
+          <span class="lp-review-link">Read review<svg width="9" height="9" viewBox="0 0 9 9" fill="none" style="position:relative; top:0.5px;"><path d="M1 4.5H8M8 4.5L5 1.5M8 4.5L5 7.5" stroke="currentColor" stroke-width="1"/></svg></span>
+        </div>
+        <div class="lp-record-data">${m.kills} / <span class="loss-num">${m.deaths}</span> / ${m.assists} <span class="sep">&middot;</span> ${esc(m.cs)} CS (${esc(m.cs_per_min ?? "-")}/min) <span class="sep">&middot;</span> ${esc(m.damage_to_champs)} damage <span class="sep">&middot;</span> ${fmtDuration(m.duration_sec)} <span class="sep">&middot;</span> ${fmtDate(m.game_start_ms)}</div>
+      </button>`;
   }).join("");
   if (reset) {
     tableBodyEl.innerHTML = rowsHtml;
