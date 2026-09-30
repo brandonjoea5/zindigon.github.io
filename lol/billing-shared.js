@@ -1,6 +1,6 @@
 // Zindigon League | billing + AI review API helpers.
 // Talks to the same zindigon-league-api Worker as app.js, but the Phase 2
-// authenticated routes (see workers/zindigon-league-api/src/index.js) —
+// authenticated routes (see workers/zindigon-league-api/src/index.js):
 // every authed call here attaches the signed-in user's Supabase access
 // token as `Authorization: Bearer <token>`, verified Worker-side against
 // Supabase's own /auth/v1/user endpoint. Depends on auth-shared.js being
@@ -33,7 +33,7 @@ async function authedFetch(path, options = {}) {
   return body;
 }
 
-// Public — no sign-in required, mirrors the Worker's GET /billing/plans.
+// Public, no sign-in required, mirrors the Worker's GET /billing/plans.
 async function fetchBillingPlans() {
   const res = await fetch(`${BILLING_WORKER_BASE}/billing/plans`);
   let body;
@@ -53,7 +53,7 @@ async function fetchBillingStatus() {
 }
 
 // Redirects the browser to Stripe Checkout. The success/cancel return is
-// handled back on our own pages (app.js's handleCheckoutReturn) — the
+// handled back on our own pages (app.js's handleCheckoutReturn); the
 // redirect itself never grants access; only the server-side webhook does.
 async function startCheckout(planSlug) {
   const { url } = await authedFetch("/billing/checkout", {
