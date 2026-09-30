@@ -6,26 +6,36 @@
 <title>Zindigon ToonData | Free Character and League Lookup Tool</title>
 <meta name="description" content="Free lookup tool for DC Universe Online. Search any character or league for stats, gear, Combat Rating, and feats, plus a CR calculator and skill points leaderboard." />
 <link rel="stylesheet" href="https://zindigon.com/assets/site.css" />
-<link rel="stylesheet" href="https://zindigon.com/assets/nav.css" />
-<script src="https://zindigon.com/assets/nav.js" defer></script>
-<link rel="stylesheet" href="toondata.css?v=26" />
+<link rel="stylesheet" href="toondata.css?v=27" />
 </head>
-<body class="toondata">
+<body class="dc-archive toondata-page">
 
-<div class="td-subnav" style="max-width:var(--max); margin:0 auto; padding:14px var(--gutter) 0; display:flex; gap:18px; flex-wrap:wrap; font-size:13px;">
-  <a href="index.html" aria-current="page" style="color:var(--fg);">ToonData</a>
-  <a href="about.html" style="color:var(--fg-soft);">About</a>
-  <a href="terms.html" style="color:var(--fg-soft);">Terms</a>
-  <a href="privacy.html" style="color:var(--fg-soft);">Privacy</a>
-  <a href="https://zindigon.com/builds/" style="color:var(--fg-soft);">Builds</a>
-</div>
+<header class="dc-header">
+  <a href="index.html" class="dc-header-brand">
+    <svg class="dc-header-mark" width="16" height="16" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <rect x="4" y="4" width="14" height="14" stroke="#4A79B4" stroke-width="1"/>
+      <circle cx="11" cy="11" r="2" fill="#4A79B4"/>
+    </svg>
+    <span class="dc-header-word">DCUO <em>Archive</em></span>
+  </a>
+
+  <nav class="dc-header-nav" aria-label="DCUO Archive">
+    <a href="index.html" aria-current="page">Character Archive</a>
+    <a href="https://zindigon.com/builds/">Loadout Library</a>
+    <a href="about.html">About</a>
+  </nav>
+
+  <div class="dc-header-side">
+    <a href="https://zindigon.com/" class="dc-header-studio-link">Zindigon Studio</a>
+  </div>
+</header>
 
 <main>
   <section class="hero" style="padding-top:24px;">
     <span class="eyebrow"><span class="dot"></span>DC Universe Online</span>
-    <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Zindigon ToonData</h1>
-    <h2 class="title" id="pageTitle" style="font-size:22px; font-weight:400; margin-top:10px; color:var(--fg-soft);">Character Lookup</h2>
-    <p class="lede" id="pageLede">Look up your DC Universe Online character's stats, gear, and feats.</p>
+    <h1 class="display" style="font-size:clamp(30px,5vw,48px);">Character Archive</h1>
+    <h2 class="title" id="pageTitle" style="font-size:18px; font-weight:400; margin-top:10px; color:var(--dc-ink-soft);">Character Lookup</h2>
+    <p class="lede" id="pageLede">Search live character data, combat rating, skill points, equipment, and feat progress.</p>
 
     <div class="td-mode-tabs" role="tablist" aria-label="Lookup type">
       <button type="button" class="td-mode-tab active" id="modeCharBtn" role="tab" aria-selected="true">Character</button>
@@ -90,40 +100,23 @@
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="footer-inner">
-    <div class="footer-col">
-      <div class="brand" style="margin-bottom:14px;">
-        <span class="brand-mark"><svg viewBox="0 0 16 16"><path d="M2 3 L14 3 L2 13 L14 13"></path></svg></span>
-        <span class="brand-name">Zindigon<em>studio</em></span>
-      </div>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch;">
-        Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners.
-      </p>
-      <p style="font-size:13px; color:var(--fg-soft); line-height:1.6; max-width:44ch; margin-top:10px;">
-        Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
-      </p>
-    </div>
-    <div class="footer-col"><h4>ToonData</h4><ul>
-      <li><a href="index.html">Lookup</a></li>
-      <li><a href="about.html">About</a></li>
-      <li><a href="https://paypal.me/Zindigon" target="_blank" rel="noopener noreferrer">Support ToonData</a></li>
-    </ul></div>
-    <div class="footer-col"><h4>Legal</h4><ul>
-      <li><a href="terms.html">Terms of Use</a></li>
-      <li><a href="privacy.html">Privacy Policy</a></li>
-    </ul></div>
-    <div class="footer-col"><h4>Reach</h4><ul>
-      <li><a href="mailto:contact@zindigon.com">contact@zindigon.com</a></li>
-    </ul></div>
+<footer class="dc-footer">
+  <span class="dc-footer-word">DCUO <em style="color:var(--dc-cobalt); font-style:italic;">Archive</em></span>
+  <div class="dc-footer-links">
+    <a href="index.html">Lookup</a>
+    <a href="about.html">About</a>
+    <a href="https://paypal.me/Zindigon" target="_blank" rel="noopener noreferrer">Support ToonData</a>
+    <a href="terms.html">Terms</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="mailto:contact@zindigon.com">Contact</a>
   </div>
-  <div class="footer-bottom">
-    <span>2026 Zindigon</span>
-    <span>Not affiliated with Daybreak Game Company, DC Comics, or Warner Bros. Entertainment</span>
-  </div>
+  <span class="dc-footer-studio">A Zindigon Studio project</span>
 </footer>
+<p class="dc-footer-disclaimer">
+  Zindigon ToonData is an independent, fan-created service and is not affiliated with, endorsed by, or sponsored by Daybreak Game Company LLC, DC Comics, Warner Bros. Entertainment, or their affiliates. DC Universe Online and all related names, logos, characters, and trademarks are the property of their respective owners. Game data is provided through the Daybreak Game Company Census API. Daybreak does not guarantee the availability, accuracy, or continued operation of the API or its data.
+</p>
 
 <script src="https://zindigon.com/assets/site.js"></script>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=45"></script>
 </body>
 </html>
