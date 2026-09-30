@@ -24,7 +24,8 @@
 
     <span class="eyebrow"><span class="dot"></span>League of Legends</span>
     <h1 class="display" style="font-size:clamp(34px,6vw,60px);">Zindigon League</h1>
-    <p class="lede">Look up any Summoner's rank and match history, free, no sign-in required. Sign in to save profiles you check often.</p>
+    <p class="lede">Your matches tell a story. Find the moments that decided them.</p>
+    <p style="color:var(--lp-ink-mute); font-family:var(--sans); font-size:15px; line-height:1.5; max-width:56ch; margin-top:12px;">Look up any Summoner's rank and match history, free, no sign-in required. Sign in to save profiles you check often.</p>
 
     <form id="searchForm" class="lp-search-form">
       <select id="platformSelect" aria-label="Region">
@@ -66,6 +67,7 @@
     </div>
 
     <div id="result" class="lp-result">
+      <span class="eyebrow" style="margin-bottom:14px;"><span class="dot"></span>Summoner Dossier</span>
       <div id="identity" class="lp-identity"></div>
       <div id="rankGrid" class="lp-rank-grid"></div>
 
@@ -113,12 +115,13 @@
         <span id="matchCount" class="lp-filter-count"></span>
       </div>
 
+      <span class="eyebrow" style="margin:24px 0 10px;"><span class="dot"></span>Match Ledger</span>
       <div id="tableWrap" class="lp-table-wrap">
         <table class="lp-table">
           <thead>
             <tr>
               <th>Result</th><th>Date</th><th>Queue</th><th>Champion</th><th>Role</th>
-              <th>K/D/A</th><th>KDA</th><th>CS</th><th>Damage</th><th>Gold</th><th>Vision</th><th title="Length" aria-label="Length">⏱</th><th>Review</th>
+              <th>K/D/A</th><th>KDA</th><th>CS</th><th>Damage</th><th>Gold</th><th>Vision</th><th>Length</th><th>Review</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
