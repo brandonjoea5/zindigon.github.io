@@ -19,7 +19,7 @@
       return;
     }
     list.innerHTML = episodes.map((ep) => {
-      if (ep.number === 14) {
+      if (ep.number === 11) {
         return `
           <div class="bz-ep-row is-coming-soon">
             <div class="bz-ep-num">Episode ${String(ep.number).padStart(2, "0")}</div>
