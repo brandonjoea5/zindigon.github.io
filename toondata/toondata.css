@@ -118,6 +118,40 @@ body.dc-archive::after {
 }
 body.dc-archive > main { flex: 1 0 auto; min-width: 0; position: relative; z-index: 1; }
 
+/* Archive scan: a very occasional, very quiet system-check sweep, not a
+   sci-fi HUD. A soft wide band drifts top to bottom roughly once every
+   26s and is gone again almost immediately - most visitors only notice
+   it after they've been on the page a moment. Lives on main (which
+   already establishes its own stacking context via position:relative +
+   z-index:1 above), at z-index -1 within that context, so it paints
+   behind every real section but still above the photo/grid behind body.
+   Full-viewport height so the -120%/+120% travel always clears the
+   screen edges no matter the viewport size, same trick as the two
+   layers above. */
+body.dc-archive > main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(74, 121, 180, 0.9) 50%,
+    transparent 60%,
+    transparent 100%);
+  opacity: 0;
+  transform: translateY(-120%);
+  animation: archive-scan 26s ease-in-out infinite;
+}
+@keyframes archive-scan {
+  0%   { transform: translateY(-120%); opacity: 0; }
+  42%  { transform: translateY(-20%);  opacity: 0; }
+  50%  { transform: translateY(0%);    opacity: 0.045; }
+  58%  { transform: translateY(20%);   opacity: 0; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+
 /* ───────── Registration-mark corner brackets ─────────
    The shared "technical container" motif, used instead of rounded
    glowing panels: a flat surface, a hairline border, and a drawn
@@ -388,6 +422,52 @@ body.dc-archive > main { flex: 1 0 auto; min-width: 0; position: relative; z-ind
 
 .td-result { margin-top: 40px; display: none; }
 .td-result.show { display: block; }
+
+/* Dossier reveal: a case file opening, not a dashboard loading. Every
+   renderCharacter()/renderComparison() call rebuilds resultEl.innerHTML
+   from scratch, so these are always brand-new elements the moment this
+   selector can first match them - the animation plays once per
+   successful lookup and never replays just from scrolling past them. */
+@keyframes dc-dossier-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.td-result.show > .td-identity,
+.td-result.show > .td-columns > div,
+.td-result.show > .card,
+.td-result.show > .td-compare > * {
+  animation: dc-dossier-reveal 200ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+/* Character view: identity, then the gear column and the CR/SP + stats
+   column (the two .td-columns panes), then the Feats card and the About
+   This Data card. */
+.td-result.show > .td-identity { animation-delay: 0ms; }
+.td-result.show > .td-columns > div:nth-child(1) { animation-delay: 50ms; }
+.td-result.show > .td-columns > div:nth-child(2) { animation-delay: 100ms; }
+.td-result.show > .card:nth-child(3) { animation-delay: 150ms; }
+.td-result.show > .card:nth-child(4) { animation-delay: 200ms; }
+/* Comparison view: renderComparison wraps everything in one .td-compare
+   element, so the stagger walks its direct children instead - the
+   identity row, then Stats/Gear/Feats-diff. */
+.td-result.show > .td-compare > *:nth-child(1) { animation-delay: 0ms; }
+.td-result.show > .td-compare > *:nth-child(2) { animation-delay: 50ms; }
+.td-result.show > .td-compare > *:nth-child(3) { animation-delay: 100ms; }
+.td-result.show > .td-compare > *:nth-child(4) { animation-delay: 150ms; }
+
+/* CR calculator: buildCrCalcHtml() only ever runs once (initCrCalc() at
+   load), after which setMode() just toggles plain display:none on
+   #crCalcForm - exactly the "removed from the render tree, then
+   restored" transition that replays a CSS animation, so this reveals
+   the tool each time someone switches to that tab, never while they're
+   typing into it. */
+#crCalcForm > .td-cr-fillall,
+#crCalcForm > .td-cr-grid,
+#crCalcForm > .td-hero-stats {
+  animation: dc-dossier-reveal 200ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+#crCalcForm > .td-cr-fillall { animation-delay: 0ms; }
+#crCalcForm > .td-cr-grid { animation-delay: 50ms; }
+#crCalcForm > .td-hero-stats { animation-delay: 100ms; }
 
 .td-columns {
   display: grid;
@@ -1227,3 +1307,16 @@ body.dc-archive > main { flex: 1 0 auto; min-width: 0; position: relative; z-ind
 .td-lb-recent-item:hover, .td-lb-recent-item:focus-visible { color: var(--dc-ink-soft); outline: none; }
 .td-lb-recent-name { color: var(--dc-ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .td-lb-recent-sp { color: var(--dc-ink-faint); font-family: var(--dc-mono); white-space: nowrap; }
+
+/* ───────── Motion accessibility ─────────
+   Stops the archive scan outright and the dossier reveal's fade/slide
+   both collapse to effectively nothing for anyone who's asked their OS
+   for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
