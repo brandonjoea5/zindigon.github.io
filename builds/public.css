@@ -91,6 +91,38 @@ body.dc-archive::after {
 }
 body.dc-archive > main { flex: 1 0 auto; min-width: 0; position: relative; z-index: 1; }
 
+/* Archive scan: shared with ToonData's copy of this same rule (see that
+   file's comment for the full reasoning) - a very occasional, very quiet
+   system-check sweep, not a sci-fi HUD. Lives on main (already its own
+   stacking context via position:relative + z-index:1 above), at
+   z-index -1 within that context, so it paints behind every real
+   section but still above the photo/grid behind body. Full-viewport
+   height so the -120%/+120% travel always clears the screen edges no
+   matter the viewport size, same trick as the two layers above. */
+body.dc-archive > main::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(74, 121, 180, 0.9) 50%,
+    transparent 60%,
+    transparent 100%);
+  opacity: 0;
+  transform: translateY(-120%);
+  animation: archive-scan 26s ease-in-out infinite;
+}
+@keyframes archive-scan {
+  0%   { transform: translateY(-120%); opacity: 0; }
+  42%  { transform: translateY(-20%);  opacity: 0; }
+  50%  { transform: translateY(0%);    opacity: 0.045; }
+  58%  { transform: translateY(20%);   opacity: 0; }
+  100% { transform: translateY(120%); opacity: 0; }
+}
+
 /* ───────── Registration-mark corner brackets ───────── */
 .dc-archive .dc-frame {
   position: relative;
@@ -276,14 +308,33 @@ body.builds-public > main { flex: 1 0 auto; }
   gap: 11px;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 200ms ease-out, transform 200ms ease-out;
 }
-.bp-card::before { content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px; border-top: 1px solid var(--dc-line-2); border-left: 1px solid var(--dc-line-2); pointer-events: none; }
-.bp-card:hover { border-color: var(--dc-cobalt-line); transform: translateY(-2px); }
-.bp-card:hover::before { border-top-color: var(--dc-cobalt); border-left-color: var(--dc-cobalt); }
+.bp-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--dc-line-2);
+  border-left: 1px solid var(--dc-line-2);
+  pointer-events: none;
+  transition: border-color 200ms ease-out;
+}
+/* A field-guide record, not a SaaS tile: one card reacts at a time,
+   lifting 2px and brightening its own corner bracket and title - the
+   rest of the card (background, tags, author line) stays put. Focus
+   gets the same treatment as hover so keyboard users see it too. */
+.bp-card:hover,
+.bp-card:focus-visible { border-color: var(--dc-cobalt-line); transform: translateY(-2px); }
+.bp-card:hover::before,
+.bp-card:focus-visible::before { border-top-color: var(--dc-cobalt); border-left-color: var(--dc-cobalt); }
 .bp-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .bp-card-top .bp-name { flex: 1; }
-.bp-card .bp-name { font-family: var(--dc-serif); font-weight: 500; font-size: 20px; color: var(--dc-ink); margin: 0; }
+.bp-card .bp-name { font-family: var(--dc-serif); font-weight: 500; font-size: 20px; color: var(--dc-ink); margin: 0; transition: color 200ms ease-out; }
+.bp-card:hover .bp-name,
+.bp-card:focus-visible .bp-name { color: #FFFFFF; }
 .bp-score { font-family: var(--dc-mono); font-size: 12px; color: var(--dc-cobalt); white-space: nowrap; padding-top: 2px; }
 .bp-card .bp-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .bp-card .bp-tag {
@@ -565,4 +616,17 @@ body.builds-public > main { flex: 1 0 auto; }
   bottom: 0;
   padding: 16px 0;
   background: linear-gradient(180deg, transparent, var(--dc-bg) 30%);
+}
+
+/* ───────── Motion accessibility ─────────
+   Stops the archive scan outright and collapses every card-hover
+   transition to effectively nothing for anyone who's asked their OS
+   for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
