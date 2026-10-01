@@ -69,6 +69,11 @@
   --lp-line-on-paper: rgba(28, 38, 48, 0.14);
   --lp-line-on-paper-2: rgba(28, 38, 48, 0.22);
 
+  /* Restrained easing for the small motion pass below: a quick, non-bouncy
+     settle for hover/focus transitions, never used for anything longer
+     than a couple hundred milliseconds. */
+  --lp-ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+
   /* Type system: League's own stack, scoped to .lol-page only. */
   --serif: 'Spectral', Georgia, serif;
   --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
@@ -97,7 +102,10 @@ body.lol-page {
 body.lol-page::before {
   content: "";
   position: fixed;
-  inset: 0;
+  /* Inset past the viewport on all sides so the slow drift below never
+     uncovers an edge: the layer is always larger than what it has to
+     cover, it just quietly repositions within that margin. */
+  inset: -20px;
   z-index: -1;
   background-image:
     linear-gradient(180deg, rgba(18, 21, 28, 0.42) 0%, rgba(18, 21, 28, 0.86) 42%, var(--lp-bg) 76%),
@@ -106,6 +114,17 @@ body.lol-page::before {
   background-position: center 30%;
   background-repeat: no-repeat;
   pointer-events: none;
+  animation: league-background-drift 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+/* Barely-there drift on the tactical-map photo: a live analysis table
+   that's quietly "on," not an esports lobby. Content above stays
+   completely fixed; only this background layer moves, and only by a
+   handful of pixels over nearly half a minute. */
+@keyframes league-background-drift {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-10px, 7px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index: 1; }
@@ -509,18 +528,45 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
   color: inherit;
   font: inherit;
   cursor: pointer;
+  /* A read ledger, not a button grid: hovering or focusing a row nudges
+     it a few px toward the reader and draws a thin rule down its left
+     edge. box-shadow (not padding/border) carries the rule so it never
+     changes the row's box size or makes it jump. */
+  box-shadow: inset 2px 0 0 0 transparent;
+  transition:
+    transform 200ms var(--lp-ease-out),
+    background-color 200ms var(--lp-ease-out),
+    box-shadow 200ms var(--lp-ease-out);
+}
+.lp-record-row:hover,
+.lp-record-row:focus-visible {
+  transform: translateX(4px);
+  background-color: rgba(198, 162, 91, 0.05);
+  box-shadow: inset 2px 0 0 0 var(--lp-gold-line);
 }
 .lp-record-top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.lp-record-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; position: relative; top: -2px; flex-shrink: 0; }
+.lp-record-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  top: -2px;
+  flex-shrink: 0;
+  transition: filter 200ms var(--lp-ease-out);
+}
 .lp-record-row.win .lp-record-dot { background: var(--lp-win); }
 .lp-record-row.loss .lp-record-dot { background: var(--lp-loss); }
+.lp-record-row:hover .lp-record-dot,
+.lp-record-row:focus-visible .lp-record-dot { filter: brightness(1.3); }
 .lp-record-name {
   font-family: var(--serif);
   font-size: 20px;
   color: var(--lp-ink);
-  transition: color 0.15s;
+  transition: color 200ms var(--lp-ease-out);
 }
-.lp-record-row:hover .lp-record-name { color: #FFFFFF; }
+.lp-record-row:hover .lp-record-name,
+.lp-record-row:focus-visible .lp-record-name { color: #FFFFFF; }
 .lp-record-meta { font-family: var(--sans); font-size: 12.5px; color: var(--lp-ink-mute); }
 .lp-review-link {
   margin-left: auto;
@@ -530,9 +576,10 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
   font-family: var(--sans);
   font-size: 12px;
   color: var(--lp-ink-faint);
-  transition: color 0.15s;
+  transition: color 200ms var(--lp-ease-out);
 }
-.lp-record-row:hover .lp-review-link { color: var(--lp-gold); }
+.lp-record-row:hover .lp-review-link,
+.lp-record-row:focus-visible .lp-review-link { color: var(--lp-gold); }
 .lp-record-data {
   font-family: var(--mono);
   font-size: 13px;
@@ -1017,4 +1064,17 @@ body.lol-page > main { flex: 1 0 auto; min-width: 0; position: relative; z-index
     margin-top: 24px;
   }
   .lp-result.lp-insights-open #tableWrap { max-height: none; overflow: visible; }
+}
+
+/* ───────── Motion accessibility ─────────
+   Stops the background drift outright and collapses every transition
+   this pass added (and any other timed motion on the page) to
+   effectively nothing for anyone who's asked their OS for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
