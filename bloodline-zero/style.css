@@ -453,7 +453,35 @@ body.bz {
   font-size: 19px;
   margin: 0 0 6px;
 }
-.bz-ep-main h3 a:hover { color: var(--accent-hi); }
+/* An invitation to turn a page, not a software button: hovering (or
+   keyboard-focusing) anywhere in the row brightens the title and draws
+   a thin rule under it, left to right, rather than the whole card
+   leaping or glowing. */
+.bz-ep-main h3 a {
+  position: relative;
+  display: inline-block;
+  transition: color 200ms var(--ease);
+}
+.bz-ep-main h3 a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: var(--accent-hi);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms var(--ease);
+}
+.bz-ep-row:hover .bz-ep-main h3 a,
+.bz-ep-row:focus-within .bz-ep-main h3 a,
+.bz-ep-main h3 a:hover,
+.bz-ep-main h3 a:focus-visible { color: var(--accent-hi); }
+.bz-ep-row:hover .bz-ep-main h3 a::after,
+.bz-ep-row:focus-within .bz-ep-main h3 a::after,
+.bz-ep-main h3 a:hover::after,
+.bz-ep-main h3 a:focus-visible::after { transform: scaleX(1); }
 .bz-ep-teaser {
   font-family: var(--read);
   font-size: 15px;
@@ -520,12 +548,17 @@ body.bz {
     radial-gradient(ellipse 48% 36% at 78% 68%, rgba(232,228,220,0.04), transparent 66%);
   background-repeat: no-repeat;
   filter: blur(46px);
-  animation: bz-fog-drift 150s ease-in-out infinite alternate;
+  animation: bz-fog-drift 30s ease-in-out infinite alternate;
 }
+/* Pixel-based, not percentage-based: keeps the drift to a genuinely
+   small excursion (well under 18px) regardless of viewport size, rather
+   than scaling up on wide screens. 0%/100% stay slightly apart on
+   purpose (not a perfect loop back to the start) so the alternate
+   direction reverses smoothly with no visible reset. */
 @keyframes bz-fog-drift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(2.5%, -2%, 0) scale(1.03); }
-  100% { transform: translate3d(-2%, 2.5%, 0) scale(1.02); }
+  0%   { transform: translate3d(-6px, 3px, 0) scale(1.015); }
+  50%  { transform: translate3d(6px, -4px, 0) scale(1.03); }
+  100% { transform: translate3d(-4px, 4px, 0) scale(1.02); }
 }
 
 /* ---------------------------------------------------------------
@@ -736,4 +769,4 @@ body:has(.bz-reader) .bz-bg::after {
   .bz-ep-action { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 4px; }
 }
 
-/* cache-bust 1790630618 */
+/* cache-bust 1790860646 */
